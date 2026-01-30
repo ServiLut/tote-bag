@@ -38,8 +38,9 @@ export default function RegisterPage() {
           setEmail('');
           setPassword('');
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al registrarse';
+      setError(message);
     } finally {
       setIsLoading(false);
     }

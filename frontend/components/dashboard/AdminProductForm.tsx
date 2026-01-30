@@ -5,6 +5,7 @@ import { useState, ChangeEvent, FormEvent, useRef } from 'react';
 import { Plus, Trash2, AlertCircle, UploadCloud, Loader2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import Image from 'next/image';
 
 // Utility for cleaner tailwind classes
 function cn(...inputs: (string | undefined | null | false)[]) {
@@ -12,9 +13,9 @@ function cn(...inputs: (string | undefined | null | false)[]) {
 }
 
 // Types based on the backend DTOs implicitly
-type ProductStatus = 'DISPONIBLE' | 'BAJO_PEDIDO' | 'PREVENTA';
+export type ProductStatus = 'DISPONIBLE' | 'BAJO_PEDIDO' | 'PREVENTA';
 
-interface VariantData {
+export interface VariantData {
   sku: string;
   color: string;
   imageUrl: string;
@@ -138,9 +139,10 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
 
       // 3. Agregar al estado
       setFormData(prev => ({ ...prev, images: [...prev.images, ...newUrls] }));
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       console.error('Upload error:', error);
-      alert('Error al subir imagen: ' + error.message);
+      alert('Error al subir imagen: ' + errorMessage);
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = ''; // Reset input
@@ -167,7 +169,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
         .getPublicUrl(fileName);
 
       updateVariant(index, 'imageUrl', data.publicUrl);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Variant upload error:', error);
       alert('Error al subir imagen de variante');
     } finally {
@@ -294,9 +296,10 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
       if (!isEditMode) {
         setFormData(INITIAL_STATE); // Reset form only on create
       }
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Hubo un problema al guardar el producto.';
       console.error('Error saving product:', error);
-      alert(error.message || 'Hubo un problema al guardar el producto.');
+      alert(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -351,7 +354,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
             {/* Images List */}
             {formData.images.map((url, idx) => (
               <div key={idx} className="relative w-24 h-24 flex-shrink-0 bg-white border border-gray-200 rounded-lg overflow-hidden group shadow-sm">
-                <img src={url} alt={`Preview ${idx}`} className="w-full h-full object-cover" />
+                <Image src={url} alt={`Preview ${idx}`} fill className="object-cover" unoptimized />
                 <button
                   type="button"
                   onClick={() => removeImage(idx)}

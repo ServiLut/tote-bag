@@ -23,21 +23,21 @@ export default function B2BQuotesManager() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
   useEffect(() => {
-    fetchQuotes();
-  }, []);
+    const fetchQuotes = async () => {
+      try {
+        const res = await fetch(`${API_URL}/b2b/quotes`);
+        if (!res.ok) throw new Error('Failed to fetch quotes');
+        const data = await res.json();
+        setQuotes(data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const fetchQuotes = async () => {
-    try {
-      const res = await fetch(`${API_URL}/b2b/quotes`);
-      if (!res.ok) throw new Error('Failed to fetch quotes');
-      const data = await res.json();
-      setQuotes(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchQuotes();
+  }, [API_URL]);
 
   const handleApprove = async (id: string) => {
     setProcessingId(id);
@@ -50,7 +50,7 @@ export default function B2BQuotesManager() {
       setQuotes(prev => prev.map(q => 
         q.id === id ? { ...q, status: 'DISEÑO_APROBADO' } : q
       ));
-    } catch (err) {
+    } catch {
       alert('Error aprobando diseño');
     } finally {
       setProcessingId(null);

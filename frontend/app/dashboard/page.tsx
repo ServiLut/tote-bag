@@ -1,6 +1,19 @@
 import Link from 'next/link';
 import { ArrowRight, TrendingUp, AlertTriangle, Briefcase, ShoppingBag, Package } from 'lucide-react';
 
+interface Order {
+  id: string;
+  createdAt: string;
+}
+
+interface Variant {
+  stock: number;
+}
+
+interface Product {
+  variants: Variant[];
+}
+
 async function getDashboardStats() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
   
@@ -11,19 +24,19 @@ async function getDashboardStats() {
       fetch(`${API_URL}/b2b/quotes`, { cache: 'no-store' }),
     ]);
 
-    const orders = ordersRes.ok ? await ordersRes.json() : [];
-    const products = productsRes.ok ? await productsRes.json() : [];
+    const orders: Order[] = ordersRes.ok ? await ordersRes.json() : [];
+    const products: Product[] = productsRes.ok ? await productsRes.json() : [];
     const quotes = quotesRes.ok ? await quotesRes.json() : [];
 
     const today = new Date().toDateString();
-    const dailyProduction = orders.filter((o: any) => 
+    const dailyProduction = orders.filter((o) => 
       new Date(o.createdAt).toDateString() === today
     ).length;
 
     let lowStockCount = 0;
-    products.forEach((p: any) => {
+    products.forEach((p) => {
       if (p.variants) {
-        p.variants.forEach((v: any) => {
+        p.variants.forEach((v) => {
           if (v.stock < 10) lowStockCount++;
         });
       }

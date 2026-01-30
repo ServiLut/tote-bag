@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Loader2, AlertTriangle, Check, Eye, Pencil, Trash2, X, Package, Tag, DollarSign } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Loader2, AlertTriangle, Check, Eye, Pencil, Trash2, X, Package, DollarSign } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import Link from 'next/link';
+import Image from 'next/image';
 
 function cn(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
@@ -41,11 +42,7 @@ export default function ProductsTable() {
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/products/list`);
       if (!res.ok) throw new Error('Failed to fetch products');
@@ -57,7 +54,11 @@ export default function ProductsTable() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL]);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
 
   const handleStatusChange = async (id: string, newStatus: string) => {
     setUpdatingId(id);
@@ -73,7 +74,7 @@ export default function ProductsTable() {
       if (!res.ok) throw new Error('Failed to update status');
 
       setProducts(prev =>
-        prev.map(p => (p.id === id ? { ...p, status: newStatus as any } : p))
+        prev.map(p => (p.id === id ? { ...p, status: newStatus as Product['status'] } : p))
       );
     } catch (err) {
       console.error(err);
@@ -144,8 +145,14 @@ export default function ProductsTable() {
                 >
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-lg overflow-hidden bg-zinc-100 border border-zinc-200 flex-shrink-0">
-                        <img src={mainImage} alt={product.name} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                      <div className="h-12 w-12 rounded-lg overflow-hidden bg-zinc-100 border border-zinc-200 flex-shrink-0 relative">
+                        <Image 
+                          src={mainImage} 
+                          alt={product.name} 
+                          width={48}
+                          height={48}
+                          className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-300" 
+                        />
                       </div>
                       <div>
                         <div className="font-bold text-zinc-900 tracking-tight">{product.name}</div>
@@ -251,10 +258,12 @@ export default function ProductsTable() {
             <div className="flex flex-col md:flex-row">
               {/* Left: Image Gallery (Simple) */}
               <div className="w-full md:w-2/5 bg-zinc-50 p-6 flex flex-col gap-4">
-                <div className="aspect-square rounded-xl overflow-hidden bg-white border border-zinc-100 shadow-sm">
-                  <img 
+                <div className="aspect-square rounded-xl overflow-hidden bg-white border border-zinc-100 shadow-sm relative">
+                  <Image 
                     src={selectedProduct.images?.[0] || 'https://via.placeholder.com/400'} 
                     alt={selectedProduct.name}
+                    width={400}
+                    height={400}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -262,8 +271,14 @@ export default function ProductsTable() {
                 {selectedProduct.images.length > 1 && (
                   <div className="flex gap-2 overflow-x-auto pb-2">
                     {selectedProduct.images.slice(1).map((img, i) => (
-                      <div key={i} className="w-16 h-16 rounded-lg overflow-hidden border border-zinc-200 flex-shrink-0">
-                        <img src={img} className="w-full h-full object-cover" />
+                      <div key={i} className="w-16 h-16 rounded-lg overflow-hidden border border-zinc-200 flex-shrink-0 relative">
+                        <Image 
+                          src={img} 
+                          alt={`${selectedProduct.name} thumbnail ${i + 1}`}
+                          width={64}
+                          height={64}
+                          className="w-full h-full object-cover" 
+                        />
                       </div>
                     ))}
                   </div>

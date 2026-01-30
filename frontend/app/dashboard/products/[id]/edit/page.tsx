@@ -1,14 +1,29 @@
 'use client';
 
-import { AdminProductForm } from '@/components/dashboard/AdminProductForm';
+import { AdminProductForm, type ProductStatus, type VariantData } from '@/components/dashboard/AdminProductForm';
 import Link from 'next/link';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+interface Product {
+  id: string;
+  name: string;
+  slug: string;
+  collection: string;
+  description?: string;
+  images: string[];
+  basePrice: number;
+  minPrice: number;
+  costPrice?: number;
+  comparePrice?: number;
+  status: ProductStatus;
+  variants: VariantData[];
+}
+
 export default function EditProductPage() {
   const { id } = useParams();
-  const [productData, setProductData] = useState<any>(null);
+  const [productData, setProductData] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,15 +38,16 @@ export default function EditProductPage() {
         if (!res.ok) throw new Error('No se pudo cargar el producto');
         const data = await res.json();
         setProductData(data);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Error al cargar el producto';
+        setError(message);
       } finally {
         setLoading(false);
       }
     };
 
     fetchProduct();
-  }, [id]);
+  }, [id, API_URL]);
 
   if (loading) {
     return (
