@@ -1,0 +1,15 @@
+meta {
+  name: Aprobar Diseño
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{url}}/b2b/quotes/:id/approve
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 
+}

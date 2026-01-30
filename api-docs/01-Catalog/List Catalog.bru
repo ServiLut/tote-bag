@@ -1,0 +1,15 @@
+meta {
+  name: Listar Catálogo
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{url}}/products/list
+  body: none
+  auth: inherit
+}
+
+params:query {
+  collection: 
+}

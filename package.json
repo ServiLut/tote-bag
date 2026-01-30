@@ -1,0 +1,12 @@
+{
+  "name": "tote-bag",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "bun x concurrently \"bun --filter backend dev\" \"bun --filter frontend dev\"",
+    "install:all": "bun install",
+    "api": "bruno open api-docs"
+  }
+}

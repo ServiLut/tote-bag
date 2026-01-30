@@ -1,0 +1,28 @@
+meta {
+  name: Crear Orden
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{url}}/orders
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "customerEmail": "cliente@correo.com",
+    "customerPhone": "3001234567",
+    "shippingAddress": "Calle 10 #20-30",
+    "city": "Medellín",
+    "items": [
+      {
+        "productId": "uuid-del-producto",
+        "sku": "TB-COLECCION-DISENO-COLOR",
+        "quantity": 2,
+        "price": 45000
+      }
+    ]
+  }
+}
