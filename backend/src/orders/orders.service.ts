@@ -9,24 +9,27 @@ export class OrdersService {
 
   async create(createOrderDto: CreateOrderDto) {
     const { items, ...orderData } = createOrderDto;
-    
+
     // Calculate total amount
-    const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const totalAmount = items.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0,
+    );
 
     return this.prisma.order.create({
       data: {
         ...orderData,
         totalAmount,
         items: {
-          create: items.map(item => ({
+          create: items.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
             price: item.price,
-            sku: item.sku, 
-          }))
-        }
+            sku: item.sku,
+          })),
+        },
       },
-      include: { items: true }
+      include: { items: true },
     });
   }
 
@@ -37,15 +40,15 @@ export class OrdersService {
           include: {
             product: {
               include: {
-                variants: true
-              }
-            }
-          }
-        }
+                variants: true,
+              },
+            },
+          },
+        },
       },
       orderBy: {
-        createdAt: 'desc'
-      }
+        createdAt: 'desc',
+      },
     });
   }
 
@@ -55,10 +58,10 @@ export class OrdersService {
       include: {
         items: {
           include: {
-            product: true
-          }
-        }
-      }
+            product: true,
+          },
+        },
+      },
     });
   }
 

@@ -1,13 +1,12 @@
-import { 
-  IsBoolean, 
-  IsEnum, 
-  IsNotEmpty, 
-  IsNumber, 
-  IsOptional, 
-  IsString, 
-  Min, 
-  IsArray, 
-  ValidateNested 
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ProductStatus, PrintType } from '../../generated/client/enums';
@@ -88,7 +87,6 @@ export class CreateProductDto {
   tags?: string[];
 
   @IsString()
-
   @IsString()
   @IsNotEmpty()
   deliveryTime: string;

@@ -1,21 +1,22 @@
-import { 
-  Injectable, 
-  BadRequestException, 
-  ConflictException, 
-  InternalServerErrorException 
+import {
+  Injectable,
+  BadRequestException,
+  ConflictException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
-  private supabase: SupabaseClient;
+  private supabase: SupabaseClient<any, any, any>;
 
   constructor(private prisma: PrismaService) {
     this.supabase = createClient(
       process.env.SUPABASE_URL!,
-      process.env.SUPABASE_KEY!
+      process.env.SUPABASE_KEY!,
     );
   }
 
@@ -32,11 +33,11 @@ export class AuthService {
       // Manejo de errores específicos
       console.error('Supabase Auth Error:', error); // Log para debugging
       const msg = error.message.toLowerCase();
-      
+
       if (msg.includes('already registered') || error.status === 422) {
         throw new ConflictException('Correo ya registrado');
       }
-      
+
       if (msg.includes('password') || msg.includes('weak')) {
         throw new BadRequestException('Contraseña demasiado débil');
       }
@@ -45,7 +46,9 @@ export class AuthService {
     }
 
     if (!data.user) {
-      throw new InternalServerErrorException('No se pudo obtener el usuario de Supabase');
+      throw new InternalServerErrorException(
+        'No se pudo obtener el usuario de Supabase',
+      );
     }
 
     // 2. Guardar en PostgreSQL (Prisma)
@@ -55,10 +58,10 @@ export class AuthService {
     });
 
     if (existingProfile) {
-       // Si existe en DB local pero Supabase dejó registrar (caso raro de desincronización), 
-       // o si Supabase retornó fake success.
-       // Asumimos conflicto si ya tenemos el perfil.
-       throw new ConflictException('Correo ya registrado en el sistema local');
+      // Si existe en DB local pero Supabase dejó registrar (caso raro de desincronización),
+      // o si Supabase retornó fake success.
+      // Asumimos conflicto si ya tenemos el perfil.
+      throw new ConflictException('Correo ya registrado en el sistema local');
     }
 
     try {
@@ -68,11 +71,13 @@ export class AuthService {
           userId: data.user.id,
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Rollback idealmente, pero sin service_role no podemos borrar el user de supabase fácilmente.
       // Logueamos el error.
       console.error('Error creating profile:', error);
-      throw new InternalServerErrorException('Error al crear el perfil de usuario');
+      throw new InternalServerErrorException(
+        'Error al crear el perfil de usuario',
+      );
     }
 
     // 3. Respuesta estructurada
@@ -80,8 +85,8 @@ export class AuthService {
     const requiresEmailVerification = !data.session;
 
     return {
-      message: requiresEmailVerification 
-        ? 'Registro iniciado. Por favor verifica tu correo electrónico.' 
+      message: requiresEmailVerification
+        ? 'Registro iniciado. Por favor verifica tu correo electrónico.'
         : 'Registro exitoso.',
       user: {
         id: data.user.id,
@@ -91,7 +96,7 @@ export class AuthService {
     };
   }
 
-  async login(loginDto: any) {
+  async login(loginDto: LoginDto) {
     const { email, password } = loginDto;
 
     const { data, error } = await this.supabase.auth.signInWithPassword({

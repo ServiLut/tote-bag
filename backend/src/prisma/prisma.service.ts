@@ -9,8 +9,9 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   constructor() {
-    let connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL_NON_POOLING;
-    
+    let connectionString =
+      process.env.DATABASE_URL || process.env.POSTGRES_URL_NON_POOLING;
+
     // Attempt to remove sslmode from URL to avoid conflicts with pg config
     try {
       if (connectionString) {
@@ -22,13 +23,16 @@ export class PrismaService
         urlObj.searchParams.delete('sslkey');
         connectionString = urlObj.toString();
       }
-    } catch (e) {
+    } catch {
       // invalid url or not a full url, ignore
     }
 
-    const pool = new pg.Pool({ 
+    const pool = new pg.Pool({
       connectionString,
-      ssl: process.env.NODE_ENV === 'production' ? true : { rejectUnauthorized: false }
+      ssl:
+        process.env.NODE_ENV === 'production'
+          ? true
+          : { rejectUnauthorized: false },
     });
     const adapter = new PrismaPg(pool);
     super({ adapter });

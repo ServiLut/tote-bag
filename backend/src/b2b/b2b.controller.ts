@@ -1,13 +1,12 @@
 import {
   Controller,
   Post,
-  Get,
-  Patch,
-  Param,
   Body,
+  Param,
+  Patch,
   UseInterceptors,
   UploadedFile,
-  BadRequestException,
+  Get,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { B2bService } from './b2b.service';

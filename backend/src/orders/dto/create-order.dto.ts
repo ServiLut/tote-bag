@@ -1,4 +1,11 @@
-import { IsString, IsNotEmpty, IsNumber, IsArray, ValidateNested, IsOptional } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsPositive,
+  IsString,
+  ValidateNested,
+  IsArray,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 class CreateOrderItemDto {
@@ -11,10 +18,12 @@ class CreateOrderItemDto {
   sku: string;
 
   @IsNumber()
+  @IsPositive()
   @IsNotEmpty()
   quantity: number;
 
   @IsNumber()
+  @IsPositive()
   @IsNotEmpty()
   price: number;
 }

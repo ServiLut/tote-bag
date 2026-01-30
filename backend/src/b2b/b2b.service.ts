@@ -23,9 +23,11 @@ export class B2bService {
     logoFile?: Express.Multer.File,
   ) {
     const assignedPackage = this.calculatePackage(createQuoteDto.quantity);
-    
+
     // Simulate logo URL
-    const logoUrl = logoFile ? `https://fake-storage.com/${logoFile.originalname}` : null;
+    const logoUrl = logoFile
+      ? `https://fake-storage.com/${logoFile.originalname}`
+      : null;
 
     const quote = await this.prisma.b2BQuote.create({
       data: {
@@ -36,7 +38,7 @@ export class B2bService {
         qrType: createQuoteDto.qrType,
         package: assignedPackage,
         logoUrl: logoUrl,
-      }
+      },
     });
 
     const whatsappPayload = {
@@ -53,14 +55,14 @@ export class B2bService {
 
   async findAll() {
     return this.prisma.b2BQuote.findMany({
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
   }
 
   async approveDesign(id: string) {
     return this.prisma.b2BQuote.update({
       where: { id },
-      data: { status: 'DISEÑO_APROBADO' }
+      data: { status: 'DISEÑO_APROBADO' },
     });
   }
 }

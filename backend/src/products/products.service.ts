@@ -1,7 +1,12 @@
-import { Injectable, NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
-import { Product } from '../generated/client/client';
+import { Product, Prisma } from '../generated/client/client';
 import { UpdateProductDto } from './dto/update-product.dto';
 
 @Injectable()
@@ -9,12 +14,13 @@ export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async update(id: string, updateProductDto: UpdateProductDto) {
-    const { variants, ...data } = updateProductDto;
-    
-    // If variants are present, we might need complex logic (upsert/delete). 
+    const { variants: _variants, ...data } = updateProductDto;
+    void _variants;
+
+    // If variants are present, we might need complex logic (upsert/delete).
     // For now, let's focus on updating scalar fields like status, prices, etc.
     // If variants update is needed, it should be handled carefully.
-    
+
     return this.prisma.product.update({
       where: { id },
       data: {
@@ -24,18 +30,17 @@ export class ProductsService {
     });
   }
 
-
   async remove(id: string) {
     // Check integrity
     const ordersCount = await this.prisma.orderItem.count({
-      where: { productId: id }
+      where: { productId: id },
     });
 
     if (ordersCount > 0) {
       // Soft Delete if it has history
       return this.prisma.product.update({
         where: { id },
-        data: { isActive: false, status: 'BAJO_PEDIDO' } // Or specific archived status
+        data: { isActive: false, status: 'BAJO_PEDIDO' }, // Or specific archived status
       });
     }
 
@@ -141,13 +146,11 @@ export class ProductsService {
       });
 
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error creating product:', error);
       // Handle unique constraint violations (e.g. SKU)
       if (
-        typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
+        error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
         throw new BadRequestException(
@@ -159,7 +162,7 @@ export class ProductsService {
   }
 
   async findAll(collection?: string) {
-    const where: any = {
+    const where: Prisma.ProductWhereInput = {
       isActive: true, // Only active products
     };
 
@@ -173,7 +176,7 @@ export class ProductsService {
     return this.prisma.product.findMany({
       where,
       include: { variants: true },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
   }
 
