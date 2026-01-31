@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from 'sonner';
+import { CartProvider } from "@/context/CartContext";
+import { ThemeProvider } from "@/components/theme-provider";
+import { CookieConsent } from "@/components/ui/CookieConsent";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tote Bag - Admin",
-  description: "Sistema de gestión de productos",
+  title: "Tote Bag Shop",
+  description: "Bolsos artesanales y ecológicos",
 };
 
 export default function RootLayout({
@@ -24,12 +27,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="es" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-base text-body`}
       >
-        <Toaster position="top-right" richColors closeButton />
-        {children}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <CartProvider>
+            <Toaster position="top-right" richColors closeButton />
+            <CookieConsent />
+            {children}
+          </CartProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

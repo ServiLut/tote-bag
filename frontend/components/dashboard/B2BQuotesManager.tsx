@@ -8,9 +8,13 @@ interface B2BQuote {
   id: string;
   businessName: string;
   quantity: number;
-  city: string;
+  department: string;
+  municipality: string;
+  neighborhood: string;
+  address: string;
   package: 'Starter' | 'Pro' | 'Evento';
   qrType: 'WHATSAPP' | 'WEB' | 'INSTAGRAM';
+  qrData?: string;
   status: string;
   logoUrl?: string;
   createdAt: string;
@@ -82,9 +86,14 @@ export default function B2BQuotesManager() {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="font-bold text-lg text-gray-900 line-clamp-1">{quote.businessName}</h3>
-                  <div className="flex items-center text-gray-500 text-sm mt-1">
-                    <MapPin className="w-3 h-3 mr-1" />
-                    {quote.city}
+                  <div className="flex flex-col text-gray-500 text-sm mt-1 gap-0.5">
+                    <div className="flex items-center">
+                      <MapPin className="w-3 h-3 mr-1 shrink-0" />
+                      {quote.municipality}, {quote.department}
+                    </div>
+                    <div className="text-xs ml-4">
+                      {quote.neighborhood} • {quote.address}
+                    </div>
                   </div>
                 </div>
                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getPackageColor(quote.package)}`}>
@@ -104,6 +113,14 @@ export default function B2BQuotesManager() {
                     {quote.qrType}
                   </span>
                 </div>
+                {quote.qrData && (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-gray-500 text-sm">Destino QR:</span>
+                    <span className="text-xs font-mono bg-gray-50 p-1.5 rounded border border-gray-100 break-all">
+                      {quote.qrData}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="bg-gray-50 rounded-lg p-3 mb-4">

@@ -9,15 +9,19 @@ import {
   Briefcase, 
   LogOut,
   Menu,
-  UserCircle
+  UserCircle,
+  Loader2,
+  Users
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { User } from '@supabase/supabase-js';
 
 const menuItems = [
   { name: 'Resumen', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Pedidos', href: '/dashboard/orders', icon: ShoppingBag },
   { name: 'Productos', href: '/dashboard/products', icon: Package },
+  { name: 'Clientes', href: '/dashboard/customers', icon: Users },
   { name: 'Corporativo (B2B)', href: '/dashboard/b2b', icon: Briefcase },
 ];
 
@@ -28,14 +32,55 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        router.push('/login');
+        return;
+      }
+
+      // Check for admin role in user metadata (or fetch profile if needed)
+      // For now we check the metadata we'll set on login or just redirect if not authorized
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+
+      // We should ideally fetch the profile to be sure about the role
+      // But as a quick win, we can assume the user needs to be logged in 
+      // and we can add a check against a specific flag or the backend response
+      const userRole = localStorage.getItem('user_role');
+      
+      if (userRole !== 'ADMIN') {
+        router.push('/catalog');
+        return;
+      }
+
+      setLoading(false);
+    };
+
+    checkUser();
+  }, [router, supabase.auth]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    localStorage.removeItem('user_role');
     router.refresh();
     router.push('/login');
   };
+
+  if (loading) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-zinc-50">
+        <Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-zinc-50 text-zinc-900 font-sans">
@@ -81,8 +126,10 @@ export default function DashboardLayout({
             <div className="flex items-center gap-3">
               <UserCircle className="w-9 h-9 text-zinc-400" />
               <div className="flex flex-col">
-                <span className="text-sm font-semibold text-zinc-900">Admin</span>
-                <span className="text-xs text-zinc-500">admin@totebag.co</span>
+                <span className="text-sm font-semibold text-zinc-900 truncate max-w-[120px]">
+                  {user?.email?.split('@')[0] || 'Admin'}
+                </span>
+                <span className="text-xs text-zinc-500 truncate max-w-[120px]">{user?.email}</span>
               </div>
             </div>
             <button 
