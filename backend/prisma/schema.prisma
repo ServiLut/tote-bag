@@ -16,12 +16,15 @@ model Product {
   // Pricing avanzado
   comparePrice     Float?        @map("compare_price")
   costPrice        Float?        @map("cost_price")
-  
+
   status           ProductStatus @default(BAJO_PEDIDO) @map("status")
-  collection       String        @map("collection")
   
+  // Relations
+  collectionId     String        @map("collection_id")
+  collection       Collection    @relation(fields: [collectionId], references: [id])
+
   // Media y SEO
-  images           String[]      @default([]) @map("images")
+  images           ProductImage[]
   slug             String        @unique @map("slug")
   seoTitle         String?       @map("seo_title")
   seoDescription   String?       @map("seo_description")
@@ -41,6 +44,29 @@ model Product {
   @@map("products")
 }
 
+model ProductImage {
+  id        String  @id @default(uuid()) @map("id")
+  url       String  @map("url")
+  alt       String? @map("alt")
+  position  Int     @default(0) @map("position")
+  productId String  @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_images")
+}
+
+model Collection {
+  id        String    @id @default(uuid()) @map("id")
+  name      String    @map("name")
+  slug      String    @unique @map("slug")
+  isActive  Boolean   @default(true) @map("is_active")
+  products  Product[]
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@map("collections")
+}
+
 model Variant {
   id        String  @id @default(uuid()) @map("id")
   sku       String  @unique @map("sku")
@@ -49,6 +75,8 @@ model Variant {
   stock     Int     @default(0) @map("stock")
   productId String  @map("product_id")
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  orderItems OrderItem[]
 
   @@map("variants")
 }
@@ -58,12 +86,14 @@ model Order {
   orderNumber     Int         @unique @default(autoincrement()) @map("order_number")
   customerEmail   String      @map("customer_email")
   customerPhone   String      @map("customer_phone")
-  shippingAddress String      @map("shipping_address")
+  shippingAddress Json        @map("shipping_address")
   city            String      @map("city")
   totalAmount     Float       @map("total_amount")
-  
+  currency        String      @default("COP") @map("currency")
+
   status          OrderStatus @default(PENDIENTE_PAGO) @map("status")
-  
+  statusHistory   OrderStatusHistory[]
+
   // Logística
   trackingNumber  String?     @map("tracking_number")
   carrier         String?     @map("carrier")
@@ -72,7 +102,21 @@ model Order {
   createdAt       DateTime    @default(now()) @map("created_at")
   items           OrderItem[]
 
+  profileId       String?     @map("profile_id")
+  profile         Profile?    @relation(fields: [profileId], references: [id])
+
   @@map("orders")
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(uuid()) @map("id")
+  orderId   String      @map("order_id")
+  status    OrderStatus @map("status")
+  createdAt DateTime    @default(now()) @map("created_at")
+
+  order     Order       @relation(fields: [orderId], references: [id])
+  
+  @@map("order_status_history")
 }
 
 enum OrderStatus {
@@ -89,22 +133,29 @@ model OrderItem {
   quantity  Int     @map("quantity")
   price     Float   @map("price")
   sku       String  @map("sku")
+
   orderId   String  @map("order_id")
   productId String  @map("product_id")
+  variantId String? @map("variant_id")
+
   order     Order   @relation(fields: [orderId], references: [id])
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+  variant   Variant? @relation(fields: [variantId], references: [id])
 
   @@map("order_items")
 }
 
+
 model Profile {
-  id        String   @id @default(uuid())
-  email     String   @unique
+  id        String   @id @default(uuid()) @map("id")
+  email     String   @unique @map("email")
   firstName String?  @map("first_name")
   lastName  String?  @map("last_name")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   userId    String   @unique @map("user_id")
+  
+  orders    Order[]
 
   @@map("profiles")
 }

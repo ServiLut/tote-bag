@@ -11,6 +11,20 @@ import {
 import { Type } from 'class-transformer';
 import { ProductStatus, PrintType } from '../../generated/client/enums';
 
+export class CreateProductImageDto {
+  @IsString()
+  @IsNotEmpty()
+  url: string;
+
+  @IsString()
+  @IsOptional()
+  alt?: string;
+
+  @IsNumber()
+  @IsOptional()
+  position?: number;
+}
+
 export class CreateVariantDto {
   @IsString()
   @IsNotEmpty()
@@ -61,13 +75,18 @@ export class CreateProductDto {
   status?: ProductStatus;
 
   @IsString()
-  @IsNotEmpty()
-  collection: string;
+  @IsOptional()
+  collectionId?: string;
+
+  @IsString()
+  @IsOptional()
+  collectionName?: string;
 
   @IsArray()
-  @IsString({ each: true })
+  @ValidateNested({ each: true })
+  @Type(() => CreateProductImageDto)
   @IsOptional()
-  images?: string[];
+  images?: CreateProductImageDto[];
 
   @IsString()
   @IsNotEmpty()
@@ -86,7 +105,6 @@ export class CreateProductDto {
   @IsOptional()
   tags?: string[];
 
-  @IsString()
   @IsString()
   @IsNotEmpty()
   deliveryTime: string;

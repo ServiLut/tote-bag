@@ -40,14 +40,15 @@ export type OrderMinAggregateOutputType = {
   orderNumber: number | null
   customerEmail: string | null
   customerPhone: string | null
-  shippingAddress: string | null
   city: string | null
   totalAmount: number | null
+  currency: string | null
   status: $Enums.OrderStatus | null
   trackingNumber: string | null
   carrier: string | null
   isB2B: boolean | null
   createdAt: Date | null
+  profileId: string | null
 }
 
 export type OrderMaxAggregateOutputType = {
@@ -55,14 +56,15 @@ export type OrderMaxAggregateOutputType = {
   orderNumber: number | null
   customerEmail: string | null
   customerPhone: string | null
-  shippingAddress: string | null
   city: string | null
   totalAmount: number | null
+  currency: string | null
   status: $Enums.OrderStatus | null
   trackingNumber: string | null
   carrier: string | null
   isB2B: boolean | null
   createdAt: Date | null
+  profileId: string | null
 }
 
 export type OrderCountAggregateOutputType = {
@@ -73,11 +75,13 @@ export type OrderCountAggregateOutputType = {
   shippingAddress: number
   city: number
   totalAmount: number
+  currency: number
   status: number
   trackingNumber: number
   carrier: number
   isB2B: number
   createdAt: number
+  profileId: number
   _all: number
 }
 
@@ -97,14 +101,15 @@ export type OrderMinAggregateInputType = {
   orderNumber?: true
   customerEmail?: true
   customerPhone?: true
-  shippingAddress?: true
   city?: true
   totalAmount?: true
+  currency?: true
   status?: true
   trackingNumber?: true
   carrier?: true
   isB2B?: true
   createdAt?: true
+  profileId?: true
 }
 
 export type OrderMaxAggregateInputType = {
@@ -112,14 +117,15 @@ export type OrderMaxAggregateInputType = {
   orderNumber?: true
   customerEmail?: true
   customerPhone?: true
-  shippingAddress?: true
   city?: true
   totalAmount?: true
+  currency?: true
   status?: true
   trackingNumber?: true
   carrier?: true
   isB2B?: true
   createdAt?: true
+  profileId?: true
 }
 
 export type OrderCountAggregateInputType = {
@@ -130,11 +136,13 @@ export type OrderCountAggregateInputType = {
   shippingAddress?: true
   city?: true
   totalAmount?: true
+  currency?: true
   status?: true
   trackingNumber?: true
   carrier?: true
   isB2B?: true
   createdAt?: true
+  profileId?: true
   _all?: true
 }
 
@@ -229,14 +237,16 @@ export type OrderGroupByOutputType = {
   orderNumber: number
   customerEmail: string
   customerPhone: string
-  shippingAddress: string
+  shippingAddress: runtime.JsonValue
   city: string
   totalAmount: number
+  currency: string
   status: $Enums.OrderStatus
   trackingNumber: string | null
   carrier: string | null
   isB2B: boolean
   createdAt: Date
+  profileId: string | null
   _count: OrderCountAggregateOutputType | null
   _avg: OrderAvgAggregateOutputType | null
   _sum: OrderSumAggregateOutputType | null
@@ -267,15 +277,19 @@ export type OrderWhereInput = {
   orderNumber?: Prisma.IntFilter<"Order"> | number
   customerEmail?: Prisma.StringFilter<"Order"> | string
   customerPhone?: Prisma.StringFilter<"Order"> | string
-  shippingAddress?: Prisma.StringFilter<"Order"> | string
+  shippingAddress?: Prisma.JsonFilter<"Order">
   city?: Prisma.StringFilter<"Order"> | string
   totalAmount?: Prisma.FloatFilter<"Order"> | number
+  currency?: Prisma.StringFilter<"Order"> | string
   status?: Prisma.EnumOrderStatusFilter<"Order"> | $Enums.OrderStatus
   trackingNumber?: Prisma.StringNullableFilter<"Order"> | string | null
   carrier?: Prisma.StringNullableFilter<"Order"> | string | null
   isB2B?: Prisma.BoolFilter<"Order"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Order"> | Date | string
+  profileId?: Prisma.StringNullableFilter<"Order"> | string | null
+  statusHistory?: Prisma.OrderStatusHistoryListRelationFilter
   items?: Prisma.OrderItemListRelationFilter
+  profile?: Prisma.XOR<Prisma.ProfileNullableScalarRelationFilter, Prisma.ProfileWhereInput> | null
 }
 
 export type OrderOrderByWithRelationInput = {
@@ -286,12 +300,16 @@ export type OrderOrderByWithRelationInput = {
   shippingAddress?: Prisma.SortOrder
   city?: Prisma.SortOrder
   totalAmount?: Prisma.SortOrder
+  currency?: Prisma.SortOrder
   status?: Prisma.SortOrder
   trackingNumber?: Prisma.SortOrderInput | Prisma.SortOrder
   carrier?: Prisma.SortOrderInput | Prisma.SortOrder
   isB2B?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  profileId?: Prisma.SortOrderInput | Prisma.SortOrder
+  statusHistory?: Prisma.OrderStatusHistoryOrderByRelationAggregateInput
   items?: Prisma.OrderItemOrderByRelationAggregateInput
+  profile?: Prisma.ProfileOrderByWithRelationInput
 }
 
 export type OrderWhereUniqueInput = Prisma.AtLeast<{
@@ -302,15 +320,19 @@ export type OrderWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.OrderWhereInput | Prisma.OrderWhereInput[]
   customerEmail?: Prisma.StringFilter<"Order"> | string
   customerPhone?: Prisma.StringFilter<"Order"> | string
-  shippingAddress?: Prisma.StringFilter<"Order"> | string
+  shippingAddress?: Prisma.JsonFilter<"Order">
   city?: Prisma.StringFilter<"Order"> | string
   totalAmount?: Prisma.FloatFilter<"Order"> | number
+  currency?: Prisma.StringFilter<"Order"> | string
   status?: Prisma.EnumOrderStatusFilter<"Order"> | $Enums.OrderStatus
   trackingNumber?: Prisma.StringNullableFilter<"Order"> | string | null
   carrier?: Prisma.StringNullableFilter<"Order"> | string | null
   isB2B?: Prisma.BoolFilter<"Order"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Order"> | Date | string
+  profileId?: Prisma.StringNullableFilter<"Order"> | string | null
+  statusHistory?: Prisma.OrderStatusHistoryListRelationFilter
   items?: Prisma.OrderItemListRelationFilter
+  profile?: Prisma.XOR<Prisma.ProfileNullableScalarRelationFilter, Prisma.ProfileWhereInput> | null
 }, "id" | "orderNumber">
 
 export type OrderOrderByWithAggregationInput = {
@@ -321,11 +343,13 @@ export type OrderOrderByWithAggregationInput = {
   shippingAddress?: Prisma.SortOrder
   city?: Prisma.SortOrder
   totalAmount?: Prisma.SortOrder
+  currency?: Prisma.SortOrder
   status?: Prisma.SortOrder
   trackingNumber?: Prisma.SortOrderInput | Prisma.SortOrder
   carrier?: Prisma.SortOrderInput | Prisma.SortOrder
   isB2B?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  profileId?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.OrderCountOrderByAggregateInput
   _avg?: Prisma.OrderAvgOrderByAggregateInput
   _max?: Prisma.OrderMaxOrderByAggregateInput
@@ -341,14 +365,16 @@ export type OrderScalarWhereWithAggregatesInput = {
   orderNumber?: Prisma.IntWithAggregatesFilter<"Order"> | number
   customerEmail?: Prisma.StringWithAggregatesFilter<"Order"> | string
   customerPhone?: Prisma.StringWithAggregatesFilter<"Order"> | string
-  shippingAddress?: Prisma.StringWithAggregatesFilter<"Order"> | string
+  shippingAddress?: Prisma.JsonWithAggregatesFilter<"Order">
   city?: Prisma.StringWithAggregatesFilter<"Order"> | string
   totalAmount?: Prisma.FloatWithAggregatesFilter<"Order"> | number
+  currency?: Prisma.StringWithAggregatesFilter<"Order"> | string
   status?: Prisma.EnumOrderStatusWithAggregatesFilter<"Order"> | $Enums.OrderStatus
   trackingNumber?: Prisma.StringNullableWithAggregatesFilter<"Order"> | string | null
   carrier?: Prisma.StringNullableWithAggregatesFilter<"Order"> | string | null
   isB2B?: Prisma.BoolWithAggregatesFilter<"Order"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Order"> | Date | string
+  profileId?: Prisma.StringNullableWithAggregatesFilter<"Order"> | string | null
 }
 
 export type OrderCreateInput = {
@@ -356,15 +382,18 @@ export type OrderCreateInput = {
   orderNumber?: number
   customerEmail: string
   customerPhone: string
-  shippingAddress: string
+  shippingAddress: Prisma.JsonNullValueInput | runtime.InputJsonValue
   city: string
   totalAmount: number
+  currency?: string
   status?: $Enums.OrderStatus
   trackingNumber?: string | null
   carrier?: string | null
   isB2B?: boolean
   createdAt?: Date | string
+  statusHistory?: Prisma.OrderStatusHistoryCreateNestedManyWithoutOrderInput
   items?: Prisma.OrderItemCreateNestedManyWithoutOrderInput
+  profile?: Prisma.ProfileCreateNestedOneWithoutOrdersInput
 }
 
 export type OrderUncheckedCreateInput = {
@@ -372,14 +401,17 @@ export type OrderUncheckedCreateInput = {
   orderNumber?: number
   customerEmail: string
   customerPhone: string
-  shippingAddress: string
+  shippingAddress: Prisma.JsonNullValueInput | runtime.InputJsonValue
   city: string
   totalAmount: number
+  currency?: string
   status?: $Enums.OrderStatus
   trackingNumber?: string | null
   carrier?: string | null
   isB2B?: boolean
   createdAt?: Date | string
+  profileId?: string | null
+  statusHistory?: Prisma.OrderStatusHistoryUncheckedCreateNestedManyWithoutOrderInput
   items?: Prisma.OrderItemUncheckedCreateNestedManyWithoutOrderInput
 }
 
@@ -387,15 +419,18 @@ export type OrderUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   customerEmail?: Prisma.StringFieldUpdateOperationsInput | string
   customerPhone?: Prisma.StringFieldUpdateOperationsInput | string
-  shippingAddress?: Prisma.StringFieldUpdateOperationsInput | string
+  shippingAddress?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   city?: Prisma.StringFieldUpdateOperationsInput | string
   totalAmount?: Prisma.FloatFieldUpdateOperationsInput | number
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   trackingNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   carrier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  statusHistory?: Prisma.OrderStatusHistoryUpdateManyWithoutOrderNestedInput
   items?: Prisma.OrderItemUpdateManyWithoutOrderNestedInput
+  profile?: Prisma.ProfileUpdateOneWithoutOrdersNestedInput
 }
 
 export type OrderUncheckedUpdateInput = {
@@ -403,14 +438,17 @@ export type OrderUncheckedUpdateInput = {
   orderNumber?: Prisma.IntFieldUpdateOperationsInput | number
   customerEmail?: Prisma.StringFieldUpdateOperationsInput | string
   customerPhone?: Prisma.StringFieldUpdateOperationsInput | string
-  shippingAddress?: Prisma.StringFieldUpdateOperationsInput | string
+  shippingAddress?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   city?: Prisma.StringFieldUpdateOperationsInput | string
   totalAmount?: Prisma.FloatFieldUpdateOperationsInput | number
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   trackingNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   carrier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  profileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  statusHistory?: Prisma.OrderStatusHistoryUncheckedUpdateManyWithoutOrderNestedInput
   items?: Prisma.OrderItemUncheckedUpdateManyWithoutOrderNestedInput
 }
 
@@ -419,23 +457,26 @@ export type OrderCreateManyInput = {
   orderNumber?: number
   customerEmail: string
   customerPhone: string
-  shippingAddress: string
+  shippingAddress: Prisma.JsonNullValueInput | runtime.InputJsonValue
   city: string
   totalAmount: number
+  currency?: string
   status?: $Enums.OrderStatus
   trackingNumber?: string | null
   carrier?: string | null
   isB2B?: boolean
   createdAt?: Date | string
+  profileId?: string | null
 }
 
 export type OrderUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   customerEmail?: Prisma.StringFieldUpdateOperationsInput | string
   customerPhone?: Prisma.StringFieldUpdateOperationsInput | string
-  shippingAddress?: Prisma.StringFieldUpdateOperationsInput | string
+  shippingAddress?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   city?: Prisma.StringFieldUpdateOperationsInput | string
   totalAmount?: Prisma.FloatFieldUpdateOperationsInput | number
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   trackingNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   carrier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -448,14 +489,16 @@ export type OrderUncheckedUpdateManyInput = {
   orderNumber?: Prisma.IntFieldUpdateOperationsInput | number
   customerEmail?: Prisma.StringFieldUpdateOperationsInput | string
   customerPhone?: Prisma.StringFieldUpdateOperationsInput | string
-  shippingAddress?: Prisma.StringFieldUpdateOperationsInput | string
+  shippingAddress?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   city?: Prisma.StringFieldUpdateOperationsInput | string
   totalAmount?: Prisma.FloatFieldUpdateOperationsInput | number
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   trackingNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   carrier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  profileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type OrderCountOrderByAggregateInput = {
@@ -466,11 +509,13 @@ export type OrderCountOrderByAggregateInput = {
   shippingAddress?: Prisma.SortOrder
   city?: Prisma.SortOrder
   totalAmount?: Prisma.SortOrder
+  currency?: Prisma.SortOrder
   status?: Prisma.SortOrder
   trackingNumber?: Prisma.SortOrder
   carrier?: Prisma.SortOrder
   isB2B?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  profileId?: Prisma.SortOrder
 }
 
 export type OrderAvgOrderByAggregateInput = {
@@ -483,14 +528,15 @@ export type OrderMaxOrderByAggregateInput = {
   orderNumber?: Prisma.SortOrder
   customerEmail?: Prisma.SortOrder
   customerPhone?: Prisma.SortOrder
-  shippingAddress?: Prisma.SortOrder
   city?: Prisma.SortOrder
   totalAmount?: Prisma.SortOrder
+  currency?: Prisma.SortOrder
   status?: Prisma.SortOrder
   trackingNumber?: Prisma.SortOrder
   carrier?: Prisma.SortOrder
   isB2B?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  profileId?: Prisma.SortOrder
 }
 
 export type OrderMinOrderByAggregateInput = {
@@ -498,14 +544,15 @@ export type OrderMinOrderByAggregateInput = {
   orderNumber?: Prisma.SortOrder
   customerEmail?: Prisma.SortOrder
   customerPhone?: Prisma.SortOrder
-  shippingAddress?: Prisma.SortOrder
   city?: Prisma.SortOrder
   totalAmount?: Prisma.SortOrder
+  currency?: Prisma.SortOrder
   status?: Prisma.SortOrder
   trackingNumber?: Prisma.SortOrder
   carrier?: Prisma.SortOrder
   isB2B?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  profileId?: Prisma.SortOrder
 }
 
 export type OrderSumOrderByAggregateInput = {
@@ -518,8 +565,32 @@ export type OrderScalarRelationFilter = {
   isNot?: Prisma.OrderWhereInput
 }
 
+export type OrderListRelationFilter = {
+  every?: Prisma.OrderWhereInput
+  some?: Prisma.OrderWhereInput
+  none?: Prisma.OrderWhereInput
+}
+
+export type OrderOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
+}
+
 export type EnumOrderStatusFieldUpdateOperationsInput = {
   set?: $Enums.OrderStatus
+}
+
+export type OrderCreateNestedOneWithoutStatusHistoryInput = {
+  create?: Prisma.XOR<Prisma.OrderCreateWithoutStatusHistoryInput, Prisma.OrderUncheckedCreateWithoutStatusHistoryInput>
+  connectOrCreate?: Prisma.OrderCreateOrConnectWithoutStatusHistoryInput
+  connect?: Prisma.OrderWhereUniqueInput
+}
+
+export type OrderUpdateOneRequiredWithoutStatusHistoryNestedInput = {
+  create?: Prisma.XOR<Prisma.OrderCreateWithoutStatusHistoryInput, Prisma.OrderUncheckedCreateWithoutStatusHistoryInput>
+  connectOrCreate?: Prisma.OrderCreateOrConnectWithoutStatusHistoryInput
+  upsert?: Prisma.OrderUpsertWithoutStatusHistoryInput
+  connect?: Prisma.OrderWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.OrderUpdateToOneWithWhereWithoutStatusHistoryInput, Prisma.OrderUpdateWithoutStatusHistoryInput>, Prisma.OrderUncheckedUpdateWithoutStatusHistoryInput>
 }
 
 export type OrderCreateNestedOneWithoutItemsInput = {
@@ -536,19 +607,151 @@ export type OrderUpdateOneRequiredWithoutItemsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.OrderUpdateToOneWithWhereWithoutItemsInput, Prisma.OrderUpdateWithoutItemsInput>, Prisma.OrderUncheckedUpdateWithoutItemsInput>
 }
 
-export type OrderCreateWithoutItemsInput = {
+export type OrderCreateNestedManyWithoutProfileInput = {
+  create?: Prisma.XOR<Prisma.OrderCreateWithoutProfileInput, Prisma.OrderUncheckedCreateWithoutProfileInput> | Prisma.OrderCreateWithoutProfileInput[] | Prisma.OrderUncheckedCreateWithoutProfileInput[]
+  connectOrCreate?: Prisma.OrderCreateOrConnectWithoutProfileInput | Prisma.OrderCreateOrConnectWithoutProfileInput[]
+  createMany?: Prisma.OrderCreateManyProfileInputEnvelope
+  connect?: Prisma.OrderWhereUniqueInput | Prisma.OrderWhereUniqueInput[]
+}
+
+export type OrderUncheckedCreateNestedManyWithoutProfileInput = {
+  create?: Prisma.XOR<Prisma.OrderCreateWithoutProfileInput, Prisma.OrderUncheckedCreateWithoutProfileInput> | Prisma.OrderCreateWithoutProfileInput[] | Prisma.OrderUncheckedCreateWithoutProfileInput[]
+  connectOrCreate?: Prisma.OrderCreateOrConnectWithoutProfileInput | Prisma.OrderCreateOrConnectWithoutProfileInput[]
+  createMany?: Prisma.OrderCreateManyProfileInputEnvelope
+  connect?: Prisma.OrderWhereUniqueInput | Prisma.OrderWhereUniqueInput[]
+}
+
+export type OrderUpdateManyWithoutProfileNestedInput = {
+  create?: Prisma.XOR<Prisma.OrderCreateWithoutProfileInput, Prisma.OrderUncheckedCreateWithoutProfileInput> | Prisma.OrderCreateWithoutProfileInput[] | Prisma.OrderUncheckedCreateWithoutProfileInput[]
+  connectOrCreate?: Prisma.OrderCreateOrConnectWithoutProfileInput | Prisma.OrderCreateOrConnectWithoutProfileInput[]
+  upsert?: Prisma.OrderUpsertWithWhereUniqueWithoutProfileInput | Prisma.OrderUpsertWithWhereUniqueWithoutProfileInput[]
+  createMany?: Prisma.OrderCreateManyProfileInputEnvelope
+  set?: Prisma.OrderWhereUniqueInput | Prisma.OrderWhereUniqueInput[]
+  disconnect?: Prisma.OrderWhereUniqueInput | Prisma.OrderWhereUniqueInput[]
+  delete?: Prisma.OrderWhereUniqueInput | Prisma.OrderWhereUniqueInput[]
+  connect?: Prisma.OrderWhereUniqueInput | Prisma.OrderWhereUniqueInput[]
+  update?: Prisma.OrderUpdateWithWhereUniqueWithoutProfileInput | Prisma.OrderUpdateWithWhereUniqueWithoutProfileInput[]
+  updateMany?: Prisma.OrderUpdateManyWithWhereWithoutProfileInput | Prisma.OrderUpdateManyWithWhereWithoutProfileInput[]
+  deleteMany?: Prisma.OrderScalarWhereInput | Prisma.OrderScalarWhereInput[]
+}
+
+export type OrderUncheckedUpdateManyWithoutProfileNestedInput = {
+  create?: Prisma.XOR<Prisma.OrderCreateWithoutProfileInput, Prisma.OrderUncheckedCreateWithoutProfileInput> | Prisma.OrderCreateWithoutProfileInput[] | Prisma.OrderUncheckedCreateWithoutProfileInput[]
+  connectOrCreate?: Prisma.OrderCreateOrConnectWithoutProfileInput | Prisma.OrderCreateOrConnectWithoutProfileInput[]
+  upsert?: Prisma.OrderUpsertWithWhereUniqueWithoutProfileInput | Prisma.OrderUpsertWithWhereUniqueWithoutProfileInput[]
+  createMany?: Prisma.OrderCreateManyProfileInputEnvelope
+  set?: Prisma.OrderWhereUniqueInput | Prisma.OrderWhereUniqueInput[]
+  disconnect?: Prisma.OrderWhereUniqueInput | Prisma.OrderWhereUniqueInput[]
+  delete?: Prisma.OrderWhereUniqueInput | Prisma.OrderWhereUniqueInput[]
+  connect?: Prisma.OrderWhereUniqueInput | Prisma.OrderWhereUniqueInput[]
+  update?: Prisma.OrderUpdateWithWhereUniqueWithoutProfileInput | Prisma.OrderUpdateWithWhereUniqueWithoutProfileInput[]
+  updateMany?: Prisma.OrderUpdateManyWithWhereWithoutProfileInput | Prisma.OrderUpdateManyWithWhereWithoutProfileInput[]
+  deleteMany?: Prisma.OrderScalarWhereInput | Prisma.OrderScalarWhereInput[]
+}
+
+export type OrderCreateWithoutStatusHistoryInput = {
   id?: string
   orderNumber?: number
   customerEmail: string
   customerPhone: string
-  shippingAddress: string
+  shippingAddress: Prisma.JsonNullValueInput | runtime.InputJsonValue
   city: string
   totalAmount: number
+  currency?: string
   status?: $Enums.OrderStatus
   trackingNumber?: string | null
   carrier?: string | null
   isB2B?: boolean
   createdAt?: Date | string
+  items?: Prisma.OrderItemCreateNestedManyWithoutOrderInput
+  profile?: Prisma.ProfileCreateNestedOneWithoutOrdersInput
+}
+
+export type OrderUncheckedCreateWithoutStatusHistoryInput = {
+  id?: string
+  orderNumber?: number
+  customerEmail: string
+  customerPhone: string
+  shippingAddress: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  city: string
+  totalAmount: number
+  currency?: string
+  status?: $Enums.OrderStatus
+  trackingNumber?: string | null
+  carrier?: string | null
+  isB2B?: boolean
+  createdAt?: Date | string
+  profileId?: string | null
+  items?: Prisma.OrderItemUncheckedCreateNestedManyWithoutOrderInput
+}
+
+export type OrderCreateOrConnectWithoutStatusHistoryInput = {
+  where: Prisma.OrderWhereUniqueInput
+  create: Prisma.XOR<Prisma.OrderCreateWithoutStatusHistoryInput, Prisma.OrderUncheckedCreateWithoutStatusHistoryInput>
+}
+
+export type OrderUpsertWithoutStatusHistoryInput = {
+  update: Prisma.XOR<Prisma.OrderUpdateWithoutStatusHistoryInput, Prisma.OrderUncheckedUpdateWithoutStatusHistoryInput>
+  create: Prisma.XOR<Prisma.OrderCreateWithoutStatusHistoryInput, Prisma.OrderUncheckedCreateWithoutStatusHistoryInput>
+  where?: Prisma.OrderWhereInput
+}
+
+export type OrderUpdateToOneWithWhereWithoutStatusHistoryInput = {
+  where?: Prisma.OrderWhereInput
+  data: Prisma.XOR<Prisma.OrderUpdateWithoutStatusHistoryInput, Prisma.OrderUncheckedUpdateWithoutStatusHistoryInput>
+}
+
+export type OrderUpdateWithoutStatusHistoryInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  customerEmail?: Prisma.StringFieldUpdateOperationsInput | string
+  customerPhone?: Prisma.StringFieldUpdateOperationsInput | string
+  shippingAddress?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  city?: Prisma.StringFieldUpdateOperationsInput | string
+  totalAmount?: Prisma.FloatFieldUpdateOperationsInput | number
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+  trackingNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  carrier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  items?: Prisma.OrderItemUpdateManyWithoutOrderNestedInput
+  profile?: Prisma.ProfileUpdateOneWithoutOrdersNestedInput
+}
+
+export type OrderUncheckedUpdateWithoutStatusHistoryInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  orderNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  customerEmail?: Prisma.StringFieldUpdateOperationsInput | string
+  customerPhone?: Prisma.StringFieldUpdateOperationsInput | string
+  shippingAddress?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  city?: Prisma.StringFieldUpdateOperationsInput | string
+  totalAmount?: Prisma.FloatFieldUpdateOperationsInput | number
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+  trackingNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  carrier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  profileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  items?: Prisma.OrderItemUncheckedUpdateManyWithoutOrderNestedInput
+}
+
+export type OrderCreateWithoutItemsInput = {
+  id?: string
+  orderNumber?: number
+  customerEmail: string
+  customerPhone: string
+  shippingAddress: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  city: string
+  totalAmount: number
+  currency?: string
+  status?: $Enums.OrderStatus
+  trackingNumber?: string | null
+  carrier?: string | null
+  isB2B?: boolean
+  createdAt?: Date | string
+  statusHistory?: Prisma.OrderStatusHistoryCreateNestedManyWithoutOrderInput
+  profile?: Prisma.ProfileCreateNestedOneWithoutOrdersInput
 }
 
 export type OrderUncheckedCreateWithoutItemsInput = {
@@ -556,14 +759,17 @@ export type OrderUncheckedCreateWithoutItemsInput = {
   orderNumber?: number
   customerEmail: string
   customerPhone: string
-  shippingAddress: string
+  shippingAddress: Prisma.JsonNullValueInput | runtime.InputJsonValue
   city: string
   totalAmount: number
+  currency?: string
   status?: $Enums.OrderStatus
   trackingNumber?: string | null
   carrier?: string | null
   isB2B?: boolean
   createdAt?: Date | string
+  profileId?: string | null
+  statusHistory?: Prisma.OrderStatusHistoryUncheckedCreateNestedManyWithoutOrderInput
 }
 
 export type OrderCreateOrConnectWithoutItemsInput = {
@@ -586,14 +792,17 @@ export type OrderUpdateWithoutItemsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   customerEmail?: Prisma.StringFieldUpdateOperationsInput | string
   customerPhone?: Prisma.StringFieldUpdateOperationsInput | string
-  shippingAddress?: Prisma.StringFieldUpdateOperationsInput | string
+  shippingAddress?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   city?: Prisma.StringFieldUpdateOperationsInput | string
   totalAmount?: Prisma.FloatFieldUpdateOperationsInput | number
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   trackingNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   carrier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  statusHistory?: Prisma.OrderStatusHistoryUpdateManyWithoutOrderNestedInput
+  profile?: Prisma.ProfileUpdateOneWithoutOrdersNestedInput
 }
 
 export type OrderUncheckedUpdateWithoutItemsInput = {
@@ -601,9 +810,161 @@ export type OrderUncheckedUpdateWithoutItemsInput = {
   orderNumber?: Prisma.IntFieldUpdateOperationsInput | number
   customerEmail?: Prisma.StringFieldUpdateOperationsInput | string
   customerPhone?: Prisma.StringFieldUpdateOperationsInput | string
-  shippingAddress?: Prisma.StringFieldUpdateOperationsInput | string
+  shippingAddress?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   city?: Prisma.StringFieldUpdateOperationsInput | string
   totalAmount?: Prisma.FloatFieldUpdateOperationsInput | number
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+  trackingNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  carrier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  profileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  statusHistory?: Prisma.OrderStatusHistoryUncheckedUpdateManyWithoutOrderNestedInput
+}
+
+export type OrderCreateWithoutProfileInput = {
+  id?: string
+  orderNumber?: number
+  customerEmail: string
+  customerPhone: string
+  shippingAddress: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  city: string
+  totalAmount: number
+  currency?: string
+  status?: $Enums.OrderStatus
+  trackingNumber?: string | null
+  carrier?: string | null
+  isB2B?: boolean
+  createdAt?: Date | string
+  statusHistory?: Prisma.OrderStatusHistoryCreateNestedManyWithoutOrderInput
+  items?: Prisma.OrderItemCreateNestedManyWithoutOrderInput
+}
+
+export type OrderUncheckedCreateWithoutProfileInput = {
+  id?: string
+  orderNumber?: number
+  customerEmail: string
+  customerPhone: string
+  shippingAddress: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  city: string
+  totalAmount: number
+  currency?: string
+  status?: $Enums.OrderStatus
+  trackingNumber?: string | null
+  carrier?: string | null
+  isB2B?: boolean
+  createdAt?: Date | string
+  statusHistory?: Prisma.OrderStatusHistoryUncheckedCreateNestedManyWithoutOrderInput
+  items?: Prisma.OrderItemUncheckedCreateNestedManyWithoutOrderInput
+}
+
+export type OrderCreateOrConnectWithoutProfileInput = {
+  where: Prisma.OrderWhereUniqueInput
+  create: Prisma.XOR<Prisma.OrderCreateWithoutProfileInput, Prisma.OrderUncheckedCreateWithoutProfileInput>
+}
+
+export type OrderCreateManyProfileInputEnvelope = {
+  data: Prisma.OrderCreateManyProfileInput | Prisma.OrderCreateManyProfileInput[]
+  skipDuplicates?: boolean
+}
+
+export type OrderUpsertWithWhereUniqueWithoutProfileInput = {
+  where: Prisma.OrderWhereUniqueInput
+  update: Prisma.XOR<Prisma.OrderUpdateWithoutProfileInput, Prisma.OrderUncheckedUpdateWithoutProfileInput>
+  create: Prisma.XOR<Prisma.OrderCreateWithoutProfileInput, Prisma.OrderUncheckedCreateWithoutProfileInput>
+}
+
+export type OrderUpdateWithWhereUniqueWithoutProfileInput = {
+  where: Prisma.OrderWhereUniqueInput
+  data: Prisma.XOR<Prisma.OrderUpdateWithoutProfileInput, Prisma.OrderUncheckedUpdateWithoutProfileInput>
+}
+
+export type OrderUpdateManyWithWhereWithoutProfileInput = {
+  where: Prisma.OrderScalarWhereInput
+  data: Prisma.XOR<Prisma.OrderUpdateManyMutationInput, Prisma.OrderUncheckedUpdateManyWithoutProfileInput>
+}
+
+export type OrderScalarWhereInput = {
+  AND?: Prisma.OrderScalarWhereInput | Prisma.OrderScalarWhereInput[]
+  OR?: Prisma.OrderScalarWhereInput[]
+  NOT?: Prisma.OrderScalarWhereInput | Prisma.OrderScalarWhereInput[]
+  id?: Prisma.StringFilter<"Order"> | string
+  orderNumber?: Prisma.IntFilter<"Order"> | number
+  customerEmail?: Prisma.StringFilter<"Order"> | string
+  customerPhone?: Prisma.StringFilter<"Order"> | string
+  shippingAddress?: Prisma.JsonFilter<"Order">
+  city?: Prisma.StringFilter<"Order"> | string
+  totalAmount?: Prisma.FloatFilter<"Order"> | number
+  currency?: Prisma.StringFilter<"Order"> | string
+  status?: Prisma.EnumOrderStatusFilter<"Order"> | $Enums.OrderStatus
+  trackingNumber?: Prisma.StringNullableFilter<"Order"> | string | null
+  carrier?: Prisma.StringNullableFilter<"Order"> | string | null
+  isB2B?: Prisma.BoolFilter<"Order"> | boolean
+  createdAt?: Prisma.DateTimeFilter<"Order"> | Date | string
+  profileId?: Prisma.StringNullableFilter<"Order"> | string | null
+}
+
+export type OrderCreateManyProfileInput = {
+  id?: string
+  orderNumber?: number
+  customerEmail: string
+  customerPhone: string
+  shippingAddress: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  city: string
+  totalAmount: number
+  currency?: string
+  status?: $Enums.OrderStatus
+  trackingNumber?: string | null
+  carrier?: string | null
+  isB2B?: boolean
+  createdAt?: Date | string
+}
+
+export type OrderUpdateWithoutProfileInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  customerEmail?: Prisma.StringFieldUpdateOperationsInput | string
+  customerPhone?: Prisma.StringFieldUpdateOperationsInput | string
+  shippingAddress?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  city?: Prisma.StringFieldUpdateOperationsInput | string
+  totalAmount?: Prisma.FloatFieldUpdateOperationsInput | number
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+  trackingNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  carrier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  statusHistory?: Prisma.OrderStatusHistoryUpdateManyWithoutOrderNestedInput
+  items?: Prisma.OrderItemUpdateManyWithoutOrderNestedInput
+}
+
+export type OrderUncheckedUpdateWithoutProfileInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  orderNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  customerEmail?: Prisma.StringFieldUpdateOperationsInput | string
+  customerPhone?: Prisma.StringFieldUpdateOperationsInput | string
+  shippingAddress?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  city?: Prisma.StringFieldUpdateOperationsInput | string
+  totalAmount?: Prisma.FloatFieldUpdateOperationsInput | number
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+  trackingNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  carrier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  statusHistory?: Prisma.OrderStatusHistoryUncheckedUpdateManyWithoutOrderNestedInput
+  items?: Prisma.OrderItemUncheckedUpdateManyWithoutOrderNestedInput
+}
+
+export type OrderUncheckedUpdateManyWithoutProfileInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  orderNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  customerEmail?: Prisma.StringFieldUpdateOperationsInput | string
+  customerPhone?: Prisma.StringFieldUpdateOperationsInput | string
+  shippingAddress?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  city?: Prisma.StringFieldUpdateOperationsInput | string
+  totalAmount?: Prisma.FloatFieldUpdateOperationsInput | number
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   trackingNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   carrier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -617,10 +978,12 @@ export type OrderUncheckedUpdateWithoutItemsInput = {
  */
 
 export type OrderCountOutputType = {
+  statusHistory: number
   items: number
 }
 
 export type OrderCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  statusHistory?: boolean | OrderCountOutputTypeCountStatusHistoryArgs
   items?: boolean | OrderCountOutputTypeCountItemsArgs
 }
 
@@ -632,6 +995,13 @@ export type OrderCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extens
    * Select specific fields to fetch from the OrderCountOutputType
    */
   select?: Prisma.OrderCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * OrderCountOutputType without action
+ */
+export type OrderCountOutputTypeCountStatusHistoryArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.OrderStatusHistoryWhereInput
 }
 
 /**
@@ -650,12 +1020,16 @@ export type OrderSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   shippingAddress?: boolean
   city?: boolean
   totalAmount?: boolean
+  currency?: boolean
   status?: boolean
   trackingNumber?: boolean
   carrier?: boolean
   isB2B?: boolean
   createdAt?: boolean
+  profileId?: boolean
+  statusHistory?: boolean | Prisma.Order$statusHistoryArgs<ExtArgs>
   items?: boolean | Prisma.Order$itemsArgs<ExtArgs>
+  profile?: boolean | Prisma.Order$profileArgs<ExtArgs>
   _count?: boolean | Prisma.OrderCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["order"]>
 
@@ -667,11 +1041,14 @@ export type OrderSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   shippingAddress?: boolean
   city?: boolean
   totalAmount?: boolean
+  currency?: boolean
   status?: boolean
   trackingNumber?: boolean
   carrier?: boolean
   isB2B?: boolean
   createdAt?: boolean
+  profileId?: boolean
+  profile?: boolean | Prisma.Order$profileArgs<ExtArgs>
 }, ExtArgs["result"]["order"]>
 
 export type OrderSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -682,11 +1059,14 @@ export type OrderSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   shippingAddress?: boolean
   city?: boolean
   totalAmount?: boolean
+  currency?: boolean
   status?: boolean
   trackingNumber?: boolean
   carrier?: boolean
   isB2B?: boolean
   createdAt?: boolean
+  profileId?: boolean
+  profile?: boolean | Prisma.Order$profileArgs<ExtArgs>
 }, ExtArgs["result"]["order"]>
 
 export type OrderSelectScalar = {
@@ -697,39 +1077,51 @@ export type OrderSelectScalar = {
   shippingAddress?: boolean
   city?: boolean
   totalAmount?: boolean
+  currency?: boolean
   status?: boolean
   trackingNumber?: boolean
   carrier?: boolean
   isB2B?: boolean
   createdAt?: boolean
+  profileId?: boolean
 }
 
-export type OrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "orderNumber" | "customerEmail" | "customerPhone" | "shippingAddress" | "city" | "totalAmount" | "status" | "trackingNumber" | "carrier" | "isB2B" | "createdAt", ExtArgs["result"]["order"]>
+export type OrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "orderNumber" | "customerEmail" | "customerPhone" | "shippingAddress" | "city" | "totalAmount" | "currency" | "status" | "trackingNumber" | "carrier" | "isB2B" | "createdAt" | "profileId", ExtArgs["result"]["order"]>
 export type OrderInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  statusHistory?: boolean | Prisma.Order$statusHistoryArgs<ExtArgs>
   items?: boolean | Prisma.Order$itemsArgs<ExtArgs>
+  profile?: boolean | Prisma.Order$profileArgs<ExtArgs>
   _count?: boolean | Prisma.OrderCountOutputTypeDefaultArgs<ExtArgs>
 }
-export type OrderIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
-export type OrderIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
+export type OrderIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  profile?: boolean | Prisma.Order$profileArgs<ExtArgs>
+}
+export type OrderIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  profile?: boolean | Prisma.Order$profileArgs<ExtArgs>
+}
 
 export type $OrderPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Order"
   objects: {
+    statusHistory: Prisma.$OrderStatusHistoryPayload<ExtArgs>[]
     items: Prisma.$OrderItemPayload<ExtArgs>[]
+    profile: Prisma.$ProfilePayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     orderNumber: number
     customerEmail: string
     customerPhone: string
-    shippingAddress: string
+    shippingAddress: runtime.JsonValue
     city: string
     totalAmount: number
+    currency: string
     status: $Enums.OrderStatus
     trackingNumber: string | null
     carrier: string | null
     isB2B: boolean
     createdAt: Date
+    profileId: string | null
   }, ExtArgs["result"]["order"]>
   composites: {}
 }
@@ -1124,7 +1516,9 @@ readonly fields: OrderFieldRefs;
  */
 export interface Prisma__OrderClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  statusHistory<T extends Prisma.Order$statusHistoryArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Order$statusHistoryArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrderStatusHistoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   items<T extends Prisma.Order$itemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Order$itemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrderItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  profile<T extends Prisma.Order$profileArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Order$profileArgs<ExtArgs>>): Prisma.Prisma__ProfileClient<runtime.Types.Result.GetResult<Prisma.$ProfilePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1158,14 +1552,16 @@ export interface OrderFieldRefs {
   readonly orderNumber: Prisma.FieldRef<"Order", 'Int'>
   readonly customerEmail: Prisma.FieldRef<"Order", 'String'>
   readonly customerPhone: Prisma.FieldRef<"Order", 'String'>
-  readonly shippingAddress: Prisma.FieldRef<"Order", 'String'>
+  readonly shippingAddress: Prisma.FieldRef<"Order", 'Json'>
   readonly city: Prisma.FieldRef<"Order", 'String'>
   readonly totalAmount: Prisma.FieldRef<"Order", 'Float'>
+  readonly currency: Prisma.FieldRef<"Order", 'String'>
   readonly status: Prisma.FieldRef<"Order", 'OrderStatus'>
   readonly trackingNumber: Prisma.FieldRef<"Order", 'String'>
   readonly carrier: Prisma.FieldRef<"Order", 'String'>
   readonly isB2B: Prisma.FieldRef<"Order", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"Order", 'DateTime'>
+  readonly profileId: Prisma.FieldRef<"Order", 'String'>
 }
     
 
@@ -1415,6 +1811,10 @@ export type OrderCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extension
    */
   data: Prisma.OrderCreateManyInput | Prisma.OrderCreateManyInput[]
   skipDuplicates?: boolean
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.OrderIncludeCreateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1485,6 +1885,10 @@ export type OrderUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.Extension
    * Limit how many Orders to update.
    */
   limit?: number
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.OrderIncludeUpdateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1554,6 +1958,30 @@ export type OrderDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Interna
 }
 
 /**
+ * Order.statusHistory
+ */
+export type Order$statusHistoryArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the OrderStatusHistory
+   */
+  select?: Prisma.OrderStatusHistorySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the OrderStatusHistory
+   */
+  omit?: Prisma.OrderStatusHistoryOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.OrderStatusHistoryInclude<ExtArgs> | null
+  where?: Prisma.OrderStatusHistoryWhereInput
+  orderBy?: Prisma.OrderStatusHistoryOrderByWithRelationInput | Prisma.OrderStatusHistoryOrderByWithRelationInput[]
+  cursor?: Prisma.OrderStatusHistoryWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.OrderStatusHistoryScalarFieldEnum | Prisma.OrderStatusHistoryScalarFieldEnum[]
+}
+
+/**
  * Order.items
  */
 export type Order$itemsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1575,6 +2003,25 @@ export type Order$itemsArgs<ExtArgs extends runtime.Types.Extensions.InternalArg
   take?: number
   skip?: number
   distinct?: Prisma.OrderItemScalarFieldEnum | Prisma.OrderItemScalarFieldEnum[]
+}
+
+/**
+ * Order.profile
+ */
+export type Order$profileArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Profile
+   */
+  select?: Prisma.ProfileSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Profile
+   */
+  omit?: Prisma.ProfileOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProfileInclude<ExtArgs> | null
+  where?: Prisma.ProfileWhereInput
 }
 
 /**

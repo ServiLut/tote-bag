@@ -2,13 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
+import { Prisma } from '../generated/client/client';
 
 @Injectable()
 export class OrdersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createOrderDto: CreateOrderDto) {
-    const { items, ...orderData } = createOrderDto;
+    const { items, shippingAddress, ...orderData } = createOrderDto;
 
     // Calculate total amount
     const totalAmount = items.reduce(
@@ -16,20 +17,32 @@ export class OrdersService {
       0,
     );
 
+    // Prepare shipping address as JSON-compatible object
+    // Prisma Json type accepts objects.
+    const shippingAddressJson =
+      shippingAddress as unknown as Prisma.InputJsonValue;
+
     return this.prisma.order.create({
       data: {
         ...orderData,
+        shippingAddress: shippingAddressJson,
         totalAmount,
+        statusHistory: {
+          create: {
+            status: 'PENDIENTE_PAGO',
+          },
+        },
         items: {
           create: items.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
             price: item.price,
             sku: item.sku,
+            variantId: item.variantId,
           })),
         },
       },
-      include: { items: true },
+      include: { items: true, statusHistory: true },
     });
   }
 
@@ -41,10 +54,13 @@ export class OrdersService {
             product: {
               include: {
                 variants: true,
+                images: true,
               },
             },
           },
         },
+        statusHistory: true,
+        profile: true,
       },
       orderBy: {
         createdAt: 'desc',
@@ -58,14 +74,40 @@ export class OrdersService {
       include: {
         items: {
           include: {
-            product: true,
+            product: {
+              include: {
+                images: true,
+              },
+            },
           },
         },
+        statusHistory: {
+          orderBy: { createdAt: 'desc' },
+        },
+        profile: true,
       },
     });
   }
 
   async update(id: string, updateOrderDto: UpdateOrderDto) {
+    const { status, ...data } = updateOrderDto;
+
+    if (status) {
+      // If status changes, add to history
+      return this.prisma.order.update({
+        where: { id },
+        data: {
+          status,
+          ...data,
+          statusHistory: {
+            create: {
+              status,
+            },
+          },
+        },
+      });
+    }
+
     return this.prisma.order.update({
       where: { id },
       data: updateOrderDto,

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Loader2, Briefcase, MapPin, CheckCircle, Image as ImageIcon, QrCode } from 'lucide-react';
+import { ApiResponse } from '@/types/api';
 
 interface B2BQuote {
   id: string;
@@ -27,8 +28,8 @@ export default function B2BQuotesManager() {
       try {
         const res = await fetch(`${API_URL}/b2b/quotes`);
         if (!res.ok) throw new Error('Failed to fetch quotes');
-        const data = await res.json();
-        setQuotes(data);
+        const responseBody: ApiResponse<B2BQuote[]> = await res.json();
+        setQuotes(responseBody.data);
       } catch (err) {
         console.error(err);
       } finally {

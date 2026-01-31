@@ -6,6 +6,8 @@ import { Plus, Trash2, AlertCircle, UploadCloud, Loader2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import Image from 'next/image';
+import { ApiResponse } from '@/types/api';
+import { toast } from 'sonner';
 
 // Utility for cleaner tailwind classes
 function cn(...inputs: (string | undefined | null | false)[]) {
@@ -22,6 +24,12 @@ export interface VariantData {
   stock: number;
 }
 
+interface ProductImage {
+  id?: string;
+  url: string;
+  position?: number;
+}
+
 interface ProductFormData {
   name: string;
   slug: string;
@@ -34,12 +42,19 @@ interface ProductFormData {
   costPrice: number;
   deliveryTime: string;
   status: ProductStatus;
-  images: string[];
+  images: ProductImage[];
   variants: VariantData[];
 }
 
 interface AdminProductFormProps {
-  initialData?: ProductFormData & { id?: string };
+  initialData?: Omit<Partial<ProductFormData>, 'tags' | 'costPrice' | 'comparePrice' | 'images' | 'collection'> & { 
+    id?: string; 
+    tags?: string | string[];
+    costPrice?: number | null;
+    comparePrice?: number | null;
+    images?: ProductImage[] | string[];
+    collection?: string | { name: string };
+  };
 }
 
 const INITIAL_STATE: ProductFormData = {
@@ -60,13 +75,26 @@ const INITIAL_STATE: ProductFormData = {
   ],
 };
 
+interface Collection {
+  name: string;
+}
+
 export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
   const isEditMode = !!initialData;
   const [formData, setFormData] = useState<ProductFormData>(
     initialData 
       ? {
+          ...INITIAL_STATE,
           ...initialData,
+          collection: typeof initialData.collection === 'object' && initialData.collection !== null 
+            ? (initialData.collection as unknown as Collection).name 
+            : (initialData.collection as string) || '',
+          images: initialData.images 
+            ? initialData.images.map((img: string | ProductImage) => typeof img === 'string' ? { url: img } : img)
+            : [],
           tags: Array.isArray(initialData.tags) ? initialData.tags.join(', ') : initialData.tags || '',
+          costPrice: initialData.costPrice ?? 0,
+          comparePrice: initialData.comparePrice ?? 0,
         } 
       : INITIAL_STATE
   );
@@ -138,11 +166,12 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
       const newUrls = await Promise.all(uploadPromises);
 
       // 3. Agregar al estado
-      setFormData(prev => ({ ...prev, images: [...prev.images, ...newUrls] }));
+      setFormData(prev => ({ ...prev, images: [...prev.images, ...newUrls.map(url => ({ url }))] }));
+      toast.success('Imágenes subidas correctamente');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       console.error('Upload error:', error);
-      alert('Error al subir imagen: ' + errorMessage);
+      toast.error('Error al subir imagen: ' + errorMessage);
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = ''; // Reset input
@@ -169,9 +198,10 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
         .getPublicUrl(fileName);
 
       updateVariant(index, 'imageUrl', data.publicUrl);
+      toast.success('Imagen de variante subida');
     } catch (error) {
       console.error('Variant upload error:', error);
-      alert('Error al subir imagen de variante');
+      toast.error('Error al subir imagen de variante');
     } finally {
       setIsUploading(false);
       e.target.value = ''; // Reset input
@@ -180,8 +210,9 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
 
   const addImageFromUrl = () => {
     if (imageUrlInput) {
-      setFormData(prev => ({ ...prev, images: [...prev.images, imageUrlInput] }));
+      setFormData(prev => ({ ...prev, images: [...prev.images, { url: imageUrlInput }] }));
       setImageUrlInput('');
+      toast.success('Imagen agregada desde URL');
     }
   };
 
@@ -191,7 +222,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
 
   const removeVariant = (index: number) => {
     if (formData.variants.length === 1) {
-      alert('El producto debe tener al menos una opción (variante).');
+      toast.warning('El producto debe tener al menos una variante.');
       return;
     }
     setFormData((prev) => ({
@@ -234,7 +265,13 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (isPriceWarning) {
-      alert('Por favor corrige las advertencias de precio antes de continuar.');
+      toast.error('Por favor corrige las advertencias de precio.');
+      return;
+    }
+
+    // Validate variants have images
+    if (formData.variants.some(v => !v.imageUrl)) {
+      toast.error('Todas las variantes deben tener una imagen asignada.');
       return;
     }
 
@@ -257,14 +294,14 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
         name: formData.name,
         slug: formData.slug,
         description: formData.description,
-        collection: formData.collection,
+        collectionName: formData.collection,
         basePrice: formData.basePrice,
         minPrice: formData.minPrice,
         comparePrice: formData.comparePrice,
         costPrice: formData.costPrice,
         deliveryTime: formData.deliveryTime,
         status: formData.status,
-        images: formData.images,
+        images: formData.images.map((img, index) => ({ url: img.url, position: index })),
         variants: cleanVariants,
         tags: typeof formData.tags === 'string' 
           ? formData.tags.split(',').map(t => t.trim()).filter(Boolean)
@@ -287,11 +324,17 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Error al guardar el producto');
+        // Format validation errors if available
+        let errorMsg = errorData.message;
+        if (Array.isArray(errorMsg)) {
+           errorMsg = errorMsg.join(', ');
+        }
+        throw new Error(errorMsg || 'Error al guardar el producto');
       }
 
-      const result = await response.json();
-      alert(`Producto "${result.name}" ${isEditMode ? 'actualizado' : 'creado'} exitosamente.`);
+      const responseBody: ApiResponse<{ name: string }> = await response.json();
+      const result = responseBody.data;
+      toast.success(`Producto "${result.name}" ${isEditMode ? 'actualizado' : 'creado'} exitosamente.`);
       
       if (!isEditMode) {
         setFormData(INITIAL_STATE); // Reset form only on create
@@ -299,7 +342,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Hubo un problema al guardar el producto.';
       console.error('Error saving product:', error);
-      alert(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -352,9 +395,9 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
             </div>
 
             {/* Images List */}
-            {formData.images.map((url, idx) => (
+            {formData.images.filter(img => img.url && img.url.trim() !== '').map((img, idx) => (
               <div key={idx} className="relative w-24 h-24 flex-shrink-0 bg-white border border-gray-200 rounded-lg overflow-hidden group shadow-sm">
-                <Image src={url} alt={`Preview ${idx}`} fill className="object-cover" unoptimized />
+                <Image src={img.url} alt={`Preview ${idx}`} fill className="object-cover" unoptimized />
                 <button
                   type="button"
                   onClick={() => removeImage(idx)}

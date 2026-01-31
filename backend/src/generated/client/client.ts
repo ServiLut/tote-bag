@@ -42,6 +42,16 @@ export { Prisma }
  */
 export type Product = Prisma.ProductModel
 /**
+ * Model ProductImage
+ * 
+ */
+export type ProductImage = Prisma.ProductImageModel
+/**
+ * Model Collection
+ * 
+ */
+export type Collection = Prisma.CollectionModel
+/**
  * Model Variant
  * 
  */
@@ -51,6 +61,11 @@ export type Variant = Prisma.VariantModel
  * 
  */
 export type Order = Prisma.OrderModel
+/**
+ * Model OrderStatusHistory
+ * 
+ */
+export type OrderStatusHistory = Prisma.OrderStatusHistoryModel
 /**
  * Model OrderItem
  * 

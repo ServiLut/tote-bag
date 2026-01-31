@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ArrowRight, TrendingUp, AlertTriangle, Briefcase, ShoppingBag, Package } from 'lucide-react';
+import { ApiResponse } from '@/types/api';
 
 interface Order {
   id: string;
@@ -24,9 +25,14 @@ async function getDashboardStats() {
       fetch(`${API_URL}/b2b/quotes`, { cache: 'no-store' }),
     ]);
 
-    const orders: Order[] = ordersRes.ok ? await ordersRes.json() : [];
-    const products: Product[] = productsRes.ok ? await productsRes.json() : [];
-    const quotes = quotesRes.ok ? await quotesRes.json() : [];
+    const ordersBody: ApiResponse<Order[]> | null = ordersRes.ok ? await ordersRes.json() : null;
+    const orders = ordersBody?.data || [];
+
+    const productsBody: ApiResponse<Product[]> | null = productsRes.ok ? await productsRes.json() : null;
+    const products = productsBody?.data || [];
+
+    const quotesBody: ApiResponse<unknown[]> | null = quotesRes.ok ? await quotesRes.json() : null;
+    const quotes = quotesBody?.data || [];
 
     const today = new Date().toDateString();
     const dailyProduction = orders.filter((o) => 

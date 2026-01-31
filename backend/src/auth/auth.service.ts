@@ -11,13 +11,13 @@ import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
-  private supabase: SupabaseClient<any, any, any>;
+  private supabase: { auth: SupabaseClient['auth'] };
 
   constructor(private prisma: PrismaService) {
     this.supabase = createClient(
       process.env.SUPABASE_URL!,
       process.env.SUPABASE_KEY!,
-    );
+    ) as unknown as { auth: SupabaseClient['auth'] };
   }
 
   async register(registerDto: RegisterDto) {

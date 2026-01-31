@@ -4,6 +4,7 @@ import { useState, ChangeEvent, FormEvent } from 'react';
 import { Upload, Smartphone, Globe, Instagram, Send, Info } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { ApiResponse } from '@/types/api';
 
 function cn(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
@@ -81,7 +82,8 @@ export const B2BQuoteForm = () => {
 
       if (!response.ok) throw new Error('Error al enviar la solicitud');
 
-      const result = await response.json();
+      const responseBody: ApiResponse<{ whatsappPayload: { message: string } }> = await response.json();
+      const result = responseBody.data;
       
       // WhatsApp Redirection
       const whatsappUrl = `https://wa.me/573000000000?text=${encodeURIComponent(result.whatsappPayload.message)}`;

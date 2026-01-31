@@ -5,13 +5,32 @@ import {
   IsString,
   ValidateNested,
   IsArray,
+  IsOptional,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+
+class AddressDto {
+  @IsString()
+  @IsNotEmpty()
+  city: string;
+
+  @IsString()
+  @IsNotEmpty()
+  address: string;
+
+  @IsString()
+  @IsNotEmpty()
+  phone: string;
+}
 
 class CreateOrderItemDto {
   @IsString()
   @IsNotEmpty()
   productId: string;
+
+  @IsString()
+  @IsOptional()
+  variantId?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -37,13 +56,22 @@ export class CreateOrderDto {
   @IsNotEmpty()
   customerPhone: string;
 
-  @IsString()
+  @ValidateNested()
+  @Type(() => AddressDto)
   @IsNotEmpty()
-  shippingAddress: string;
+  shippingAddress: AddressDto;
 
   @IsString()
   @IsNotEmpty()
   city: string;
+
+  @IsString()
+  @IsOptional()
+  currency?: string;
+
+  @IsString()
+  @IsOptional()
+  profileId?: string;
 
   @IsArray()
   @ValidateNested({ each: true })

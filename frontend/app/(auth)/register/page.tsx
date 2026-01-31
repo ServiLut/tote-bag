@@ -26,15 +26,16 @@ export default function RegisterPage() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      const responseBody = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Error al registrarse');
+        throw new Error(responseBody.message || 'Error al registrarse');
       }
 
-      setSuccess(data.message);
+      const result = responseBody.data;
+      setSuccess(result.message);
       // Opcional: limpiar campos si fue exitoso
-      if (!data.requiresEmailVerification) {
+      if (!result.requiresEmailVerification) {
           setEmail('');
           setPassword('');
       }

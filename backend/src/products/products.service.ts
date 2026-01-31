@@ -14,19 +14,48 @@ export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async update(id: string, updateProductDto: UpdateProductDto) {
-    const { variants: _variants, ...data } = updateProductDto;
+    const { variants: _variants, images, collectionId, collectionName, ...data } = updateProductDto;
     void _variants;
 
-    // If variants are present, we might need complex logic (upsert/delete).
-    // For now, let's focus on updating scalar fields like status, prices, etc.
-    // If variants update is needed, it should be handled carefully.
+    // Resolve Collection if needed
+    let activeCollectionId: string | undefined = collectionId;
+
+    if (collectionName) {
+      const slug = collectionName.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+      let collection = await this.prisma.collection.findFirst({
+        where: { OR: [{ name: collectionName }, { slug }] }
+      });
+
+      if (!collection) {
+        collection = await this.prisma.collection.create({
+          data: { name: collectionName, slug }
+        });
+      }
+      activeCollectionId = collection.id;
+    }
+
+    // Prepare update data
+    const updateData: Prisma.ProductUpdateInput = {
+      ...data,
+      ...(activeCollectionId && { collectionId: activeCollectionId }), // Only add if resolved
+    };
+
+    // Handle images update if provided
+    if (images) {
+      updateData.images = {
+        deleteMany: {}, // Clear existing images
+        create: images.map((img) => ({
+          url: img.url,
+          alt: img.alt,
+          position: img.position,
+        })),
+      };
+    }
 
     return this.prisma.product.update({
       where: { id },
-      data: {
-        ...data,
-      },
-      include: { variants: true },
+      data: updateData,
+      include: { variants: true, images: true, collection: true },
     });
   }
 
@@ -51,51 +80,31 @@ export class ProductsService {
 
   private validateSku(
     sku: string,
-    collection: string,
+    collectionName: string, // Name from DB
     design: string,
     color: string,
   ): boolean {
     // Format: TB-[COLECCIÓN]-[DISEÑO]-[COLOR]
-    // We normalize inputs to uppercase to compare
-    const normalizedCollection = collection.toUpperCase().replace(/\s+/g, '');
-    const normalizedDesign = design.toUpperCase().replace(/\s+/g, ''); // Assuming design maps to Product Name
+    const normalizedCollection = collectionName
+      .toUpperCase()
+      .replace(/\s+/g, '');
+    const normalizedDesign = design.toUpperCase().replace(/\s+/g, '');
     const normalizedColor = color.toUpperCase().replace(/\s+/g, '');
 
-    // Construct expected prefix and suffix or full SKU
-    // Requirement is ensuring the format.
-    // Let's check regex: ^TB-[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+$
-    const skuRegex =
-      /^TB-[A-Z0-9\u00C0-\u00FF]+-[A-Z0-9\u00C0-\u00FF]+-[A-Z0-9\u00C0-\u00FF]+$/;
-
-    if (!skuRegex.test(sku)) {
-      return false;
-    }
-
-    // Optional: stricter check matching the actual values
     const parts = sku.split('-');
     if (parts.length !== 4) return false;
-
-    // parts[0] is TB
-    // parts[1] should be collection
-    // parts[2] should be design (name)
-    // parts[3] should be color
-
-    // We allow loose matching or strict? "Validación de SKU que asegure el formato".
-    // I will implement strict matching against the provided product details.
 
     return (
       parts[0] === 'TB' &&
       parts[1] === normalizedCollection &&
-      // parts[2] === normalizedDesign && // Name might vary slightly, let's keep it flexible or strict?
-      // User prompt: "TB-[COLECCIÓN]-[DISEÑO]-[COLOR]"
-      // I'll assume strict consistency is desired to prevent data mess.
       parts[2] === normalizedDesign &&
       parts[3] === normalizedColor
     );
   }
 
   async create(createProductDto: CreateProductDto): Promise<Product> {
-    const { variants, ...productData } = createProductDto;
+    const { variants, collectionId, collectionName, images, ...productData } =
+      createProductDto;
 
     // 1. Logic Validation: base_price >= min_price
     if (productData.basePrice < productData.minPrice) {
@@ -104,31 +113,71 @@ export class ProductsService {
       );
     }
 
-    // 2. Prepare Variants and Validate SKUs
-    // We assume 'name' acts as 'DISEÑO'
+    // 2. Fetch or Create Collection for SKU validation
+    let collection: { id: string; name: string } | null = null;
+
+    if (collectionId) {
+      collection = await this.prisma.collection.findUnique({
+        where: { id: collectionId },
+      });
+      if (!collection) {
+        throw new NotFoundException(
+          `Collection with ID ${collectionId} not found`,
+        );
+      }
+    } else if (collectionName) {
+      const slug = collectionName
+        .toLowerCase()
+        .replace(/ /g, '-')
+        .replace(/[^\w-]+/g, '');
+      collection = await this.prisma.collection.findFirst({
+        where: { OR: [{ name: collectionName }, { slug }] },
+      });
+
+      if (!collection) {
+        collection = await this.prisma.collection.create({
+          data: { name: collectionName, slug },
+        });
+      }
+    } else {
+      throw new BadRequestException(
+        'Either collectionId or collectionName is required',
+      );
+    }
+
+    // 3. Prepare Variants and Validate SKUs
     const designName = productData.name;
 
     for (const variant of variants) {
       const isValid = this.validateSku(
         variant.sku,
-        productData.collection,
+        collection.name,
         designName,
         variant.color,
       );
 
       if (!isValid) {
         throw new BadRequestException(
-          `Invalid SKU format: ${variant.sku}. Expected: TB-${productData.collection.toUpperCase().replace(/\s+/g, '')}-${designName.toUpperCase().replace(/\s+/g, '')}-${variant.color.toUpperCase().replace(/\s+/g, '')}`,
+          `Invalid SKU format: ${variant.sku}. Expected: TB-${collection.name.toUpperCase().replace(/\s+/g, '')}-${designName.toUpperCase().replace(/\s+/g, '')}-${variant.color.toUpperCase().replace(/\s+/g, '')}`,
         );
       }
     }
 
-    // 3. Transactional Creation
+    // 4. Transactional Creation
     try {
+      const activeCollectionId = collection.id;
       const result = await this.prisma.$transaction(async (prisma) => {
         const product = await prisma.product.create({
           data: {
             ...productData,
+            collectionId: activeCollectionId,
+            images: {
+              create: images?.map((img) => ({
+                url: img.url,
+                alt: img.alt,
+                position: img.position,
+              })),
+            },
             variants: {
               create: variants.map((v) => ({
                 sku: v.sku,
@@ -140,6 +189,8 @@ export class ProductsService {
           },
           include: {
             variants: true,
+            images: true,
+            collection: true,
           },
         });
         return product;
@@ -148,7 +199,6 @@ export class ProductsService {
       return result;
     } catch (error: unknown) {
       console.error('Error creating product:', error);
-      // Handle unique constraint violations (e.g. SKU)
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
@@ -161,21 +211,18 @@ export class ProductsService {
     }
   }
 
-  async findAll(collection?: string) {
+  async findAll(collectionId?: string) {
     const where: Prisma.ProductWhereInput = {
-      isActive: true, // Only active products
+      isActive: true,
     };
 
-    if (collection) {
-      where.collection = {
-        equals: collection,
-        mode: 'insensitive', // Case insensitive search
-      };
+    if (collectionId) {
+      where.collectionId = collectionId;
     }
 
     return this.prisma.product.findMany({
       where,
-      include: { variants: true },
+      include: { variants: true, images: true, collection: true },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -183,7 +230,7 @@ export class ProductsService {
   async findOne(id: string) {
     const product = await this.prisma.product.findUnique({
       where: { id },
-      include: { variants: true },
+      include: { variants: true, images: true, collection: true },
     });
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);

@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, CalendarClock, Box, Phone, MapPin, Truck, CheckCircle2, AlertCircle, Eye, X, Save } from 'lucide-react';
+import Image from 'next/image';
+import { Loader2, CalendarClock, Box, Phone, MapPin, Truck, Eye, X, Save } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { ApiResponse } from '@/types/api';
 
 function cn(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
@@ -60,21 +62,21 @@ export default function OrdersManager() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    const fetchOrders = async () => {
+      try {
+        const res = await fetch(`${API_URL}/orders`);
+        if (!res.ok) throw new Error('Failed to fetch orders');
+        const responseBody: ApiResponse<Order[]> = await res.json();
+        setOrders(responseBody.data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const fetchOrders = async () => {
-    try {
-      const res = await fetch(`${API_URL}/orders`);
-      if (!res.ok) throw new Error('Failed to fetch orders');
-      const data = await res.json();
-      setOrders(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchOrders();
+  }, [API_URL]);
 
   const openOrderModal = (order: Order) => {
     setSelectedOrder(order);
@@ -105,7 +107,7 @@ export default function OrdersManager() {
       
       setSelectedOrder(null); // Close modal
       alert('Orden actualizada correctamente');
-    } catch (err) {
+    } catch {
       alert('Error al actualizar la orden');
     } finally {
       setUpdating(false);
@@ -278,8 +280,14 @@ export default function OrdersManager() {
           {batchItems.map((batch) => (
             <div key={batch.sku} className="p-6 rounded-2xl border border-zinc-200 bg-white shadow-sm flex flex-col justify-between hover:shadow-md transition-all group">
               <div className="flex gap-4">
-                <div className="h-16 w-16 rounded-xl overflow-hidden border border-zinc-100 bg-zinc-50 flex-shrink-0 shadow-sm">
-                  <img src={batch.image || 'https://via.placeholder.com/100'} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                <div className="h-16 w-16 rounded-xl overflow-hidden border border-zinc-100 bg-zinc-50 flex-shrink-0 shadow-sm relative">
+                  <Image 
+                    src={batch.image || '/placeholder.svg'} 
+                    alt={batch.name}
+                    fill
+                    className="object-cover group-hover:scale-110 transition-transform duration-300"
+                    unoptimized
+                  />
                 </div>
                 <div>
                   <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">{batch.sku}</div>
@@ -342,8 +350,14 @@ export default function OrdersManager() {
                 <div className="space-y-3 max-h-40 overflow-y-auto pr-2">
                   {selectedOrder.items.map(item => (
                     <div key={item.id} className="flex gap-3 items-center">
-                      <div className="h-10 w-10 rounded border border-zinc-200 overflow-hidden flex-shrink-0">
-                        <img src={item.product.images?.[0] || 'https://via.placeholder.com/50'} className="h-full w-full object-cover" />
+                      <div className="h-10 w-10 rounded border border-zinc-200 overflow-hidden flex-shrink-0 relative">
+                        <Image 
+                          src={item.product.images?.[0] || '/placeholder.svg'} 
+                          alt={item.product.name}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-zinc-900 truncate">{item.product.name}</p>

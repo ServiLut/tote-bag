@@ -5,20 +5,23 @@ import Link from 'next/link';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { ApiResponse } from '@/types/api';
 
 interface Product {
   id: string;
   name: string;
   slug: string;
   collection: string;
-  description?: string;
+  description: string;
   images: string[];
   basePrice: number;
   minPrice: number;
-  costPrice?: number;
-  comparePrice?: number;
+  costPrice?: number | null;
+  comparePrice?: number | null;
   status: ProductStatus;
   variants: VariantData[];
+  tags: string[];
+  deliveryTime: string;
 }
 
 export default function EditProductPage() {
@@ -36,8 +39,8 @@ export default function EditProductPage() {
       try {
         const res = await fetch(`${API_URL}/products/${id}`);
         if (!res.ok) throw new Error('No se pudo cargar el producto');
-        const data = await res.json();
-        setProductData(data);
+        const responseBody: ApiResponse<Product> = await res.json();
+        setProductData(responseBody.data);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Error al cargar el producto';
         setError(message);

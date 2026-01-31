@@ -408,6 +408,21 @@ async login() {}
 @Throttle({ short: { limit: 3, ttl: 60000 } })
 async checkout() {}
 
+## 3.5 Cumplimiento Legal (Colombia - Habeas Data)
+
+Para operar en Colombia, el sistema debe cumplir estrictamente con el régimen de protección de datos personales.
+
+### Normativa Aplicable
+- **Ley 1581 de 2012**: Disposiciones generales para la protección de datos personales.
+- **Decreto 1377 de 2013**: Reglamentación de la ley para el tratamiento de datos.
+
+### Implementación Técnica Obligatoria
+
+1. **Autorización Expresa**: Los formularios de registro y checkout deben incluir un checkbox (no marcado por defecto) para la aceptación de la Política de Tratamiento de Datos.
+2. **Registro de Autorización**: Se debe almacenar la fecha, hora e IP donde el usuario aceptó los términos (utilizar la tabla `audit_logs` o extender `users`).
+3. **Derechos ARCO**: Implementar endpoints para que el usuario pueda Acceder, Rectificar, Cancelar u Oponerse al tratamiento de sus datos.
+4. **Finalidad del Dato**: Los datos recolectados deben limitarse estrictamente a lo necesario para la prestación del servicio de e-commerce y logística.
+
 # 4. BASE DE DATOS Y TRANSACCIONALIDAD
 
 ## 4.1 Schema Completo de Producción
@@ -1152,10 +1167,11 @@ CI/CD:
 
 LEGAL Y COMPLIANCE:
 
-- ✅ Política de privacidad publicada
-- ✅ Términos y condiciones
-- ✅ GDPR compliance (si aplica)
-- ✅ Cookie consent
+- ✅ Política de privacidad publicada (Ley 1581 de 2012)
+- ✅ Autorización de tratamiento de datos (Decreto 1377 de 2013)
+- ✅ Términos y condiciones actualizados
+- ✅ Procedimiento de derechos ARCO implementado
+- ✅ Cookie consent con normativa local
 
 **ARQUITECTURA LISTA PARA PRODUCCIÓN**
 
