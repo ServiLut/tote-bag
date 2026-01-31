@@ -1,19 +1,20 @@
-# Stage 1: Build
 FROM oven/bun:1 AS base
 WORKDIR /app
 
-# Copiamos los archivos de la raíz para manejar el lockfile del monorepo
+# Copiamos archivos de la raíz (asumiendo que el contexto de build es la raíz del monorepo)
 COPY package.json bun.lock ./
+# Copiamos el package del frontend a su subcarpeta
 COPY frontend/package.json ./frontend/
 
-# Instalamos dependencias desde la raíz para el workspace frontend
-RUN bun install --cwd ./frontend
+# Instalamos usando el lockfile de la raíz pero solo para el workspace frontend
+RUN bun install --filter frontend
 
-# Copiamos el código fuente del frontend
+# Copiamos el resto del código
 COPY frontend ./frontend
+
+# Cambiamos al directorio de trabajo del frontend para el build
 WORKDIR /app/frontend
 
-# INYECCIÓN DE VARIABLES (Esto evita el error del archivo .env inexistente)
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -22,15 +23,12 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-# Construir la aplicación
 RUN bun run build
 
-# Stage 2: Runner
 FROM node:20-slim AS runner
 WORKDIR /app
 
-ENV NODE_ENV=production
-# Importante: Next.js debe estar en modo standalone
+# Copiamos los artefactos del build standalone
 COPY --from=base /app/frontend/public ./public
 COPY --from=base /app/frontend/.next/standalone ./
 COPY --from=base /app/frontend/.next/static ./.next/static
