@@ -9,7 +9,14 @@ export class OrdersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createOrderDto: CreateOrderDto) {
-    const { items, shippingAddress, ...orderData } = createOrderDto;
+    const {
+      items,
+      shippingAddress,
+      firstName,
+      lastName,
+      department,
+      ...orderData
+    } = createOrderDto;
 
     // Calculate total amount
     const totalAmount = items.reduce(
@@ -18,9 +25,12 @@ export class OrdersService {
     );
 
     // Prepare shipping address as JSON-compatible object
-    // Prisma Json type accepts objects.
-    const shippingAddressJson =
-      shippingAddress as unknown as Prisma.InputJsonValue;
+    const shippingAddressJson = {
+      ...(shippingAddress as object),
+      firstName,
+      lastName,
+      department,
+    } as Prisma.InputJsonValue;
 
     return this.prisma.order.create({
       data: {
@@ -85,6 +95,34 @@ export class OrdersService {
           orderBy: { createdAt: 'desc' },
         },
         profile: true,
+      },
+    });
+  }
+
+  async findByUser(userId: string) {
+    return this.prisma.order.findMany({
+      where: {
+        profile: {
+          userId: userId,
+        },
+      },
+      include: {
+        items: {
+          include: {
+            product: {
+              include: {
+                images: true,
+              },
+            },
+            variant: true,
+          },
+        },
+        statusHistory: {
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
     });
   }

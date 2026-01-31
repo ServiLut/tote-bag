@@ -20,6 +20,14 @@ export const OrderStatus = {
 export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus]
 
 
+export const Role = {
+  ADMIN: 'ADMIN',
+  CUSTOMER: 'CUSTOMER'
+} as const
+
+export type Role = (typeof Role)[keyof typeof Role]
+
+
 export const ProductStatus = {
   DISPONIBLE: 'DISPONIBLE',
   BAJO_PEDIDO: 'BAJO_PEDIDO',

@@ -28,6 +28,12 @@ export type ProfileMinAggregateOutputType = {
   email: string | null
   firstName: string | null
   lastName: string | null
+  phone: string | null
+  department: string | null
+  municipality: string | null
+  neighborhood: string | null
+  address: string | null
+  role: $Enums.Role | null
   createdAt: Date | null
   updatedAt: Date | null
   userId: string | null
@@ -38,6 +44,12 @@ export type ProfileMaxAggregateOutputType = {
   email: string | null
   firstName: string | null
   lastName: string | null
+  phone: string | null
+  department: string | null
+  municipality: string | null
+  neighborhood: string | null
+  address: string | null
+  role: $Enums.Role | null
   createdAt: Date | null
   updatedAt: Date | null
   userId: string | null
@@ -48,9 +60,16 @@ export type ProfileCountAggregateOutputType = {
   email: number
   firstName: number
   lastName: number
+  phone: number
+  department: number
+  municipality: number
+  neighborhood: number
+  address: number
+  role: number
   createdAt: number
   updatedAt: number
   userId: number
+  metadata: number
   _all: number
 }
 
@@ -60,6 +79,12 @@ export type ProfileMinAggregateInputType = {
   email?: true
   firstName?: true
   lastName?: true
+  phone?: true
+  department?: true
+  municipality?: true
+  neighborhood?: true
+  address?: true
+  role?: true
   createdAt?: true
   updatedAt?: true
   userId?: true
@@ -70,6 +95,12 @@ export type ProfileMaxAggregateInputType = {
   email?: true
   firstName?: true
   lastName?: true
+  phone?: true
+  department?: true
+  municipality?: true
+  neighborhood?: true
+  address?: true
+  role?: true
   createdAt?: true
   updatedAt?: true
   userId?: true
@@ -80,9 +111,16 @@ export type ProfileCountAggregateInputType = {
   email?: true
   firstName?: true
   lastName?: true
+  phone?: true
+  department?: true
+  municipality?: true
+  neighborhood?: true
+  address?: true
+  role?: true
   createdAt?: true
   updatedAt?: true
   userId?: true
+  metadata?: true
   _all?: true
 }
 
@@ -163,9 +201,16 @@ export type ProfileGroupByOutputType = {
   email: string
   firstName: string | null
   lastName: string | null
+  phone: string | null
+  department: string | null
+  municipality: string | null
+  neighborhood: string | null
+  address: string | null
+  role: $Enums.Role
   createdAt: Date
   updatedAt: Date
   userId: string
+  metadata: runtime.JsonValue | null
   _count: ProfileCountAggregateOutputType | null
   _min: ProfileMinAggregateOutputType | null
   _max: ProfileMaxAggregateOutputType | null
@@ -194,9 +239,16 @@ export type ProfileWhereInput = {
   email?: Prisma.StringFilter<"Profile"> | string
   firstName?: Prisma.StringNullableFilter<"Profile"> | string | null
   lastName?: Prisma.StringNullableFilter<"Profile"> | string | null
+  phone?: Prisma.StringNullableFilter<"Profile"> | string | null
+  department?: Prisma.StringNullableFilter<"Profile"> | string | null
+  municipality?: Prisma.StringNullableFilter<"Profile"> | string | null
+  neighborhood?: Prisma.StringNullableFilter<"Profile"> | string | null
+  address?: Prisma.StringNullableFilter<"Profile"> | string | null
+  role?: Prisma.EnumRoleFilter<"Profile"> | $Enums.Role
   createdAt?: Prisma.DateTimeFilter<"Profile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Profile"> | Date | string
   userId?: Prisma.StringFilter<"Profile"> | string
+  metadata?: Prisma.JsonNullableFilter<"Profile">
   orders?: Prisma.OrderListRelationFilter
 }
 
@@ -205,9 +257,16 @@ export type ProfileOrderByWithRelationInput = {
   email?: Prisma.SortOrder
   firstName?: Prisma.SortOrderInput | Prisma.SortOrder
   lastName?: Prisma.SortOrderInput | Prisma.SortOrder
+  phone?: Prisma.SortOrderInput | Prisma.SortOrder
+  department?: Prisma.SortOrderInput | Prisma.SortOrder
+  municipality?: Prisma.SortOrderInput | Prisma.SortOrder
+  neighborhood?: Prisma.SortOrderInput | Prisma.SortOrder
+  address?: Prisma.SortOrderInput | Prisma.SortOrder
+  role?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  metadata?: Prisma.SortOrderInput | Prisma.SortOrder
   orders?: Prisma.OrderOrderByRelationAggregateInput
 }
 
@@ -220,8 +279,15 @@ export type ProfileWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.ProfileWhereInput | Prisma.ProfileWhereInput[]
   firstName?: Prisma.StringNullableFilter<"Profile"> | string | null
   lastName?: Prisma.StringNullableFilter<"Profile"> | string | null
+  phone?: Prisma.StringNullableFilter<"Profile"> | string | null
+  department?: Prisma.StringNullableFilter<"Profile"> | string | null
+  municipality?: Prisma.StringNullableFilter<"Profile"> | string | null
+  neighborhood?: Prisma.StringNullableFilter<"Profile"> | string | null
+  address?: Prisma.StringNullableFilter<"Profile"> | string | null
+  role?: Prisma.EnumRoleFilter<"Profile"> | $Enums.Role
   createdAt?: Prisma.DateTimeFilter<"Profile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Profile"> | Date | string
+  metadata?: Prisma.JsonNullableFilter<"Profile">
   orders?: Prisma.OrderListRelationFilter
 }, "id" | "email" | "userId">
 
@@ -230,9 +296,16 @@ export type ProfileOrderByWithAggregationInput = {
   email?: Prisma.SortOrder
   firstName?: Prisma.SortOrderInput | Prisma.SortOrder
   lastName?: Prisma.SortOrderInput | Prisma.SortOrder
+  phone?: Prisma.SortOrderInput | Prisma.SortOrder
+  department?: Prisma.SortOrderInput | Prisma.SortOrder
+  municipality?: Prisma.SortOrderInput | Prisma.SortOrder
+  neighborhood?: Prisma.SortOrderInput | Prisma.SortOrder
+  address?: Prisma.SortOrderInput | Prisma.SortOrder
+  role?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  metadata?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.ProfileCountOrderByAggregateInput
   _max?: Prisma.ProfileMaxOrderByAggregateInput
   _min?: Prisma.ProfileMinOrderByAggregateInput
@@ -246,9 +319,16 @@ export type ProfileScalarWhereWithAggregatesInput = {
   email?: Prisma.StringWithAggregatesFilter<"Profile"> | string
   firstName?: Prisma.StringNullableWithAggregatesFilter<"Profile"> | string | null
   lastName?: Prisma.StringNullableWithAggregatesFilter<"Profile"> | string | null
+  phone?: Prisma.StringNullableWithAggregatesFilter<"Profile"> | string | null
+  department?: Prisma.StringNullableWithAggregatesFilter<"Profile"> | string | null
+  municipality?: Prisma.StringNullableWithAggregatesFilter<"Profile"> | string | null
+  neighborhood?: Prisma.StringNullableWithAggregatesFilter<"Profile"> | string | null
+  address?: Prisma.StringNullableWithAggregatesFilter<"Profile"> | string | null
+  role?: Prisma.EnumRoleWithAggregatesFilter<"Profile"> | $Enums.Role
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Profile"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Profile"> | Date | string
   userId?: Prisma.StringWithAggregatesFilter<"Profile"> | string
+  metadata?: Prisma.JsonNullableWithAggregatesFilter<"Profile">
 }
 
 export type ProfileCreateInput = {
@@ -256,9 +336,16 @@ export type ProfileCreateInput = {
   email: string
   firstName?: string | null
   lastName?: string | null
+  phone?: string | null
+  department?: string | null
+  municipality?: string | null
+  neighborhood?: string | null
+  address?: string | null
+  role?: $Enums.Role
   createdAt?: Date | string
   updatedAt?: Date | string
   userId: string
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   orders?: Prisma.OrderCreateNestedManyWithoutProfileInput
 }
 
@@ -267,9 +354,16 @@ export type ProfileUncheckedCreateInput = {
   email: string
   firstName?: string | null
   lastName?: string | null
+  phone?: string | null
+  department?: string | null
+  municipality?: string | null
+  neighborhood?: string | null
+  address?: string | null
+  role?: $Enums.Role
   createdAt?: Date | string
   updatedAt?: Date | string
   userId: string
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutProfileInput
 }
 
@@ -278,9 +372,16 @@ export type ProfileUpdateInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  municipality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   orders?: Prisma.OrderUpdateManyWithoutProfileNestedInput
 }
 
@@ -289,9 +390,16 @@ export type ProfileUncheckedUpdateInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  municipality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   orders?: Prisma.OrderUncheckedUpdateManyWithoutProfileNestedInput
 }
 
@@ -300,9 +408,16 @@ export type ProfileCreateManyInput = {
   email: string
   firstName?: string | null
   lastName?: string | null
+  phone?: string | null
+  department?: string | null
+  municipality?: string | null
+  neighborhood?: string | null
+  address?: string | null
+  role?: $Enums.Role
   createdAt?: Date | string
   updatedAt?: Date | string
   userId: string
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type ProfileUpdateManyMutationInput = {
@@ -310,9 +425,16 @@ export type ProfileUpdateManyMutationInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  municipality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type ProfileUncheckedUpdateManyInput = {
@@ -320,9 +442,16 @@ export type ProfileUncheckedUpdateManyInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  municipality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type ProfileNullableScalarRelationFilter = {
@@ -335,9 +464,16 @@ export type ProfileCountOrderByAggregateInput = {
   email?: Prisma.SortOrder
   firstName?: Prisma.SortOrder
   lastName?: Prisma.SortOrder
+  phone?: Prisma.SortOrder
+  department?: Prisma.SortOrder
+  municipality?: Prisma.SortOrder
+  neighborhood?: Prisma.SortOrder
+  address?: Prisma.SortOrder
+  role?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  metadata?: Prisma.SortOrder
 }
 
 export type ProfileMaxOrderByAggregateInput = {
@@ -345,6 +481,12 @@ export type ProfileMaxOrderByAggregateInput = {
   email?: Prisma.SortOrder
   firstName?: Prisma.SortOrder
   lastName?: Prisma.SortOrder
+  phone?: Prisma.SortOrder
+  department?: Prisma.SortOrder
+  municipality?: Prisma.SortOrder
+  neighborhood?: Prisma.SortOrder
+  address?: Prisma.SortOrder
+  role?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   userId?: Prisma.SortOrder
@@ -355,6 +497,12 @@ export type ProfileMinOrderByAggregateInput = {
   email?: Prisma.SortOrder
   firstName?: Prisma.SortOrder
   lastName?: Prisma.SortOrder
+  phone?: Prisma.SortOrder
+  department?: Prisma.SortOrder
+  municipality?: Prisma.SortOrder
+  neighborhood?: Prisma.SortOrder
+  address?: Prisma.SortOrder
+  role?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   userId?: Prisma.SortOrder
@@ -376,14 +524,25 @@ export type ProfileUpdateOneWithoutOrdersNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ProfileUpdateToOneWithWhereWithoutOrdersInput, Prisma.ProfileUpdateWithoutOrdersInput>, Prisma.ProfileUncheckedUpdateWithoutOrdersInput>
 }
 
+export type EnumRoleFieldUpdateOperationsInput = {
+  set?: $Enums.Role
+}
+
 export type ProfileCreateWithoutOrdersInput = {
   id?: string
   email: string
   firstName?: string | null
   lastName?: string | null
+  phone?: string | null
+  department?: string | null
+  municipality?: string | null
+  neighborhood?: string | null
+  address?: string | null
+  role?: $Enums.Role
   createdAt?: Date | string
   updatedAt?: Date | string
   userId: string
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type ProfileUncheckedCreateWithoutOrdersInput = {
@@ -391,9 +550,16 @@ export type ProfileUncheckedCreateWithoutOrdersInput = {
   email: string
   firstName?: string | null
   lastName?: string | null
+  phone?: string | null
+  department?: string | null
+  municipality?: string | null
+  neighborhood?: string | null
+  address?: string | null
+  role?: $Enums.Role
   createdAt?: Date | string
   updatedAt?: Date | string
   userId: string
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type ProfileCreateOrConnectWithoutOrdersInput = {
@@ -417,9 +583,16 @@ export type ProfileUpdateWithoutOrdersInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  municipality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type ProfileUncheckedUpdateWithoutOrdersInput = {
@@ -427,9 +600,16 @@ export type ProfileUncheckedUpdateWithoutOrdersInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  municipality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 
@@ -468,9 +648,16 @@ export type ProfileSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   email?: boolean
   firstName?: boolean
   lastName?: boolean
+  phone?: boolean
+  department?: boolean
+  municipality?: boolean
+  neighborhood?: boolean
+  address?: boolean
+  role?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   userId?: boolean
+  metadata?: boolean
   orders?: boolean | Prisma.Profile$ordersArgs<ExtArgs>
   _count?: boolean | Prisma.ProfileCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["profile"]>
@@ -480,9 +667,16 @@ export type ProfileSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   email?: boolean
   firstName?: boolean
   lastName?: boolean
+  phone?: boolean
+  department?: boolean
+  municipality?: boolean
+  neighborhood?: boolean
+  address?: boolean
+  role?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   userId?: boolean
+  metadata?: boolean
 }, ExtArgs["result"]["profile"]>
 
 export type ProfileSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -490,9 +684,16 @@ export type ProfileSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   email?: boolean
   firstName?: boolean
   lastName?: boolean
+  phone?: boolean
+  department?: boolean
+  municipality?: boolean
+  neighborhood?: boolean
+  address?: boolean
+  role?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   userId?: boolean
+  metadata?: boolean
 }, ExtArgs["result"]["profile"]>
 
 export type ProfileSelectScalar = {
@@ -500,12 +701,19 @@ export type ProfileSelectScalar = {
   email?: boolean
   firstName?: boolean
   lastName?: boolean
+  phone?: boolean
+  department?: boolean
+  municipality?: boolean
+  neighborhood?: boolean
+  address?: boolean
+  role?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   userId?: boolean
+  metadata?: boolean
 }
 
-export type ProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "firstName" | "lastName" | "createdAt" | "updatedAt" | "userId", ExtArgs["result"]["profile"]>
+export type ProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "firstName" | "lastName" | "phone" | "department" | "municipality" | "neighborhood" | "address" | "role" | "createdAt" | "updatedAt" | "userId" | "metadata", ExtArgs["result"]["profile"]>
 export type ProfileInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   orders?: boolean | Prisma.Profile$ordersArgs<ExtArgs>
   _count?: boolean | Prisma.ProfileCountOutputTypeDefaultArgs<ExtArgs>
@@ -523,9 +731,16 @@ export type $ProfilePayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     email: string
     firstName: string | null
     lastName: string | null
+    phone: string | null
+    department: string | null
+    municipality: string | null
+    neighborhood: string | null
+    address: string | null
+    role: $Enums.Role
     createdAt: Date
     updatedAt: Date
     userId: string
+    metadata: runtime.JsonValue | null
   }, ExtArgs["result"]["profile"]>
   composites: {}
 }
@@ -954,9 +1169,16 @@ export interface ProfileFieldRefs {
   readonly email: Prisma.FieldRef<"Profile", 'String'>
   readonly firstName: Prisma.FieldRef<"Profile", 'String'>
   readonly lastName: Prisma.FieldRef<"Profile", 'String'>
+  readonly phone: Prisma.FieldRef<"Profile", 'String'>
+  readonly department: Prisma.FieldRef<"Profile", 'String'>
+  readonly municipality: Prisma.FieldRef<"Profile", 'String'>
+  readonly neighborhood: Prisma.FieldRef<"Profile", 'String'>
+  readonly address: Prisma.FieldRef<"Profile", 'String'>
+  readonly role: Prisma.FieldRef<"Profile", 'Role'>
   readonly createdAt: Prisma.FieldRef<"Profile", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Profile", 'DateTime'>
   readonly userId: Prisma.FieldRef<"Profile", 'String'>
+  readonly metadata: Prisma.FieldRef<"Profile", 'Json'>
 }
     
 

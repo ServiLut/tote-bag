@@ -37,9 +37,13 @@ export type B2BQuoteMinAggregateOutputType = {
   id: string | null
   businessName: string | null
   quantity: number | null
-  city: string | null
+  department: string | null
+  municipality: string | null
+  neighborhood: string | null
+  address: string | null
   contactPhone: string | null
   qrType: string | null
+  qrData: string | null
   logoUrl: string | null
   package: string | null
   status: string | null
@@ -50,9 +54,13 @@ export type B2BQuoteMaxAggregateOutputType = {
   id: string | null
   businessName: string | null
   quantity: number | null
-  city: string | null
+  department: string | null
+  municipality: string | null
+  neighborhood: string | null
+  address: string | null
   contactPhone: string | null
   qrType: string | null
+  qrData: string | null
   logoUrl: string | null
   package: string | null
   status: string | null
@@ -63,9 +71,13 @@ export type B2BQuoteCountAggregateOutputType = {
   id: number
   businessName: number
   quantity: number
-  city: number
+  department: number
+  municipality: number
+  neighborhood: number
+  address: number
   contactPhone: number
   qrType: number
+  qrData: number
   logoUrl: number
   package: number
   status: number
@@ -86,9 +98,13 @@ export type B2BQuoteMinAggregateInputType = {
   id?: true
   businessName?: true
   quantity?: true
-  city?: true
+  department?: true
+  municipality?: true
+  neighborhood?: true
+  address?: true
   contactPhone?: true
   qrType?: true
+  qrData?: true
   logoUrl?: true
   package?: true
   status?: true
@@ -99,9 +115,13 @@ export type B2BQuoteMaxAggregateInputType = {
   id?: true
   businessName?: true
   quantity?: true
-  city?: true
+  department?: true
+  municipality?: true
+  neighborhood?: true
+  address?: true
   contactPhone?: true
   qrType?: true
+  qrData?: true
   logoUrl?: true
   package?: true
   status?: true
@@ -112,9 +132,13 @@ export type B2BQuoteCountAggregateInputType = {
   id?: true
   businessName?: true
   quantity?: true
-  city?: true
+  department?: true
+  municipality?: true
+  neighborhood?: true
+  address?: true
   contactPhone?: true
   qrType?: true
+  qrData?: true
   logoUrl?: true
   package?: true
   status?: true
@@ -212,9 +236,13 @@ export type B2BQuoteGroupByOutputType = {
   id: string
   businessName: string
   quantity: number
-  city: string
+  department: string
+  municipality: string
+  neighborhood: string
+  address: string
   contactPhone: string
   qrType: string
+  qrData: string | null
   logoUrl: string | null
   package: string
   status: string
@@ -248,9 +276,13 @@ export type B2BQuoteWhereInput = {
   id?: Prisma.StringFilter<"B2BQuote"> | string
   businessName?: Prisma.StringFilter<"B2BQuote"> | string
   quantity?: Prisma.IntFilter<"B2BQuote"> | number
-  city?: Prisma.StringFilter<"B2BQuote"> | string
+  department?: Prisma.StringFilter<"B2BQuote"> | string
+  municipality?: Prisma.StringFilter<"B2BQuote"> | string
+  neighborhood?: Prisma.StringFilter<"B2BQuote"> | string
+  address?: Prisma.StringFilter<"B2BQuote"> | string
   contactPhone?: Prisma.StringFilter<"B2BQuote"> | string
   qrType?: Prisma.StringFilter<"B2BQuote"> | string
+  qrData?: Prisma.StringNullableFilter<"B2BQuote"> | string | null
   logoUrl?: Prisma.StringNullableFilter<"B2BQuote"> | string | null
   package?: Prisma.StringFilter<"B2BQuote"> | string
   status?: Prisma.StringFilter<"B2BQuote"> | string
@@ -261,9 +293,13 @@ export type B2BQuoteOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   businessName?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
-  city?: Prisma.SortOrder
+  department?: Prisma.SortOrder
+  municipality?: Prisma.SortOrder
+  neighborhood?: Prisma.SortOrder
+  address?: Prisma.SortOrder
   contactPhone?: Prisma.SortOrder
   qrType?: Prisma.SortOrder
+  qrData?: Prisma.SortOrderInput | Prisma.SortOrder
   logoUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   package?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -277,9 +313,13 @@ export type B2BQuoteWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.B2BQuoteWhereInput | Prisma.B2BQuoteWhereInput[]
   businessName?: Prisma.StringFilter<"B2BQuote"> | string
   quantity?: Prisma.IntFilter<"B2BQuote"> | number
-  city?: Prisma.StringFilter<"B2BQuote"> | string
+  department?: Prisma.StringFilter<"B2BQuote"> | string
+  municipality?: Prisma.StringFilter<"B2BQuote"> | string
+  neighborhood?: Prisma.StringFilter<"B2BQuote"> | string
+  address?: Prisma.StringFilter<"B2BQuote"> | string
   contactPhone?: Prisma.StringFilter<"B2BQuote"> | string
   qrType?: Prisma.StringFilter<"B2BQuote"> | string
+  qrData?: Prisma.StringNullableFilter<"B2BQuote"> | string | null
   logoUrl?: Prisma.StringNullableFilter<"B2BQuote"> | string | null
   package?: Prisma.StringFilter<"B2BQuote"> | string
   status?: Prisma.StringFilter<"B2BQuote"> | string
@@ -290,9 +330,13 @@ export type B2BQuoteOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   businessName?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
-  city?: Prisma.SortOrder
+  department?: Prisma.SortOrder
+  municipality?: Prisma.SortOrder
+  neighborhood?: Prisma.SortOrder
+  address?: Prisma.SortOrder
   contactPhone?: Prisma.SortOrder
   qrType?: Prisma.SortOrder
+  qrData?: Prisma.SortOrderInput | Prisma.SortOrder
   logoUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   package?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -311,9 +355,13 @@ export type B2BQuoteScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"B2BQuote"> | string
   businessName?: Prisma.StringWithAggregatesFilter<"B2BQuote"> | string
   quantity?: Prisma.IntWithAggregatesFilter<"B2BQuote"> | number
-  city?: Prisma.StringWithAggregatesFilter<"B2BQuote"> | string
+  department?: Prisma.StringWithAggregatesFilter<"B2BQuote"> | string
+  municipality?: Prisma.StringWithAggregatesFilter<"B2BQuote"> | string
+  neighborhood?: Prisma.StringWithAggregatesFilter<"B2BQuote"> | string
+  address?: Prisma.StringWithAggregatesFilter<"B2BQuote"> | string
   contactPhone?: Prisma.StringWithAggregatesFilter<"B2BQuote"> | string
   qrType?: Prisma.StringWithAggregatesFilter<"B2BQuote"> | string
+  qrData?: Prisma.StringNullableWithAggregatesFilter<"B2BQuote"> | string | null
   logoUrl?: Prisma.StringNullableWithAggregatesFilter<"B2BQuote"> | string | null
   package?: Prisma.StringWithAggregatesFilter<"B2BQuote"> | string
   status?: Prisma.StringWithAggregatesFilter<"B2BQuote"> | string
@@ -324,9 +372,13 @@ export type B2BQuoteCreateInput = {
   id?: string
   businessName: string
   quantity: number
-  city: string
+  department: string
+  municipality: string
+  neighborhood: string
+  address: string
   contactPhone: string
   qrType: string
+  qrData?: string | null
   logoUrl?: string | null
   package: string
   status?: string
@@ -337,9 +389,13 @@ export type B2BQuoteUncheckedCreateInput = {
   id?: string
   businessName: string
   quantity: number
-  city: string
+  department: string
+  municipality: string
+  neighborhood: string
+  address: string
   contactPhone: string
   qrType: string
+  qrData?: string | null
   logoUrl?: string | null
   package: string
   status?: string
@@ -350,9 +406,13 @@ export type B2BQuoteUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   businessName?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
-  city?: Prisma.StringFieldUpdateOperationsInput | string
+  department?: Prisma.StringFieldUpdateOperationsInput | string
+  municipality?: Prisma.StringFieldUpdateOperationsInput | string
+  neighborhood?: Prisma.StringFieldUpdateOperationsInput | string
+  address?: Prisma.StringFieldUpdateOperationsInput | string
   contactPhone?: Prisma.StringFieldUpdateOperationsInput | string
   qrType?: Prisma.StringFieldUpdateOperationsInput | string
+  qrData?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   package?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
@@ -363,9 +423,13 @@ export type B2BQuoteUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   businessName?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
-  city?: Prisma.StringFieldUpdateOperationsInput | string
+  department?: Prisma.StringFieldUpdateOperationsInput | string
+  municipality?: Prisma.StringFieldUpdateOperationsInput | string
+  neighborhood?: Prisma.StringFieldUpdateOperationsInput | string
+  address?: Prisma.StringFieldUpdateOperationsInput | string
   contactPhone?: Prisma.StringFieldUpdateOperationsInput | string
   qrType?: Prisma.StringFieldUpdateOperationsInput | string
+  qrData?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   package?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
@@ -376,9 +440,13 @@ export type B2BQuoteCreateManyInput = {
   id?: string
   businessName: string
   quantity: number
-  city: string
+  department: string
+  municipality: string
+  neighborhood: string
+  address: string
   contactPhone: string
   qrType: string
+  qrData?: string | null
   logoUrl?: string | null
   package: string
   status?: string
@@ -389,9 +457,13 @@ export type B2BQuoteUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   businessName?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
-  city?: Prisma.StringFieldUpdateOperationsInput | string
+  department?: Prisma.StringFieldUpdateOperationsInput | string
+  municipality?: Prisma.StringFieldUpdateOperationsInput | string
+  neighborhood?: Prisma.StringFieldUpdateOperationsInput | string
+  address?: Prisma.StringFieldUpdateOperationsInput | string
   contactPhone?: Prisma.StringFieldUpdateOperationsInput | string
   qrType?: Prisma.StringFieldUpdateOperationsInput | string
+  qrData?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   package?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
@@ -402,9 +474,13 @@ export type B2BQuoteUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   businessName?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
-  city?: Prisma.StringFieldUpdateOperationsInput | string
+  department?: Prisma.StringFieldUpdateOperationsInput | string
+  municipality?: Prisma.StringFieldUpdateOperationsInput | string
+  neighborhood?: Prisma.StringFieldUpdateOperationsInput | string
+  address?: Prisma.StringFieldUpdateOperationsInput | string
   contactPhone?: Prisma.StringFieldUpdateOperationsInput | string
   qrType?: Prisma.StringFieldUpdateOperationsInput | string
+  qrData?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   package?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
@@ -415,9 +491,13 @@ export type B2BQuoteCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   businessName?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
-  city?: Prisma.SortOrder
+  department?: Prisma.SortOrder
+  municipality?: Prisma.SortOrder
+  neighborhood?: Prisma.SortOrder
+  address?: Prisma.SortOrder
   contactPhone?: Prisma.SortOrder
   qrType?: Prisma.SortOrder
+  qrData?: Prisma.SortOrder
   logoUrl?: Prisma.SortOrder
   package?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -432,9 +512,13 @@ export type B2BQuoteMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   businessName?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
-  city?: Prisma.SortOrder
+  department?: Prisma.SortOrder
+  municipality?: Prisma.SortOrder
+  neighborhood?: Prisma.SortOrder
+  address?: Prisma.SortOrder
   contactPhone?: Prisma.SortOrder
   qrType?: Prisma.SortOrder
+  qrData?: Prisma.SortOrder
   logoUrl?: Prisma.SortOrder
   package?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -445,9 +529,13 @@ export type B2BQuoteMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   businessName?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
-  city?: Prisma.SortOrder
+  department?: Prisma.SortOrder
+  municipality?: Prisma.SortOrder
+  neighborhood?: Prisma.SortOrder
+  address?: Prisma.SortOrder
   contactPhone?: Prisma.SortOrder
   qrType?: Prisma.SortOrder
+  qrData?: Prisma.SortOrder
   logoUrl?: Prisma.SortOrder
   package?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -464,9 +552,13 @@ export type B2BQuoteSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   id?: boolean
   businessName?: boolean
   quantity?: boolean
-  city?: boolean
+  department?: boolean
+  municipality?: boolean
+  neighborhood?: boolean
+  address?: boolean
   contactPhone?: boolean
   qrType?: boolean
+  qrData?: boolean
   logoUrl?: boolean
   package?: boolean
   status?: boolean
@@ -477,9 +569,13 @@ export type B2BQuoteSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   id?: boolean
   businessName?: boolean
   quantity?: boolean
-  city?: boolean
+  department?: boolean
+  municipality?: boolean
+  neighborhood?: boolean
+  address?: boolean
   contactPhone?: boolean
   qrType?: boolean
+  qrData?: boolean
   logoUrl?: boolean
   package?: boolean
   status?: boolean
@@ -490,9 +586,13 @@ export type B2BQuoteSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   id?: boolean
   businessName?: boolean
   quantity?: boolean
-  city?: boolean
+  department?: boolean
+  municipality?: boolean
+  neighborhood?: boolean
+  address?: boolean
   contactPhone?: boolean
   qrType?: boolean
+  qrData?: boolean
   logoUrl?: boolean
   package?: boolean
   status?: boolean
@@ -503,16 +603,20 @@ export type B2BQuoteSelectScalar = {
   id?: boolean
   businessName?: boolean
   quantity?: boolean
-  city?: boolean
+  department?: boolean
+  municipality?: boolean
+  neighborhood?: boolean
+  address?: boolean
   contactPhone?: boolean
   qrType?: boolean
+  qrData?: boolean
   logoUrl?: boolean
   package?: boolean
   status?: boolean
   createdAt?: boolean
 }
 
-export type B2BQuoteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "businessName" | "quantity" | "city" | "contactPhone" | "qrType" | "logoUrl" | "package" | "status" | "createdAt", ExtArgs["result"]["b2BQuote"]>
+export type B2BQuoteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "businessName" | "quantity" | "department" | "municipality" | "neighborhood" | "address" | "contactPhone" | "qrType" | "qrData" | "logoUrl" | "package" | "status" | "createdAt", ExtArgs["result"]["b2BQuote"]>
 
 export type $B2BQuotePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "B2BQuote"
@@ -521,9 +625,13 @@ export type $B2BQuotePayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     id: string
     businessName: string
     quantity: number
-    city: string
+    department: string
+    municipality: string
+    neighborhood: string
+    address: string
     contactPhone: string
     qrType: string
+    qrData: string | null
     logoUrl: string | null
     package: string
     status: string
@@ -954,9 +1062,13 @@ export interface B2BQuoteFieldRefs {
   readonly id: Prisma.FieldRef<"B2BQuote", 'String'>
   readonly businessName: Prisma.FieldRef<"B2BQuote", 'String'>
   readonly quantity: Prisma.FieldRef<"B2BQuote", 'Int'>
-  readonly city: Prisma.FieldRef<"B2BQuote", 'String'>
+  readonly department: Prisma.FieldRef<"B2BQuote", 'String'>
+  readonly municipality: Prisma.FieldRef<"B2BQuote", 'String'>
+  readonly neighborhood: Prisma.FieldRef<"B2BQuote", 'String'>
+  readonly address: Prisma.FieldRef<"B2BQuote", 'String'>
   readonly contactPhone: Prisma.FieldRef<"B2BQuote", 'String'>
   readonly qrType: Prisma.FieldRef<"B2BQuote", 'String'>
+  readonly qrData: Prisma.FieldRef<"B2BQuote", 'String'>
   readonly logoUrl: Prisma.FieldRef<"B2BQuote", 'String'>
   readonly package: Prisma.FieldRef<"B2BQuote", 'String'>
   readonly status: Prisma.FieldRef<"B2BQuote", 'String'>

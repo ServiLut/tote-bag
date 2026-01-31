@@ -1226,9 +1226,16 @@ export const ProfileScalarFieldEnum = {
   email: 'email',
   firstName: 'firstName',
   lastName: 'lastName',
+  phone: 'phone',
+  department: 'department',
+  municipality: 'municipality',
+  neighborhood: 'neighborhood',
+  address: 'address',
+  role: 'role',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
-  userId: 'userId'
+  userId: 'userId',
+  metadata: 'metadata'
 } as const
 
 export type ProfileScalarFieldEnum = (typeof ProfileScalarFieldEnum)[keyof typeof ProfileScalarFieldEnum]
@@ -1238,9 +1245,13 @@ export const B2BQuoteScalarFieldEnum = {
   id: 'id',
   businessName: 'businessName',
   quantity: 'quantity',
-  city: 'city',
+  department: 'department',
+  municipality: 'municipality',
+  neighborhood: 'neighborhood',
+  address: 'address',
   contactPhone: 'contactPhone',
   qrType: 'qrType',
+  qrData: 'qrData',
   logoUrl: 'logoUrl',
   package: 'package',
   status: 'status',
@@ -1263,6 +1274,14 @@ export const JsonNullValueInput = {
 } as const
 
 export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
+
+
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
 
 
 export const QueryMode = {
@@ -1412,6 +1431,20 @@ export type EnumOrderStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$Pris
  * Reference to a field of type 'OrderStatus[]'
  */
 export type ListEnumOrderStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OrderStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Role'
+ */
+export type EnumRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Role'>
+    
+
+
+/**
+ * Reference to a field of type 'Role[]'
+ */
+export type ListEnumRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Role[]'>
     
 
 /**

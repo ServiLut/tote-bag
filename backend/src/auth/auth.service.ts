@@ -20,8 +20,8 @@ export class AuthService {
     ) as unknown as { auth: SupabaseClient['auth'] };
   }
 
-  async register(registerDto: RegisterDto) {
-    const { email, password } = registerDto;
+  async register(registerDto: RegisterDto, ip?: string) {
+    const { email, password, acceptTerms } = registerDto;
 
     // 1. Intentar registro en Supabase
     const { data, error } = await this.supabase.auth.signUp({
@@ -69,6 +69,11 @@ export class AuthService {
         data: {
           email: data.user.email!,
           userId: data.user.id,
+          metadata: {
+            termsAccepted: acceptTerms,
+            termsAcceptedAt: new Date().toISOString(),
+            registrationIp: ip,
+          },
         },
       });
     } catch (error: unknown) {
@@ -108,10 +113,32 @@ export class AuthService {
       throw new BadRequestException('Credenciales inválidas');
     }
 
+    let profile = await this.prisma.profile.findUnique({
+      where: { userId: data.user.id },
+    });
+
+    // Auto-healing: If user exists in Auth but not in Profile, create it.
+    if (!profile && data.user) {
+      try {
+        console.log(`Creating missing profile for user ${data.user.email}`);
+        profile = await this.prisma.profile.create({
+          data: {
+            email: data.user.email!,
+            userId: data.user.id,
+            role: 'CUSTOMER', // Default role
+          },
+        });
+      } catch (err) {
+        console.error('Failed to auto-create profile on login', err);
+        // We continue, but role will fall back to default in response
+      }
+    }
+
     return {
       message: 'Inicio de sesión exitoso',
       user: data.user,
       session: data.session,
+      role: profile?.role || 'CUSTOMER',
     };
   }
 }

@@ -29,6 +29,11 @@ export class ProductsController {
     return this.productsService.findAll(collection);
   }
 
+  @Get('slug/:slug')
+  findBySlug(@Param('slug') slug: string) {
+    return this.productsService.findBySlug(slug);
+  }
+
   @Get(':id')
   findOne(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
     return this.productsService.findOne(id);

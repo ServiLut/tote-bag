@@ -6,6 +6,8 @@ import { ProductsModule } from './products/products.module';
 import { B2bModule } from './b2b/b2b.module';
 import { AuthModule } from './auth/auth.module';
 import { OrdersModule } from './orders/orders.module';
+import { ProfilesModule } from './profiles/profiles.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { OrdersModule } from './orders/orders.module';
     B2bModule,
     AuthModule,
     OrdersModule,
+    ProfilesModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

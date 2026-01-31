@@ -50,20 +50,32 @@ class CreateOrderItemDto {
 export class CreateOrderDto {
   @IsString()
   @IsNotEmpty()
+  firstName: string;
+
+  @IsString()
+  @IsNotEmpty()
+  lastName: string;
+
+  @IsString()
+  @IsNotEmpty()
   customerEmail: string;
 
   @IsString()
   @IsNotEmpty()
   customerPhone: string;
 
-  @ValidateNested()
-  @Type(() => AddressDto)
+  @IsString()
   @IsNotEmpty()
-  shippingAddress: AddressDto;
+  department: string;
 
   @IsString()
   @IsNotEmpty()
   city: string;
+
+  @ValidateNested()
+  @Type(() => AddressDto)
+  @IsNotEmpty()
+  shippingAddress: AddressDto;
 
   @IsString()
   @IsOptional()

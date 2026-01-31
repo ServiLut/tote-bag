@@ -15,10 +15,26 @@ export class CreateQuoteDto {
 
   @IsString()
   @IsNotEmpty()
-  city: string;
+  department: string;
+
+  @IsString()
+  @IsNotEmpty()
+  municipality: string;
+
+  @IsString()
+  @IsNotEmpty()
+  neighborhood: string;
+
+  @IsString()
+  @IsNotEmpty()
+  address: string;
 
   @IsEnum(QrType)
   qrType: QrType;
+
+  @IsString()
+  @IsNotEmpty()
+  qrData: string;
 
   @IsString()
   @IsNotEmpty()

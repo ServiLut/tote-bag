@@ -212,25 +212,29 @@ async function main() {
   await prisma.b2BQuote.createMany({
     data: [
       {
-        businessName: 'Tech Solutions SAS',
-        quantity: 100,
-        city: 'Cali',
-        contactPhone: '3205551234',
+        businessName: 'Tech Innovators SAS',
+        quantity: 50,
+        department: 'Valle del Cauca',
+        municipality: 'Cali',
+        neighborhood: 'Granada',
+        address: 'Av. 9N # 12-34',
+        contactPhone: '+57 300 123 4567',
         qrType: 'WEB',
-        package: 'Pro',
+        package: 'Starter',
         status: 'PENDIENTE',
-        logoUrl: 'https://example.com/logo.pdf'
       },
       {
-        businessName: 'Festival de Cine',
-        quantity: 500,
-        city: 'Cartagena',
-        contactPhone: '3151112222',
+        businessName: 'Café & Libros',
+        quantity: 150,
+        department: 'Bolívar',
+        municipality: 'Cartagena',
+        neighborhood: 'Centro Histórico',
+        address: 'Calle de la Moneda # 5-67',
+        contactPhone: '+57 310 987 6543',
         qrType: 'INSTAGRAM',
-        package: 'Evento',
+        package: 'Pro',
         status: 'DISEÑO_APROBADO',
-        logoUrl: 'https://example.com/festival.ai'
-      }
+      },
     ]
   });
 

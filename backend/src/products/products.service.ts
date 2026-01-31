@@ -14,21 +14,30 @@ export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async update(id: string, updateProductDto: UpdateProductDto) {
-    const { variants: _variants, images, collectionId, collectionName, ...data } = updateProductDto;
+    const {
+      variants: _variants,
+      images,
+      collectionId,
+      collectionName,
+      ...data
+    } = updateProductDto;
     void _variants;
 
     // Resolve Collection if needed
     let activeCollectionId: string | undefined = collectionId;
 
     if (collectionName) {
-      const slug = collectionName.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+      const slug = collectionName
+        .toLowerCase()
+        .replace(/ /g, '-')
+        .replace(/[^\w-]+/g, '');
       let collection = await this.prisma.collection.findFirst({
-        where: { OR: [{ name: collectionName }, { slug }] }
+        where: { OR: [{ name: collectionName }, { slug }] },
       });
 
       if (!collection) {
         collection = await this.prisma.collection.create({
-          data: { name: collectionName, slug }
+          data: { name: collectionName, slug },
         });
       }
       activeCollectionId = collection.id;
@@ -234,6 +243,17 @@ export class ProductsService {
     });
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
+    }
+    return product;
+  }
+
+  async findBySlug(slug: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { slug },
+      include: { variants: true, images: true, collection: true },
+    });
+    if (!product) {
+      throw new NotFoundException(`Product with slug ${slug} not found`);
     }
     return product;
   }

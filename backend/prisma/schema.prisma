@@ -147,17 +147,29 @@ model OrderItem {
 
 
 model Profile {
-  id        String   @id @default(uuid()) @map("id")
-  email     String   @unique @map("email")
-  firstName String?  @map("first_name")
-  lastName  String?  @map("last_name")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  userId    String   @unique @map("user_id")
+  id           String   @id @default(uuid()) @map("id")
+  email        String   @unique @map("email")
+  firstName    String?  @map("first_name")
+  lastName     String?  @map("last_name")
+  phone        String?  @map("phone")
+  department   String?  @map("department")
+  municipality String?  @map("municipality")
+  neighborhood String?  @map("neighborhood")
+  address      String?  @map("address")
+  role         Role     @default(CUSTOMER) @map("role")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  userId       String   @unique @map("user_id")
+  metadata     Json?    @map("metadata")
   
   orders    Order[]
 
   @@map("profiles")
+}
+
+enum Role {
+  ADMIN
+  CUSTOMER
 }
 
 enum ProductStatus {
@@ -175,9 +187,13 @@ model B2BQuote {
   id           String   @id @default(uuid()) @map("id")
   businessName String   @map("business_name")
   quantity     Int      @map("quantity")
-  city         String   @map("city")
+  department   String   @map("department")
+  municipality String   @map("municipality")
+  neighborhood String   @map("neighborhood")
+  address      String   @map("address")
   contactPhone String   @map("contact_phone")
   qrType       String   @map("qr_type")
+  qrData       String?  @map("qr_data")
   logoUrl      String?  @map("logo_url")
   package      String   @map("package")
   status       String   @default("PENDIENTE") @map("status")
