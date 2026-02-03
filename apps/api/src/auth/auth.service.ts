@@ -14,9 +14,16 @@ export class AuthService {
   private supabase: { auth: SupabaseClient['auth'] };
 
   constructor(private prisma: PrismaService) {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_ANON_KEY ?? process.env.SERVICE_ROLE;
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing Supabase configuration: SUPABASE_URL or SUPABASE_ANON_KEY/SERVICE_ROLE is not set.');
+    }
+
     this.supabase = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_ANON_KEY ?? process.env.SERVICE_ROLE!,
+      supabaseUrl,
+      supabaseKey,
     ) as unknown as { auth: SupabaseClient['auth'] };
   }
 

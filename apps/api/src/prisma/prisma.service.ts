@@ -29,7 +29,9 @@ export class PrismaService
 
     const pool = new pg.Pool({
       connectionString,
-      ssl: { rejectUnauthorized: false },
+      // Only enable SSL if not explicitly disabled or if connecting to a host that requires it.
+      // For self-hosted Supabase/Postgres without SSL, this needs to be false or undefined.
+      ssl: process.env.DB_SSL === 'false' ? false : { rejectUnauthorized: false }, 
     });
     const adapter = new PrismaPg(pool);
     super({ adapter });
