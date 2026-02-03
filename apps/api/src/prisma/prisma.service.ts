@@ -12,9 +12,7 @@ export class PrismaService
     let connectionString =
       process.env.DATABASE_URL || process.env.POSTGRES_URL_NON_POOLING;
 
-    console.log('DEBUG: Raw Connection String:', connectionString?.replace(/:[^:@]+@/, ':****@')); // Hide password
-
-    // Force strip SSL params
+    // 1. Clean SSL params to avoid conflicts and force SSL: false later
     try {
       if (connectionString) {
         const urlObj = new URL(connectionString);
@@ -22,21 +20,28 @@ export class PrismaService
         urlObj.searchParams.delete('sslrootcert');
         urlObj.searchParams.delete('sslcert');
         urlObj.searchParams.delete('sslkey');
+        
+        // 2. Ensure schema is set in the search_path via query param options
+        // This is the standard way for 'pg' driver to set search_path
+        if (!urlObj.searchParams.has('schema')) {
+             urlObj.searchParams.set('schema', 'tote-bag');
+        }
+        
+        // Also force it via 'options' param which pg driver respects
+        // -c search_path=tote-bag
+        urlObj.searchParams.set('options', '-c search_path=tote-bag');
+
         connectionString = urlObj.toString();
-        console.log('DEBUG: Stripped Connection String:', connectionString.replace(/:[^:@]+@/, ':****@'));
       }
     } catch (e) {
-      console.error('DEBUG: Error parsing URL', e);
+      console.error('Error parsing DATABASE_URL', e);
     }
 
-    // HARDCODED DEBUG: Force SSL false to test connectivity
     const pool = new pg.Pool({
       connectionString,
-      ssl: false, 
+      ssl: false, // Force disable SSL as confirmed fix
     });
     
-    console.log('DEBUG: pg.Pool initialized with ssl: false');
-
     const adapter = new PrismaPg(pool);
     super({ adapter });
   }
