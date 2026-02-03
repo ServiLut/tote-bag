@@ -16,15 +16,16 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 COPY --from=base /app/out/json/ .
 COPY --from=base /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
-# Instalamos dependencias SIN ignorar scripts para que Prisma descargue los binarios de Alpine
-# (Esto es crucial para que funcione el Query Engine en Linux/Alpine)
-RUN pnpm install --frozen-lockfile
+# INSTALAMOS CON --ignore-scripts para evitar que 'postinstall' falle
+# al no encontrar el schema.prisma (que aún no se ha copiado).
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
-# Copiamos el código fuente completo
+# Copiamos el código fuente completo (ahora sí tenemos el schema)
 COPY --from=base /app/out/full/ .
 
 # Generar Prisma Client
-# Usamos 'pnpm exec' para asegurar que encuentre el binario en el node_modules correcto
+# Al ejecutar esto AHORA (con el schema presente), Prisma también
+# descargará los binarios necesarios (Query Engine) para Alpine.
 RUN pnpm exec prisma generate --schema=apps/api/prisma/schema.prisma
 
 # Construir la API
@@ -51,10 +52,5 @@ WORKDIR /app/apps/api
 
 EXPOSE 4000
 
-# Usamos 'pnpm exec' también aquí por consistencia, o ruta directa si pnpm no está en runner (node:alpine no trae pnpm por defecto)
-# Como runner es base alpine, NO TIENE pnpm instalado globalmente.
-# Opción A: Instalar pnpm en runner.
-# Opción B: Usar npx (pero ya vimos que falla a veces).
-# Opción C: Invocar el binario directo: ../../node_modules/.bin/prisma
-# Vamos con la Opción C que es la más "nativa" y robusta sin instalar cosas extra.
+# Usamos el binario local de prisma
 CMD ["sh", "-c", "../../node_modules/.bin/prisma db push --config prisma.config.ts && node dist/main.js"]
