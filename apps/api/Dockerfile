@@ -9,6 +9,9 @@ RUN turbo prune --scope=api --docker
 FROM node:22-alpine AS build
 WORKDIR /app
 
+# Instalar dependencias necesarias para Prisma en Alpine
+RUN apk add --no-cache openssl libc6-compat
+
 # Enable corepack for pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
@@ -23,8 +26,8 @@ RUN pnpm install --frozen-lockfile --ignore-scripts
 COPY --from=base /app/out/full/ .
 
 # Generar Prisma Client
-# Invocamos directamente el binario. Si esto falla, es que pnpm no ha creado el enlace.
-RUN ./node_modules/.bin/prisma generate --schema=apps/api/prisma/schema.prisma
+# Usamos pnpm exec en el contexto del paquete api para localizar correctamente el binario
+RUN pnpm --filter=api exec prisma generate
 
 # Construir la API
 RUN pnpm run build --filter=api
@@ -43,6 +46,7 @@ RUN apk add --no-cache openssl
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/apps/api/dist ./apps/api/dist
 COPY --from=build /app/apps/api/package.json ./apps/api/package.json
+COPY --from=build /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=build /app/apps/api/prisma ./apps/api/prisma
 COPY --from=build /app/apps/api/prisma.config.ts ./apps/api/prisma.config.ts
 
@@ -51,4 +55,4 @@ WORKDIR /app/apps/api
 EXPOSE 4000
 
 # Usamos el binario local de prisma
-CMD ["sh", "-c", "../../node_modules/.bin/prisma db push --config prisma.config.ts && node dist/main.js"]
+CMD ["sh", "-c", "./node_modules/.bin/prisma db push --config prisma.config.ts && node dist/main.js"]
