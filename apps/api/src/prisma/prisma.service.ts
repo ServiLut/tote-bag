@@ -12,10 +12,9 @@ export class PrismaService
     let connectionString =
       process.env.DATABASE_URL || process.env.POSTGRES_URL_NON_POOLING;
 
-    // Attempt to remove sslmode from URL to avoid conflicts with pg config
+    // IMPORTANT: Strip SSL params from URL so our manual config takes precedence
     try {
       if (connectionString) {
-        // Check if it's a valid URL before parsing, or just try/catch
         const urlObj = new URL(connectionString);
         urlObj.searchParams.delete('sslmode');
         urlObj.searchParams.delete('sslrootcert');
@@ -24,14 +23,16 @@ export class PrismaService
         connectionString = urlObj.toString();
       }
     } catch {
-      // invalid url or not a full url, ignore
+      // ignore invalid URLs
     }
+
+    const isSslDisabled = process.env.DB_SSL === 'false';
 
     const pool = new pg.Pool({
       connectionString,
-      // Only enable SSL if not explicitly disabled or if connecting to a host that requires it.
-      // For self-hosted Supabase/Postgres without SSL, this needs to be false or undefined.
-      ssl: process.env.DB_SSL === 'false' ? false : { rejectUnauthorized: false }, 
+      // If DB_SSL is explicitly 'false', pass undefined to disable SSL.
+      // Otherwise, default to permissive SSL (accept self-signed).
+      ssl: isSslDisabled ? undefined : { rejectUnauthorized: false }, 
     });
     const adapter = new PrismaPg(pool);
     super({ adapter });
