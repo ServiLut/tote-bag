@@ -16,17 +16,15 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 COPY --from=base /app/out/json/ .
 COPY --from=base /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
-# INSTALAMOS CON --ignore-scripts para evitar que 'postinstall' falle
-# al no encontrar el schema.prisma (que aún no se ha copiado).
+# INSTALAMOS CON --ignore-scripts
 RUN pnpm install --frozen-lockfile --ignore-scripts
 
-# Copiamos el código fuente completo (ahora sí tenemos el schema)
+# Copiamos el código fuente completo
 COPY --from=base /app/out/full/ .
 
 # Generar Prisma Client
-# Al ejecutar esto AHORA (con el schema presente), Prisma también
-# descargará los binarios necesarios (Query Engine) para Alpine.
-RUN pnpm exec prisma generate --schema=apps/api/prisma/schema.prisma
+# Invocamos directamente el binario. Si esto falla, es que pnpm no ha creado el enlace.
+RUN ./node_modules/.bin/prisma generate --schema=apps/api/prisma/schema.prisma
 
 # Construir la API
 RUN pnpm run build --filter=api
@@ -38,7 +36,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=4000
 
-# Instalamos OpenSSL (necesario para Prisma en Alpine)
+# Instalamos OpenSSL
 RUN apk add --no-cache openssl
 
 # Copiamos dependencias y build
