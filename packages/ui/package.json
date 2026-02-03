@@ -1,0 +1,17 @@
+{
+  "name": "@tote-bag/ui",
+  "version": "0.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "lint": "eslint *.ts*"
+  },
+  "devDependencies": {
+    "react": "^19.2.3",
+    "typescript": "^5.0.0",
+    "@tote-bag/typescript-config": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^19.2.3"
+  }
+}

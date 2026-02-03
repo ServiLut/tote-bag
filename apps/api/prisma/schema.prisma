@@ -1,0 +1,203 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Product {
+  id               String        @id @default(uuid()) @map("id")
+  name             String        @map("name")
+  description      String        @map("description")
+  basePrice        Float         @map("base_price")
+  minPrice         Float         @map("min_price")
+  // Pricing avanzado
+  comparePrice     Float?        @map("compare_price")
+  costPrice        Float?        @map("cost_price")
+
+  status           ProductStatus @default(BAJO_PEDIDO) @map("status")
+  
+  // Relations
+  collectionId     String        @map("collection_id")
+  collection       Collection    @relation(fields: [collectionId], references: [id])
+
+  // Media y SEO
+  images           ProductImage[]
+  slug             String        @unique @map("slug")
+  seoTitle         String?       @map("seo_title")
+  seoDescription   String?       @map("seo_description")
+  tags             String[]      @default([]) @map("tags")
+
+  deliveryTime     String        @map("delivery_time")
+  material         String        @default("Algodón resistente") @map("material")
+  dimensions       String?       @map("dimensions")
+  careInstructions String?       @map("care_instructions")
+  printType        PrintType     @default(DTF) @map("print_type")
+  isActive         Boolean       @default(true) @map("is_active")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+  orderItems       OrderItem[]
+  variants         Variant[]
+
+  @@map("products")
+}
+
+model ProductImage {
+  id        String  @id @default(uuid()) @map("id")
+  url       String  @map("url")
+  alt       String? @map("alt")
+  position  Int     @default(0) @map("position")
+  productId String  @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_images")
+}
+
+model Collection {
+  id        String    @id @default(uuid()) @map("id")
+  name      String    @map("name")
+  slug      String    @unique @map("slug")
+  isActive  Boolean   @default(true) @map("is_active")
+  products  Product[]
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@map("collections")
+}
+
+model Variant {
+  id        String  @id @default(uuid()) @map("id")
+  sku       String  @unique @map("sku")
+  color     String  @map("color")
+  imageUrl  String  @map("image_url")
+  stock     Int     @default(0) @map("stock")
+  productId String  @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  orderItems OrderItem[]
+
+  @@map("variants")
+}
+
+model Order {
+  id              String      @id @default(uuid()) @map("id")
+  orderNumber     Int         @unique @default(autoincrement()) @map("order_number")
+  customerEmail   String      @map("customer_email")
+  customerPhone   String      @map("customer_phone")
+  shippingAddress Json        @map("shipping_address")
+  city            String      @map("city")
+  totalAmount     Float       @map("total_amount")
+  currency        String      @default("COP") @map("currency")
+
+  status          OrderStatus @default(PENDIENTE_PAGO) @map("status")
+  statusHistory   OrderStatusHistory[]
+
+  // Logística
+  trackingNumber  String?     @map("tracking_number")
+  carrier         String?     @map("carrier")
+
+  isB2B           Boolean     @default(false) @map("is_b2b")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  items           OrderItem[]
+
+  profileId       String?     @map("profile_id")
+  profile         Profile?    @relation(fields: [profileId], references: [id])
+
+  @@map("orders")
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(uuid()) @map("id")
+  orderId   String      @map("order_id")
+  status    OrderStatus @map("status")
+  createdAt DateTime    @default(now()) @map("created_at")
+
+  order     Order       @relation(fields: [orderId], references: [id])
+  
+  @@map("order_status_history")
+}
+
+enum OrderStatus {
+  PENDIENTE_PAGO
+  PAGADA
+  EN_PRODUCCION
+  ENVIADA
+  ENTREGADA
+  CANCELADA
+}
+
+model OrderItem {
+  id        String  @id @default(uuid()) @map("id")
+  quantity  Int     @map("quantity")
+  price     Float   @map("price")
+  sku       String  @map("sku")
+
+  orderId   String  @map("order_id")
+  productId String  @map("product_id")
+  variantId String? @map("variant_id")
+
+  order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+  variant   Variant? @relation(fields: [variantId], references: [id])
+
+  @@map("order_items")
+}
+
+
+model Profile {
+  id           String   @id @default(uuid()) @map("id")
+  email        String   @unique @map("email")
+  firstName    String?  @map("first_name")
+  lastName     String?  @map("last_name")
+  phone        String?  @map("phone")
+  department   String?  @map("department")
+  municipality String?  @map("municipality")
+  neighborhood String?  @map("neighborhood")
+  address      String?  @map("address")
+  role         Role     @default(CUSTOMER) @map("role")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  userId       String   @unique @map("user_id")
+  metadata     Json?    @map("metadata")
+  
+  orders    Order[]
+
+  @@map("profiles")
+}
+
+enum Role {
+  ADMIN
+  CUSTOMER
+}
+
+enum ProductStatus {
+  DISPONIBLE
+  BAJO_PEDIDO
+  PREVENTA
+}
+
+enum PrintType {
+  SERIGRAFIA
+  DTF
+}
+
+model B2BQuote {
+  id           String   @id @default(uuid()) @map("id")
+  businessName String   @map("business_name")
+  quantity     Int      @map("quantity")
+  department   String   @map("department")
+  municipality String   @map("municipality")
+  neighborhood String   @map("neighborhood")
+  address      String   @map("address")
+  contactPhone String   @map("contact_phone")
+  qrType       String   @map("qr_type")
+  qrData       String?  @map("qr_data")
+  logoUrl      String?  @map("logo_url")
+  package      String   @map("package")
+  status       String   @default("PENDIENTE") @map("status")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("b2b_quotes")
+}

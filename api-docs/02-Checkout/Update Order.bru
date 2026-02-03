@@ -1,0 +1,23 @@
+meta {
+  name: Actualizar Estado Orden
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{url}}/orders/:id
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 
+}
+
+body:json {
+  {
+    "status": "ENVIADA",
+    "trackingNumber": "GUIA-12345678",
+    "carrier": "Servientrega"
+  }
+}
