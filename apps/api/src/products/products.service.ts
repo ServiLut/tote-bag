@@ -14,14 +14,8 @@ export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async update(id: string, updateProductDto: UpdateProductDto) {
-    const {
-      variants: _variants,
-      images,
-      collectionId,
-      collectionName,
-      ...data
-    } = updateProductDto;
-    void _variants;
+    const { variants, images, collectionId, collectionName, ...data } =
+      updateProductDto;
 
     // Resolve Collection if needed
     let activeCollectionId: string | undefined = collectionId;
@@ -61,10 +55,57 @@ export class ProductsService {
       };
     }
 
-    return this.prisma.product.update({
-      where: { id },
-      data: updateData,
-      include: { variants: true, images: true, collection: true },
+    return this.prisma.$transaction(async (prisma) => {
+      // 1. Update Variants if provided
+      if (variants) {
+        const currentVariants = await prisma.variant.findMany({
+          where: { productId: id },
+          select: { id: true, sku: true },
+        });
+        const currentSkuSet = new Set(currentVariants.map((v) => v.sku));
+        const incomingSkuSet = new Set(variants.map((v) => v.sku));
+
+        // Delete removed variants
+        const variantsToDelete = currentVariants.filter(
+          (v) => !incomingSkuSet.has(v.sku),
+        );
+        if (variantsToDelete.length > 0) {
+          await prisma.variant.deleteMany({
+            where: { id: { in: variantsToDelete.map((v) => v.id) } },
+          });
+        }
+
+        // Update or Create
+        for (const v of variants) {
+          if (currentSkuSet.has(v.sku)) {
+            await prisma.variant.update({
+              where: { sku: v.sku },
+              data: {
+                color: v.color,
+                imageUrl: v.imageUrl,
+                stock: v.stock,
+              },
+            });
+          } else {
+            await prisma.variant.create({
+              data: {
+                sku: v.sku,
+                color: v.color,
+                imageUrl: v.imageUrl,
+                stock: v.stock,
+                productId: id,
+              },
+            });
+          }
+        }
+      }
+
+      // 2. Update Product (and images via nested write)
+      return prisma.product.update({
+        where: { id },
+        data: updateData,
+        include: { variants: true, images: true, collection: true },
+      });
     });
   }
 

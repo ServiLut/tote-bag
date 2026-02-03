@@ -20,13 +20,13 @@ export class PrismaService
         urlObj.searchParams.delete('sslrootcert');
         urlObj.searchParams.delete('sslcert');
         urlObj.searchParams.delete('sslkey');
-        
+
         // 2. Ensure schema is set in the search_path via query param options
         // This is the standard way for 'pg' driver to set search_path
         if (!urlObj.searchParams.has('schema')) {
-             urlObj.searchParams.set('schema', 'tote-bag');
+          urlObj.searchParams.set('schema', 'tote-bag');
         }
-        
+
         // Also force it via 'options' param which pg driver respects
         // -c search_path=tote-bag
         urlObj.searchParams.set('options', '-c search_path=tote-bag');
@@ -40,11 +40,8 @@ export class PrismaService
     const pool = new pg.Pool({
       connectionString,
       ssl: false,
-      // Force search_path via explicit connection options
-      // This is more reliable than URL params for some pg versions/adapters
-      options: '-c search_path=tote-bag',
     });
-    
+
     const adapter = new PrismaPg(pool);
     super({ adapter });
   }

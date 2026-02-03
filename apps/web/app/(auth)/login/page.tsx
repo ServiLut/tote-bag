@@ -22,6 +22,7 @@ export default function LoginPage() {
 
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      console.log("DEBUG: Attempting login at:", API_URL);
       
       const res = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
