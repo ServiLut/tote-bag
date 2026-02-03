@@ -1,10 +1,12 @@
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/client"
+  previewFeatures = ["multiSchema"]
 }
 
 datasource db {
   provider = "postgresql"
+  schemas  = ["tote-bag"]
 }
 
 model Product {
@@ -18,7 +20,7 @@ model Product {
   costPrice        Float?        @map("cost_price")
 
   status           ProductStatus @default(BAJO_PEDIDO) @map("status")
-  
+
   // Relations
   collectionId     String        @map("collection_id")
   collection       Collection    @relation(fields: [collectionId], references: [id])
@@ -42,6 +44,7 @@ model Product {
   variants         Variant[]
 
   @@map("products")
+  @@schema("tote-bag")
 }
 
 model ProductImage {
@@ -53,6 +56,7 @@ model ProductImage {
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@map("product_images")
+  @@schema("tote-bag")
 }
 
 model Collection {
@@ -65,6 +69,7 @@ model Collection {
   updatedAt DateTime  @updatedAt @map("updated_at")
 
   @@map("collections")
+  @@schema("tote-bag")
 }
 
 model Variant {
@@ -75,10 +80,11 @@ model Variant {
   stock     Int     @default(0) @map("stock")
   productId String  @map("product_id")
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
+
   orderItems OrderItem[]
 
   @@map("variants")
+  @@schema("tote-bag")
 }
 
 model Order {
@@ -106,6 +112,7 @@ model Order {
   profile         Profile?    @relation(fields: [profileId], references: [id])
 
   @@map("orders")
+  @@schema("tote-bag")
 }
 
 model OrderStatusHistory {
@@ -115,8 +122,9 @@ model OrderStatusHistory {
   createdAt DateTime    @default(now()) @map("created_at")
 
   order     Order       @relation(fields: [orderId], references: [id])
-  
+
   @@map("order_status_history")
+  @@schema("tote-bag")
 }
 
 enum OrderStatus {
@@ -126,6 +134,8 @@ enum OrderStatus {
   ENVIADA
   ENTREGADA
   CANCELADA
+
+  @@schema("tote-bag")
 }
 
 model OrderItem {
@@ -143,6 +153,7 @@ model OrderItem {
   variant   Variant? @relation(fields: [variantId], references: [id])
 
   @@map("order_items")
+  @@schema("tote-bag")
 }
 
 
@@ -161,26 +172,33 @@ model Profile {
   updatedAt    DateTime @updatedAt @map("updated_at")
   userId       String   @unique @map("user_id")
   metadata     Json?    @map("metadata")
-  
+
   orders    Order[]
 
   @@map("profiles")
+  @@schema("tote-bag")
 }
 
 enum Role {
   ADMIN
   CUSTOMER
+
+  @@schema("tote-bag")
 }
 
 enum ProductStatus {
   DISPONIBLE
   BAJO_PEDIDO
   PREVENTA
+
+  @@schema("tote-bag")
 }
 
 enum PrintType {
   SERIGRAFIA
   DTF
+
+  @@schema("tote-bag")
 }
 
 model B2BQuote {
@@ -200,4 +218,5 @@ model B2BQuote {
   createdAt    DateTime @default(now()) @map("created_at")
 
   @@map("b2b_quotes")
+  @@schema("tote-bag")
 }
