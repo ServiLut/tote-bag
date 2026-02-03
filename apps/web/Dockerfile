@@ -12,17 +12,17 @@ WORKDIR /app
 # Enable corepack for pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Copiamos lo necesario para instalar dependencias
+# Copiamos lo necesario
 COPY --from=base /app/out/json/ .
 COPY --from=base /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
-# Instalamos dependencias
+# Instalamos SIN ignorar scripts para asegurar builds nativos (ej. sharp, etc.)
 RUN pnpm install --frozen-lockfile
 
-# Copiamos el código fuente
+# Copiamos código
 COPY --from=base /app/out/full/ .
 
-# Variables de entorno para el Build (Next.js las necesita en tiempo de build para inyectar valores estáticos)
+# Args de entorno
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -30,7 +30,7 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-# Construimos la web
+# Build
 RUN pnpm run build --filter=web
 
 # 3. Runner
@@ -41,10 +41,10 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Instalar libc6-compat para compatibilidad en Alpine
+# Libc6 para compatibilidad
 RUN apk add --no-cache libc6-compat
 
-# Copiamos solo lo necesario para standalone
+# Copiamos standalone
 COPY --from=build /app/apps/web/public ./apps/web/public
 COPY --from=build /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=build /app/apps/web/.next/standalone ./

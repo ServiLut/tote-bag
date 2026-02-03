@@ -12,18 +12,20 @@ WORKDIR /app
 # Enable corepack for pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Copiamos solo lo necesario para instalar dependencias (lockfile y package.jsons)
+# Copiamos solo lo necesario para instalar dependencias
 COPY --from=base /app/out/json/ .
 COPY --from=base /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
-# Instalamos todas las dependencias (incluyendo devDeps para el build y Prisma CLI)
-RUN pnpm install --ignore-scripts --frozen-lockfile
+# Instalamos dependencias SIN ignorar scripts para que Prisma descargue los binarios de Alpine
+# (Esto es crucial para que funcione el Query Engine en Linux/Alpine)
+RUN pnpm install --frozen-lockfile
 
 # Copiamos el código fuente completo
 COPY --from=base /app/out/full/ .
 
-# Generar Prisma Client (Necesario antes del build)
-RUN npx prisma generate --schema=apps/api/prisma/schema.prisma
+# Generar Prisma Client
+# Usamos 'pnpm exec' para asegurar que encuentre el binario en el node_modules correcto
+RUN pnpm exec prisma generate --schema=apps/api/prisma/schema.prisma
 
 # Construir la API
 RUN pnpm run build --filter=api
@@ -35,10 +37,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=4000
 
-# Instalamos OpenSSL, necesario para Prisma Client en Alpine
+# Instalamos OpenSSL (necesario para Prisma en Alpine)
 RUN apk add --no-cache openssl
 
-# Copiamos dependencias (incluye Prisma CLI para el db push)
+# Copiamos dependencias y build
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/apps/api/dist ./apps/api/dist
 COPY --from=build /app/apps/api/package.json ./apps/api/package.json
@@ -49,9 +51,10 @@ WORKDIR /app/apps/api
 
 EXPOSE 4000
 
-# Volvemos a la raíz para ejecutar los comandos
-WORKDIR /app
-
-# NOTA: 'prisma db push' sincroniza el esquema al iniciar el contenedor.
-# En producción seria, esto se hace en un paso previo (CI/CD), pero para Dokploy está bien.
-CMD ["sh", "-c", "npx prisma db push --config apps/api/prisma.config.ts && node apps/api/dist/main.js"]
+# Usamos 'pnpm exec' también aquí por consistencia, o ruta directa si pnpm no está en runner (node:alpine no trae pnpm por defecto)
+# Como runner es base alpine, NO TIENE pnpm instalado globalmente.
+# Opción A: Instalar pnpm en runner.
+# Opción B: Usar npx (pero ya vimos que falla a veces).
+# Opción C: Invocar el binario directo: ../../node_modules/.bin/prisma
+# Vamos con la Opción C que es la más "nativa" y robusta sin instalar cosas extra.
+CMD ["sh", "-c", "../../node_modules/.bin/prisma db push --config prisma.config.ts && node dist/main.js"]
