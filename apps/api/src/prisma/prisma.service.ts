@@ -39,7 +39,10 @@ export class PrismaService
 
     const pool = new pg.Pool({
       connectionString,
-      ssl: false, // Force disable SSL as confirmed fix
+      ssl: false,
+      // Force search_path via explicit connection options
+      // This is more reliable than URL params for some pg versions/adapters
+      options: '-c search_path=tote-bag',
     });
     
     const adapter = new PrismaPg(pool);
