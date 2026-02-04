@@ -54,17 +54,17 @@ export default function EditProductPage() {
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
+      <div className="h-screen flex items-center justify-center bg-base">
+        <Loader2 className="w-8 h-8 animate-spin text-muted" />
       </div>
     );
   }
 
   if (error || !productData) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center space-y-4">
-        <p className="text-red-500 font-medium">{error || 'Producto no encontrado'}</p>
-        <Link href="/dashboard/products" className="text-zinc-600 hover:text-black underline">
+      <div className="h-screen flex flex-col items-center justify-center space-y-4 bg-base">
+        <p className="text-red-500 font-bold">{error || 'Producto no encontrado'}</p>
+        <Link href="/dashboard/products" className="text-muted hover:text-primary font-black uppercase text-xs tracking-widest underline underline-offset-8">
           Volver al catálogo
         </Link>
       </div>
@@ -72,22 +72,22 @@ export default function EditProductPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col p-8 md:p-12 max-w-5xl mx-auto overflow-hidden">
+    <div className="h-screen flex flex-col p-8 md:p-12 max-w-5xl mx-auto overflow-hidden bg-base">
       <div className="flex-none mb-8">
         <Link 
           href="/dashboard/products" 
-          className="inline-flex items-center gap-2 text-sm font-medium text-zinc-500 hover:text-black transition-colors mb-4"
+          className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted hover:text-primary transition-all mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
           Volver a productos
         </Link>
-        <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Editar Producto</h1>
-        <p className="mt-2 text-zinc-500 font-medium">
+        <h1 className="text-3xl font-black tracking-tight text-primary">Editar Producto</h1>
+        <p className="mt-2 text-muted font-medium">
           Modifica los detalles, precios o variantes del producto.
         </p>
       </div>
 
-      <div className="flex-1 bg-white rounded-2xl border border-zinc-100 shadow-sm overflow-hidden mb-12">
+      <div className="flex-1 bg-surface rounded-3xl border border-theme shadow-sm overflow-hidden mb-12">
         <AdminProductForm initialData={productData} />
       </div>
     </div>

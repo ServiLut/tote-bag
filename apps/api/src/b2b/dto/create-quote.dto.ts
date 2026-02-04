@@ -1,10 +1,23 @@
-import { IsString, IsInt, IsEnum, Min, IsNotEmpty } from 'class-validator';
+import {
+  IsString,
+  IsInt,
+  IsEnum,
+  Min,
+  IsNotEmpty,
+  IsOptional,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export enum QrType {
   WHATSAPP = 'WHATSAPP',
   WEB = 'WEB',
   INSTAGRAM = 'INSTAGRAM',
+}
+
+export enum B2BPackage {
+  STARTER = 'Starter',
+  PRO = 'Pro',
+  EVENTO = 'Evento',
 }
 
 export class CreateQuoteDto {
@@ -43,4 +56,8 @@ export class CreateQuoteDto {
   @IsString()
   @IsNotEmpty()
   contactPhone: string;
+
+  @IsOptional()
+  @IsEnum(B2BPackage)
+  package?: B2BPackage;
 }

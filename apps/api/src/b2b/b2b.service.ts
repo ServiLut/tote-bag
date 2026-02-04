@@ -1,16 +1,33 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateQuoteDto } from './dto/create-quote.dto';
-
-export enum B2BPackage {
-  STARTER = 'Starter',
-  PRO = 'Pro',
-  EVENTO = 'Evento',
-}
+import { CreateQuoteDto, B2BPackage } from './dto/create-quote.dto';
+import { createClient } from '@supabase/supabase-js';
 
 @Injectable()
 export class B2bService {
-  constructor(private readonly prisma: PrismaService) {}
+  private supabase: ReturnType<typeof createClient>;
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {
+    const supabaseUrl =
+      this.configService.get<string>('SUPABASE_URL') ||
+      this.configService.get<string>('NEXT_PUBLIC_SUPABASE_URL');
+    const supabaseKey =
+      this.configService.get<string>('SERVICE_ROLE') ||
+      this.configService.get<string>('SUPABASE_KEY') ||
+      this.configService.get<string>('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error(
+        'Supabase URL or Key is missing in environment variables. Please check SUPABASE_URL and SUPABASE_KEY.',
+      );
+    }
+
+    this.supabase = createClient(supabaseUrl, supabaseKey);
+  }
 
   calculatePackage(quantity: number): B2BPackage {
     if (quantity < 50) return B2BPackage.STARTER;
@@ -22,17 +39,51 @@ export class B2bService {
     createQuoteDto: CreateQuoteDto,
     logoFile?: Express.Multer.File,
   ) {
-    const assignedPackage = this.calculatePackage(createQuoteDto.quantity);
+    let assignedPackage = this.calculatePackage(createQuoteDto.quantity);
 
-    // Simulate logo URL
-    const logoUrl = logoFile
-      ? `https://fake-storage.com/${logoFile.originalname}`
-      : null;
+    // Validate manual package selection if provided
+    if (createQuoteDto.package) {
+      const pkg = createQuoteDto.package;
+      const qty = createQuoteDto.quantity;
+
+      let isValid = false;
+      if (pkg === B2BPackage.STARTER && qty >= 12) isValid = true;
+      if (pkg === B2BPackage.PRO && qty >= 50) isValid = true;
+      if (pkg === B2BPackage.EVENTO && qty >= 200) isValid = true;
+
+      if (isValid) {
+        assignedPackage = pkg;
+      }
+    }
+
+    let logoUrl: string | null = null;
+
+    if (logoFile) {
+      const fileName = `b2b-quotes/${Date.now()}-${logoFile.originalname.replace(/\s+/g, '-')}`;
+
+      const { error } = await this.supabase.storage
+        .from('logo-corporativo')
+        .upload(fileName, logoFile.buffer, {
+          contentType: logoFile.mimetype,
+          upsert: false,
+        });
+
+      if (error) {
+        console.error('Supabase Upload Error:', error);
+        throw new InternalServerErrorException('Error uploading logo');
+      }
+
+      const { data: publicUrlData } = this.supabase.storage
+        .from('logo-corporativo')
+        .getPublicUrl(fileName);
+
+      logoUrl = publicUrlData.publicUrl;
+    }
 
     const quote = await this.prisma.b2BQuote.create({
       data: {
         businessName: createQuoteDto.businessName,
-        quantity: createQuoteDto.quantity,
+        quantity: Number(createQuoteDto.quantity), // Ensure quantity is a number
         department: createQuoteDto.department,
         municipality: createQuoteDto.municipality,
         neighborhood: createQuoteDto.neighborhood,

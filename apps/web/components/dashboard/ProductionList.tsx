@@ -153,25 +153,25 @@ export const ProductionList = () => {
   };
 
   return (
-    <div className="w-full bg-[#F5F5F0] min-h-screen p-8 text-[#171717] font-sans">
+    <div className="w-full bg-[#F5F5F0] dark:bg-zinc-950 min-h-screen p-8 text-[#171717] dark:text-zinc-100 font-sans transition-colors">
       <div className="max-w-6xl mx-auto">
         
         {/* Header */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Producción Diaria</h1>
-            <p className="text-gray-600">Gestión de lotes y priorización de pedidos.</p>
+            <p className="text-gray-600 dark:text-zinc-400">Gestión de lotes y priorización de pedidos.</p>
           </div>
           
           <div className="flex items-center gap-3">
-            <div className="bg-white px-4 py-2 rounded-lg border border-gray-200 flex items-center gap-2 text-sm shadow-sm">
-              <Clock size={16} className="text-gray-500" />
+            <div className="bg-white dark:bg-zinc-900 px-4 py-2 rounded-lg border border-gray-200 dark:border-zinc-800 flex items-center gap-2 text-sm shadow-sm">
+              <Clock size={16} className="text-gray-500 dark:text-zinc-400" />
               <span>Cut-off: <strong>12:00 PM</strong></span>
             </div>
             
             <button 
               onClick={handleExport}
-              className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-lg font-medium hover:bg-gray-800 transition-all shadow-md active:transform active:scale-95"
+              className="flex items-center gap-2 bg-black dark:bg-white text-white dark:text-black px-5 py-2.5 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-zinc-200 transition-all shadow-md active:transform active:scale-95"
             >
               <Download size={18} />
               Exportar Lotes
@@ -181,31 +181,31 @@ export const ProductionList = () => {
 
         {/* Stats / Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-zinc-800">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
+              <div className="p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg">
                 <Package size={24} />
               </div>
               <div>
-                <p className="text-sm text-gray-500 font-medium">Total a Producir</p>
+                <p className="text-sm text-gray-500 dark:text-zinc-400 font-medium">Total a Producir</p>
                 <p className="text-3xl font-bold">
                   {productionBatches.reduce((acc, b) => acc + b.totalQuantity, 0)}
-                  <span className="text-sm font-normal text-gray-400 ml-1">unidades</span>
+                  <span className="text-sm font-normal text-gray-400 dark:text-zinc-500 ml-1">unidades</span>
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-zinc-800">
              <div className="flex items-center gap-4">
-              <div className="p-3 bg-amber-50 text-amber-600 rounded-lg">
+              <div className="p-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-lg">
                 <Clock size={24} />
               </div>
               <div>
-                <p className="text-sm text-gray-500 font-medium">Prioridad Alta</p>
+                <p className="text-sm text-gray-500 dark:text-zinc-400 font-medium">Prioridad Alta</p>
                 <p className="text-3xl font-bold">
                    {productionBatches.reduce((acc, b) => acc + b.items.filter(i => i.isPriority).reduce((s, i) => s + i.quantity, 0), 0)}
-                   <span className="text-sm font-normal text-gray-400 ml-1">unidades</span>
+                   <span className="text-sm font-normal text-gray-400 dark:text-zinc-500 ml-1">unidades</span>
                 </p>
               </div>
             </div>
@@ -220,42 +220,42 @@ export const ProductionList = () => {
             </h2>
 
             {productionBatches.length === 0 ? (
-                <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-300">
-                    <CheckCircle2 size={48} className="mx-auto text-gray-300 mb-3" />
-                    <p className="text-gray-500 font-medium">Todo listo. No hay pedidos pendientes de producción.</p>
+                <div className="text-center py-12 bg-white dark:bg-zinc-900 rounded-xl border border-dashed border-gray-300 dark:border-zinc-800">
+                    <CheckCircle2 size={48} className="mx-auto text-gray-300 dark:text-zinc-700 mb-3" />
+                    <p className="text-gray-500 dark:text-zinc-400 font-medium">Todo listo. No hay pedidos pendientes de producción.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 gap-6">
                     {productionBatches.map((batch) => (
-                        <div key={batch.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div key={batch.id} className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-200 dark:border-zinc-800 overflow-hidden">
                             {/* Batch Header */}
-                            <div className="p-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gray-50/50">
+                            <div className="p-5 border-b border-gray-100 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gray-50/50 dark:bg-zinc-800/50">
                                 <div>
                                     <div className="flex items-center gap-3 mb-1">
                                         <h3 className="text-lg font-bold">{batch.productName}</h3>
-                                        <span className="px-2 py-0.5 bg-gray-200 text-gray-700 text-xs font-semibold rounded-md uppercase tracking-wide">
+                                        <span className="px-2 py-0.5 bg-gray-200 dark:bg-zinc-700 text-gray-700 dark:text-zinc-300 text-xs font-semibold rounded-md uppercase tracking-wide">
                                             {batch.color}
                                         </span>
                                     </div>
-                                    <p className="text-sm text-gray-500">SKU Base: TB-{batch.productName.substring(0,3).toUpperCase()}-...</p>
+                                    <p className="text-sm text-gray-500 dark:text-zinc-400">SKU Base: TB-{batch.productName.substring(0,3).toUpperCase()}-...</p>
                                 </div>
                                 <div className="text-right">
                                     <span className="block text-2xl font-bold">{batch.totalQuantity}</span>
-                                    <span className="text-xs text-gray-500 uppercase font-medium">Total a Imprimir</span>
+                                    <span className="text-xs text-gray-500 dark:text-zinc-400 uppercase font-medium">Total a Imprimir</span>
                                 </div>
                             </div>
 
                             {/* Batch Items */}
-                            <div className="divide-y divide-gray-100">
+                            <div className="divide-y divide-gray-100 dark:divide-zinc-800">
                                 {batch.items.map((item, idx) => (
                                     <div key={idx} className={cn(
-                                        "p-4 flex items-center justify-between hover:bg-gray-50 transition-colors",
-                                        item.isPriority ? "bg-amber-50/40 hover:bg-amber-50" : ""
+                                        "p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors",
+                                        item.isPriority ? "bg-amber-50/40 dark:bg-amber-900/10 hover:bg-amber-50 dark:hover:bg-amber-900/20" : ""
                                     )}>
                                         <div className="flex items-center gap-4">
                                             <div className={cn(
                                                 "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm",
-                                                item.isPriority ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-600"
+                                                item.isPriority ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" : "bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400"
                                             )}>
                                                 {item.quantity}x
                                             </div>
@@ -263,16 +263,16 @@ export const ProductionList = () => {
                                                 <p className="font-medium text-sm flex items-center gap-2">
                                                     Orden #{item.orderNumber}
                                                     {item.isPriority && (
-                                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full">
                                                             <AlertCircle size={10} />
                                                             PRIORIDAD (12 PM)
                                                         </span>
                                                     )}
                                                 </p>
-                                                <p className="text-xs text-gray-500">{item.customer}</p>
+                                                <p className="text-xs text-gray-500 dark:text-zinc-400">{item.customer}</p>
                                             </div>
                                         </div>
-                                        <div className="text-xs text-gray-400 font-mono">
+                                        <div className="text-xs text-gray-400 dark:text-zinc-500 font-mono">
                                             {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </div>
                                     </div>

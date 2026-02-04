@@ -79,7 +79,7 @@ export default function B2BPage() {
           {/* Right Column: Form */}
           <div className="relative animate-in slide-in-from-right duration-500 delay-100">
             {/* Decoration Element */}
-            <div className="absolute -top-10 -right-10 w-64 h-64 bg-accent rounded-full mix-blend-multiply dark:mix-blend-normal filter blur-3xl opacity-20 animate-pulse"></div>
+            <div className="absolute -top-10 -right-10 w-64 h-64 bg-accent rounded-full mix-blend-multiply dark:mix-blend-normal filter blur-3xl opacity-20 animate-pulse pointer-events-none"></div>
             
             <B2BQuoteForm />
           </div>

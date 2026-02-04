@@ -72,75 +72,75 @@ export default async function DashboardPage() {
     <div className="p-8 md:p-12 max-w-7xl mx-auto space-y-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Resumen Diario</h1>
-          <p className="text-zinc-500 mt-1 text-sm font-medium">Vista general de operaciones y alertas.</p>
+          <h1 className="text-3xl font-black tracking-tight text-primary">Resumen Diario</h1>
+          <p className="text-muted mt-1 text-sm font-medium">Vista general de operaciones y alertas.</p>
         </div>
         <div className="text-right hidden md:block">
-          <p className="text-sm font-medium text-zinc-900">{new Date().toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          <p className="text-sm font-bold text-primary">{new Date().toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
         {/* Card 1: Producción */}
-        <div className="group bg-white p-6 rounded-2xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-zinc-100 transition-all duration-300">
+        <div className="group bg-surface p-6 rounded-2xl shadow-sm border border-theme transition-all duration-300 hover:shadow-md">
           <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-blue-50 rounded-xl text-blue-600 group-hover:scale-110 transition-transform duration-300">
+            <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-xl text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform duration-300">
               <ShoppingBag className="w-6 h-6" />
             </div>
-            <span className="flex items-center text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
+            <span className="flex items-center text-xs font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 px-2.5 py-1 rounded-full">
               <TrendingUp className="w-3 h-3 mr-1" />
               +12%
             </span>
           </div>
           <div>
-            <p className="text-sm font-medium text-zinc-500 mb-1">Pedidos Hoy</p>
-            <h3 className="text-4xl font-bold text-zinc-900 tracking-tight">{stats.dailyProduction}</h3>
+            <p className="text-xs font-bold text-muted uppercase tracking-widest mb-1">Pedidos Hoy</p>
+            <h3 className="text-4xl font-black text-primary tracking-tight">{stats.dailyProduction}</h3>
           </div>
-          <div className="mt-6 pt-4 border-t border-zinc-50">
-            <Link href="/dashboard/orders" className="text-sm text-zinc-600 font-medium flex items-center hover:text-blue-600 transition-colors group-hover:translate-x-1">
+          <div className="mt-6 pt-4 border-t border-theme">
+            <Link href="/dashboard/orders" className="text-sm text-muted font-bold flex items-center hover:text-primary transition-colors group-hover:translate-x-1">
               Ver detalle de producción <ArrowRight className="w-4 h-4 ml-1" />
             </Link>
           </div>
         </div>
 
         {/* Card 2: Inventario */}
-        <div className="group bg-white p-6 rounded-2xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-zinc-100 transition-all duration-300">
+        <div className="group bg-surface p-6 rounded-2xl shadow-sm border border-theme transition-all duration-300 hover:shadow-md">
           <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-amber-50 rounded-xl text-amber-600 group-hover:scale-110 transition-transform duration-300">
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform duration-300">
               <Package className="w-6 h-6" />
             </div>
             {stats.lowStockCount > 0 && (
-              <span className="flex items-center text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded-full animate-pulse">
+              <span className="flex items-center text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 px-2.5 py-1 rounded-full animate-pulse">
                 <AlertTriangle className="w-3 h-3 mr-1" />
                 Atención
               </span>
             )}
           </div>
           <div>
-            <p className="text-sm font-medium text-zinc-500 mb-1">Stock Crítico</p>
-            <h3 className="text-4xl font-bold text-zinc-900 tracking-tight">{stats.lowStockCount}</h3>
+            <p className="text-xs font-bold text-muted uppercase tracking-widest mb-1">Stock Crítico</p>
+            <h3 className="text-4xl font-black text-primary tracking-tight">{stats.lowStockCount}</h3>
           </div>
-          <div className="mt-6 pt-4 border-t border-zinc-50">
-            <Link href="/dashboard/products" className="text-sm text-zinc-600 font-medium flex items-center hover:text-amber-600 transition-colors group-hover:translate-x-1">
+          <div className="mt-6 pt-4 border-t border-theme">
+            <Link href="/dashboard/products" className="text-sm text-muted font-bold flex items-center hover:text-primary transition-colors group-hover:translate-x-1">
               Gestionar inventario <ArrowRight className="w-4 h-4 ml-1" />
             </Link>
           </div>
         </div>
 
         {/* Card 3: B2B */}
-        <div className="group bg-white p-6 rounded-2xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-zinc-100 transition-all duration-300">
+        <div className="group bg-surface p-6 rounded-2xl shadow-sm border border-theme transition-all duration-300 hover:shadow-md">
           <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-purple-50 rounded-xl text-purple-600 group-hover:scale-110 transition-transform duration-300">
+            <div className="p-3 bg-secondary/10 rounded-xl text-secondary group-hover:scale-110 transition-transform duration-300">
               <Briefcase className="w-6 h-6" />
             </div>
           </div>
           <div>
-            <p className="text-sm font-medium text-zinc-500 mb-1">Cotizaciones B2B</p>
-            <h3 className="text-4xl font-bold text-zinc-900 tracking-tight">{stats.pendingQuotes}</h3>
+            <p className="text-xs font-bold text-muted uppercase tracking-widest mb-1">Cotizaciones B2B</p>
+            <h3 className="text-4xl font-black text-primary tracking-tight">{stats.pendingQuotes}</h3>
           </div>
-          <div className="mt-6 pt-4 border-t border-zinc-50">
-            <Link href="/dashboard/b2b" className="text-sm text-zinc-600 font-medium flex items-center hover:text-purple-600 transition-colors group-hover:translate-x-1">
+          <div className="mt-6 pt-4 border-t border-theme">
+            <Link href="/dashboard/b2b" className="text-sm text-muted font-bold flex items-center hover:text-primary transition-colors group-hover:translate-x-1">
               Revisar solicitudes <ArrowRight className="w-4 h-4 ml-1" />
             </Link>
           </div>
