@@ -1,12 +1,27 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '../generated/client/client';
 
 @Injectable()
 export class ProfilesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll() {
+  async findAll(
+    filters: {
+      role?: 'ADMIN' | 'CUSTOMER';
+      department?: string;
+      municipality?: string;
+    } = {},
+  ) {
+    const { role, department, municipality } = filters;
+
+    const where: Prisma.ProfileWhereInput = {};
+    if (role) where.role = role;
+    if (department) where.department = department;
+    if (municipality) where.municipality = municipality;
+
     return this.prisma.profile.findMany({
+      where,
       orderBy: { createdAt: 'desc' },
       include: {
         _count: {
@@ -16,17 +31,7 @@ export class ProfilesService {
     });
   }
 
-  async findAllByRole(role: 'ADMIN' | 'CUSTOMER') {
-    return this.prisma.profile.findMany({
-      where: { role },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        _count: {
-          select: { orders: true },
-        },
-      },
-    });
-  }
+  // Removiendo findAllByRole ya que findAll ahora maneja los filtros
 
   async findOne(id: string) {
     return this.prisma.profile.findUnique({

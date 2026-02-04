@@ -312,6 +312,12 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
         ? `${apiUrl}/products/${initialData.id}` 
         : `${apiUrl}/products`;
       
+      console.log('------------------------------------------------');
+      console.log('🚀 SUBMITTING FORM');
+      console.log('🎯 Target URL:', url);
+      console.log('📦 Payload:', payload);
+      console.log('------------------------------------------------');
+
       const method = isEditMode ? 'PATCH' : 'POST';
 
       const response = await fetch(url, {

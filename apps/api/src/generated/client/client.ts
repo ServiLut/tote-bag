@@ -77,6 +77,16 @@ export type OrderItem = Prisma.OrderItemModel
  */
 export type Profile = Prisma.ProfileModel
 /**
+ * Model Department
+ * 
+ */
+export type Department = Prisma.DepartmentModel
+/**
+ * Model Municipality
+ * 
+ */
+export type Municipality = Prisma.MunicipalityModel
+/**
  * Model B2BQuote
  * 
  */

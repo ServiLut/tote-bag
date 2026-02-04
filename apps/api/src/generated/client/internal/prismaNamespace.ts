@@ -391,6 +391,8 @@ export const ModelName = {
   OrderStatusHistory: 'OrderStatusHistory',
   OrderItem: 'OrderItem',
   Profile: 'Profile',
+  Department: 'Department',
+  Municipality: 'Municipality',
   B2BQuote: 'B2BQuote'
 } as const
 
@@ -407,7 +409,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "product" | "productImage" | "collection" | "variant" | "order" | "orderStatusHistory" | "orderItem" | "profile" | "b2BQuote"
+    modelProps: "product" | "productImage" | "collection" | "variant" | "order" | "orderStatusHistory" | "orderItem" | "profile" | "department" | "municipality" | "b2BQuote"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1003,6 +1005,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    Department: {
+      payload: Prisma.$DepartmentPayload<ExtArgs>
+      fields: Prisma.DepartmentFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.DepartmentFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DepartmentPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.DepartmentFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DepartmentPayload>
+        }
+        findFirst: {
+          args: Prisma.DepartmentFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DepartmentPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.DepartmentFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DepartmentPayload>
+        }
+        findMany: {
+          args: Prisma.DepartmentFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DepartmentPayload>[]
+        }
+        create: {
+          args: Prisma.DepartmentCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DepartmentPayload>
+        }
+        createMany: {
+          args: Prisma.DepartmentCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.DepartmentCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DepartmentPayload>[]
+        }
+        delete: {
+          args: Prisma.DepartmentDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DepartmentPayload>
+        }
+        update: {
+          args: Prisma.DepartmentUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DepartmentPayload>
+        }
+        deleteMany: {
+          args: Prisma.DepartmentDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.DepartmentUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.DepartmentUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DepartmentPayload>[]
+        }
+        upsert: {
+          args: Prisma.DepartmentUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DepartmentPayload>
+        }
+        aggregate: {
+          args: Prisma.DepartmentAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateDepartment>
+        }
+        groupBy: {
+          args: Prisma.DepartmentGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.DepartmentGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.DepartmentCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.DepartmentCountAggregateOutputType> | number
+        }
+      }
+    }
+    Municipality: {
+      payload: Prisma.$MunicipalityPayload<ExtArgs>
+      fields: Prisma.MunicipalityFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.MunicipalityFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MunicipalityPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.MunicipalityFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MunicipalityPayload>
+        }
+        findFirst: {
+          args: Prisma.MunicipalityFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MunicipalityPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.MunicipalityFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MunicipalityPayload>
+        }
+        findMany: {
+          args: Prisma.MunicipalityFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MunicipalityPayload>[]
+        }
+        create: {
+          args: Prisma.MunicipalityCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MunicipalityPayload>
+        }
+        createMany: {
+          args: Prisma.MunicipalityCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.MunicipalityCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MunicipalityPayload>[]
+        }
+        delete: {
+          args: Prisma.MunicipalityDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MunicipalityPayload>
+        }
+        update: {
+          args: Prisma.MunicipalityUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MunicipalityPayload>
+        }
+        deleteMany: {
+          args: Prisma.MunicipalityDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.MunicipalityUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.MunicipalityUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MunicipalityPayload>[]
+        }
+        upsert: {
+          args: Prisma.MunicipalityUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MunicipalityPayload>
+        }
+        aggregate: {
+          args: Prisma.MunicipalityAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateMunicipality>
+        }
+        groupBy: {
+          args: Prisma.MunicipalityGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.MunicipalityGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.MunicipalityCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.MunicipalityCountAggregateOutputType> | number
+        }
+      }
+    }
     B2BQuote: {
       payload: Prisma.$B2BQuotePayload<ExtArgs>
       fields: Prisma.B2BQuoteFieldRefs
@@ -1235,10 +1385,31 @@ export const ProfileScalarFieldEnum = {
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   userId: 'userId',
-  metadata: 'metadata'
+  metadata: 'metadata',
+  departmentId: 'departmentId',
+  municipalityId: 'municipalityId'
 } as const
 
 export type ProfileScalarFieldEnum = (typeof ProfileScalarFieldEnum)[keyof typeof ProfileScalarFieldEnum]
+
+
+export const DepartmentScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  code: 'code'
+} as const
+
+export type DepartmentScalarFieldEnum = (typeof DepartmentScalarFieldEnum)[keyof typeof DepartmentScalarFieldEnum]
+
+
+export const MunicipalityScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  code: 'code',
+  departmentId: 'departmentId'
+} as const
+
+export type MunicipalityScalarFieldEnum = (typeof MunicipalityScalarFieldEnum)[keyof typeof MunicipalityScalarFieldEnum]
 
 
 export const B2BQuoteScalarFieldEnum = {
@@ -1550,6 +1721,8 @@ export type GlobalOmitConfig = {
   orderStatusHistory?: Prisma.OrderStatusHistoryOmit
   orderItem?: Prisma.OrderItemOmit
   profile?: Prisma.ProfileOmit
+  department?: Prisma.DepartmentOmit
+  municipality?: Prisma.MunicipalityOmit
   b2BQuote?: Prisma.B2BQuoteOmit
 }
 

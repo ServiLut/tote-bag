@@ -44,6 +44,22 @@ export class ProductsController {
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body() updateProductDto: UpdateProductDto,
   ) {
+    console.log(`[ProductsController] Update request for ID: ${id}`);
+    console.log(
+      `[ProductsController] Payload keys: ${Object.keys(updateProductDto).join(', ')}`,
+    );
+    if (updateProductDto.variants) {
+      console.log(
+        `[ProductsController] Variants count: ${updateProductDto.variants.length}`,
+      );
+      console.log(
+        `[ProductsController] First variant: ${JSON.stringify(updateProductDto.variants[0])}`,
+      );
+    } else {
+      console.warn(
+        '[ProductsController] WARNING: No variants received in payload!',
+      );
+    }
     return this.productsService.update(id, updateProductDto);
   }
 

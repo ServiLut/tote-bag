@@ -37,6 +37,8 @@ export type ProfileMinAggregateOutputType = {
   createdAt: Date | null
   updatedAt: Date | null
   userId: string | null
+  departmentId: string | null
+  municipalityId: string | null
 }
 
 export type ProfileMaxAggregateOutputType = {
@@ -53,6 +55,8 @@ export type ProfileMaxAggregateOutputType = {
   createdAt: Date | null
   updatedAt: Date | null
   userId: string | null
+  departmentId: string | null
+  municipalityId: string | null
 }
 
 export type ProfileCountAggregateOutputType = {
@@ -70,6 +74,8 @@ export type ProfileCountAggregateOutputType = {
   updatedAt: number
   userId: number
   metadata: number
+  departmentId: number
+  municipalityId: number
   _all: number
 }
 
@@ -88,6 +94,8 @@ export type ProfileMinAggregateInputType = {
   createdAt?: true
   updatedAt?: true
   userId?: true
+  departmentId?: true
+  municipalityId?: true
 }
 
 export type ProfileMaxAggregateInputType = {
@@ -104,6 +112,8 @@ export type ProfileMaxAggregateInputType = {
   createdAt?: true
   updatedAt?: true
   userId?: true
+  departmentId?: true
+  municipalityId?: true
 }
 
 export type ProfileCountAggregateInputType = {
@@ -121,6 +131,8 @@ export type ProfileCountAggregateInputType = {
   updatedAt?: true
   userId?: true
   metadata?: true
+  departmentId?: true
+  municipalityId?: true
   _all?: true
 }
 
@@ -211,6 +223,8 @@ export type ProfileGroupByOutputType = {
   updatedAt: Date
   userId: string
   metadata: runtime.JsonValue | null
+  departmentId: string | null
+  municipalityId: string | null
   _count: ProfileCountAggregateOutputType | null
   _min: ProfileMinAggregateOutputType | null
   _max: ProfileMaxAggregateOutputType | null
@@ -249,7 +263,11 @@ export type ProfileWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Profile"> | Date | string
   userId?: Prisma.StringFilter<"Profile"> | string
   metadata?: Prisma.JsonNullableFilter<"Profile">
+  departmentId?: Prisma.StringNullableFilter<"Profile"> | string | null
+  municipalityId?: Prisma.StringNullableFilter<"Profile"> | string | null
   orders?: Prisma.OrderListRelationFilter
+  locationDepartment?: Prisma.XOR<Prisma.DepartmentNullableScalarRelationFilter, Prisma.DepartmentWhereInput> | null
+  locationMunicipality?: Prisma.XOR<Prisma.MunicipalityNullableScalarRelationFilter, Prisma.MunicipalityWhereInput> | null
 }
 
 export type ProfileOrderByWithRelationInput = {
@@ -267,7 +285,11 @@ export type ProfileOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   metadata?: Prisma.SortOrderInput | Prisma.SortOrder
+  departmentId?: Prisma.SortOrderInput | Prisma.SortOrder
+  municipalityId?: Prisma.SortOrderInput | Prisma.SortOrder
   orders?: Prisma.OrderOrderByRelationAggregateInput
+  locationDepartment?: Prisma.DepartmentOrderByWithRelationInput
+  locationMunicipality?: Prisma.MunicipalityOrderByWithRelationInput
 }
 
 export type ProfileWhereUniqueInput = Prisma.AtLeast<{
@@ -288,7 +310,11 @@ export type ProfileWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"Profile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Profile"> | Date | string
   metadata?: Prisma.JsonNullableFilter<"Profile">
+  departmentId?: Prisma.StringNullableFilter<"Profile"> | string | null
+  municipalityId?: Prisma.StringNullableFilter<"Profile"> | string | null
   orders?: Prisma.OrderListRelationFilter
+  locationDepartment?: Prisma.XOR<Prisma.DepartmentNullableScalarRelationFilter, Prisma.DepartmentWhereInput> | null
+  locationMunicipality?: Prisma.XOR<Prisma.MunicipalityNullableScalarRelationFilter, Prisma.MunicipalityWhereInput> | null
 }, "id" | "email" | "userId">
 
 export type ProfileOrderByWithAggregationInput = {
@@ -306,6 +332,8 @@ export type ProfileOrderByWithAggregationInput = {
   updatedAt?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   metadata?: Prisma.SortOrderInput | Prisma.SortOrder
+  departmentId?: Prisma.SortOrderInput | Prisma.SortOrder
+  municipalityId?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.ProfileCountOrderByAggregateInput
   _max?: Prisma.ProfileMaxOrderByAggregateInput
   _min?: Prisma.ProfileMinOrderByAggregateInput
@@ -329,6 +357,8 @@ export type ProfileScalarWhereWithAggregatesInput = {
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Profile"> | Date | string
   userId?: Prisma.StringWithAggregatesFilter<"Profile"> | string
   metadata?: Prisma.JsonNullableWithAggregatesFilter<"Profile">
+  departmentId?: Prisma.StringNullableWithAggregatesFilter<"Profile"> | string | null
+  municipalityId?: Prisma.StringNullableWithAggregatesFilter<"Profile"> | string | null
 }
 
 export type ProfileCreateInput = {
@@ -347,6 +377,8 @@ export type ProfileCreateInput = {
   userId: string
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   orders?: Prisma.OrderCreateNestedManyWithoutProfileInput
+  locationDepartment?: Prisma.DepartmentCreateNestedOneWithoutProfilesInput
+  locationMunicipality?: Prisma.MunicipalityCreateNestedOneWithoutProfilesInput
 }
 
 export type ProfileUncheckedCreateInput = {
@@ -364,6 +396,8 @@ export type ProfileUncheckedCreateInput = {
   updatedAt?: Date | string
   userId: string
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  departmentId?: string | null
+  municipalityId?: string | null
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutProfileInput
 }
 
@@ -383,6 +417,8 @@ export type ProfileUpdateInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   orders?: Prisma.OrderUpdateManyWithoutProfileNestedInput
+  locationDepartment?: Prisma.DepartmentUpdateOneWithoutProfilesNestedInput
+  locationMunicipality?: Prisma.MunicipalityUpdateOneWithoutProfilesNestedInput
 }
 
 export type ProfileUncheckedUpdateInput = {
@@ -400,6 +436,8 @@ export type ProfileUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  departmentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  municipalityId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   orders?: Prisma.OrderUncheckedUpdateManyWithoutProfileNestedInput
 }
 
@@ -418,6 +456,8 @@ export type ProfileCreateManyInput = {
   updatedAt?: Date | string
   userId: string
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  departmentId?: string | null
+  municipalityId?: string | null
 }
 
 export type ProfileUpdateManyMutationInput = {
@@ -452,6 +492,8 @@ export type ProfileUncheckedUpdateManyInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  departmentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  municipalityId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type ProfileNullableScalarRelationFilter = {
@@ -474,6 +516,8 @@ export type ProfileCountOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   metadata?: Prisma.SortOrder
+  departmentId?: Prisma.SortOrder
+  municipalityId?: Prisma.SortOrder
 }
 
 export type ProfileMaxOrderByAggregateInput = {
@@ -490,6 +534,8 @@ export type ProfileMaxOrderByAggregateInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  departmentId?: Prisma.SortOrder
+  municipalityId?: Prisma.SortOrder
 }
 
 export type ProfileMinOrderByAggregateInput = {
@@ -506,6 +552,18 @@ export type ProfileMinOrderByAggregateInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  departmentId?: Prisma.SortOrder
+  municipalityId?: Prisma.SortOrder
+}
+
+export type ProfileListRelationFilter = {
+  every?: Prisma.ProfileWhereInput
+  some?: Prisma.ProfileWhereInput
+  none?: Prisma.ProfileWhereInput
+}
+
+export type ProfileOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
 }
 
 export type ProfileCreateNestedOneWithoutOrdersInput = {
@@ -528,6 +586,90 @@ export type EnumRoleFieldUpdateOperationsInput = {
   set?: $Enums.Role
 }
 
+export type ProfileCreateNestedManyWithoutLocationDepartmentInput = {
+  create?: Prisma.XOR<Prisma.ProfileCreateWithoutLocationDepartmentInput, Prisma.ProfileUncheckedCreateWithoutLocationDepartmentInput> | Prisma.ProfileCreateWithoutLocationDepartmentInput[] | Prisma.ProfileUncheckedCreateWithoutLocationDepartmentInput[]
+  connectOrCreate?: Prisma.ProfileCreateOrConnectWithoutLocationDepartmentInput | Prisma.ProfileCreateOrConnectWithoutLocationDepartmentInput[]
+  createMany?: Prisma.ProfileCreateManyLocationDepartmentInputEnvelope
+  connect?: Prisma.ProfileWhereUniqueInput | Prisma.ProfileWhereUniqueInput[]
+}
+
+export type ProfileUncheckedCreateNestedManyWithoutLocationDepartmentInput = {
+  create?: Prisma.XOR<Prisma.ProfileCreateWithoutLocationDepartmentInput, Prisma.ProfileUncheckedCreateWithoutLocationDepartmentInput> | Prisma.ProfileCreateWithoutLocationDepartmentInput[] | Prisma.ProfileUncheckedCreateWithoutLocationDepartmentInput[]
+  connectOrCreate?: Prisma.ProfileCreateOrConnectWithoutLocationDepartmentInput | Prisma.ProfileCreateOrConnectWithoutLocationDepartmentInput[]
+  createMany?: Prisma.ProfileCreateManyLocationDepartmentInputEnvelope
+  connect?: Prisma.ProfileWhereUniqueInput | Prisma.ProfileWhereUniqueInput[]
+}
+
+export type ProfileUpdateManyWithoutLocationDepartmentNestedInput = {
+  create?: Prisma.XOR<Prisma.ProfileCreateWithoutLocationDepartmentInput, Prisma.ProfileUncheckedCreateWithoutLocationDepartmentInput> | Prisma.ProfileCreateWithoutLocationDepartmentInput[] | Prisma.ProfileUncheckedCreateWithoutLocationDepartmentInput[]
+  connectOrCreate?: Prisma.ProfileCreateOrConnectWithoutLocationDepartmentInput | Prisma.ProfileCreateOrConnectWithoutLocationDepartmentInput[]
+  upsert?: Prisma.ProfileUpsertWithWhereUniqueWithoutLocationDepartmentInput | Prisma.ProfileUpsertWithWhereUniqueWithoutLocationDepartmentInput[]
+  createMany?: Prisma.ProfileCreateManyLocationDepartmentInputEnvelope
+  set?: Prisma.ProfileWhereUniqueInput | Prisma.ProfileWhereUniqueInput[]
+  disconnect?: Prisma.ProfileWhereUniqueInput | Prisma.ProfileWhereUniqueInput[]
+  delete?: Prisma.ProfileWhereUniqueInput | Prisma.ProfileWhereUniqueInput[]
+  connect?: Prisma.ProfileWhereUniqueInput | Prisma.ProfileWhereUniqueInput[]
+  update?: Prisma.ProfileUpdateWithWhereUniqueWithoutLocationDepartmentInput | Prisma.ProfileUpdateWithWhereUniqueWithoutLocationDepartmentInput[]
+  updateMany?: Prisma.ProfileUpdateManyWithWhereWithoutLocationDepartmentInput | Prisma.ProfileUpdateManyWithWhereWithoutLocationDepartmentInput[]
+  deleteMany?: Prisma.ProfileScalarWhereInput | Prisma.ProfileScalarWhereInput[]
+}
+
+export type ProfileUncheckedUpdateManyWithoutLocationDepartmentNestedInput = {
+  create?: Prisma.XOR<Prisma.ProfileCreateWithoutLocationDepartmentInput, Prisma.ProfileUncheckedCreateWithoutLocationDepartmentInput> | Prisma.ProfileCreateWithoutLocationDepartmentInput[] | Prisma.ProfileUncheckedCreateWithoutLocationDepartmentInput[]
+  connectOrCreate?: Prisma.ProfileCreateOrConnectWithoutLocationDepartmentInput | Prisma.ProfileCreateOrConnectWithoutLocationDepartmentInput[]
+  upsert?: Prisma.ProfileUpsertWithWhereUniqueWithoutLocationDepartmentInput | Prisma.ProfileUpsertWithWhereUniqueWithoutLocationDepartmentInput[]
+  createMany?: Prisma.ProfileCreateManyLocationDepartmentInputEnvelope
+  set?: Prisma.ProfileWhereUniqueInput | Prisma.ProfileWhereUniqueInput[]
+  disconnect?: Prisma.ProfileWhereUniqueInput | Prisma.ProfileWhereUniqueInput[]
+  delete?: Prisma.ProfileWhereUniqueInput | Prisma.ProfileWhereUniqueInput[]
+  connect?: Prisma.ProfileWhereUniqueInput | Prisma.ProfileWhereUniqueInput[]
+  update?: Prisma.ProfileUpdateWithWhereUniqueWithoutLocationDepartmentInput | Prisma.ProfileUpdateWithWhereUniqueWithoutLocationDepartmentInput[]
+  updateMany?: Prisma.ProfileUpdateManyWithWhereWithoutLocationDepartmentInput | Prisma.ProfileUpdateManyWithWhereWithoutLocationDepartmentInput[]
+  deleteMany?: Prisma.ProfileScalarWhereInput | Prisma.ProfileScalarWhereInput[]
+}
+
+export type ProfileCreateNestedManyWithoutLocationMunicipalityInput = {
+  create?: Prisma.XOR<Prisma.ProfileCreateWithoutLocationMunicipalityInput, Prisma.ProfileUncheckedCreateWithoutLocationMunicipalityInput> | Prisma.ProfileCreateWithoutLocationMunicipalityInput[] | Prisma.ProfileUncheckedCreateWithoutLocationMunicipalityInput[]
+  connectOrCreate?: Prisma.ProfileCreateOrConnectWithoutLocationMunicipalityInput | Prisma.ProfileCreateOrConnectWithoutLocationMunicipalityInput[]
+  createMany?: Prisma.ProfileCreateManyLocationMunicipalityInputEnvelope
+  connect?: Prisma.ProfileWhereUniqueInput | Prisma.ProfileWhereUniqueInput[]
+}
+
+export type ProfileUncheckedCreateNestedManyWithoutLocationMunicipalityInput = {
+  create?: Prisma.XOR<Prisma.ProfileCreateWithoutLocationMunicipalityInput, Prisma.ProfileUncheckedCreateWithoutLocationMunicipalityInput> | Prisma.ProfileCreateWithoutLocationMunicipalityInput[] | Prisma.ProfileUncheckedCreateWithoutLocationMunicipalityInput[]
+  connectOrCreate?: Prisma.ProfileCreateOrConnectWithoutLocationMunicipalityInput | Prisma.ProfileCreateOrConnectWithoutLocationMunicipalityInput[]
+  createMany?: Prisma.ProfileCreateManyLocationMunicipalityInputEnvelope
+  connect?: Prisma.ProfileWhereUniqueInput | Prisma.ProfileWhereUniqueInput[]
+}
+
+export type ProfileUpdateManyWithoutLocationMunicipalityNestedInput = {
+  create?: Prisma.XOR<Prisma.ProfileCreateWithoutLocationMunicipalityInput, Prisma.ProfileUncheckedCreateWithoutLocationMunicipalityInput> | Prisma.ProfileCreateWithoutLocationMunicipalityInput[] | Prisma.ProfileUncheckedCreateWithoutLocationMunicipalityInput[]
+  connectOrCreate?: Prisma.ProfileCreateOrConnectWithoutLocationMunicipalityInput | Prisma.ProfileCreateOrConnectWithoutLocationMunicipalityInput[]
+  upsert?: Prisma.ProfileUpsertWithWhereUniqueWithoutLocationMunicipalityInput | Prisma.ProfileUpsertWithWhereUniqueWithoutLocationMunicipalityInput[]
+  createMany?: Prisma.ProfileCreateManyLocationMunicipalityInputEnvelope
+  set?: Prisma.ProfileWhereUniqueInput | Prisma.ProfileWhereUniqueInput[]
+  disconnect?: Prisma.ProfileWhereUniqueInput | Prisma.ProfileWhereUniqueInput[]
+  delete?: Prisma.ProfileWhereUniqueInput | Prisma.ProfileWhereUniqueInput[]
+  connect?: Prisma.ProfileWhereUniqueInput | Prisma.ProfileWhereUniqueInput[]
+  update?: Prisma.ProfileUpdateWithWhereUniqueWithoutLocationMunicipalityInput | Prisma.ProfileUpdateWithWhereUniqueWithoutLocationMunicipalityInput[]
+  updateMany?: Prisma.ProfileUpdateManyWithWhereWithoutLocationMunicipalityInput | Prisma.ProfileUpdateManyWithWhereWithoutLocationMunicipalityInput[]
+  deleteMany?: Prisma.ProfileScalarWhereInput | Prisma.ProfileScalarWhereInput[]
+}
+
+export type ProfileUncheckedUpdateManyWithoutLocationMunicipalityNestedInput = {
+  create?: Prisma.XOR<Prisma.ProfileCreateWithoutLocationMunicipalityInput, Prisma.ProfileUncheckedCreateWithoutLocationMunicipalityInput> | Prisma.ProfileCreateWithoutLocationMunicipalityInput[] | Prisma.ProfileUncheckedCreateWithoutLocationMunicipalityInput[]
+  connectOrCreate?: Prisma.ProfileCreateOrConnectWithoutLocationMunicipalityInput | Prisma.ProfileCreateOrConnectWithoutLocationMunicipalityInput[]
+  upsert?: Prisma.ProfileUpsertWithWhereUniqueWithoutLocationMunicipalityInput | Prisma.ProfileUpsertWithWhereUniqueWithoutLocationMunicipalityInput[]
+  createMany?: Prisma.ProfileCreateManyLocationMunicipalityInputEnvelope
+  set?: Prisma.ProfileWhereUniqueInput | Prisma.ProfileWhereUniqueInput[]
+  disconnect?: Prisma.ProfileWhereUniqueInput | Prisma.ProfileWhereUniqueInput[]
+  delete?: Prisma.ProfileWhereUniqueInput | Prisma.ProfileWhereUniqueInput[]
+  connect?: Prisma.ProfileWhereUniqueInput | Prisma.ProfileWhereUniqueInput[]
+  update?: Prisma.ProfileUpdateWithWhereUniqueWithoutLocationMunicipalityInput | Prisma.ProfileUpdateWithWhereUniqueWithoutLocationMunicipalityInput[]
+  updateMany?: Prisma.ProfileUpdateManyWithWhereWithoutLocationMunicipalityInput | Prisma.ProfileUpdateManyWithWhereWithoutLocationMunicipalityInput[]
+  deleteMany?: Prisma.ProfileScalarWhereInput | Prisma.ProfileScalarWhereInput[]
+}
+
 export type ProfileCreateWithoutOrdersInput = {
   id?: string
   email: string
@@ -543,6 +685,8 @@ export type ProfileCreateWithoutOrdersInput = {
   updatedAt?: Date | string
   userId: string
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  locationDepartment?: Prisma.DepartmentCreateNestedOneWithoutProfilesInput
+  locationMunicipality?: Prisma.MunicipalityCreateNestedOneWithoutProfilesInput
 }
 
 export type ProfileUncheckedCreateWithoutOrdersInput = {
@@ -560,6 +704,8 @@ export type ProfileUncheckedCreateWithoutOrdersInput = {
   updatedAt?: Date | string
   userId: string
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  departmentId?: string | null
+  municipalityId?: string | null
 }
 
 export type ProfileCreateOrConnectWithoutOrdersInput = {
@@ -593,6 +739,8 @@ export type ProfileUpdateWithoutOrdersInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  locationDepartment?: Prisma.DepartmentUpdateOneWithoutProfilesNestedInput
+  locationMunicipality?: Prisma.MunicipalityUpdateOneWithoutProfilesNestedInput
 }
 
 export type ProfileUncheckedUpdateWithoutOrdersInput = {
@@ -610,6 +758,306 @@ export type ProfileUncheckedUpdateWithoutOrdersInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  departmentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  municipalityId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+}
+
+export type ProfileCreateWithoutLocationDepartmentInput = {
+  id?: string
+  email: string
+  firstName?: string | null
+  lastName?: string | null
+  phone?: string | null
+  department?: string | null
+  municipality?: string | null
+  neighborhood?: string | null
+  address?: string | null
+  role?: $Enums.Role
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userId: string
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  orders?: Prisma.OrderCreateNestedManyWithoutProfileInput
+  locationMunicipality?: Prisma.MunicipalityCreateNestedOneWithoutProfilesInput
+}
+
+export type ProfileUncheckedCreateWithoutLocationDepartmentInput = {
+  id?: string
+  email: string
+  firstName?: string | null
+  lastName?: string | null
+  phone?: string | null
+  department?: string | null
+  municipality?: string | null
+  neighborhood?: string | null
+  address?: string | null
+  role?: $Enums.Role
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userId: string
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  municipalityId?: string | null
+  orders?: Prisma.OrderUncheckedCreateNestedManyWithoutProfileInput
+}
+
+export type ProfileCreateOrConnectWithoutLocationDepartmentInput = {
+  where: Prisma.ProfileWhereUniqueInput
+  create: Prisma.XOR<Prisma.ProfileCreateWithoutLocationDepartmentInput, Prisma.ProfileUncheckedCreateWithoutLocationDepartmentInput>
+}
+
+export type ProfileCreateManyLocationDepartmentInputEnvelope = {
+  data: Prisma.ProfileCreateManyLocationDepartmentInput | Prisma.ProfileCreateManyLocationDepartmentInput[]
+  skipDuplicates?: boolean
+}
+
+export type ProfileUpsertWithWhereUniqueWithoutLocationDepartmentInput = {
+  where: Prisma.ProfileWhereUniqueInput
+  update: Prisma.XOR<Prisma.ProfileUpdateWithoutLocationDepartmentInput, Prisma.ProfileUncheckedUpdateWithoutLocationDepartmentInput>
+  create: Prisma.XOR<Prisma.ProfileCreateWithoutLocationDepartmentInput, Prisma.ProfileUncheckedCreateWithoutLocationDepartmentInput>
+}
+
+export type ProfileUpdateWithWhereUniqueWithoutLocationDepartmentInput = {
+  where: Prisma.ProfileWhereUniqueInput
+  data: Prisma.XOR<Prisma.ProfileUpdateWithoutLocationDepartmentInput, Prisma.ProfileUncheckedUpdateWithoutLocationDepartmentInput>
+}
+
+export type ProfileUpdateManyWithWhereWithoutLocationDepartmentInput = {
+  where: Prisma.ProfileScalarWhereInput
+  data: Prisma.XOR<Prisma.ProfileUpdateManyMutationInput, Prisma.ProfileUncheckedUpdateManyWithoutLocationDepartmentInput>
+}
+
+export type ProfileScalarWhereInput = {
+  AND?: Prisma.ProfileScalarWhereInput | Prisma.ProfileScalarWhereInput[]
+  OR?: Prisma.ProfileScalarWhereInput[]
+  NOT?: Prisma.ProfileScalarWhereInput | Prisma.ProfileScalarWhereInput[]
+  id?: Prisma.StringFilter<"Profile"> | string
+  email?: Prisma.StringFilter<"Profile"> | string
+  firstName?: Prisma.StringNullableFilter<"Profile"> | string | null
+  lastName?: Prisma.StringNullableFilter<"Profile"> | string | null
+  phone?: Prisma.StringNullableFilter<"Profile"> | string | null
+  department?: Prisma.StringNullableFilter<"Profile"> | string | null
+  municipality?: Prisma.StringNullableFilter<"Profile"> | string | null
+  neighborhood?: Prisma.StringNullableFilter<"Profile"> | string | null
+  address?: Prisma.StringNullableFilter<"Profile"> | string | null
+  role?: Prisma.EnumRoleFilter<"Profile"> | $Enums.Role
+  createdAt?: Prisma.DateTimeFilter<"Profile"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Profile"> | Date | string
+  userId?: Prisma.StringFilter<"Profile"> | string
+  metadata?: Prisma.JsonNullableFilter<"Profile">
+  departmentId?: Prisma.StringNullableFilter<"Profile"> | string | null
+  municipalityId?: Prisma.StringNullableFilter<"Profile"> | string | null
+}
+
+export type ProfileCreateWithoutLocationMunicipalityInput = {
+  id?: string
+  email: string
+  firstName?: string | null
+  lastName?: string | null
+  phone?: string | null
+  department?: string | null
+  municipality?: string | null
+  neighborhood?: string | null
+  address?: string | null
+  role?: $Enums.Role
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userId: string
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  orders?: Prisma.OrderCreateNestedManyWithoutProfileInput
+  locationDepartment?: Prisma.DepartmentCreateNestedOneWithoutProfilesInput
+}
+
+export type ProfileUncheckedCreateWithoutLocationMunicipalityInput = {
+  id?: string
+  email: string
+  firstName?: string | null
+  lastName?: string | null
+  phone?: string | null
+  department?: string | null
+  municipality?: string | null
+  neighborhood?: string | null
+  address?: string | null
+  role?: $Enums.Role
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userId: string
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  departmentId?: string | null
+  orders?: Prisma.OrderUncheckedCreateNestedManyWithoutProfileInput
+}
+
+export type ProfileCreateOrConnectWithoutLocationMunicipalityInput = {
+  where: Prisma.ProfileWhereUniqueInput
+  create: Prisma.XOR<Prisma.ProfileCreateWithoutLocationMunicipalityInput, Prisma.ProfileUncheckedCreateWithoutLocationMunicipalityInput>
+}
+
+export type ProfileCreateManyLocationMunicipalityInputEnvelope = {
+  data: Prisma.ProfileCreateManyLocationMunicipalityInput | Prisma.ProfileCreateManyLocationMunicipalityInput[]
+  skipDuplicates?: boolean
+}
+
+export type ProfileUpsertWithWhereUniqueWithoutLocationMunicipalityInput = {
+  where: Prisma.ProfileWhereUniqueInput
+  update: Prisma.XOR<Prisma.ProfileUpdateWithoutLocationMunicipalityInput, Prisma.ProfileUncheckedUpdateWithoutLocationMunicipalityInput>
+  create: Prisma.XOR<Prisma.ProfileCreateWithoutLocationMunicipalityInput, Prisma.ProfileUncheckedCreateWithoutLocationMunicipalityInput>
+}
+
+export type ProfileUpdateWithWhereUniqueWithoutLocationMunicipalityInput = {
+  where: Prisma.ProfileWhereUniqueInput
+  data: Prisma.XOR<Prisma.ProfileUpdateWithoutLocationMunicipalityInput, Prisma.ProfileUncheckedUpdateWithoutLocationMunicipalityInput>
+}
+
+export type ProfileUpdateManyWithWhereWithoutLocationMunicipalityInput = {
+  where: Prisma.ProfileScalarWhereInput
+  data: Prisma.XOR<Prisma.ProfileUpdateManyMutationInput, Prisma.ProfileUncheckedUpdateManyWithoutLocationMunicipalityInput>
+}
+
+export type ProfileCreateManyLocationDepartmentInput = {
+  id?: string
+  email: string
+  firstName?: string | null
+  lastName?: string | null
+  phone?: string | null
+  department?: string | null
+  municipality?: string | null
+  neighborhood?: string | null
+  address?: string | null
+  role?: $Enums.Role
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userId: string
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  municipalityId?: string | null
+}
+
+export type ProfileUpdateWithoutLocationDepartmentInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  municipality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  orders?: Prisma.OrderUpdateManyWithoutProfileNestedInput
+  locationMunicipality?: Prisma.MunicipalityUpdateOneWithoutProfilesNestedInput
+}
+
+export type ProfileUncheckedUpdateWithoutLocationDepartmentInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  municipality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  municipalityId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orders?: Prisma.OrderUncheckedUpdateManyWithoutProfileNestedInput
+}
+
+export type ProfileUncheckedUpdateManyWithoutLocationDepartmentInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  municipality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  municipalityId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+}
+
+export type ProfileCreateManyLocationMunicipalityInput = {
+  id?: string
+  email: string
+  firstName?: string | null
+  lastName?: string | null
+  phone?: string | null
+  department?: string | null
+  municipality?: string | null
+  neighborhood?: string | null
+  address?: string | null
+  role?: $Enums.Role
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userId: string
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  departmentId?: string | null
+}
+
+export type ProfileUpdateWithoutLocationMunicipalityInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  municipality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  orders?: Prisma.OrderUpdateManyWithoutProfileNestedInput
+  locationDepartment?: Prisma.DepartmentUpdateOneWithoutProfilesNestedInput
+}
+
+export type ProfileUncheckedUpdateWithoutLocationMunicipalityInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  municipality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  departmentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orders?: Prisma.OrderUncheckedUpdateManyWithoutProfileNestedInput
+}
+
+export type ProfileUncheckedUpdateManyWithoutLocationMunicipalityInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  municipality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  departmentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 
@@ -658,7 +1106,11 @@ export type ProfileSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   updatedAt?: boolean
   userId?: boolean
   metadata?: boolean
+  departmentId?: boolean
+  municipalityId?: boolean
   orders?: boolean | Prisma.Profile$ordersArgs<ExtArgs>
+  locationDepartment?: boolean | Prisma.Profile$locationDepartmentArgs<ExtArgs>
+  locationMunicipality?: boolean | Prisma.Profile$locationMunicipalityArgs<ExtArgs>
   _count?: boolean | Prisma.ProfileCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["profile"]>
 
@@ -677,6 +1129,10 @@ export type ProfileSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   updatedAt?: boolean
   userId?: boolean
   metadata?: boolean
+  departmentId?: boolean
+  municipalityId?: boolean
+  locationDepartment?: boolean | Prisma.Profile$locationDepartmentArgs<ExtArgs>
+  locationMunicipality?: boolean | Prisma.Profile$locationMunicipalityArgs<ExtArgs>
 }, ExtArgs["result"]["profile"]>
 
 export type ProfileSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -694,6 +1150,10 @@ export type ProfileSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   updatedAt?: boolean
   userId?: boolean
   metadata?: boolean
+  departmentId?: boolean
+  municipalityId?: boolean
+  locationDepartment?: boolean | Prisma.Profile$locationDepartmentArgs<ExtArgs>
+  locationMunicipality?: boolean | Prisma.Profile$locationMunicipalityArgs<ExtArgs>
 }, ExtArgs["result"]["profile"]>
 
 export type ProfileSelectScalar = {
@@ -711,20 +1171,32 @@ export type ProfileSelectScalar = {
   updatedAt?: boolean
   userId?: boolean
   metadata?: boolean
+  departmentId?: boolean
+  municipalityId?: boolean
 }
 
-export type ProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "firstName" | "lastName" | "phone" | "department" | "municipality" | "neighborhood" | "address" | "role" | "createdAt" | "updatedAt" | "userId" | "metadata", ExtArgs["result"]["profile"]>
+export type ProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "firstName" | "lastName" | "phone" | "department" | "municipality" | "neighborhood" | "address" | "role" | "createdAt" | "updatedAt" | "userId" | "metadata" | "departmentId" | "municipalityId", ExtArgs["result"]["profile"]>
 export type ProfileInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   orders?: boolean | Prisma.Profile$ordersArgs<ExtArgs>
+  locationDepartment?: boolean | Prisma.Profile$locationDepartmentArgs<ExtArgs>
+  locationMunicipality?: boolean | Prisma.Profile$locationMunicipalityArgs<ExtArgs>
   _count?: boolean | Prisma.ProfileCountOutputTypeDefaultArgs<ExtArgs>
 }
-export type ProfileIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
-export type ProfileIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
+export type ProfileIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  locationDepartment?: boolean | Prisma.Profile$locationDepartmentArgs<ExtArgs>
+  locationMunicipality?: boolean | Prisma.Profile$locationMunicipalityArgs<ExtArgs>
+}
+export type ProfileIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  locationDepartment?: boolean | Prisma.Profile$locationDepartmentArgs<ExtArgs>
+  locationMunicipality?: boolean | Prisma.Profile$locationMunicipalityArgs<ExtArgs>
+}
 
 export type $ProfilePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Profile"
   objects: {
     orders: Prisma.$OrderPayload<ExtArgs>[]
+    locationDepartment: Prisma.$DepartmentPayload<ExtArgs> | null
+    locationMunicipality: Prisma.$MunicipalityPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -741,6 +1213,8 @@ export type $ProfilePayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     updatedAt: Date
     userId: string
     metadata: runtime.JsonValue | null
+    departmentId: string | null
+    municipalityId: string | null
   }, ExtArgs["result"]["profile"]>
   composites: {}
 }
@@ -1136,6 +1610,8 @@ readonly fields: ProfileFieldRefs;
 export interface Prisma__ProfileClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   orders<T extends Prisma.Profile$ordersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Profile$ordersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  locationDepartment<T extends Prisma.Profile$locationDepartmentArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Profile$locationDepartmentArgs<ExtArgs>>): Prisma.Prisma__DepartmentClient<runtime.Types.Result.GetResult<Prisma.$DepartmentPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  locationMunicipality<T extends Prisma.Profile$locationMunicipalityArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Profile$locationMunicipalityArgs<ExtArgs>>): Prisma.Prisma__MunicipalityClient<runtime.Types.Result.GetResult<Prisma.$MunicipalityPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1179,6 +1655,8 @@ export interface ProfileFieldRefs {
   readonly updatedAt: Prisma.FieldRef<"Profile", 'DateTime'>
   readonly userId: Prisma.FieldRef<"Profile", 'String'>
   readonly metadata: Prisma.FieldRef<"Profile", 'Json'>
+  readonly departmentId: Prisma.FieldRef<"Profile", 'String'>
+  readonly municipalityId: Prisma.FieldRef<"Profile", 'String'>
 }
     
 
@@ -1428,6 +1906,10 @@ export type ProfileCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensi
    */
   data: Prisma.ProfileCreateManyInput | Prisma.ProfileCreateManyInput[]
   skipDuplicates?: boolean
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProfileIncludeCreateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1498,6 +1980,10 @@ export type ProfileUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensi
    * Limit how many Profiles to update.
    */
   limit?: number
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProfileIncludeUpdateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1588,6 +2074,44 @@ export type Profile$ordersArgs<ExtArgs extends runtime.Types.Extensions.Internal
   take?: number
   skip?: number
   distinct?: Prisma.OrderScalarFieldEnum | Prisma.OrderScalarFieldEnum[]
+}
+
+/**
+ * Profile.locationDepartment
+ */
+export type Profile$locationDepartmentArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Department
+   */
+  select?: Prisma.DepartmentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Department
+   */
+  omit?: Prisma.DepartmentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DepartmentInclude<ExtArgs> | null
+  where?: Prisma.DepartmentWhereInput
+}
+
+/**
+ * Profile.locationMunicipality
+ */
+export type Profile$locationMunicipalityArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Municipality
+   */
+  select?: Prisma.MunicipalitySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Municipality
+   */
+  omit?: Prisma.MunicipalityOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.MunicipalityInclude<ExtArgs> | null
+  where?: Prisma.MunicipalityWhereInput
 }
 
 /**

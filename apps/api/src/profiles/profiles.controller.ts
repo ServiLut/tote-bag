@@ -6,11 +6,12 @@ export class ProfilesController {
   constructor(private readonly profilesService: ProfilesService) {}
 
   @Get()
-  findAll(@Query('role') role?: 'ADMIN' | 'CUSTOMER') {
-    if (role) {
-      return this.profilesService.findAllByRole(role);
-    }
-    return this.profilesService.findAll();
+  findAll(
+    @Query('role') role?: 'ADMIN' | 'CUSTOMER',
+    @Query('department') department?: string,
+    @Query('municipality') municipality?: string,
+  ) {
+    return this.profilesService.findAll({ role, department, municipality });
   }
 
   @Get(':id')

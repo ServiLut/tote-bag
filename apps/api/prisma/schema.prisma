@@ -175,7 +175,36 @@ model Profile {
 
   orders    Order[]
 
+  departmentId String? @map("department_id")
+  locationDepartment   Department? @relation(fields: [departmentId], references: [id])
+  municipalityId String? @map("municipality_id")
+  locationMunicipality   Municipality? @relation(fields: [municipalityId], references: [id])
+
   @@map("profiles")
+  @@schema("tote-bag")
+}
+
+model Department {
+  id        String   @id @default(uuid()) @map("id")
+  name      String   @unique @map("name")
+  code      String?  @unique @map("code") // Código DANE
+  municipalities Municipality[]
+  profiles  Profile[]
+
+  @@map("departments")
+  @@schema("tote-bag")
+}
+
+model Municipality {
+  id           String     @id @default(uuid()) @map("id")
+  name         String     @map("name")
+  code         String?    @map("code") // Código DANE
+  departmentId String     @map("department_id")
+  department   Department @relation(fields: [departmentId], references: [id])
+  profiles     Profile[]
+
+  @@unique([departmentId, name]) // Evitar duplicados por departamento
+  @@map("municipalities")
   @@schema("tote-bag")
 }
 

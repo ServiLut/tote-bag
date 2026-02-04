@@ -14,17 +14,41 @@ export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async update(id: string, updateProductDto: UpdateProductDto) {
-    const { variants, images, collectionId, collectionName, ...data } =
-      updateProductDto;
+    const {
+      variants,
+
+      images,
+
+      collectionId,
+
+      collectionName,
+
+      ...data
+    } = updateProductDto;
+
+    console.log(`Updating product ${id}`);
+
+    if (variants) {
+      console.log('Received variants for update:', variants.length);
+
+      console.log('Sample variant SKU:', variants[0]?.sku);
+    } else {
+      console.log('No variants provided in update DTO');
+    }
 
     // Resolve Collection if needed
+
     let activeCollectionId: string | undefined = collectionId;
 
     if (collectionName) {
       const slug = collectionName
+
         .toLowerCase()
+
         .replace(/ /g, '-')
+
         .replace(/[^\w-]+/g, '');
+
       let collection = await this.prisma.collection.findFirst({
         where: { OR: [{ name: collectionName }, { slug }] },
       });
@@ -34,22 +58,29 @@ export class ProductsService {
           data: { name: collectionName, slug },
         });
       }
+
       activeCollectionId = collection.id;
     }
 
     // Prepare update data
+
     const updateData: Prisma.ProductUpdateInput = {
       ...data,
+
       ...(activeCollectionId && { collectionId: activeCollectionId }), // Only add if resolved
     };
 
     // Handle images update if provided
+
     if (images) {
       updateData.images = {
         deleteMany: {}, // Clear existing images
+
         create: images.map((img) => ({
           url: img.url,
+
           alt: img.alt,
+
           position: img.position,
         })),
       };
@@ -57,19 +88,38 @@ export class ProductsService {
 
     return this.prisma.$transaction(async (prisma) => {
       // 1. Update Variants if provided
+
       if (variants) {
+        console.log(`[ProductsService] Processing ${variants.length} variants`);
         const currentVariants = await prisma.variant.findMany({
           where: { productId: id },
           select: { id: true, sku: true },
         });
-        const currentSkuSet = new Set(currentVariants.map((v) => v.sku));
-        const incomingSkuSet = new Set(variants.map((v) => v.sku));
+
+        console.log(
+          `[ProductsService] Found ${currentVariants.length} existing variants`,
+        );
+        const currentSkuSet = new Set(currentVariants.map((v) => v.sku.trim()));
+        console.log(
+          `[ProductsService] Existing SKUs: ${Array.from(currentSkuSet).join(', ')}`,
+        );
+
+        const incomingSkuSet = new Set(variants.map((v) => v.sku.trim()));
+        console.log(
+          `[ProductsService] Incoming SKUs: ${Array.from(incomingSkuSet).join(', ')}`,
+        );
 
         // Delete removed variants
         const variantsToDelete = currentVariants.filter(
-          (v) => !incomingSkuSet.has(v.sku),
+          (v) => !incomingSkuSet.has(v.sku.trim()),
         );
+
         if (variantsToDelete.length > 0) {
+          console.log(
+            '[ProductsService] Deleting variants:',
+            variantsToDelete.length,
+          );
+
           await prisma.variant.deleteMany({
             where: { id: { in: variantsToDelete.map((v) => v.id) } },
           });
@@ -77,9 +127,14 @@ export class ProductsService {
 
         // Update or Create
         for (const v of variants) {
-          if (currentSkuSet.has(v.sku)) {
+          const sku = v.sku.trim();
+          if (currentSkuSet.has(sku)) {
+            console.log(
+              `[ProductsService] Updating variant SKU: ${sku} Stock: ${v.stock}`,
+            );
+
             await prisma.variant.update({
-              where: { sku: v.sku },
+              where: { sku: sku },
               data: {
                 color: v.color,
                 imageUrl: v.imageUrl,
@@ -87,9 +142,11 @@ export class ProductsService {
               },
             });
           } else {
+            console.log(`[ProductsService] Creating variant SKU: ${sku}`);
+
             await prisma.variant.create({
               data: {
-                sku: v.sku,
+                sku: sku,
                 color: v.color,
                 imageUrl: v.imageUrl,
                 stock: v.stock,
@@ -101,9 +158,12 @@ export class ProductsService {
       }
 
       // 2. Update Product (and images via nested write)
+
       return prisma.product.update({
         where: { id },
+
         data: updateData,
+
         include: { variants: true, images: true, collection: true },
       });
     });

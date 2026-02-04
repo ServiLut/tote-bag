@@ -58,6 +58,8 @@ export const ModelName = {
   OrderStatusHistory: 'OrderStatusHistory',
   OrderItem: 'OrderItem',
   Profile: 'Profile',
+  Department: 'Department',
+  Municipality: 'Municipality',
   B2BQuote: 'B2BQuote'
 } as const
 
@@ -196,10 +198,31 @@ export const ProfileScalarFieldEnum = {
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   userId: 'userId',
-  metadata: 'metadata'
+  metadata: 'metadata',
+  departmentId: 'departmentId',
+  municipalityId: 'municipalityId'
 } as const
 
 export type ProfileScalarFieldEnum = (typeof ProfileScalarFieldEnum)[keyof typeof ProfileScalarFieldEnum]
+
+
+export const DepartmentScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  code: 'code'
+} as const
+
+export type DepartmentScalarFieldEnum = (typeof DepartmentScalarFieldEnum)[keyof typeof DepartmentScalarFieldEnum]
+
+
+export const MunicipalityScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  code: 'code',
+  departmentId: 'departmentId'
+} as const
+
+export type MunicipalityScalarFieldEnum = (typeof MunicipalityScalarFieldEnum)[keyof typeof MunicipalityScalarFieldEnum]
 
 
 export const B2BQuoteScalarFieldEnum = {
