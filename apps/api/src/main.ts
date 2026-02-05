@@ -1,19 +1,30 @@
+import './instrument';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { Request, Response, NextFunction } from 'express';
+import { winstonConfig } from './common/logger/winston.config';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: winstonConfig,
+  });
 
-  // Logging middleware
+  const logger = new Logger('HTTP');
+
+  // Structured Logging middleware
   app.use((req: Request, res: Response, next: NextFunction) => {
-    const { method, url } = req;
+    const { method, url, ip } = req;
+    const userAgent = req.get('user-agent') || '';
+    const startTime = Date.now();
+
     res.on('finish', () => {
       const { statusCode } = res;
-      console.log(
-        `[${new Date().toISOString()}] ${method} ${url} - ${statusCode}`,
+      const duration = Date.now() - startTime;
+
+      logger.log(
+        `${method} ${url} ${statusCode} - ${userAgent} ${ip} +${duration}ms`,
       );
     });
     next();

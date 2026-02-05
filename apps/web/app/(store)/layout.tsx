@@ -4,16 +4,16 @@ import Navbar from '@/components/store/Navbar';
 import Footer from '@/components/store/Footer';
 import CartDrawer from '@/components/store/CartDrawer';
 
-export default function LegalLayout({
+export default function StoreLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex flex-col bg-surface">
+    <div className="min-h-screen flex flex-col bg-base transition-colors duration-300">
       <Navbar />
       <CartDrawer />
-      <main className="flex-grow container mx-auto px-4 py-12 max-w-4xl">
+      <main className="flex-1">
         {children}
       </main>
       <Footer />

@@ -1,11 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import Navbar from '@/components/store/Navbar';
-import CartDrawer from '@/components/store/CartDrawer';
 import ProductGrid from '@/components/store/ProductGrid';
 import FilterSidebar from '@/components/store/FilterSidebar';
-import Footer from '@/components/store/Footer';
 import { Product } from '@/types/product';
 import { ApiResponse } from '@/types/api';
 import { Loader2, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -95,10 +92,7 @@ export default function CatalogPage() {
   }, [filteredProducts, currentPage]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-base transition-colors duration-300">
-      <Navbar />
-      <CartDrawer />
-
+    <>
       {/* Header */}
       <div className="bg-base border-b border-theme py-12 px-4">
         <div className="max-w-7xl mx-auto">
@@ -208,8 +202,6 @@ export default function CatalogPage() {
           )}
         </div>
       </main>
-
-      <Footer />
-    </div>
+    </>
   );
 }

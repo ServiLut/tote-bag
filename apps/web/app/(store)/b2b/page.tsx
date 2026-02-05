@@ -1,13 +1,9 @@
-import Navbar from '@/components/store/Navbar';
 import B2BQuoteForm from '@/components/b2b/B2BQuoteForm';
-import Footer from '@/components/store/Footer';
 import { Building2, QrCode, Sparkles } from 'lucide-react';
 
 export default function B2BPage() {
   return (
-    <div className="min-h-screen bg-base transition-colors duration-300 flex flex-col">
-      <Navbar />
-      
+    <>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 flex-1">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
           
@@ -86,7 +82,6 @@ export default function B2BPage() {
 
         </div>
       </main>
-      <Footer />
-    </div>
+    </>
   );
 }

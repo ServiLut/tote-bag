@@ -1,6 +1,10 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_INTERCEPTOR, APP_GUARD, APP_FILTER } from '@nestjs/core';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { PrometheusModule } from '@willsoto/nestjs-prometheus';
+import { SentryModule } from '@sentry/nestjs/setup';
+import { SentryGlobalFilter } from '@sentry/nestjs/setup';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ProductsModule } from './products/products.module';
@@ -14,11 +18,24 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { AuditModule } from './audit/audit.module';
 import { AuthMiddleware } from './common/middleware/auth.middleware';
+import { CustomThrottlerGuard } from './common/guards/throttler.guard';
+import { validate } from './config/env.validation';
 
 @Module({
   imports: [
+    SentryModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
+      validate,
+    }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 10,
+      },
+    ]),
+    PrometheusModule.register({
+      path: '/metrics',
     }),
     PrismaModule,
     ProductsModule,
@@ -34,8 +51,16 @@ import { AuthMiddleware } from './common/middleware/auth.middleware';
   providers: [
     AppService,
     {
+      provide: APP_FILTER,
+      useClass: SentryGlobalFilter,
+    },
+    {
       provide: APP_INTERCEPTOR,
       useClass: AuditInterceptor,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: CustomThrottlerGuard,
     },
   ],
 })

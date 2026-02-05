@@ -1,10 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Navbar from '@/components/store/Navbar';
 import ProductCard from '@/components/store/ProductCard';
-import CartDrawer from '@/components/store/CartDrawer';
-import Footer from '@/components/store/Footer';
 import { Product } from '@/types/product';
 import { ApiResponse } from '@/types/api';
 import { Loader2 } from 'lucide-react';
@@ -36,10 +33,7 @@ export default function Home() {
   }, [API_URL]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-base transition-colors duration-300">
-      <Navbar />
-      <CartDrawer />
-
+    <>
       {/* Hero Section */}
       <section className="relative w-full h-[80vh] bg-base flex items-center justify-center overflow-hidden transition-colors duration-300">
         <div className="absolute inset-0 z-0 opacity-10">
@@ -121,8 +115,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-      
-      <Footer />
-    </div>
+    </>
   );
 }

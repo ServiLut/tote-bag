@@ -3,8 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
-import Navbar from '@/components/store/Navbar';
-import Footer from '@/components/store/Footer';
 import Image from 'next/image';
 import { User, UserCircle2 } from 'lucide-react';
 import Script from 'next/script';
@@ -244,8 +242,7 @@ export default function CheckoutPage() {
   if (items.length === 0) return null;
 
   return (
-    <div className="min-h-screen bg-base transition-colors duration-300">
-      <Navbar />
+    <>
       <Script src="https://checkout.wompi.co/widget.js" strategy="lazyOnload" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -465,7 +462,6 @@ export default function CheckoutPage() {
 
         </div>
       </div>
-      <Footer />
-    </div>
+    </>
   );
 }

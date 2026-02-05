@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Navbar from '@/components/store/Navbar';
-import Footer from '@/components/store/Footer';
 import { createClient } from '@/utils/supabase/client';
 import { Loader2, Package, MapPin, LogOut } from 'lucide-react';
 import Image from 'next/image';
@@ -82,9 +80,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-base transition-colors duration-300">
-      <Navbar />
-
+    <>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
@@ -209,7 +205,6 @@ export default function ProfilePage() {
           </div>
         </div>
       </main>
-      <Footer />
-    </div>
+    </>
   );
 }

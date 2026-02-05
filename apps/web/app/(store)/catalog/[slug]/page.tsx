@@ -1,9 +1,6 @@
 import { notFound } from 'next/navigation';
-import Navbar from '@/components/store/Navbar';
-import CartDrawer from '@/components/store/CartDrawer';
 import ProductDetailClient from '@/components/store/ProductDetailClient';
 import ProductCard from '@/components/store/ProductCard';
-import Footer from '@/components/store/Footer';
 import { Product } from '@/types/product';
 import { ApiResponse } from '@/types/api';
 import { Metadata } from 'next';
@@ -98,10 +95,7 @@ export default async function ProductPage({ params }: PageProps) {
   const relatedProducts = await getRelatedProducts(product.id, product.collectionId);
 
   return (
-    <div className="min-h-screen bg-base transition-colors duration-300">
-      <Navbar />
-      <CartDrawer />
-      
+    <>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-20">
         <ProductDetailClient product={product} />
 
@@ -118,8 +112,6 @@ export default async function ProductPage({ params }: PageProps) {
           </div>
         )}
       </main>
-
-      <Footer />
-    </div>
+    </>
   );
 }

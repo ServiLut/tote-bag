@@ -4,7 +4,7 @@ import { Leaf, Handshake, Infinity } from 'lucide-react';
 
 export default function AboutPage() {
   return (
-    <div className="bg-base min-h-screen">
+    <>
       {/* Hero Section */}
       <section className="relative h-[60vh] w-full flex items-center justify-center overflow-hidden">
         <Image
@@ -99,7 +99,7 @@ export default function AboutPage() {
           <p><strong>Ubicación:</strong> {COMPANY_INFO.address}</p>
         </div>
       </section>
-    </div>
+    </>
   );
 }
 
