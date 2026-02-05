@@ -48,12 +48,20 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [email, setEmail] = useState('');
+  const [role, setRole] = useState<string | null>(null);
 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
   const supabase = createClient();
+
+  useEffect(() => {
+    const userRole = localStorage.getItem('user_role');
+    setRole(userRole);
+  }, []);
+
+  const isReadOnly = role === 'ADVISOR';
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -324,7 +332,7 @@ export default function SettingsPage() {
           <div className="pt-8 flex justify-end">
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || isReadOnly}
               className="flex items-center gap-2 px-10 py-4 bg-primary text-base-color font-black uppercase tracking-[0.2em] text-xs rounded-2xl hover:opacity-90 active:scale-95 transition-all shadow-xl shadow-primary/20 disabled:opacity-50"
             >
               {saving ? (
@@ -332,7 +340,7 @@ export default function SettingsPage() {
               ) : (
                 <Save className="w-4 h-4" />
               )}
-              {saving ? 'Guardando...' : 'Guardar Cambios'}
+              {isReadOnly ? 'Modo Lectura' : saving ? 'Guardando...' : 'Guardar Cambios'}
             </button>
           </div>
         </form>

@@ -101,3 +101,8 @@ export type B2BQuote = Prisma.B2BQuoteModel
  * 
  */
 export type AuditLog = Prisma.AuditLogModel
+/**
+ * Model Address
+ * 
+ */
+export type Address = Prisma.AddressModel

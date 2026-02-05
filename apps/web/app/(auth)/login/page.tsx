@@ -51,7 +51,7 @@ export default function LoginPage() {
       // Store role in localStorage for simple frontend checks
       localStorage.setItem('user_role', role);
 
-      if (role === 'ADMIN') {
+      if (role === 'ADMIN' || role === 'ADVISOR' || role === 'VIEWER') {
         router.push('/dashboard');
       } else {
         router.push('/profile');

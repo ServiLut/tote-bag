@@ -57,9 +57,17 @@ export default function ProductsTable() {
   const [error, setError] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [role, setRole] = useState<string | null>(null);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
   const supabase = createClient();
+
+  useEffect(() => {
+    const userRole = localStorage.getItem('user_role');
+    setRole(userRole);
+  }, []);
+
+  const isReadOnly = role === 'ADVISOR';
 
   const fetchProducts = useCallback(async () => {
     try {
@@ -210,7 +218,7 @@ export default function ProductsTable() {
                       <select
                         value={product.status}
                         onChange={(e) => handleStatusChange(product.id, e.target.value)}
-                        disabled={updatingId === product.id}
+                        disabled={updatingId === product.id || isReadOnly}
                         className={cn(
                           "rounded-lg border-theme bg-surface py-1.5 pl-3 pr-8 text-[9px] font-black uppercase tracking-widest focus:ring-2 focus:ring-primary outline-none appearance-none cursor-pointer disabled:opacity-50 transition-all",
                           product.status === 'DISPONIBLE' ? "text-green-700 dark:text-green-400" :
@@ -266,20 +274,24 @@ export default function ProductsTable() {
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-                      <Link
-                        href={`/dashboard/products/${product.id}/edit`}
-                        className="p-2.5 text-muted hover:text-secondary hover:bg-secondary/10 rounded-xl transition-all active:scale-90"
-                        title="Editar"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Link>
-                      <button
-                        onClick={() => handleDelete(product.id)}
-                        className="p-2.5 text-muted hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl transition-all active:scale-90"
-                        title="Eliminar"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {!isReadOnly && (
+                        <>
+                          <Link
+                            href={`/dashboard/products/${product.id}/edit`}
+                            className="p-2.5 text-muted hover:text-secondary hover:bg-secondary/10 rounded-xl transition-all active:scale-90"
+                            title="Editar"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Link>
+                          <button
+                            onClick={() => handleDelete(product.id)}
+                            className="p-2.5 text-muted hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl transition-all active:scale-90"
+                            title="Eliminar"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>

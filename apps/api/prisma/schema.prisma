@@ -1,6 +1,6 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/client"
+  provider        = "prisma-client"
+  output          = "../src/generated/client"
   previewFeatures = ["multiSchema"]
 }
 
@@ -10,37 +10,30 @@ datasource db {
 }
 
 model Product {
-  id               String        @id @default(uuid()) @map("id")
-  name             String        @map("name")
-  description      String        @map("description")
-  basePrice        Float         @map("base_price")
-  minPrice         Float         @map("min_price")
-  // Pricing avanzado
-  comparePrice     Float?        @map("compare_price")
-  costPrice        Float?        @map("cost_price")
-
-  status           ProductStatus @default(BAJO_PEDIDO) @map("status")
-
-  // Relations
-  collectionId     String        @map("collection_id")
-  collection       Collection    @relation(fields: [collectionId], references: [id])
-
-  // Media y SEO
-  images           ProductImage[]
-  slug             String        @unique @map("slug")
-  seoTitle         String?       @map("seo_title")
-  seoDescription   String?       @map("seo_description")
-  tags             String[]      @default([]) @map("tags")
-
-  deliveryTime     String        @map("delivery_time")
-  material         String        @default("Algodón resistente") @map("material")
-  dimensions       String?       @map("dimensions")
-  careInstructions String?       @map("care_instructions")
-  printType        PrintType     @default(DTF) @map("print_type")
-  isActive         Boolean       @default(true) @map("is_active")
-  createdAt        DateTime      @default(now()) @map("created_at")
-  updatedAt        DateTime      @updatedAt @map("updated_at")
+  id               String         @id @default(uuid()) @map("id")
+  name             String         @map("name")
+  description      String         @map("description")
+  basePrice        Float          @map("base_price")
+  minPrice         Float          @map("min_price")
+  comparePrice     Float?         @map("compare_price")
+  costPrice        Float?         @map("cost_price")
+  status           ProductStatus  @default(BAJO_PEDIDO) @map("status")
+  collectionId     String         @map("collection_id")
+  slug             String         @unique @map("slug")
+  seoTitle         String?        @map("seo_title")
+  seoDescription   String?        @map("seo_description")
+  tags             String[]       @default([]) @map("tags")
+  deliveryTime     String         @map("delivery_time")
+  material         String         @default("Algodón resistente") @map("material")
+  dimensions       String?        @map("dimensions")
+  careInstructions String?        @map("care_instructions")
+  printType        PrintType      @default(DTF) @map("print_type")
+  isActive         Boolean        @default(true) @map("is_active")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
   orderItems       OrderItem[]
+  images           ProductImage[]
+  collection       Collection     @relation(fields: [collectionId], references: [id])
   variants         Variant[]
 
   @@map("products")
@@ -64,52 +57,46 @@ model Collection {
   name      String    @map("name")
   slug      String    @unique @map("slug")
   isActive  Boolean   @default(true) @map("is_active")
-  products  Product[]
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
+  products  Product[]
 
   @@map("collections")
   @@schema("tote-bag")
 }
 
 model Variant {
-  id        String  @id @default(uuid()) @map("id")
-  sku       String  @unique @map("sku")
-  color     String  @map("color")
-  imageUrl  String  @map("image_url")
-  stock     Int     @default(0) @map("stock")
-  productId String  @map("product_id")
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
+  id         String      @id @default(uuid()) @map("id")
+  sku        String      @unique @map("sku")
+  color      String      @map("color")
+  imageUrl   String      @map("image_url")
+  stock      Int         @default(0) @map("stock")
+  productId  String      @map("product_id")
   orderItems OrderItem[]
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@map("variants")
   @@schema("tote-bag")
 }
 
 model Order {
-  id              String      @id @default(uuid()) @map("id")
-  orderNumber     Int         @unique @default(autoincrement()) @map("order_number")
-  customerEmail   String      @map("customer_email")
-  customerPhone   String      @map("customer_phone")
-  shippingAddress Json        @map("shipping_address")
-  city            String      @map("city")
-  totalAmount     Float       @map("total_amount")
-  currency        String      @default("COP") @map("currency")
-
-  status          OrderStatus @default(PENDIENTE_PAGO) @map("status")
-  statusHistory   OrderStatusHistory[]
-
-  // Logística
-  trackingNumber  String?     @map("tracking_number")
-  carrier         String?     @map("carrier")
-
-  isB2B           Boolean     @default(false) @map("is_b2b")
-  createdAt       DateTime    @default(now()) @map("created_at")
+  id              String               @id @default(uuid()) @map("id")
+  orderNumber     Int                  @unique @default(autoincrement()) @map("order_number")
+  customerEmail   String               @map("customer_email")
+  customerPhone   String               @map("customer_phone")
+  shippingAddress Json                 @map("shipping_address")
+  city            String               @map("city")
+  totalAmount     Float                @map("total_amount")
+  currency        String               @default("COP") @map("currency")
+  status          OrderStatus          @default(PENDIENTE_PAGO) @map("status")
+  trackingNumber  String?              @map("tracking_number")
+  carrier         String?              @map("carrier")
+  isB2B           Boolean              @default(false) @map("is_b2b")
+  createdAt       DateTime             @default(now()) @map("created_at")
+  profileId       String?              @map("profile_id")
   items           OrderItem[]
-
-  profileId       String?     @map("profile_id")
-  profile         Profile?    @relation(fields: [profileId], references: [id])
+  statusHistory   OrderStatusHistory[]
+  profile         Profile?             @relation(fields: [profileId], references: [id])
 
   @@map("orders")
   @@schema("tote-bag")
@@ -120,36 +107,22 @@ model OrderStatusHistory {
   orderId   String      @map("order_id")
   status    OrderStatus @map("status")
   createdAt DateTime    @default(now()) @map("created_at")
-
   order     Order       @relation(fields: [orderId], references: [id])
 
   @@map("order_status_history")
   @@schema("tote-bag")
 }
 
-enum OrderStatus {
-  PENDIENTE_PAGO
-  PAGADA
-  EN_PRODUCCION
-  ENVIADA
-  ENTREGADA
-  CANCELADA
-
-  @@schema("tote-bag")
-}
-
 model OrderItem {
-  id        String  @id @default(uuid()) @map("id")
-  quantity  Int     @map("quantity")
-  price     Float   @map("price")
-  sku       String  @map("sku")
-
-  orderId   String  @map("order_id")
-  productId String  @map("product_id")
-  variantId String? @map("variant_id")
-
-  order     Order   @relation(fields: [orderId], references: [id])
-  product   Product @relation(fields: [productId], references: [id])
+  id        String   @id @default(uuid()) @map("id")
+  quantity  Int      @map("quantity")
+  price     Float    @map("price")
+  sku       String   @map("sku")
+  orderId   String   @map("order_id")
+  productId String   @map("product_id")
+  variantId String?  @map("variant_id")
+  order     Order    @relation(fields: [orderId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
   variant   Variant? @relation(fields: [variantId], references: [id])
 
   @@map("order_items")
@@ -157,53 +130,52 @@ model OrderItem {
 }
 
 model User {
-  id           String   @id @map("id") // Supabase Auth ID
-  email        String   @unique @map("email")
-  role         Role     @default(CUSTOMER) @map("role")
-  isActive     Boolean  @default(true) @map("is_active")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  profile      Profile?
-  auditLogs    AuditLog[]
+  id        String     @id @map("id")
+  email     String     @unique @map("email")
+  role      Role       @default(CUSTOMER) @map("role")
+  isActive  Boolean    @default(true) @map("is_active")
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+  auditLogs AuditLog[]
+  profile   Profile?
 
   @@map("users")
   @@schema("tote-bag")
 }
 
 model Profile {
-  id           String   @id @default(uuid()) @map("id")
-  email        String   @unique @map("email")
-  firstName    String?  @map("first_name")
-  lastName     String?  @map("last_name")
-  phone        String?  @map("phone")
-  department   String?  @map("department")
-  municipality String?  @map("municipality")
-  neighborhood String?  @map("neighborhood")
-  address      String?  @map("address")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-  userId       String   @unique @map("user_id")
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  metadata     Json?    @map("metadata")
-
-  orders    Order[]
-
-  departmentId String? @map("department_id")
-  locationDepartment   Department? @relation(fields: [departmentId], references: [id])
-  municipalityId String? @map("municipality_id")
-  locationMunicipality   Municipality? @relation(fields: [municipalityId], references: [id])
+  id                   String        @id @default(uuid()) @map("id")
+  email                String        @unique @map("email")
+  firstName            String?       @map("first_name")
+  lastName             String?       @map("last_name")
+  phone                String?       @map("phone")
+  department           String?       @map("department")
+  municipality         String?       @map("municipality")
+  neighborhood         String?       @map("neighborhood")
+  address              String?       @map("address")
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @updatedAt @map("updated_at")
+  userId               String        @unique @map("user_id")
+  metadata             Json?         @map("metadata")
+  departmentId         String?       @map("department_id")
+  municipalityId       String?       @map("municipality_id")
+  addresses            Address[]
+  orders               Order[]
+  locationDepartment   Department?   @relation(fields: [departmentId], references: [id])
+  locationMunicipality Municipality? @relation(fields: [municipalityId], references: [id])
+  user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("profiles")
   @@schema("tote-bag")
 }
 
 model Department {
-  id        String   @id @default(uuid()) @map("id")
-  name      String   @unique @map("name")
-  code      String?  @unique @map("code") // Código DANE
+  id             String         @id @default(uuid()) @map("id")
+  name           String         @unique @map("name")
+  code           String?        @unique @map("code")
+  addresses      Address[]
   municipalities Municipality[]
-  profiles  Profile[]
+  profiles       Profile[]
 
   @@map("departments")
   @@schema("tote-bag")
@@ -212,35 +184,14 @@ model Department {
 model Municipality {
   id           String     @id @default(uuid()) @map("id")
   name         String     @map("name")
-  code         String?    @map("code") // Código DANE
+  code         String?    @map("code")
   departmentId String     @map("department_id")
+  addresses    Address[]
   department   Department @relation(fields: [departmentId], references: [id])
   profiles     Profile[]
 
-  @@unique([departmentId, name]) // Evitar duplicados por departamento
+  @@unique([departmentId, name])
   @@map("municipalities")
-  @@schema("tote-bag")
-}
-
-enum Role {
-  ADMIN
-  CUSTOMER
-
-  @@schema("tote-bag")
-}
-
-enum ProductStatus {
-  DISPONIBLE
-  BAJO_PEDIDO
-  PREVENTA
-
-  @@schema("tote-bag")
-}
-
-enum PrintType {
-  SERIGRAFIA
-  DTF
-
   @@schema("tote-bag")
 }
 
@@ -266,17 +217,75 @@ model B2BQuote {
 
 model AuditLog {
   id           String   @id @default(uuid()) @map("id")
-  action       String   @map("action") // CREATE, UPDATE, DELETE
-  entity       String   @map("entity") // Product, Order, etc.
+  action       String   @map("action")
+  entity       String   @map("entity")
   entityId     String?  @map("entity_id")
   payload      Json?    @map("payload")
-  previousData Json?    @map("previous_data")
   userId       String?  @map("user_id")
-  user         User?    @relation(fields: [userId], references: [id])
   ip           String?  @map("ip")
   userAgent    String?  @map("user_agent")
   createdAt    DateTime @default(now()) @map("created_at")
+  previousData Json?    @map("previous_data")
+  user         User?    @relation(fields: [userId], references: [id])
 
   @@map("audit_logs")
+  @@schema("tote-bag")
+}
+
+model Address {
+  id             String       @id @default(uuid()) @map("id")
+  profileId      String       @map("profile_id")
+  title          String       @map("title")
+  firstName      String       @map("first_name")
+  lastName       String       @map("last_name")
+  phone          String       @map("phone")
+  departmentId   String       @map("department_id")
+  municipalityId String       @map("municipality_id")
+  address        String       @map("address")
+  neighborhood   String?      @map("neighborhood")
+  additionalInfo String?      @map("additional_info")
+  isDefault      Boolean      @default(false) @map("is_default")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  department     Department   @relation(fields: [departmentId], references: [id])
+  municipality   Municipality @relation(fields: [municipalityId], references: [id])
+  profile        Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("addresses")
+  @@schema("tote-bag")
+}
+
+enum OrderStatus {
+  PENDIENTE_PAGO
+  PAGADA
+  EN_PRODUCCION
+  ENVIADA
+  ENTREGADA
+  CANCELADA
+
+  @@schema("tote-bag")
+}
+
+enum Role {
+  ADMIN
+  CUSTOMER
+  VIEWER
+  ADVISOR
+
+  @@schema("tote-bag")
+}
+
+enum ProductStatus {
+  DISPONIBLE
+  BAJO_PEDIDO
+  PREVENTA
+
+  @@schema("tote-bag")
+}
+
+enum PrintType {
+  SERIGRAFIA
+  DTF
+
   @@schema("tote-bag")
 }

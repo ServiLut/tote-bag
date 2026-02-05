@@ -46,7 +46,7 @@ export default function DashboardLayout({
 
       const userRole = localStorage.getItem('user_role');
       
-      if (userRole !== 'ADMIN') {
+      if (userRole !== 'ADMIN' && userRole !== 'ADVISOR' && userRole !== 'VIEWER') {
         router.push('/catalog');
         return;
       }

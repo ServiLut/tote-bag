@@ -62,7 +62,8 @@ export const ModelName = {
   Department: 'Department',
   Municipality: 'Municipality',
   B2BQuote: 'B2BQuote',
-  AuditLog: 'AuditLog'
+  AuditLog: 'AuditLog',
+  Address: 'Address'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -264,14 +265,34 @@ export const AuditLogScalarFieldEnum = {
   entity: 'entity',
   entityId: 'entityId',
   payload: 'payload',
-  previousData: 'previousData',
   userId: 'userId',
   ip: 'ip',
   userAgent: 'userAgent',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  previousData: 'previousData'
 } as const
 
 export type AuditLogScalarFieldEnum = (typeof AuditLogScalarFieldEnum)[keyof typeof AuditLogScalarFieldEnum]
+
+
+export const AddressScalarFieldEnum = {
+  id: 'id',
+  profileId: 'profileId',
+  title: 'title',
+  firstName: 'firstName',
+  lastName: 'lastName',
+  phone: 'phone',
+  departmentId: 'departmentId',
+  municipalityId: 'municipalityId',
+  address: 'address',
+  neighborhood: 'neighborhood',
+  additionalInfo: 'additionalInfo',
+  isDefault: 'isDefault',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AddressScalarFieldEnum = (typeof AddressScalarFieldEnum)[keyof typeof AddressScalarFieldEnum]
 
 
 export const SortOrder = {

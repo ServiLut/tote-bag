@@ -14,6 +14,7 @@ import { OrdersModule } from './orders/orders.module';
 import { ProfilesModule } from './profiles/profiles.module';
 import { PaymentsModule } from './payments/payments.module';
 import { LocationsModule } from './locations/locations.module';
+import { AddressesModule } from './addresses/addresses.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { AuditModule } from './audit/audit.module';
@@ -45,6 +46,7 @@ import { validate } from './config/env.validation';
     ProfilesModule,
     PaymentsModule,
     LocationsModule,
+    AddressesModule,
     AuditModule,
   ],
   controllers: [AppController],

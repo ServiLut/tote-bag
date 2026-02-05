@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import { Loader2, Package, MapPin, LogOut } from 'lucide-react';
+import { Loader2, Package, MapPin, LogOut, Plus, Trash2, CheckCircle2 } from 'lucide-react';
 import Image from 'next/image';
+import AddressForm from '@/components/store/AddressForm';
+import { toast } from 'sonner';
 
 interface OrderItem {
   id: string;
@@ -30,45 +32,124 @@ interface Order {
   items: OrderItem[];
 }
 
+interface Address {
+  id: string;
+  title: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  departmentId: string;
+  department: { name: string };
+  municipalityId: string;
+  municipality: { name: string };
+  address: string;
+  neighborhood?: string;
+  additionalInfo?: string;
+  isDefault: boolean;
+}
+
 export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [addresses, setAddresses] = useState<Address[]>([]);
   const [userEmail, setUserEmail] = useState<string>('');
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [accessToken, setAccessToken] = useState<string>('');
+  
   const router = useRouter();
   const supabase = createClient();
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
+  const fetchData = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      router.push('/login');
+      return;
+    }
+
+    setUserEmail(session.user.email || '');
+    setAccessToken(session.access_token);
+
+    try {
+      const [ordersRes, addressesRes] = await Promise.all([
+        fetch(`${API_URL}/orders/user/${session.user.id}`),
+        fetch(`${API_URL}/addresses`, {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
+          }
+        })
+      ]);
+
+      if (ordersRes.ok) {
+        const response = await ordersRes.json();
+        setOrders(response.data || []);
+      }
+
+      if (addressesRes.ok) {
+        const response = await addressesRes.json();
+        setAddresses(response.data || []);
+      } else {
+        console.error('Addresses fetch failed:', await addressesRes.text());
+        setAddresses([]);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setAddresses([]);
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase.auth, router, API_URL]);
+
   useEffect(() => {
-    const fetchData = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        router.push('/login');
-        return;
-      }
-
-      setUserEmail(session.user.email || '');
-
-      try {
-        const res = await fetch(`${API_URL}/orders/user/${session.user.id}`);
-        if (res.ok) {
-          const response = await res.json();
-          setOrders(response.data);
-        }
-      } catch (error) {
-        console.error('Error fetching orders:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
-  }, [router, supabase, API_URL]);
+  }, [fetchData]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     localStorage.removeItem('user_role');
     router.push('/login');
+  };
+
+  const handleDeleteAddress = async (id: string) => {
+    if (!confirm('¿Estás seguro de eliminar esta dirección?')) return;
+
+    try {
+      const res = await fetch(`${API_URL}/addresses/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+
+      if (res.ok) {
+        toast.success('Dirección eliminada');
+        fetchData();
+      }
+    } catch {
+      toast.error('Error al eliminar la dirección');
+    }
+  };
+
+  const handleSetDefault = async (id: string) => {
+    try {
+      const res = await fetch(`${API_URL}/addresses/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({ isDefault: true })
+      });
+
+      if (res.ok) {
+        toast.success('Dirección predeterminada actualizada');
+        fetchData();
+      }
+    } catch {
+      toast.error('Error al actualizar la dirección');
+    }
   };
 
   if (loading) {
@@ -97,15 +178,83 @@ export default function ProfilePage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Sidebar Info (Could be expanded) */}
+          {/* Sidebar Info (Addresses) */}
           <div className="space-y-6">
             <div className="bg-surface p-6 rounded-xl border border-theme shadow-sm">
-              <h2 className="font-bold text-lg mb-4 flex items-center gap-2 text-primary">
-                <MapPin className="w-5 h-5" /> Direcciones Guardadas
-              </h2>
-              <p className="text-sm text-muted mb-4">Aún no tienes direcciones guardadas.</p>
-              <button className="text-sm font-bold underline decoration-1 underline-offset-4 text-primary hover:opacity-70 transition-opacity">
-                Agregar Dirección
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="font-bold text-lg flex items-center gap-2 text-primary">
+                  <MapPin className="w-5 h-5" /> Direcciones Guardadas
+                </h2>
+                <button 
+                  onClick={() => setShowAddressForm(true)}
+                  className="p-1 hover:bg-base rounded-full transition-colors text-accent"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                {addresses.length === 0 ? (
+                  <p className="text-sm text-muted">Aún no tienes direcciones guardadas.</p>
+                ) : (
+                  addresses.map((address) => (
+                    <div 
+                      key={address.id} 
+                      className={`p-4 rounded-lg border transition-all ${
+                        address.isDefault 
+                          ? 'border-accent/50 bg-accent/5' 
+                          : 'border-theme bg-base/30'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <span className="text-xs font-bold uppercase tracking-wider text-accent mb-1 block">
+                            {address.title}
+                          </span>
+                          <p className="text-sm font-bold text-primary">
+                            {address.firstName} {address.lastName}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          {!address.isDefault && (
+                            <button 
+                              onClick={() => handleSetDefault(address.id)}
+                              className="text-muted hover:text-accent transition-colors"
+                              title="Marcar como predeterminada"
+                            >
+                              <CheckCircle2 className="w-4 h-4" />
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => handleDeleteAddress(address.id)}
+                            className="text-muted hover:text-red-500 transition-colors"
+                            title="Eliminar"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted leading-relaxed">
+                        {address.address}<br />
+                        {address.neighborhood && `${address.neighborhood}, `}
+                        {address.municipality.name}, {address.department.name}<br />
+                        Tél: {address.phone}
+                      </p>
+                      {address.isDefault && (
+                        <span className="mt-2 inline-block px-2 py-0.5 bg-accent text-surface text-[10px] font-bold rounded uppercase tracking-tighter">
+                          Predeterminada
+                        </span>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <button 
+                onClick={() => setShowAddressForm(true)}
+                className="mt-6 w-full py-2 text-sm font-bold border border-theme rounded-lg text-primary hover:bg-base transition-colors flex items-center justify-center gap-2"
+              >
+                <Plus className="w-4 h-4" /> Agregar Dirección
               </button>
             </div>
           </div>
@@ -152,7 +301,7 @@ export default function ProfilePage() {
                       <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
                         order.status === 'ENTREGADA' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
                         order.status === 'ENVIADA' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                        order.status === 'CANCELADA' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                        order.status === 'CANCELADA' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-green-400' :
                         'bg-secondary/20 text-secondary'
                       }`}>
                         {order.status.replace('_', ' ')}
@@ -205,6 +354,15 @@ export default function ProfilePage() {
           </div>
         </div>
       </main>
+
+      {showAddressForm && (
+        <AddressForm 
+          onClose={() => setShowAddressForm(false)}
+          onSuccess={fetchData}
+          apiUrl={API_URL}
+          token={accessToken}
+        />
+      )}
     </>
   );
 }

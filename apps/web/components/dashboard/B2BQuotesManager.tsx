@@ -38,6 +38,7 @@ export default function B2BQuotesManager() {
   const [quotes, setQuotes] = useState<B2BQuote[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   
   // Filters & Pagination State
   const [searchTerm, setSearchTerm] = useState('');
@@ -48,6 +49,13 @@ export default function B2BQuotesManager() {
   const ITEMS_PER_PAGE = 10;
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
   const supabase = createClient();
+
+  useEffect(() => {
+    const userRole = localStorage.getItem('user_role');
+    setRole(userRole);
+  }, []);
+
+  const isReadOnly = role === 'ADVISOR';
 
   useEffect(() => {
     const fetchQuotes = async () => {
@@ -241,15 +249,15 @@ export default function B2BQuotesManager() {
                         ) : (
                           <button
                             onClick={(e) => handleApprove(quote.id, e)}
-                            disabled={!!processingId}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-base-color rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-primary/10"
+                            disabled={!!processingId || isReadOnly}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-base-color rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {processingId === quote.id ? (
                               <Loader2 className="w-3 h-3 animate-spin" />
                             ) : (
                               <Briefcase className="w-4 h-4" />
                             )}
-                            Aprobar
+                            {isReadOnly ? 'Solo Lectura' : 'Aprobar'}
                           </button>
                         )}
                       </td>

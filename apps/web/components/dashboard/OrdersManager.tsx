@@ -65,6 +65,7 @@ export default function OrdersManager() {
   const [filter, setFilter] = useState<'all' | 'cutoff'>('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [updating, setUpdating] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
 
   // Advanced Filters State
   const [searchTerm, setSearchTerm] = useState('');
@@ -79,6 +80,13 @@ export default function OrdersManager() {
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
   const supabase = createClient();
+
+  useEffect(() => {
+    const userRole = localStorage.getItem('user_role');
+    setRole(userRole);
+  }, []);
+
+  const isReadOnly = role === 'ADVISOR';
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -461,7 +469,7 @@ export default function OrdersManager() {
                         <select
                           value={order.status}
                           onChange={(e) => updateOrderStatus(order.id, e.target.value as OrderStatus)}
-                          disabled={updating}
+                          disabled={updating || isReadOnly}
                           className={cn(
                             "appearance-none w-full px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase border tracking-widest cursor-pointer transition-all focus:ring-2 focus:ring-primary/20 outline-none pr-8 disabled:opacity-50",
                             getStatusColor(order.status)
@@ -618,7 +626,8 @@ export default function OrdersManager() {
                   <select 
                     value={newStatus}
                     onChange={(e) => setNewStatus(e.target.value as OrderStatus)}
-                    className="w-full p-3 rounded-xl border border-theme bg-surface text-primary font-bold text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none cursor-pointer"
+                    disabled={isReadOnly}
+                    className="w-full p-3 rounded-xl border border-theme bg-surface text-primary font-bold text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none cursor-pointer disabled:opacity-50"
                   >
                     <option value="PENDIENTE_PAGO">Pendiente Pago</option>
                     <option value="PAGADA">Pagada</option>
@@ -635,8 +644,9 @@ export default function OrdersManager() {
                     type="text"
                     value={tracking}
                     onChange={(e) => setTracking(e.target.value)}
+                    disabled={isReadOnly}
                     placeholder="Ej. GUIA-123456"
-                    className="w-full p-3 rounded-xl border border-theme bg-surface text-primary font-bold text-sm focus:ring-2 focus:ring-primary/20 outline-none placeholder:text-muted/30 transition-all"
+                    className="w-full p-3 rounded-xl border border-theme bg-surface text-primary font-bold text-sm focus:ring-2 focus:ring-primary/20 outline-none placeholder:text-muted/30 transition-all disabled:opacity-50"
                   />
                 </div>
               </div>
@@ -648,14 +658,16 @@ export default function OrdersManager() {
                 >
                   <Phone className="w-3.5 h-3.5" /> Contactar WhatsApp
                 </button>
-                <button
-                  onClick={handleUpdateOrder}
-                  disabled={updating}
-                  className="w-full sm:w-auto bg-primary text-base-color px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-[0.2em] hover:opacity-90 transition-all shadow-xl shadow-primary/10 flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
-                >
-                  {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  Guardar Cambios
-                </button>
+                {!isReadOnly && (
+                  <button
+                    onClick={handleUpdateOrder}
+                    disabled={updating}
+                    className="w-full sm:w-auto bg-primary text-base-color px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-[0.2em] hover:opacity-90 transition-all shadow-xl shadow-primary/10 flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
+                  >
+                    {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Guardar Cambios
+                  </button>
+                )}
               </div>
             </div>
           </div>
