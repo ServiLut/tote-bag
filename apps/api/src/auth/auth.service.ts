@@ -60,35 +60,44 @@ export class AuthService {
       );
     }
 
+    const user = data.user;
+
     // 2. Guardar en PostgreSQL (Prisma)
-    // Verificamos si ya existe el perfil para evitar error 500 feo (aunque el try/catch lo captura)
-    const existingProfile = await this.prisma.profile.findUnique({
-      where: { email },
+    // Verificamos si ya existe el usuario para evitar error 500 feo
+    const existingUser = await this.prisma.user.findUnique({
+      where: { id: user.id },
     });
 
-    if (existingProfile) {
-      // Si existe en DB local pero Supabase dejó registrar (caso raro de desincronización),
-      // o si Supabase retornó fake success.
-      // Asumimos conflicto si ya tenemos el perfil.
-      throw new ConflictException('Correo ya registrado en el sistema local');
+    if (existingUser) {
+      throw new ConflictException('Usuario ya registrado en el sistema local');
     }
 
     try {
-      await this.prisma.profile.create({
-        data: {
-          email: data.user.email!,
-          userId: data.user.id,
-          metadata: {
-            termsAccepted: acceptTerms,
-            termsAcceptedAt: new Date().toISOString(),
-            registrationIp: ip,
+      // Usamos una transacción para asegurar que ambos se creen
+      await this.prisma.$transaction(async (tx) => {
+        await tx.user.create({
+          data: {
+            id: user.id,
+            email: user.email!,
+            role: 'CUSTOMER',
           },
-        },
+        });
+
+        await tx.profile.create({
+          data: {
+            email: user.email!,
+            userId: user.id,
+            metadata: {
+              termsAccepted: acceptTerms,
+              termsAcceptedAt: new Date().toISOString(),
+              registrationIp: ip,
+            },
+          },
+        });
       });
     } catch (error: unknown) {
       // Rollback idealmente, pero sin service_role no podemos borrar el user de supabase fácilmente.
-      // Logueamos el error.
-      console.error('Error creating profile:', error);
+      console.error('Error creating user/profile:', error);
       throw new InternalServerErrorException(
         'Error al crear el perfil de usuario',
       );
@@ -103,8 +112,8 @@ export class AuthService {
         ? 'Registro iniciado. Por favor verifica tu correo electrónico.'
         : 'Registro exitoso.',
       user: {
-        id: data.user.id,
-        email: data.user.email,
+        id: user.id,
+        email: user.email,
       },
       requiresEmailVerification,
     };
@@ -118,28 +127,51 @@ export class AuthService {
       password,
     });
 
-    if (error) {
+    if (error || !data.user) {
       throw new BadRequestException('Credenciales inválidas');
     }
 
-    let profile = await this.prisma.profile.findUnique({
-      where: { userId: data.user.id },
+    const user = data.user;
+
+    let userInDb = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      include: { profile: true },
     });
 
-    // Auto-healing: If user exists in Auth but not in Profile, create it.
-    if (!profile && data.user) {
+    // Auto-healing: If user exists in Auth but not in our DB, create it.
+    if (!userInDb && user) {
       try {
-        console.log(`Creating missing profile for user ${data.user.email}`);
-        profile = await this.prisma.profile.create({
+        console.log(`Creating missing user/profile for user ${user.email}`);
+        userInDb = await this.prisma.user.create({
           data: {
-            email: data.user.email!,
-            userId: data.user.id,
-            role: 'CUSTOMER', // Default role
+            id: user.id,
+            email: user.email!,
+            role: 'CUSTOMER',
+            profile: {
+              create: {
+                email: user.email!,
+              },
+            },
+          },
+          include: { profile: true },
+        });
+      } catch (err) {
+        console.error('Failed to auto-create user/profile on login', err);
+      }
+    } else if (userInDb && !userInDb.profile) {
+      // User exists but profile doesn't (rare)
+      try {
+        await this.prisma.profile.create({
+          data: {
+            email: userInDb.email,
+            userId: userInDb.id,
           },
         });
       } catch (err) {
-        console.error('Failed to auto-create profile on login', err);
-        // We continue, but role will fall back to default in response
+        console.error(
+          'Failed to auto-create profile for existing user on login',
+          err,
+        );
       }
     }
 
@@ -147,7 +179,7 @@ export class AuthService {
       message: 'Inicio de sesión exitoso',
       user: data.user,
       session: data.session,
-      role: profile?.role || 'CUSTOMER',
+      role: userInDb?.role || 'CUSTOMER',
     };
   }
 

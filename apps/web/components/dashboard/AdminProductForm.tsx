@@ -112,6 +112,10 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
     ? ((formData.basePrice - formData.costPrice) / formData.basePrice) * 100
     : 0;
 
+  const discount = formData.comparePrice > formData.basePrice && formData.comparePrice > 0
+    ? ((formData.comparePrice - formData.basePrice) / formData.comparePrice) * 100
+    : 0;
+
     const generateSku = (name: string, collection: string, color: string) => {
       const clean = (str: string) => str.toUpperCase().replace(/\s+/g, '').replace(/[^\w-]/g, '');
       if (!name && !collection && !color) return '';
@@ -405,7 +409,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
             {/* Images List */}
             {formData.images.filter(img => img.url && img.url.trim() !== '').map((img, idx) => (
               <div key={idx} className="relative w-24 h-24 flex-shrink-0 bg-base border border-theme rounded-xl overflow-hidden group shadow-sm">
-                <Image src={img.url} alt={`Preview ${idx}`} fill className="object-cover" unoptimized />
+                <Image src={img.url || '/placeholder.svg'} alt={`Preview ${idx}`} fill className="object-cover" unoptimized />
                 <button
                   type="button"
                   onClick={() => removeImage(idx)}
@@ -494,11 +498,21 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
         <section className="space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-black text-primary tracking-tight">Estrategia de Precios</h3>
-            {margin > 0 && (
-              <span className={`text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-widest border ${margin < 30 ? 'bg-red-50 text-red-700 border-red-100' : 'bg-secondary/10 text-secondary border-secondary/20'}`}>
-                Margen: {margin.toFixed(1)}%
-              </span>
-            )}
+            <div className="flex gap-2">
+              {discount > 0 && (
+                <span className="text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-widest border bg-primary/5 text-primary border-primary/10">
+                  Descuento: {discount.toFixed(0)}%
+                </span>
+              )}
+              {margin !== 0 && (
+                <span className={cn(
+                  "text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-widest border",
+                  margin < 30 ? "bg-red-50 text-red-700 border-red-100" : "bg-secondary/10 text-secondary border-secondary/20"
+                )}>
+                  Margen: {margin.toFixed(1)}%
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -656,6 +670,25 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
                 className="w-full p-3 border border-theme rounded-xl bg-base text-primary font-medium focus:ring-2 focus:ring-primary/20 outline-none"
               />
               <p className="text-[9px] text-muted font-bold uppercase tracking-widest px-1">Separadas por comas.</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-muted">Vista previa en buscadores</label>
+            <div className="bg-white p-6 rounded-2xl border border-theme shadow-sm max-w-2xl overflow-hidden">
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="w-6 h-6 bg-[#f1f3f4] rounded-full flex items-center justify-center text-[10px] text-[#202124] font-bold">T</div>
+                <div className="flex flex-col">
+                  <span className="text-[12px] text-[#202124] leading-tight font-medium">Tote Bag</span>
+                  <span className="text-[11px] text-[#70757a] leading-tight">https://tote-bag.com/products/{formData.slug || 'slug-del-producto'}</span>
+                </div>
+              </div>
+              <h3 className="text-[18px] text-[#1a0dab] hover:underline cursor-pointer leading-tight mb-1 font-medium truncate">
+                {formData.name || 'Título del Producto'} | Tote Bag
+              </h3>
+              <p className="text-[13px] text-[#4d5156] leading-relaxed line-clamp-2 font-normal">
+                {formData.description || 'Agrega una descripción para ver cómo se verá tu producto en los resultados de búsqueda de Google.'}
+              </p>
             </div>
           </div>
         </section>

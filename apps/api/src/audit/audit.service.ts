@@ -29,9 +29,13 @@ export class AuditService {
         include: {
           user: {
             select: {
-              firstName: true,
-              lastName: true,
               email: true,
+              profile: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                },
+              },
             },
           },
         },

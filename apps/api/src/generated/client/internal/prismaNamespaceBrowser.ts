@@ -57,6 +57,7 @@ export const ModelName = {
   Order: 'Order',
   OrderStatusHistory: 'OrderStatusHistory',
   OrderItem: 'OrderItem',
+  User: 'User',
   Profile: 'Profile',
   Department: 'Department',
   Municipality: 'Municipality',
@@ -185,6 +186,18 @@ export const OrderItemScalarFieldEnum = {
 export type OrderItemScalarFieldEnum = (typeof OrderItemScalarFieldEnum)[keyof typeof OrderItemScalarFieldEnum]
 
 
+export const UserScalarFieldEnum = {
+  id: 'id',
+  email: 'email',
+  role: 'role',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
 export const ProfileScalarFieldEnum = {
   id: 'id',
   email: 'email',
@@ -195,7 +208,6 @@ export const ProfileScalarFieldEnum = {
   municipality: 'municipality',
   neighborhood: 'neighborhood',
   address: 'address',
-  role: 'role',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   userId: 'userId',

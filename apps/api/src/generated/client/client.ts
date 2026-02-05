@@ -72,6 +72,11 @@ export type OrderStatusHistory = Prisma.OrderStatusHistoryModel
  */
 export type OrderItem = Prisma.OrderItemModel
 /**
+ * Model User
+ * 
+ */
+export type User = Prisma.UserModel
+/**
  * Model Profile
  * 
  */

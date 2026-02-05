@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
-import { Loader2, CalendarClock, Box, Phone, MapPin, Truck, Eye, X, Save } from 'lucide-react';
+import { Loader2, CalendarClock, Box, Phone, MapPin, Truck, Eye, X, Save, Search, Filter, ChevronDown, Calendar, Check, Trash2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { ApiResponse } from '@/types/api';
@@ -12,7 +12,9 @@ function cn(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
 }
 
-type OrderStatus = 'PENDIENTE_PAGO' | 'PAGADA' | 'EN_PRODUCCION' | 'ENVIADA' | 'ENTREGADA' | 'CANCELADA';
+export type OrderStatus = 'PENDIENTE_PAGO' | 'PAGADA' | 'EN_PRODUCCION' | 'ENVIADA' | 'ENTREGADA' | 'CANCELADA';
+
+const STATUS_OPTIONS: OrderStatus[] = ['PENDIENTE_PAGO', 'PAGADA', 'EN_PRODUCCION', 'ENVIADA', 'ENTREGADA', 'CANCELADA'];
 
 interface OrderItem {
   id: string;
@@ -21,8 +23,8 @@ interface OrderItem {
   price: number;
   product: {
     name: string;
-    collection: string;
-    images: string[];
+    collection?: string;
+    images: { url: string }[];
   };
 }
 
@@ -32,7 +34,15 @@ interface Order {
   customerEmail: string;
   customerPhone: string;
   city: string;
-  shippingAddress: string;
+  shippingAddress: {
+    address: string;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    department?: string;
+    municipality?: string;
+    neighborhood?: string;
+  } | string;
   totalAmount: number;
   status: OrderStatus;
   trackingNumber?: string;
@@ -55,6 +65,13 @@ export default function OrdersManager() {
   const [filter, setFilter] = useState<'all' | 'cutoff'>('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [updating, setUpdating] = useState(false);
+
+  // Advanced Filters State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [selectedStatuses, setSelectedStatuses] = useState<OrderStatus[]>([]);
+  const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false);
 
   // Form states for modal
   const [newStatus, setNewStatus] = useState<OrderStatus>('PENDIENTE_PAGO');
@@ -91,21 +108,19 @@ export default function OrdersManager() {
     setTracking(order.trackingNumber || '');
   };
 
-  const handleUpdateOrder = async () => {
-    if (!selectedOrder) return;
+  const updateOrderStatus = async (orderId: string, status: OrderStatus, trackingNumber?: string | null) => {
     setUpdating(true);
-    
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`${API_URL}/orders/${selectedOrder.id}`, {
+      const res = await fetch(`${API_URL}/orders/${orderId}`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify({
-          status: newStatus,
-          trackingNumber: tracking || null
+          status,
+          trackingNumber: trackingNumber ?? null
         }),
       });
 
@@ -113,33 +128,82 @@ export default function OrdersManager() {
 
       // Update local state
       setOrders(prev => prev.map(o => 
-        o.id === selectedOrder.id ? { ...o, status: newStatus, trackingNumber: tracking } : o
+        o.id === orderId ? { ...o, status, trackingNumber: trackingNumber || o.trackingNumber } : o
       ));
       
-      setSelectedOrder(null); // Close modal
-      alert('Orden actualizada correctamente');
-    } catch {
+      return true;
+    } catch (err) {
+      console.error(err);
       alert('Error al actualizar la orden');
+      return false;
     } finally {
       setUpdating(false);
     }
   };
 
-  const getFilteredOrders = () => {
-    if (filter === 'all') return orders;
+  const handleUpdateOrder = async () => {
+    if (!selectedOrder) return;
+    const success = await updateOrderStatus(selectedOrder.id, newStatus, tracking);
+    if (success) {
+      setSelectedOrder(null); // Close modal
+    }
+  };
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    return orders.filter(order => {
-      const orderDate = new Date(order.createdAt);
-      const isToday = orderDate.getFullYear() === today.getFullYear() &&
-                      orderDate.getMonth() === today.getMonth() &&
-                      orderDate.getDate() === today.getDate();
+  const toggleStatusFilter = (status: OrderStatus) => {
+    setSelectedStatuses(prev => 
+      prev.includes(status) 
+        ? prev.filter(s => s !== status) 
+        : [...prev, status]
+    );
+  };
+
+  const getFilteredOrders = () => {
+    let result = [...orders];
+
+    // Search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(o => 
+        o.customerEmail.toLowerCase().includes(term) || 
+        o.orderNumber.toString().includes(term) ||
+        o.city.toLowerCase().includes(term)
+      );
+    }
+
+    // Status filter (Multi)
+    if (selectedStatuses.length > 0) {
+      result = result.filter(o => selectedStatuses.includes(o.status));
+    }
+
+    // Date range filter
+    if (startDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      result = result.filter(o => new Date(o.createdAt) >= start);
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      result = result.filter(o => new Date(o.createdAt) <= end);
+    }
+
+    // Legacy cutoff filter
+    if (filter === 'cutoff') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
       
-      const isBeforeCutoff = orderDate.getHours() < 12;
-      return isToday && isBeforeCutoff;
-    });
+      result = result.filter(order => {
+        const orderDate = new Date(order.createdAt);
+        const isToday = orderDate.getFullYear() === today.getFullYear() &&
+                        orderDate.getMonth() === today.getMonth() &&
+                        orderDate.getDate() === today.getDate();
+        
+        const isBeforeCutoff = orderDate.getHours() < 12;
+        return isToday && isBeforeCutoff;
+      });
+    }
+
+    return result;
   };
 
   const getBatchGrouping = (filteredOrders: Order[]): BatchItem[] => {
@@ -157,7 +221,7 @@ export default function OrdersManager() {
           map.set(item.sku, {
             sku: item.sku,
             name: item.product.name,
-            image: item.product.images?.[0],
+            image: item.product.images?.[0]?.url,
             totalQuantity: item.quantity
           });
         }
@@ -229,6 +293,135 @@ export default function OrdersManager() {
         </div>
       </div>
 
+      {/* Advanced Filters */}
+      <div className="bg-surface p-6 rounded-2xl border border-theme shadow-sm space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+          {/* Search */}
+          <div className="md:col-span-4 relative group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted group-focus-within:text-primary transition-colors" />
+            <input 
+              type="text"
+              placeholder="Buscar por # Orden, Email o Ciudad..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 bg-base border border-theme rounded-xl text-xs font-bold text-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-muted/40"
+            />
+          </div>
+
+          {/* Date Range */}
+          <div className="md:col-span-5 flex items-center gap-3">
+            <div className="flex-1 relative">
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
+              <input 
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 bg-base border border-theme rounded-xl text-[10px] font-black uppercase text-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+              />
+            </div>
+            <span className="text-muted font-black text-[10px] uppercase">a</span>
+            <div className="flex-1 relative">
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
+              <input 
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 bg-base border border-theme rounded-xl text-[10px] font-black uppercase text-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+              />
+            </div>
+          </div>
+
+          {/* Reset Filters */}
+          <div className="md:col-span-3 flex items-end">
+            <button 
+              onClick={() => {
+                setSearchTerm('');
+                setStartDate('');
+                setEndDate('');
+                setSelectedStatuses([]);
+                setFilter('all');
+              }}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 rounded-xl text-[9px] font-black uppercase text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-all active:scale-95 h-[42px] w-full md:w-auto"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Limpiar Filtros
+            </button>
+          </div>
+        </div>
+
+        {/* Status Multi-select Dropdown */}
+        <div className="flex items-center gap-4">
+          <span className="text-[9px] font-black text-muted uppercase tracking-[0.2em]">Filtrar Estado:</span>
+          <div className="relative">
+            <button
+              onClick={() => setIsStatusFilterOpen(!isStatusFilterOpen)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2.5 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 bg-base border-theme min-w-[180px] justify-between",
+                selectedStatuses.length > 0 ? "border-primary text-primary" : "text-muted"
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <Filter className="w-3 h-3" />
+                {selectedStatuses.length === 0 
+                  ? "Todos los estados" 
+                  : selectedStatuses.length === 1
+                    ? selectedStatuses[0]?.replace('_', ' ')
+                    : `${selectedStatuses.length} seleccionados`
+                }
+              </div>
+              <ChevronDown className={cn("w-3 h-3 transition-transform", isStatusFilterOpen && "rotate-180")} />
+            </button>
+
+            {isStatusFilterOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 z-10" 
+                  onClick={() => setIsStatusFilterOpen(false)}
+                />
+                <div className="absolute top-full left-0 mt-2 w-64 bg-surface border border-theme rounded-2xl shadow-xl z-20 py-2 animate-in fade-in zoom-in-95 duration-200">
+                  {STATUS_OPTIONS.map(status => {
+                    const isSelected = selectedStatuses.includes(status);
+                    return (
+                      <button
+                        key={status}
+                        onClick={() => toggleStatusFilter(status)}
+                        className="w-full px-4 py-2.5 flex items-center justify-between hover:bg-base transition-colors group"
+                      >
+                        <span className={cn(
+                          "text-[10px] font-bold uppercase tracking-widest transition-colors",
+                          isSelected ? "text-primary" : "text-muted group-hover:text-primary"
+                        )}>
+                          {status.replace('_', ' ')}
+                        </span>
+                        <div className={cn(
+                          "w-4 h-4 rounded border flex items-center justify-center transition-all",
+                          isSelected 
+                            ? "bg-primary border-primary text-base-color" 
+                            : "border-theme group-hover:border-muted"
+                        )}>
+                          {isSelected && <Check className="w-3 h-3" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                  
+                  {selectedStatuses.length > 0 && (
+                    <div className="border-t border-theme mt-1 pt-1 px-2">
+                      <button
+                        onClick={() => setSelectedStatuses([])}
+                        className="w-full py-2 text-[9px] font-black uppercase text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors"
+                      >
+                        Limpiar Selección
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
       {view === 'list' ? (
         <div className="overflow-hidden rounded-2xl border border-theme shadow-sm bg-surface">
           <table className="w-full divide-y divide-theme text-sm text-left">
@@ -236,7 +429,7 @@ export default function OrdersManager() {
               <tr className="bg-base/50">
                 <th className="px-6 py-4 font-bold text-primary uppercase text-[10px] tracking-widest">Orden</th>
                 <th className="px-6 py-4 font-bold text-primary uppercase text-[10px] tracking-widest">Cliente</th>
-                <th className="px-6 py-4 font-bold text-primary uppercase text-[10px] tracking-widest">Estado</th>
+                <th className="px-6 py-4 font-bold text-primary uppercase text-[10px] tracking-widest">Estado (Rápido)</th>
                 <th className="px-6 py-4 font-bold text-primary uppercase text-[10px] tracking-widest">Total</th>
                 <th className="px-6 py-4 text-right font-bold text-primary uppercase text-[10px] tracking-widest">Acción</th>
               </tr>
@@ -264,9 +457,25 @@ export default function OrdersManager() {
                       <div className="text-[10px] text-muted font-medium truncate max-w-[150px]" title={order.city}>{order.city}</div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={cn("px-2.5 py-1 rounded-md text-[9px] font-black uppercase border tracking-widest", getStatusColor(order.status))}>
-                        {order.status.replace('_', ' ')}
-                      </span>
+                      <div className="relative group/status min-w-[140px]">
+                        <select
+                          value={order.status}
+                          onChange={(e) => updateOrderStatus(order.id, e.target.value as OrderStatus)}
+                          disabled={updating}
+                          className={cn(
+                            "appearance-none w-full px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase border tracking-widest cursor-pointer transition-all focus:ring-2 focus:ring-primary/20 outline-none pr-8 disabled:opacity-50",
+                            getStatusColor(order.status)
+                          )}
+                        >
+                          {STATUS_OPTIONS.map(status => (
+                            <option key={status} value={status} className="bg-surface text-primary">
+                              {status.replace('_', ' ')}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none opacity-50" />
+                        {updating && <Loader2 className="absolute -right-6 top-1/2 -translate-y-1/2 w-3 h-3 animate-spin text-primary" />}
+                      </div>
                     </td>
                     <td className="px-6 py-4 font-black text-primary">
                       ${order.totalAmount.toLocaleString('es-CO')}
@@ -275,7 +484,7 @@ export default function OrdersManager() {
                       <button
                         onClick={() => openOrderModal(order)}
                         className="p-2.5 text-muted hover:text-primary hover:bg-base rounded-xl transition-all active:scale-90"
-                        title="Gestionar Orden"
+                        title="Ver Detalles"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
@@ -293,7 +502,7 @@ export default function OrdersManager() {
               <div className="flex gap-4">
                 <div className="h-16 w-16 rounded-xl overflow-hidden border border-theme bg-base flex-shrink-0 shadow-sm relative">
                   <Image 
-                    src={batch.image || '/placeholder.svg'} 
+                    src={(batch.image && batch.image.trim() !== '') ? batch.image : '/placeholder.svg'} 
                     alt={batch.name}
                     fill
                     className="object-cover group-hover:scale-110 transition-transform duration-300"
@@ -351,7 +560,16 @@ export default function OrdersManager() {
                   <p className="text-muted font-medium">{selectedOrder.city}</p>
                   <div className="p-4 bg-base/40 rounded-2xl border border-theme mt-2">
                     <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-1 opacity-60">Dirección</p>
-                    <p className="text-xs text-primary font-bold">{selectedOrder.shippingAddress}</p>
+                    <p className="text-xs text-primary font-bold">
+                      {typeof selectedOrder.shippingAddress === 'object' && selectedOrder.shippingAddress !== null
+                        ? `${selectedOrder.shippingAddress.address}${selectedOrder.shippingAddress.neighborhood ? `, ${selectedOrder.shippingAddress.neighborhood}` : ''}`
+                        : selectedOrder.shippingAddress}
+                    </p>
+                    {typeof selectedOrder.shippingAddress === 'object' && selectedOrder.shippingAddress !== null && (
+                      <p className="text-[10px] text-muted font-bold mt-1 uppercase">
+                        {selectedOrder.shippingAddress.firstName} {selectedOrder.shippingAddress.lastName}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -366,7 +584,7 @@ export default function OrdersManager() {
                     <div key={item.id} className="flex gap-4 items-center p-2 rounded-xl hover:bg-base/30 transition-colors">
                       <div className="h-12 w-12 rounded-lg border border-theme bg-base overflow-hidden flex-shrink-0 relative shadow-sm">
                         <Image 
-                          src={item.product.images?.[0] || '/placeholder.svg'} 
+                          src={(item.product.images && item.product.images[0]?.url && item.product.images[0].url.trim() !== '') ? item.product.images[0].url : '/placeholder.svg'} 
                           alt={item.product.name}
                           fill
                           className="object-cover"

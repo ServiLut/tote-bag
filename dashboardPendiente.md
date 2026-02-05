@@ -53,4 +53,3 @@ Mejoras en la experiencia de usuario para los administradores.
     - **Filtros Avanzados:** Faltan filtros por Rango de Fechas, Búsqueda por Cliente/Email y Filtrado múltiple por Estado.
 
 ---
-**Siguiente Paso Recomendado:** Actualizar `backend/prisma/schema.prisma` con las tablas de seguridad y auditoría.

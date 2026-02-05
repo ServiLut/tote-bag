@@ -16,7 +16,9 @@ export class ProfilesService {
     const { role, department, municipality } = filters;
 
     const where: Prisma.ProfileWhereInput = {};
-    if (role) where.role = role;
+    if (role) {
+      where.user = { role };
+    }
     if (department) where.department = department;
     if (municipality) where.municipality = municipality;
 
@@ -24,6 +26,9 @@ export class ProfilesService {
       where,
       orderBy: { createdAt: 'desc' },
       include: {
+        user: {
+          select: { role: true, isActive: true },
+        },
         _count: {
           select: { orders: true },
         },
@@ -37,6 +42,7 @@ export class ProfilesService {
     return this.prisma.profile.findUnique({
       where: { id },
       include: {
+        user: true,
         orders: {
           orderBy: { createdAt: 'desc' },
         },
@@ -47,6 +53,7 @@ export class ProfilesService {
   async findByUserId(userId: string) {
     return this.prisma.profile.findUnique({
       where: { userId },
+      include: { user: true },
     });
   }
 
