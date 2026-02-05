@@ -43,4 +43,17 @@ export class ProfilesService {
       },
     });
   }
+
+  async findByUserId(userId: string) {
+    return this.prisma.profile.findUnique({
+      where: { userId },
+    });
+  }
+
+  async update(userId: string, data: Prisma.ProfileUpdateInput) {
+    return this.prisma.profile.update({
+      where: { userId },
+      data,
+    });
+  }
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { createClient } from '@/utils/supabase/client';
 import { Loader2, CalendarClock, Box, Phone, MapPin, Truck, Eye, X, Save } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -60,11 +61,17 @@ export default function OrdersManager() {
   const [tracking, setTracking] = useState('');
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const supabase = createClient();
 
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const res = await fetch(`${API_URL}/orders`);
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch(`${API_URL}/orders`, {
+          headers: {
+            'Authorization': `Bearer ${session?.access_token}`,
+          }
+        });
         if (!res.ok) throw new Error('Failed to fetch orders');
         const responseBody: ApiResponse<Order[]> = await res.json();
         setOrders(responseBody.data);
@@ -76,7 +83,7 @@ export default function OrdersManager() {
     };
 
     fetchOrders();
-  }, [API_URL]);
+  }, [API_URL, supabase.auth]);
 
   const openOrderModal = (order: Order) => {
     setSelectedOrder(order);
@@ -89,9 +96,13 @@ export default function OrdersManager() {
     setUpdating(true);
     
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`${API_URL}/orders/${selectedOrder.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
         body: JSON.stringify({
           status: newStatus,
           trackingNumber: tracking || null

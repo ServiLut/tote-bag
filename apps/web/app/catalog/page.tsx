@@ -8,7 +8,7 @@ import FilterSidebar from '@/components/store/FilterSidebar';
 import Footer from '@/components/store/Footer';
 import { Product } from '@/types/product';
 import { ApiResponse } from '@/types/api';
-import { Loader2, SlidersHorizontal } from 'lucide-react';
+import { Loader2, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface FilterState {
   minPrice: number;
@@ -78,6 +78,22 @@ export default function CatalogPage() {
     });
   }, [products, filters]);
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 12;
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredProducts, currentPage]);
+
   return (
     <div className="min-h-screen flex flex-col bg-base transition-colors duration-300">
       <Navbar />
@@ -120,7 +136,13 @@ export default function CatalogPage() {
         <div className="flex-1">
           <div className="mb-6 flex justify-between items-center">
             <span className="text-sm text-muted">
-              Mostrando {filteredProducts.length} producto(s)
+              {filteredProducts.length > 0 ? (
+                <>
+                  Mostrando <span className="text-primary font-medium">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> - <span className="text-primary font-medium">{Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)}</span> de <span className="text-primary font-medium">{filteredProducts.length}</span> productos
+                </>
+              ) : (
+                'No se encontraron productos'
+              )}
             </span>
             {/* Sort Dropdown could go here */}
           </div>
@@ -132,7 +154,57 @@ export default function CatalogPage() {
           ) : error ? (
             <div className="text-center py-20 text-accent font-medium">{error}</div>
           ) : (
-            <ProductGrid products={filteredProducts} />
+            <>
+              <ProductGrid products={paginatedProducts} />
+              
+              {/* Pagination UI */}
+              {totalPages > 1 && (
+                <div className="mt-12 flex justify-center items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setCurrentPage(prev => Math.max(prev - 1, 1));
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    disabled={currentPage === 1}
+                    className="p-2 border border-theme disabled:opacity-30 disabled:cursor-not-allowed hover:bg-theme/5 transition-colors rounded-sm"
+                    aria-label="Página anterior"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  
+                  <div className="flex gap-1 overflow-x-auto pb-2 sm:pb-0">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => {
+                          setCurrentPage(page);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className={`min-w-[40px] h-10 flex items-center justify-center border transition-colors rounded-sm text-sm font-medium ${
+                          currentPage === page 
+                            ? 'bg-primary text-base border-primary' 
+                            : 'border-theme hover:bg-theme/5 text-primary'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setCurrentPage(prev => Math.min(prev + 1, totalPages));
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    disabled={currentPage === totalPages}
+                    className="p-2 border border-theme disabled:opacity-30 disabled:cursor-not-allowed hover:bg-theme/5 transition-colors rounded-sm"
+                    aria-label="Siguiente página"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </main>

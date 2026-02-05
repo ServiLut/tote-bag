@@ -8,6 +8,7 @@ import Footer from '@/components/store/Footer';
 import Image from 'next/image';
 import { User, UserCircle2 } from 'lucide-react';
 import Script from 'next/script';
+import { Combobox } from '@/components/ui/Combobox';
 
 // Type for Wompi Widget
 interface WompiWidgetOptions {
@@ -46,6 +47,11 @@ declare global {
   }
 }
 
+interface LocationItem {
+  id: string;
+  name: string;
+}
+
 export default function CheckoutPage() {
   const { items, subtotal } = useCart();
   const router = useRouter();
@@ -64,6 +70,13 @@ export default function CheckoutPage() {
     address: '',
   });
 
+  const [departments, setDepartments] = useState<LocationItem[]>([]);
+  const [municipalities, setMunicipalities] = useState<LocationItem[]>([]);
+  const [selectedDeptId, setSelectedDeptId] = useState<string>('');
+  const [selectedCityId, setSelectedCityId] = useState<string>('');
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
   // If cart is empty, redirect to catalog
   useEffect(() => {
     if (items.length === 0) {
@@ -71,17 +84,75 @@ export default function CheckoutPage() {
     }
   }, [items, router]);
 
+  // Fetch Departments
+  useEffect(() => {
+    const fetchDepts = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/locations/departments`);
+        if (res.ok) {
+          const result = await res.json();
+          // The API wraps response in { success: true, data: [...] }
+          setDepartments(Array.isArray(result.data) ? result.data : []);
+        }
+      } catch (error) {
+        console.error('Error fetching departments:', error);
+        setDepartments([]);
+      }
+    };
+    fetchDepts();
+  }, [apiUrl]);
+
+  // Fetch Municipalities when department changes
+  useEffect(() => {
+    if (!selectedDeptId) {
+      setMunicipalities([]);
+      return;
+    }
+
+    const fetchMunis = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/locations/municipalities/${selectedDeptId}`);
+        if (res.ok) {
+          const result = await res.json();
+          // The API wraps response in { success: true, data: [...] }
+          setMunicipalities(Array.isArray(result.data) ? result.data : []);
+        }
+      } catch (error) {
+        console.error('Error fetching municipalities:', error);
+        setMunicipalities([]);
+      }
+    };
+    fetchMunis();
+  }, [selectedDeptId, apiUrl]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleDeptChange = (id: string, name: string) => {
+    setSelectedDeptId(id);
+    setSelectedCityId('');
+    setFormData(prev => ({ ...prev, department: name, city: '' }));
+  };
+
+  const handleCityChange = (id: string, name: string) => {
+    setSelectedCityId(id);
+    setFormData(prev => ({ ...prev, city: name }));
+  };
+
   const handleGuestCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.department || !formData.city) {
+      alert('Por favor selecciona departamento y municipio');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      console.log('Iniciando proceso de pago...', { orderPayload: formData });
 
       // 1. Create Order
       const orderPayload = {
@@ -91,39 +162,51 @@ export default function CheckoutPage() {
         customerPhone: formData.phone,
         department: formData.department,
         city: formData.city,
-                shippingAddress: {
-                  city: formData.city,
-                  address: `${formData.address} - ${formData.neighborhood}`,
-                  phone: formData.phone,
-                },
-                items: items.map(item => ({
-                  productId: item.product.id,
-                  variantId: item.variant.id, // Assuming variant has ID, checking interface below
-                  sku: item.variant.sku,
-                  quantity: item.quantity,
-                  price: item.product.basePrice,
-                })),
-              };
-        
-              const res = await fetch(`${apiUrl}/orders`, {        method: 'POST',
+        shippingAddress: {
+          city: formData.city,
+          address: `${formData.address} - ${formData.neighborhood}`,
+          phone: formData.phone,
+        },
+        items: items.map(item => ({
+          productId: item.product.id,
+          variantId: item.variant.id,
+          sku: item.variant.sku,
+          quantity: item.quantity,
+          price: item.product.basePrice,
+        })),
+      };
+
+      const res = await fetch(`${apiUrl}/orders`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderPayload)
       });
 
-      if (!res.ok) throw new Error('Error creando la orden');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        console.error('Error en respuesta de orden:', errorData);
+        throw new Error(errorData.message || 'Error creando la orden');
+      }
       
-      const orderData = await res.json();
-      // Adjust depending on backend response structure (NestJS might wrap in data or not)
-      // Assuming it returns the Order object directly or inside data
-      const orderId = orderData.id || orderData.data?.id; 
+      const orderResult = await res.json();
+      const orderId = orderResult.data?.id || orderResult.id; 
 
       if (!orderId) throw new Error('No se recibió el ID de la orden');
+      console.log('Orden creada con éxito:', orderId);
 
       // 2. Get Payment Signature
       const signRes = await fetch(`${apiUrl}/payments/wompi/signature/${orderId}`);
-      if (!signRes.ok) throw new Error('Error obteniendo firma de pago');
+      if (!signRes.ok) {
+        const errorData = await signRes.json().catch(() => ({}));
+        console.error('Error en firma:', errorData);
+        throw new Error('Error obteniendo firma de pago');
+      }
       
-      const signData = await signRes.json(); // { reference, amountInCents, currency, signature, publicKey }
+      const signResult = await signRes.json();
+      const signData = signResult.data;
+
+      if (!signData) throw new Error('No se recibieron datos de firma');
+      console.log('Firma obtenida con éxito');
 
       // 3. Open Wompi Widget
       const checkout = new window.WidgetCheckout({
@@ -131,15 +214,15 @@ export default function CheckoutPage() {
         amountInCents: signData.amountInCents,
         reference: signData.reference,
         publicKey: signData.publicKey,
-        signature: { integrity: signData.signature }, // New format often requires integrity object
-        redirectUrl: `${window.location.origin}/dashboard/orders`, // Redirect after payment
+        signature: { integrity: signData.signature },
+        redirectUrl: `${window.location.origin}/dashboard/orders`,
         customerData: {
           email: formData.email,
           fullName: `${formData.firstName} ${formData.lastName}`,
           phoneNumber: formData.phone,
           phoneNumberPrefix: '+57',
-          legalId: '123456789', // Optional or ask user
-          legalIdType: 'CC' // Optional
+          legalId: '123456789',
+          legalIdType: 'CC'
         }
       });
 
@@ -274,24 +357,24 @@ export default function CheckoutPage() {
 
                   <div className="space-y-2">
                     <label className="text-xs font-bold uppercase text-muted">Departamento</label>
-                    <input 
-                      type="text" 
-                      name="department"
-                      value={formData.department}
-                      onChange={handleInputChange}
-                      required 
-                      className="w-full p-3 bg-base border border-theme rounded outline-none focus:border-primary text-primary" 
+                    <Combobox
+                      options={(departments || []).map(d => ({ value: d.id, label: d.name }))}
+                      value={selectedDeptId}
+                      onChange={handleDeptChange}
+                      placeholder="Seleccionar departamento"
+                      searchPlaceholder="Buscar departamento..."
                     />
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-bold uppercase text-muted">Municipio / Ciudad</label>
-                    <input 
-                      type="text" 
-                      name="city"
-                      required 
-                      value={formData.city}
-                      onChange={handleInputChange}
-                      className="w-full p-3 bg-base border border-theme rounded outline-none focus:border-primary text-primary" 
+                    <Combobox
+                      options={(municipalities || []).map(m => ({ value: m.id, label: m.name }))}
+                      value={selectedCityId}
+                      onChange={handleCityChange}
+                      placeholder="Seleccionar municipio"
+                      searchPlaceholder="Buscar municipio..."
+                      disabled={!selectedDeptId}
+                      emptyMessage={selectedDeptId ? "No se encontraron municipios." : "Selecciona un departamento primero."}
                     />
                   </div>
 

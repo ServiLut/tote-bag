@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { createClient } from '@/utils/supabase/client';
 import { Loader2, AlertTriangle, Check, Eye, Pencil, Trash2, X, Package, DollarSign } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -58,10 +59,16 @@ export default function ProductsTable() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const supabase = createClient();
 
   const fetchProducts = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/products/list`);
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${API_URL}/products/list`, {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`,
+        }
+      });
       if (!res.ok) throw new Error('Failed to fetch products');
       const responseBody: ApiResponse<Product[]> = await res.json();
       setProducts(responseBody.data);
@@ -71,7 +78,7 @@ export default function ProductsTable() {
     } finally {
       setLoading(false);
     }
-  }, [API_URL]);
+  }, [API_URL, supabase.auth]);
 
   useEffect(() => {
     fetchProducts();
@@ -80,10 +87,12 @@ export default function ProductsTable() {
   const handleStatusChange = async (id: string, newStatus: string) => {
     setUpdatingId(id);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`${API_URL}/products/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify({ status: newStatus }),
       });
@@ -105,8 +114,12 @@ export default function ProductsTable() {
     if (!confirm('¿Estás seguro de que quieres eliminar este producto? Esta acción no se puede deshacer.')) return;
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`${API_URL}/products/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`,
+        }
       });
 
       if (!res.ok) throw new Error('Failed to delete product');

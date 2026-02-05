@@ -71,3 +71,8 @@ export type Municipality = Prisma.MunicipalityModel
  * 
  */
 export type B2BQuote = Prisma.B2BQuoteModel
+/**
+ * Model AuditLog
+ * 
+ */
+export type AuditLog = Prisma.AuditLogModel

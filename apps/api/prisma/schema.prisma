@@ -174,6 +174,7 @@ model Profile {
   metadata     Json?    @map("metadata")
 
   orders    Order[]
+  auditLogs AuditLog[]
 
   departmentId String? @map("department_id")
   locationDepartment   Department? @relation(fields: [departmentId], references: [id])
@@ -247,5 +248,22 @@ model B2BQuote {
   createdAt    DateTime @default(now()) @map("created_at")
 
   @@map("b2b_quotes")
+  @@schema("tote-bag")
+}
+
+model AuditLog {
+  id           String   @id @default(uuid()) @map("id")
+  action       String   @map("action") // CREATE, UPDATE, DELETE
+  entity       String   @map("entity") // Product, Order, etc.
+  entityId     String?  @map("entity_id")
+  payload      Json?    @map("payload")
+  previousData Json?    @map("previous_data")
+  userId       String?  @map("user_id")
+  user         Profile? @relation(fields: [userId], references: [userId])
+  ip           String?  @map("ip")
+  userAgent    String?  @map("user_agent")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("audit_logs")
   @@schema("tote-bag")
 }

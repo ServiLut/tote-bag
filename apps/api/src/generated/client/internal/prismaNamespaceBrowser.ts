@@ -60,7 +60,8 @@ export const ModelName = {
   Profile: 'Profile',
   Department: 'Department',
   Municipality: 'Municipality',
-  B2BQuote: 'B2BQuote'
+  B2BQuote: 'B2BQuote',
+  AuditLog: 'AuditLog'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -243,6 +244,22 @@ export const B2BQuoteScalarFieldEnum = {
 } as const
 
 export type B2BQuoteScalarFieldEnum = (typeof B2BQuoteScalarFieldEnum)[keyof typeof B2BQuoteScalarFieldEnum]
+
+
+export const AuditLogScalarFieldEnum = {
+  id: 'id',
+  action: 'action',
+  entity: 'entity',
+  entityId: 'entityId',
+  payload: 'payload',
+  previousData: 'previousData',
+  userId: 'userId',
+  ip: 'ip',
+  userAgent: 'userAgent',
+  createdAt: 'createdAt'
+} as const
+
+export type AuditLogScalarFieldEnum = (typeof AuditLogScalarFieldEnum)[keyof typeof AuditLogScalarFieldEnum]
 
 
 export const SortOrder = {

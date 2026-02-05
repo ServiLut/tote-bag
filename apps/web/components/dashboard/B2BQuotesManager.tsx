@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, Fragment, ChangeEvent } from 'react';
 import Image from 'next/image';
+import { createClient } from '@/utils/supabase/client';
 import { 
   Loader2, 
   Briefcase, 
@@ -46,11 +47,17 @@ export default function B2BQuotesManager() {
   
   const ITEMS_PER_PAGE = 10;
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const supabase = createClient();
 
   useEffect(() => {
     const fetchQuotes = async () => {
       try {
-        const res = await fetch(`${API_URL}/b2b/quotes`);
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch(`${API_URL}/b2b/quotes`, {
+          headers: {
+            'Authorization': `Bearer ${session?.access_token}`,
+          }
+        });
         if (!res.ok) throw new Error('Failed to fetch quotes');
         const responseBody: ApiResponse<B2BQuote[]> = await res.json();
         setQuotes(responseBody.data);
@@ -62,14 +69,18 @@ export default function B2BQuotesManager() {
     };
 
     fetchQuotes();
-  }, [API_URL]);
+  }, [API_URL, supabase.auth]);
 
   const handleApprove = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setProcessingId(id);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`${API_URL}/b2b/quotes/${id}/approve`, {
         method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`,
+        }
       });
       if (!res.ok) throw new Error('Failed to approve');
       

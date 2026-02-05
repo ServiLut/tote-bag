@@ -150,4 +150,18 @@ export class AuthService {
       role: profile?.role || 'CUSTOMER',
     };
   }
+
+  async forgotPassword(email: string) {
+    const { error } = await this.supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password`,
+    });
+
+    if (error) {
+      throw new BadRequestException(error.message);
+    }
+
+    return {
+      message: 'Correo de recuperación enviado con éxito',
+    };
+  }
 }

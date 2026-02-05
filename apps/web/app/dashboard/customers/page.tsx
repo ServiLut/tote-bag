@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, ChangeEvent } from 'react';
+import { createClient } from '@/utils/supabase/client';
 import { Loader2, UserCircle, ShoppingBag, Eye, X, Mail, Phone, MapPin, Hash, Clock, Database, FileText, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Profile {
@@ -50,13 +51,19 @@ export default function CustomersPage() {
   const ITEMS_PER_PAGE = 10;
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const supabase = createClient();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers = {
+          'Authorization': `Bearer ${session?.access_token}`,
+        };
+
         const [profilesRes, departmentsRes] = await Promise.all([
-          fetch(`${API_URL}/profiles?role=CUSTOMER`),
-          fetch(`${API_URL}/locations/departments`)
+          fetch(`${API_URL}/profiles?role=CUSTOMER`, { headers }),
+          fetch(`${API_URL}/locations/departments`, { headers })
         ]);
 
         if (profilesRes.ok) {
@@ -80,7 +87,7 @@ export default function CustomersPage() {
     };
 
     fetchData();
-  }, [API_URL]);
+  }, [API_URL, supabase.auth]);
 
   useEffect(() => {
     if (!selectedDept) {
@@ -91,7 +98,12 @@ export default function CustomersPage() {
 
     const fetchMunicipalities = async () => {
       try {
-        const res = await fetch(`${API_URL}/locations/municipalities/${selectedDept}`);
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch(`${API_URL}/locations/municipalities/${selectedDept}`, {
+          headers: {
+            'Authorization': `Bearer ${session?.access_token}`,
+          }
+        });
         if (res.ok) {
           const response = await res.json();
           setMunicipalities(response.data || []);
@@ -103,7 +115,7 @@ export default function CustomersPage() {
 
     fetchMunicipalities();
     setSelectedMuni('');
-  }, [selectedDept, API_URL]);
+  }, [selectedDept, API_URL, supabase.auth]);
 
   // Filter Logic
   const filteredProfiles = profiles.filter((profile) => {
