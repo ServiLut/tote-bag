@@ -19,29 +19,29 @@ interface Municipality {
 type PackageType = 'Starter' | 'Pro' | 'Evento';
 
 const PACKAGES = [
-  { 
-    id: 'Starter', 
-    label: 'Starter', 
-    min: 12, 
-    icon: Zap, 
+  {
+    id: 'Starter',
+    label: 'Starter',
+    min: 12,
+    icon: Zap,
     activeClass: 'bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-600 dark:ring-blue-500',
     iconClass: 'text-blue-600 dark:text-blue-400',
     textClass: 'text-blue-700 dark:text-blue-300'
   },
-  { 
-    id: 'Pro', 
-    label: 'Pro', 
-    min: 50, 
-    icon: Briefcase, 
+  {
+    id: 'Pro',
+    label: 'Pro',
+    min: 50,
+    icon: Briefcase,
     activeClass: 'bg-purple-50 dark:bg-purple-900/30 ring-2 ring-purple-600 dark:ring-purple-500',
     iconClass: 'text-purple-600 dark:text-purple-400',
     textClass: 'text-purple-700 dark:text-purple-300'
   },
-  { 
-    id: 'Evento', 
-    label: 'Evento', 
-    min: 200, 
-    icon: Crown, 
+  {
+    id: 'Evento',
+    label: 'Evento',
+    min: 200,
+    icon: Crown,
     activeClass: 'bg-amber-50 dark:bg-amber-900/30 ring-2 ring-amber-600 dark:ring-amber-500',
     iconClass: 'text-amber-600 dark:text-amber-400',
     textClass: 'text-amber-700 dark:text-amber-300'
@@ -206,10 +206,10 @@ export default function B2BQuoteForm() {
         <p className="text-green-800 max-w-md mx-auto">
           Hemos recibido tu solicitud B2B. Nuestro equipo comercial te contactará al <strong>{formData.contactPhone}</strong> en menos de 24 horas para finalizar los detalles de tu pedido corporativo.
         </p>
-        <button 
-          onClick={() => { 
-            setSuccess(false); 
-            setFormData({ businessName: '', quantity: 12, department: '', municipality: '', neighborhood: '', address: '', contactPhone: '', qrType: 'WHATSAPP', qrData: '', package: 'Starter' }); 
+        <button
+          onClick={() => {
+            setSuccess(false);
+            setFormData({ businessName: '', quantity: 12, department: '', municipality: '', neighborhood: '', address: '', contactPhone: '', qrType: 'WHATSAPP', qrData: '', package: 'Starter' });
             setLogoFile(null);
             setSelectedDeptId('');
             setMunicipalities([]);
@@ -226,7 +226,7 @@ export default function B2BQuoteForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 bg-surface p-8 rounded-2xl shadow-sm border border-theme">
-      
+
       {/* Package Selector */}
       <div className="space-y-3">
         <label className="text-xs font-bold uppercase tracking-wide text-muted">Selecciona tu Paquete</label>
@@ -241,7 +241,7 @@ export default function B2BQuoteForm() {
                 onClick={() => handlePackageChange(pkg.id as PackageType)}
                 className={cn(
                   "flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200 outline-none focus:ring-2 focus:ring-primary/5",
-                  isSelected 
+                  isSelected
                     ? `border-transparent ${pkg.activeClass}`
                     : "border-theme bg-surface hover:bg-base"
                 )}
@@ -356,7 +356,7 @@ export default function B2BQuoteForm() {
         <h4 className="text-sm font-bold text-primary mb-4 flex items-center gap-2">
           <QrCode className="w-4 h-4" /> Personalización Inteligente
         </h4>
-        
+
         <div className="grid grid-cols-1 gap-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
@@ -383,10 +383,10 @@ export default function B2BQuoteForm() {
                 required
                 className="w-full p-3 bg-base/50 border border-theme rounded-lg focus:ring-2 focus:ring-primary focus:bg-surface transition-all outline-none text-primary placeholder:text-muted/50"
                 placeholder={
-                  formData.qrType === 'WHATSAPP' 
-                    ? 'Ej. +57 300 123 4567' 
-                    : formData.qrType === 'INSTAGRAM' 
-                      ? 'Ej. @tu_marca o link de perfil' 
+                  formData.qrType === 'WHATSAPP'
+                    ? 'Ej. +57 300 123 4567'
+                    : formData.qrType === 'INSTAGRAM'
+                      ? '@tu_marca o link de perfil'
                       : 'Ej. https://www.tuempresa.com'
                 }
               />
@@ -404,8 +404,8 @@ export default function B2BQuoteForm() {
               />
               <div className={cn(
                 "w-full p-3 border-2 border-dashed rounded-lg flex items-center justify-center gap-3 transition-colors",
-                logoFile 
-                  ? 'border-secondary bg-secondary/5 text-secondary' 
+                logoFile
+                  ? 'border-secondary bg-secondary/5 text-secondary'
                   : 'border-theme bg-base/50 text-muted group-hover:border-primary group-hover:text-primary'
               )}>
                 <UploadCloud className="w-5 h-5" />

@@ -36,7 +36,7 @@ export default function AboutPage() {
               En <strong>{COMPANY_INFO.name}</strong>, nacimos con una misión simple pero ambiciosa: eliminar el uso de bolsas plásticas de un solo uso en Colombia, sin sacrificar el estilo.
             </p>
             <p className="text-lg text-muted leading-relaxed">
-              Lo que comenzó en 2024 como un pequeño taller en Bogotá, se ha convertido en una comunidad de personas conscientes que eligen calidad sobre cantidad. Cada tote bag que fabricamos lleva consigo horas de dedicación, materiales seleccionados y el compromiso de reducir nuestra huella ambiental.
+              Lo que comenzó en 2024 como un pequeño taller en Medellín, se ha convertido en una comunidad de personas conscientes que eligen calidad sobre cantidad. Cada tote bag que fabricamos lleva consigo horas de dedicación, materiales seleccionados y el compromiso de reducir nuestra huella ambiental.
             </p>
           </div>
           <div className="relative h-[500px] w-full bg-surface rounded-lg overflow-hidden shadow-xl">
@@ -52,7 +52,7 @@ export default function AboutPage() {
       <section className="bg-surface py-24 px-4 border-y border-theme">
         <div className="container mx-auto max-w-6xl text-center">
           <h2 className="text-3xl font-serif font-bold text-primary mb-16">Nuestros Pilares</h2>
-          
+
           <div className="grid md:grid-cols-3 gap-12">
             <div className="space-y-4 p-6">
               <div className="w-16 h-16 bg-secondary/20 rounded-full mx-auto flex items-center justify-center mb-6">
@@ -102,4 +102,3 @@ export default function AboutPage() {
     </>
   );
 }
-
