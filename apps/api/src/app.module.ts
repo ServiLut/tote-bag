@@ -40,23 +40,28 @@ import { validate } from './config/env.validation';
           return { ttl: 600 * 1000 };
         }
 
-        const store = await redisStore({
-          url: redisUrl,
-          ttl: 600 * 1000,
-          socket: {
-            keepAlive: 10000,
-            connectTimeout: 10000,
-          },
-        });
-
-        return { store: store as unknown as never };
+        try {
+          const store = await redisStore({
+            url: redisUrl,
+            ttl: 600 * 1000,
+            socket: {
+              keepAlive: 10000,
+              connectTimeout: 10000,
+            },
+          });
+          return { store: store as unknown as never };
+        } catch (error) {
+          console.error('[Redis] Failed to connect:', error);
+          // Fallback to in-memory store
+          return { ttl: 600 * 1000 };
+        }
       },
       inject: [ConfigService],
     }),
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
-        limit: 10,
+        limit: 30,
       },
     ]),
     PrometheusModule.register({
