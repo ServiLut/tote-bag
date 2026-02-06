@@ -36,15 +36,20 @@ import { validate } from './config/env.validation';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
         const redisUrl = configService.get<string>('REDIS_URL');
-        console.log(
-          `[Redis] Connecting to: ${redisUrl ? 'URL provided' : 'MISSING URL'}`,
-        );
-        return {
-          store: (await redisStore({
-            url: redisUrl,
-            ttl: 600 * 1000,
-          })) as unknown as string, // Cast to avoid cache-manager version conflicts with NestJS types
-        };
+        if (!redisUrl) {
+          console.warn(
+            '[Redis] No REDIS_URL provided, falling back to in-memory cache',
+          );
+          return { ttl: 600 * 1000 };
+        }
+
+        console.log('[Redis] Connecting to provided URL');
+        const store = await redisStore({
+          url: redisUrl,
+          ttl: 600 * 1000,
+        });
+
+        return { store: store as unknown as never };
       },
       inject: [ConfigService],
     }),
