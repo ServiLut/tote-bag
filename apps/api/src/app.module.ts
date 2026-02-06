@@ -37,16 +37,16 @@ import { validate } from './config/env.validation';
       useFactory: async (configService: ConfigService) => {
         const redisUrl = configService.get<string>('REDIS_URL');
         if (!redisUrl) {
-          console.warn(
-            '[Redis] No REDIS_URL provided, falling back to in-memory cache',
-          );
           return { ttl: 600 * 1000 };
         }
 
-        console.log('[Redis] Connecting to provided URL');
         const store = await redisStore({
           url: redisUrl,
           ttl: 600 * 1000,
+          socket: {
+            keepAlive: 10000,
+            connectTimeout: 10000,
+          },
         });
 
         return { store: store as unknown as never };
