@@ -34,12 +34,18 @@ import { validate } from './config/env.validation';
     CacheModule.registerAsync({
       isGlobal: true,
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        store: await redisStore({
-          url: configService.get('REDIS_URL'),
-          ttl: 600 * 1000, // 10 minutes default
-        }),
-      }),
+      useFactory: async (configService: ConfigService) => {
+        const redisUrl = configService.get<string>('REDIS_URL');
+        console.log(
+          `[Redis] Connecting to: ${redisUrl ? 'URL provided' : 'MISSING URL'}`,
+        );
+        return {
+          store: (await redisStore({
+            url: redisUrl,
+            ttl: 600 * 1000,
+          })) as unknown as string, // Cast to avoid cache-manager version conflicts with NestJS types
+        };
+      },
       inject: [ConfigService],
     }),
     ThrottlerModule.forRoot([
