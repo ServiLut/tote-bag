@@ -325,16 +325,13 @@ export class ProductsService {
   }
 
   async findAll(collectionId?: string): Promise<ProductWithRelations[]> {
-    // We only cache the main list (no filters) for maximum efficiency on homepage
     if (!collectionId) {
       const cachedProducts = await this.cacheManager.get<
         ProductWithRelations[]
       >(this.CACHE_KEY);
       if (cachedProducts) {
-        console.log('[Redis] Cache HIT for products_list');
         return cachedProducts;
       }
-      console.log('[Redis] Cache MISS for products_list');
     }
 
     const where: Prisma.ProductWhereInput = {
@@ -352,7 +349,6 @@ export class ProductsService {
     });
 
     if (!collectionId) {
-      console.log('[Redis] Saving products_list to cache');
       await this.cacheManager.set(this.CACHE_KEY, products);
     }
 
