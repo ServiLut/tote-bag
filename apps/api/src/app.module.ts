@@ -1,5 +1,7 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { CacheModule } from '@nestjs/cache-manager';
+import { redisStore } from 'cache-manager-redis-yet';
 import { APP_INTERCEPTOR, APP_GUARD, APP_FILTER } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
@@ -28,6 +30,17 @@ import { validate } from './config/env.validation';
     ConfigModule.forRoot({
       isGlobal: true,
       validate,
+    }),
+    CacheModule.registerAsync({
+      isGlobal: true,
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        store: await redisStore({
+          url: configService.get('REDIS_URL'),
+          ttl: 600 * 1000, // 10 minutes default
+        }),
+      }),
+      inject: [ConfigService],
     }),
     ThrottlerModule.forRoot([
       {

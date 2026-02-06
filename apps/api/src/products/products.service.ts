@@ -3,50 +3,51 @@ import {
   NotFoundException,
   BadRequestException,
   InternalServerErrorException,
+  Inject,
 } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { Product, Prisma } from '../generated/client/client';
 import { UpdateProductDto } from './dto/update-product.dto';
 
+export type ProductWithRelations = Prisma.ProductGetPayload<{
+  include: { variants: true; images: true; collection: true };
+}>;
+
 @Injectable()
 export class ProductsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly CACHE_KEY = 'products_list';
 
-  async update(id: string, updateProductDto: UpdateProductDto) {
-    const {
-      variants,
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+  ) {}
 
-      images,
-
-      collectionId,
-
-      collectionName,
-
-      ...data
-    } = updateProductDto;
+  async update(
+    id: string,
+    updateProductDto: UpdateProductDto,
+  ): Promise<ProductWithRelations> {
+    const { variants, images, collectionId, collectionName, ...data } =
+      updateProductDto;
 
     console.log(`Updating product ${id}`);
 
     if (variants) {
       console.log('Received variants for update:', variants.length);
-
       console.log('Sample variant SKU:', variants[0]?.sku);
     } else {
       console.log('No variants provided in update DTO');
     }
 
     // Resolve Collection if needed
-
     let activeCollectionId: string | undefined = collectionId;
 
     if (collectionName) {
       const slug = collectionName
-
         .toLowerCase()
-
         .replace(/ /g, '-')
-
         .replace(/[^\w-]+/g, '');
 
       let collection = await this.prisma.collection.findFirst({
@@ -63,32 +64,25 @@ export class ProductsService {
     }
 
     // Prepare update data
-
     const updateData: Prisma.ProductUpdateInput = {
       ...data,
-
       ...(activeCollectionId && { collectionId: activeCollectionId }), // Only add if resolved
     };
 
     // Handle images update if provided
-
     if (images) {
       updateData.images = {
         deleteMany: {}, // Clear existing images
-
         create: images.map((img) => ({
           url: img.url,
-
           alt: img.alt,
-
           position: img.position,
         })),
       };
     }
 
-    return this.prisma.$transaction(async (prisma) => {
+    const updatedProduct = await this.prisma.$transaction(async (prisma) => {
       // 1. Update Variants if provided
-
       if (variants) {
         console.log(`[ProductsService] Processing ${variants.length} variants`);
         const currentVariants = await prisma.variant.findMany({
@@ -158,34 +152,40 @@ export class ProductsService {
       }
 
       // 2. Update Product (and images via nested write)
-
       return prisma.product.update({
         where: { id },
-
         data: updateData,
-
         include: { variants: true, images: true, collection: true },
       });
     });
+
+    // Invalidate Cache
+    await this.cacheManager.del(this.CACHE_KEY);
+    return updatedProduct;
   }
 
-  async remove(id: string) {
+  async remove(id: string): Promise<Product> {
     // Check integrity
     const ordersCount = await this.prisma.orderItem.count({
       where: { productId: id },
     });
 
+    let result: Product;
     if (ordersCount > 0) {
       // Soft Delete if it has history
-      return this.prisma.product.update({
+      result = await this.prisma.product.update({
         where: { id },
         data: { isActive: false, status: 'BAJO_PEDIDO' }, // Or specific archived status
       });
+    } else {
+      result = await this.prisma.product.delete({
+        where: { id },
+      });
     }
 
-    return this.prisma.product.delete({
-      where: { id },
-    });
+    // Invalidate Cache
+    await this.cacheManager.del(this.CACHE_KEY);
+    return result;
   }
 
   private validateSku(
@@ -212,7 +212,9 @@ export class ProductsService {
     );
   }
 
-  async create(createProductDto: CreateProductDto): Promise<Product> {
+  async create(
+    createProductDto: CreateProductDto,
+  ): Promise<ProductWithRelations> {
     const { variants, collectionId, collectionName, images, ...productData } =
       createProductDto;
 
@@ -276,8 +278,8 @@ export class ProductsService {
     // 4. Transactional Creation
     try {
       const activeCollectionId = collection.id;
-      const result = await this.prisma.$transaction(async (prisma) => {
-        const product = await prisma.product.create({
+      const product = await this.prisma.$transaction(async (prisma) => {
+        return prisma.product.create({
           data: {
             ...productData,
             collectionId: activeCollectionId,
@@ -303,10 +305,11 @@ export class ProductsService {
             collection: true,
           },
         });
-        return product;
       });
 
-      return result;
+      // Invalidate Cache
+      await this.cacheManager.del(this.CACHE_KEY);
+      return product;
     } catch (error: unknown) {
       console.error('Error creating product:', error);
       if (
@@ -321,7 +324,18 @@ export class ProductsService {
     }
   }
 
-  async findAll(collectionId?: string) {
+  async findAll(collectionId?: string): Promise<ProductWithRelations[]> {
+    // We only cache the main list (no filters) for maximum efficiency on homepage
+    if (!collectionId) {
+      const cachedProducts = await this.cacheManager.get<
+        ProductWithRelations[]
+      >(this.CACHE_KEY);
+      if (cachedProducts) {
+        console.log('[ProductsService] Returning products from cache');
+        return cachedProducts;
+      }
+    }
+
     const where: Prisma.ProductWhereInput = {
       isActive: true,
     };
@@ -330,14 +344,20 @@ export class ProductsService {
       where.collectionId = collectionId;
     }
 
-    return this.prisma.product.findMany({
+    const products = await this.prisma.product.findMany({
       where,
       include: { variants: true, images: true, collection: true },
       orderBy: { createdAt: 'desc' },
     });
+
+    if (!collectionId) {
+      await this.cacheManager.set(this.CACHE_KEY, products);
+    }
+
+    return products;
   }
 
-  async findOne(id: string) {
+  async findOne(id: string): Promise<ProductWithRelations> {
     const product = await this.prisma.product.findUnique({
       where: { id },
       include: { variants: true, images: true, collection: true },
@@ -348,7 +368,7 @@ export class ProductsService {
     return product;
   }
 
-  async findBySlug(slug: string) {
+  async findBySlug(slug: string): Promise<ProductWithRelations> {
     const product = await this.prisma.product.findUnique({
       where: { slug },
       include: { variants: true, images: true, collection: true },
