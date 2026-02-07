@@ -54,5 +54,4 @@ WORKDIR /app/apps/api
 
 EXPOSE 4000
 
-# Usamos el binario local de prisma
-CMD ./node_modules/.bin/prisma db push --config prisma.config.ts; node dist/main.js
+CMD ["node", "dist/main.js"]
