@@ -17,8 +17,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tote Bag Shop",
-  description: "Bolsos artesanales y ecológicos",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
+  title: {
+    default: "Tote Bag Shop | Bolsos Artesanales",
+    template: "%s | Tote Bag Shop"
+  },
+  description: "Bolsos artesanales y ecológicos creados para durar.",
+  alternates: {
+    canonical: '/',
+  }
 };
 
 export default function RootLayout({

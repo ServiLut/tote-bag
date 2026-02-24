@@ -25,8 +25,24 @@ export class CatalogController {
   }
 
   @Get('products')
-  findAll(@Query('collection') collection?: string) {
-    return this.catalogService.findAll(collection);
+  findAll(
+    @Query('collection') collection?: string,
+    @Query('line') line?: string,
+    @Query('size') size?: string,
+    @Query('quality') quality?: string,
+    @Query('material') material?: string,
+    @Query('status') status?: string,
+    @Query('isCustomizable') isCustomizable?: string,
+  ) {
+    return this.catalogService.findAll({
+      collectionId: collection,
+      line,
+      size,
+      quality,
+      material,
+      status,
+      isCustomizable: isCustomizable === 'true',
+    });
   }
 
   @Get('slug/:slug')

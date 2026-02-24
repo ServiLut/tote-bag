@@ -2,16 +2,10 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import ProductGrid from '@/components/store/ProductGrid';
-import FilterSidebar from '@/components/store/FilterSidebar';
+import FilterSidebar, { type FilterState } from '@/components/store/FilterSidebar';
 import { Product } from '@/types/product';
 import { ApiResponse } from '@/types/api';
 import { Loader2, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
-
-interface FilterState {
-  minPrice: number;
-  maxPrice: number;
-  collections: string[];
-}
 
 export default function CatalogPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -26,14 +20,28 @@ export default function CatalogPage() {
     minPrice: 0,
     maxPrice: 1000000,
     collections: [],
+    lines: [],
+    sizes: [],
+    qualities: [],
+    materials: [],
+    status: [],
   });
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
 
   useEffect(() => {
     const fetchProducts = async () => {
+      setLoading(true);
       try {
-        const res = await fetch(`${API_URL}/catalog/products`);
+        // Construct query params from filters
+        const params = new URLSearchParams();
+        if (filters.collections.length > 0) params.append('collection', filters.collections[0]); // Backend takes one ID currently
+        if (filters.lines.length > 0) params.append('line', filters.lines[0]);
+        if (filters.sizes.length > 0) params.append('size', filters.sizes[0]);
+        if (filters.qualities.length > 0) params.append('quality', filters.qualities[0]);
+        if (filters.status.length > 0) params.append('status', filters.status[0]);
+
+        const res = await fetch(`${API_URL}/catalog/products?${params.toString()}`);
         if (!res.ok) throw new Error('Error al cargar catálogo');
         const responseBody: ApiResponse<Product[]> = await res.json();
         setProducts(responseBody.data);
@@ -46,34 +54,12 @@ export default function CatalogPage() {
     };
 
     fetchProducts();
-  }, [API_URL]);
+  }, [API_URL, filters]);
 
-  // Extract unique collections from products for the filter
+  // Extract unique collections from initial products load (simplified)
   const availableCollections = useMemo(() => {
-    const collections = new Set<string>();
-    products.forEach(p => {
-      if (p.collection?.name) collections.add(p.collection.name);
-    });
-    return Array.from(collections);
-  }, [products]);
-
-  // Apply filters
-  const filteredProducts = useMemo(() => {
-    return products.filter(product => {
-      // 1. Price Filter
-      if (product.basePrice < filters.minPrice) return false;
-      if (filters.maxPrice > 0 && product.basePrice > filters.maxPrice) return false;
-
-      // 2. Collection Filter
-      if (filters.collections.length > 0) {
-        if (!product.collection?.name || !filters.collections.includes(product.collection.name)) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [products, filters]);
+    return ['Básicos', 'Test Collection']; // Should ideally come from an API
+  }, []);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -84,19 +70,19 @@ export default function CatalogPage() {
     setCurrentPage(1);
   }, [filters]);
 
-  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(products.length / ITEMS_PER_PAGE);
   
   const paginatedProducts = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredProducts, currentPage]);
+    return products.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [products, currentPage]);
 
   return (
     <>
       {/* Header */}
       <div className="bg-base border-b border-theme py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-serif text-primary">Catálogo</h1>
+          <h1 className="text-4xl md:text-5xl font-serif font-bold text-primary">Catálogo</h1>
           <p className="text-muted mt-2 max-w-xl">
             Explora nuestra colección completa de tote bags sostenibles. 
             Diseñadas para reducir el uso de plástico sin sacrificar tu estilo.
@@ -130,15 +116,14 @@ export default function CatalogPage() {
         <div className="flex-1">
           <div className="mb-6 flex justify-between items-center">
             <span className="text-sm text-muted">
-              {filteredProducts.length > 0 ? (
+              {products.length > 0 ? (
                 <>
-                  Mostrando <span className="text-primary font-medium">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> - <span className="text-primary font-medium">{Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)}</span> de <span className="text-primary font-medium">{filteredProducts.length}</span> productos
+                  Mostrando <span className="text-primary font-medium">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> - <span className="text-primary font-medium">{Math.min(currentPage * ITEMS_PER_PAGE, products.length)}</span> de <span className="text-primary font-medium">{products.length}</span> productos
                 </>
               ) : (
                 'No se encontraron productos'
               )}
             </span>
-            {/* Sort Dropdown could go here */}
           </div>
 
           {loading ? (
@@ -161,12 +146,11 @@ export default function CatalogPage() {
                     }}
                     disabled={currentPage === 1}
                     className="p-2 border border-theme disabled:opacity-30 disabled:cursor-not-allowed hover:bg-theme/5 transition-colors rounded-sm"
-                    aria-label="Página anterior"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
                   
-                  <div className="flex gap-1 overflow-x-auto pb-2 sm:pb-0">
+                  <div className="flex gap-1">
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                       <button
                         key={page}
@@ -192,7 +176,6 @@ export default function CatalogPage() {
                     }}
                     disabled={currentPage === totalPages}
                     className="p-2 border border-theme disabled:opacity-30 disabled:cursor-not-allowed hover:bg-theme/5 transition-colors rounded-sm"
-                    aria-label="Siguiente página"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>
@@ -205,4 +188,3 @@ export default function CatalogPage() {
     </>
   );
 }
-

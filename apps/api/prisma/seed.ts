@@ -28,7 +28,7 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  console.log('🌱 Generando Seed...');
+  console.log('🌱 Iniciando Seed de Datos...');
 
   // 1. Departamentos y Municipios
   console.log('🇨🇴 Poblando Departamentos y Municipios...');
@@ -70,62 +70,66 @@ async function main() {
       data: municipalitiesData,
       skipDuplicates: true,
     });
-    console.log(`✅ Municipios procesados.`);
+    console.log(`✅ Departamentos y Municipios procesados.`);
   }
 
   // 2. Colección
+  console.log('📦 Creando Colección...');
   const collection = await prisma.collection.upsert({
     where: { slug: 'tote-bags' },
     update: {},
-    create: { name: 'Tote Bags', slug: 'tote-bags' },
+    create: {
+      name: 'Tote Bags',
+      slug: 'tote-bags',
+    },
   });
 
-  // 3. Personalización Global
-  const personalizations = [
-    { name: 'Bordado Frontal', code: 'BORD_FRONT', basePrice: 12000 },
-    { name: 'Estampado DTF', code: 'STAMP_DTF', basePrice: 8000 },
-  ];
-
-  for (const p of personalizations) {
-    await prisma.personalizationOption.upsert({ where: { code: p.code }, update: p, create: p });
-  }
-
-  // 4. Producto Base
+  // 3. Producto de Prueba
+  console.log('🛍️ Creando Producto Base...');
   const product = await prisma.product.upsert({
     where: { slug: 'tote-bag-clasica' },
-    update: { basePrice: 25000, minPrice: 18000 },
+    update: {},
     create: {
       name: 'Tote Bag Clásica',
-      description: 'Nuestra tote bag más versátil.',
+      description: 'Nuestra bolsa de tela más icónica y resistente.',
       slug: 'tote-bag-clasica',
       basePrice: 25000,
       minPrice: 18000,
       status: ProductStatus.DISPONIBLE,
       deliveryTime: '3-5 días',
-      material: 'Lona',
+      material: 'Algodón',
       collectionId: collection.id,
       printType: PrintType.DTF,
     },
   });
 
-  // 5. Atributos
-  const attrs = [
+  // 4. Atributos
+  console.log('✨ Creando Atributos de Prueba...');
+  const attributes = [
     { productId: product.id, type: AttributeType.SIZE, name: 'Estándar', priceModifier: 0, isDefault: true },
     { productId: product.id, type: AttributeType.SIZE, name: 'Grande', priceModifier: 5000, isDefault: false },
     { productId: product.id, type: AttributeType.QUALITY, name: 'Económica', priceModifier: 0, isDefault: true },
     { productId: product.id, type: AttributeType.QUALITY, name: 'Premium', priceModifier: 7000, isDefault: false },
+    // Línea requerida por DTO
     { productId: product.id, type: AttributeType.LINE, name: 'BASICA', priceModifier: 0, isDefault: true },
-    { productId: product.id, type: AttributeType.MATERIAL, name: 'Lona', priceModifier: 0, isDefault: true },
+    { productId: product.id, type: AttributeType.LINE, name: 'PREMIUM', priceModifier: 10000, isDefault: false },
   ];
 
-  await prisma.productAttribute.deleteMany({ where: { productId: product.id } });
-  for (const a of attrs) {
-    await prisma.productAttribute.create({ data: a });
+  for (const attr of attributes) {
+    await prisma.productAttribute.deleteMany({
+      where: { productId: product.id, type: attr.type, name: attr.name }
+    });
+    await prisma.productAttribute.create({ data: attr });
   }
 
-  console.log('✅ Seed completado.');
+  console.log('✅ Seed completado exitosamente.');
 }
 
 main()
-  .catch((e) => { console.error(e); process.exit(1); })
-  .finally(async () => { await prisma.$disconnect(); });
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

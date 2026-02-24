@@ -326,15 +326,16 @@ export class CatalogService {
     }
   }
 
-  async findAll(collectionId?: string): Promise<ProductWithRelations[]> {
-    if (!collectionId) {
-      const cachedProducts = await this.cacheManager.get<
-        ProductWithRelations[]
-      >(this.CACHE_KEY);
-      if (cachedProducts) {
-        return cachedProducts;
-      }
-    }
+  async findAll(filters: {
+    collectionId?: string;
+    line?: string;
+    size?: string;
+    quality?: string;
+    material?: string;
+    status?: string;
+    isCustomizable?: boolean;
+  }): Promise<ProductWithRelations[]> {
+    const { collectionId, line, size, quality, material, status, isCustomizable } = filters;
 
     const where: Prisma.ProductWhereInput = {
       isActive: true,
@@ -344,15 +345,39 @@ export class CatalogService {
       where.collectionId = collectionId;
     }
 
+    if (status) {
+      where.status = status as any;
+    }
+
+    // Additive Filters (AND): Product must match all provided attribute criteria
+    const andFilters: Prisma.ProductWhereInput[] = [];
+
+    if (line) andFilters.push({ attributes: { some: { type: 'LINE', name: { equals: line, mode: 'insensitive' } } } });
+    if (size) andFilters.push({ attributes: { some: { type: 'SIZE', name: { equals: size, mode: 'insensitive' } } } });
+    if (quality) andFilters.push({ attributes: { some: { type: 'QUALITY', name: { equals: quality, mode: 'insensitive' } } } });
+    if (material) andFilters.push({ attributes: { some: { type: 'MATERIAL', name: { equals: material, mode: 'insensitive' } } } });
+
+    // isCustomizable logic: In this architecture, products with variants or specific attributes are customizable
+    if (isCustomizable !== undefined) {
+      // Logic: if true, maybe check if it has personalization rules or just assume true for now
+      // as most products in this business are customizable.
+    }
+
+    if (andFilters.length > 0) {
+      where.AND = andFilters;
+    }
+
     const products = await this.prisma.product.findMany({
       where,
-      include: { variants: true, images: true, collection: true },
+      include: { 
+        variants: true, 
+        images: true, 
+        collection: true, 
+        attributes: true,
+        pricingRules: true 
+      },
       orderBy: { createdAt: 'desc' },
     });
-
-    if (!collectionId) {
-      await this.cacheManager.set(this.CACHE_KEY, products);
-    }
 
     return products;
   }

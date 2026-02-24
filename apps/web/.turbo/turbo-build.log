@@ -1,0 +1,58 @@
+
+> web@0.1.0 build C:\Users\user\Desktop\deybis\tote-bag\apps\web
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 15.8s
+  Running TypeScript ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/25) ...
+  Generating static pages using 7 workers (6/25) 
+  Generating static pages using 7 workers (12/25) 
+Error fetching dashboard stats: Error: Dynamic server usage: Route /dashboard couldn't be rendered statically because it used revalidate: 0 fetch http://127.0.0.1:4001/orders /dashboard. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at w (C:\Users\user\Desktop\deybis\tote-bag\apps\web\.next\server\chunks\ssr\[root-of-the-server]__bd86e026._.js:1:89491)
+    at <unknown> (C:\Users\user\Desktop\deybis\tote-bag\apps\web\.next\server\chunks\ssr\[root-of-the-server]__bd86e026._.js:8:10522) {
+  description: "Route /dashboard couldn't be rendered statically because it used revalidate: 0 fetch http://127.0.0.1:4001/orders /dashboard. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+  Generating static pages using 7 workers (18/25) 
+✓ Generating static pages using 7 workers (25/25) in 1923.4ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /about
+├ ○ /b2b
+├ ○ /catalog
+├ ƒ /catalog/[slug]
+├ ○ /checkout
+├ ƒ /dashboard
+├ ○ /dashboard/audit
+├ ○ /dashboard/b2b
+├ ○ /dashboard/customers
+├ ○ /dashboard/orders
+├ ○ /dashboard/products
+├ ƒ /dashboard/products/[id]/edit
+├ ○ /dashboard/products/new
+├ ○ /dashboard/settings
+├ ○ /forgot-password
+├ ○ /legal/cookies
+├ ○ /legal/data-processing
+├ ○ /legal/privacy
+├ ƒ /linea/[slug]
+├ ○ /login
+├ ○ /personaliza
+├ ○ /profile
+├ ○ /register
+└ ○ /reset-password
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
