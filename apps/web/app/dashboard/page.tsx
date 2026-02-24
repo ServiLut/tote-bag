@@ -21,7 +21,7 @@ async function getDashboardStats() {
   try {
     const [ordersRes, productsRes, quotesRes] = await Promise.all([
       fetch(`${API_URL}/orders`, { cache: 'no-store' }),
-      fetch(`${API_URL}/products/list`, { cache: 'no-store' }),
+      fetch(`${API_URL}/catalog/products`, { cache: 'no-store' }),
       fetch(`${API_URL}/b2b/quotes`, { cache: 'no-store' }),
     ]);
 
@@ -150,3 +150,4 @@ export default async function DashboardPage() {
     </div>
   );
 }
+

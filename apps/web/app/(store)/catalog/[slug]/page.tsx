@@ -13,7 +13,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 async function getProduct(slug: string): Promise<Product | null> {
   try {
-    const res = await fetch(`${API_URL}/products/slug/${slug}`, {
+    const res = await fetch(`${API_URL}/catalog/slug/${slug}`, {
       next: { revalidate: 60 }, // Revalidate every minute
     });
     
@@ -36,7 +36,7 @@ async function getRelatedProducts(currentProductId: string, collectionId?: strin
 
     // 1. Try fetching from same collection if available
     if (collectionId) {
-      const endpoint = `${API_URL}/products/list?collection=${collectionId}`;
+      const endpoint = `${API_URL}/catalog/products?collection=${collectionId}`;
       const res = await fetch(endpoint, { next: { revalidate: 60 } });
       if (res.ok) {
         const response: ApiResponse<Product[]> = await res.json();
@@ -49,7 +49,7 @@ async function getRelatedProducts(currentProductId: string, collectionId?: strin
 
     // 2. If no products found (or only the current one existed in collection), fetch general list
     if (related.length === 0) {
-      const res = await fetch(`${API_URL}/products/list`, { next: { revalidate: 60 } });
+      const res = await fetch(`${API_URL}/catalog/products`, { next: { revalidate: 60 } });
       if (res.ok) {
         const response: ApiResponse<Product[]> = await res.json();
         // Filter out current product from general list

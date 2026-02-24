@@ -313,8 +313,8 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
       };
 
       const url = isEditMode  
-        ? `${apiUrl}/products/${initialData.id}` 
-        : `${apiUrl}/products`;
+        ? `${apiUrl}/catalog/${initialData.id}` 
+        : `${apiUrl}/catalog`;
       
       console.log('------------------------------------------------');
       console.log('🚀 SUBMITTING FORM');

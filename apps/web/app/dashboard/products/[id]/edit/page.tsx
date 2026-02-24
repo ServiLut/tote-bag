@@ -37,7 +37,7 @@ export default function EditProductPage() {
 
     const fetchProduct = async () => {
       try {
-        const res = await fetch(`${API_URL}/products/${id}`);
+        const res = await fetch(`${API_URL}/catalog/${id}`);
         if (!res.ok) throw new Error('No se pudo cargar el producto');
         const responseBody: ApiResponse<Product> = await res.json();
         setProductData(responseBody.data);

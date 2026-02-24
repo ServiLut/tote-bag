@@ -31,8 +31,11 @@ model Product {
   isActive         Boolean        @default(true) @map("is_active")
   createdAt        DateTime       @default(now()) @map("created_at")
   updatedAt        DateTime       @updatedAt @map("updated_at")
-  orderItems       OrderItem[]
+  attributes       ProductAttribute[]
   images           ProductImage[]
+  orderItems       OrderItem[]
+  pricingRules     PricingRule[]
+  quoteItems       B2BQuoteItem[]
   collection       Collection     @relation(fields: [collectionId], references: [id])
   variants         Variant[]
 
@@ -114,16 +117,19 @@ model OrderStatusHistory {
 }
 
 model OrderItem {
-  id        String   @id @default(uuid()) @map("id")
-  quantity  Int      @map("quantity")
-  price     Float    @map("price")
-  sku       String   @map("sku")
-  orderId   String   @map("order_id")
-  productId String   @map("product_id")
-  variantId String?  @map("variant_id")
-  order     Order    @relation(fields: [orderId], references: [id])
-  product   Product  @relation(fields: [productId], references: [id])
-  variant   Variant? @relation(fields: [variantId], references: [id])
+  id                String   @id @default(uuid()) @map("id")
+  quantity          Int      @map("quantity")
+  price             Float    @map("price")
+  totalPrice        Float    @default(0) @map("total_price")
+  sku               String   @map("sku")
+  configurationJson Json?    @map("configuration_json")
+  pricingJson       Json?    @map("pricing_json")
+  orderId           String   @map("order_id")
+  productId         String   @map("product_id")
+  variantId         String?  @map("variant_id")
+  order             Order    @relation(fields: [orderId], references: [id])
+  product           Product  @relation(fields: [productId], references: [id])
+  variant           Variant? @relation(fields: [variantId], references: [id])
 
   @@map("order_items")
   @@schema("tote-bag")
@@ -210,6 +216,7 @@ model B2BQuote {
   package      String   @map("package")
   status       String   @default("PENDIENTE") @map("status")
   createdAt    DateTime @default(now()) @map("created_at")
+  items        B2BQuoteItem[]
 
   @@map("b2b_quotes")
   @@schema("tote-bag")
@@ -255,6 +262,58 @@ model Address {
   @@schema("tote-bag")
 }
 
+model ProductAttribute {
+  id            String        @id @default(uuid()) @map("id")
+  productId     String        @map("product_id")
+  type          AttributeType @map("type")
+  name          String        @map("name")
+  priceModifier Float         @default(0) @map("price_modifier")
+  isDefault     Boolean       @default(false) @map("is_default")
+  product       Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_attributes")
+  @@schema("tote-bag")
+}
+
+model PersonalizationOption {
+  id        String @id @default(uuid()) @map("id")
+  name      String @map("name")
+  code      String @unique @map("code")
+  basePrice Float  @map("base_price")
+
+  @@map("personalization_options")
+  @@schema("tote-bag")
+}
+
+model PricingRule {
+  id                 String       @id @default(uuid()) @map("id")
+  productId          String       @map("product_id")
+  minQuantity        Int          @map("min_quantity")
+  discountPercentage Float        @map("discount_percentage")
+  scope              PricingScope @map("scope")
+  product            Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("pricing_rules")
+  @@schema("tote-bag")
+}
+
+model B2BQuoteItem {
+  id                String   @id @default(uuid()) @map("id")
+  quoteId           String   @map("quote_id")
+  productId         String   @map("product_id")
+  variantId         String?  @map("variant_id")
+  quantity          Int      @map("quantity")
+  unitPrice         Float    @map("unit_price")
+  totalPrice        Float    @default(0) @map("total_price")
+  configurationJson Json?    @map("configuration_json")
+  pricingJson       Json?    @map("pricing_json")
+  product           Product  @relation(fields: [productId], references: [id])
+  quote             B2BQuote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@map("b2b_quote_items")
+  @@schema("tote-bag")
+}
+
 enum OrderStatus {
   PENDIENTE_PAGO
   PAGADA
@@ -286,6 +345,22 @@ enum ProductStatus {
 enum PrintType {
   SERIGRAFIA
   DTF
+
+  @@schema("tote-bag")
+}
+
+enum AttributeType {
+  SIZE
+  MATERIAL
+  QUALITY
+  LINE
+
+  @@schema("tote-bag")
+}
+
+enum PricingScope {
+  B2C
+  B2B
 
   @@schema("tote-bag")
 }

@@ -17,7 +17,7 @@ export default function Home() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await fetch(`${API_URL}/products/list`);
+        const res = await fetch(`${API_URL}/catalog/products`);
         if (!res.ok) throw new Error('Error al cargar productos');
         const responseBody: ApiResponse<Product[]> = await res.json();
         setProducts(responseBody.data);
@@ -118,3 +118,4 @@ export default function Home() {
     </>
   );
 }
+

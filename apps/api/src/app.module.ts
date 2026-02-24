@@ -9,27 +9,31 @@ import { SentryModule } from '@sentry/nestjs/setup';
 import { SentryGlobalFilter } from '@sentry/nestjs/setup';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ProductsModule } from './products/products.module';
-import { B2bModule } from './b2b/b2b.module';
-import { AuthModule } from './auth/auth.module';
-import { OrdersModule } from './orders/orders.module';
-import { ProfilesModule } from './profiles/profiles.module';
-import { PaymentsModule } from './payments/payments.module';
-import { LocationsModule } from './locations/locations.module';
-import { AddressesModule } from './addresses/addresses.module';
+import { B2BModule } from './modules/b2b/b2b.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { OrdersModule } from './modules/orders/orders.module';
+import { ProfilesModule } from './modules/profiles/profiles.module';
+import { PaymentsModule } from './modules/payments/payments.module';
+import { LocationsModule } from './modules/locations/locations.module';
+import { AddressesModule } from './modules/addresses/addresses.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ConfigurationModule } from './modules/configuration/configuration.module';
+import { PricingModule } from './modules/pricing/pricing.module';
+import { CatalogModule } from './modules/catalog/catalog.module';
+import { CartModule } from './modules/cart/cart.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
-import { AuditModule } from './audit/audit.module';
+import { AuditModule } from './modules/audit/audit.module';
 import { AuthMiddleware } from './common/middleware/auth.middleware';
-import { CustomThrottlerGuard } from './common/guards/throttler.guard';
-import { validate } from './config/env.validation';
+import { ThrottlerBehindProxyGuard } from './common/guards/throttler.guard';
+import envValidationSchema from './config/env.validation';
 
 @Module({
   imports: [
     SentryModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
-      validate,
+      validate: envValidationSchema,
     }),
     CacheModule.registerAsync({
       isGlobal: true,
@@ -61,15 +65,14 @@ import { validate } from './config/env.validation';
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
-        limit: 30,
+        limit: 100,
       },
     ]),
     PrometheusModule.register({
       path: '/metrics',
     }),
     PrismaModule,
-    ProductsModule,
-    B2bModule,
+    B2BModule,
     AuthModule,
     OrdersModule,
     ProfilesModule,
@@ -77,6 +80,11 @@ import { validate } from './config/env.validation';
     LocationsModule,
     AddressesModule,
     AuditModule,
+    ConfigurationModule,
+    PricingModule,
+    CatalogModule,
+    CartModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [
@@ -91,7 +99,7 @@ import { validate } from './config/env.validation';
     },
     {
       provide: APP_GUARD,
-      useClass: CustomThrottlerGuard,
+      useClass: ThrottlerBehindProxyGuard,
     },
   ],
 })

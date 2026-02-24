@@ -2,7 +2,7 @@ import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 
 @Injectable()
-export class CustomThrottlerGuard extends ThrottlerGuard {
+export class ThrottlerBehindProxyGuard extends ThrottlerGuard {
   protected throwThrottlingException(): Promise<void> {
     throw new HttpException(
       {

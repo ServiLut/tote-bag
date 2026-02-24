@@ -72,7 +72,7 @@ export default function ProductsTable() {
   const fetchProducts = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`${API_URL}/products/list`, {
+      const res = await fetch(`${API_URL}/catalog/products`, {
         headers: {
           'Authorization': `Bearer ${session?.access_token}`,
         }
@@ -96,7 +96,7 @@ export default function ProductsTable() {
     setUpdatingId(id);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`${API_URL}/products/${id}`, {
+      const res = await fetch(`${API_URL}/catalog/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -123,7 +123,7 @@ export default function ProductsTable() {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`${API_URL}/products/${id}`, {
+      const res = await fetch(`${API_URL}/catalog/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${session?.access_token}`,
