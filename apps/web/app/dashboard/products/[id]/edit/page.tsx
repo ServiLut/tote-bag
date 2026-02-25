@@ -72,7 +72,7 @@ export default function EditProductPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col p-8 md:p-12 max-w-5xl mx-auto overflow-hidden bg-base">
+    <div className="min-h-screen flex flex-col p-8 md:p-12 max-w-5xl mx-auto bg-base">
       <div className="flex-none mb-8">
         <Link 
           href="/dashboard/products" 
@@ -87,7 +87,7 @@ export default function EditProductPage() {
         </p>
       </div>
 
-      <div className="flex-1 bg-surface rounded-3xl border border-theme shadow-sm overflow-hidden mb-12">
+      <div className="bg-surface rounded-3xl border border-theme shadow-sm mb-12">
         <AdminProductForm initialData={productData} />
       </div>
     </div>

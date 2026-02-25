@@ -4,7 +4,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { Prisma } from '../../generated/client/client';
 import { PricingService } from '../pricing/pricing.service';
-import { PricingScope } from '../../generated/client/enums';
+import { PriceRuleScope } from '../../generated/client/enums';
 import { ConfigurationSnapshot } from '../../common/interfaces/snapshots.interface';
 
 @Injectable()
@@ -27,20 +27,21 @@ export class OrdersService {
 
     const processedItems = await Promise.all(
       items.map(async (item) => {
-        let finalPrice = item.price || 0;
-        let totalPrice = finalPrice * item.quantity;
+        let unitPrice = item.price || 0;
+        let totalPrice = unitPrice * item.quantity;
         let configurationJson: any = null;
         let pricingJson: any = null;
 
         if (item.configuration) {
-          const scope = isB2B ? PricingScope.B2B : PricingScope.B2C;
+          const scope = isB2B ? PriceRuleScope.B2B : PriceRuleScope.B2C;
           const quote = await this.pricingService.calculateQuote(item.configuration, scope);
-          finalPrice = quote.unitPrice;
+          unitPrice = quote.unitPrice;
           totalPrice = quote.total;
           
           // Generate Configuration Snapshot
           const configSnapshot: ConfigurationSnapshot = {
-            version: '1.0',
+            version: '1.1',
+            configCode: quote.snapshot.configCode,
             productId: item.productId,
             productName: item.sku, // Fallback if name not in DTO
             line: item.configuration.line,
@@ -57,7 +58,7 @@ export class OrdersService {
 
         return {
           ...item,
-          price: finalPrice,
+          unitPrice,
           totalPrice,
           configurationJson,
           pricingJson,
@@ -94,7 +95,7 @@ export class OrdersService {
           create: processedItems.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
-            price: item.price,
+            unitPrice: item.unitPrice,
             totalPrice: item.totalPrice,
             sku: item.sku,
             variantId: item.variantId,

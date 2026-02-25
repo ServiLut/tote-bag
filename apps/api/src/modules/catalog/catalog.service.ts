@@ -29,17 +29,10 @@ export class CatalogService {
     id: string,
     updateProductDto: UpdateProductDto,
   ): Promise<ProductWithRelations> {
-    const { variants, images, collectionId, collectionName, ...data } =
+    const { variants, images, attributes, pricingRules, collectionId, collectionName, ...data } =
       updateProductDto;
 
     console.log(`Updating product ${id}`);
-
-    if (variants) {
-      console.log('Received variants for update:', variants.length);
-      console.log('Sample variant SKU:', variants[0]?.sku);
-    } else {
-      console.log('No variants provided in update DTO');
-    }
 
     // Resolve Collection if needed
     let activeCollectionId: string | undefined = collectionId;
@@ -77,6 +70,35 @@ export class CatalogService {
           url: img.url,
           alt: img.alt,
           position: img.position,
+        })),
+      };
+    }
+
+    // Handle Attributes update if provided
+    if (attributes) {
+      updateData.attributes = {
+        deleteMany: {},
+        create: attributes.map((attr) => ({
+          type: attr.type,
+          value: attr.value,
+          priceModifier: attr.priceModifier,
+          sortOrder: attr.sortOrder || 0,
+          isActive: attr.isActive ?? true,
+        })),
+      };
+    }
+
+    // Handle PricingRules update if provided
+    if (pricingRules) {
+      updateData.pricingRules = {
+        deleteMany: {},
+        create: pricingRules.map((rule) => ({
+          scope: rule.scope,
+          minQty: rule.minQty,
+          maxQty: rule.maxQty,
+          discountPct: rule.discountPct,
+          fixedUnitPrice: rule.fixedUnitPrice,
+          isActive: rule.isActive ?? true,
         })),
       };
     }
@@ -215,17 +237,8 @@ export class CatalogService {
   async create(
     createProductDto: CreateProductDto,
   ): Promise<ProductWithRelations> {
-    const { variants, collectionId, collectionName, images, ...productData } =
+    const { variants, collectionId, collectionName, images, attributes, pricingRules, ...productData } =
       createProductDto;
-
-    // TODO: Mover a PricingService: Validar que basePrice >= minPrice
-    /*
-    if (productData.basePrice < productData.minPrice) {
-      throw new BadRequestException(
-        `Base price (${productData.basePrice}) cannot be lower than Minimum Price (${productData.minPrice})`,
-      );
-    }
-    */
 
     // 2. Fetch or Create Collection for SKU validation
     let collection: { id: string; name: string } | null = null;
@@ -300,11 +313,32 @@ export class CatalogService {
                 stock: v.stock,
               })),
             },
+            attributes: {
+              create: attributes?.map((attr) => ({
+                type: attr.type,
+                value: attr.value,
+                priceModifier: attr.priceModifier,
+                sortOrder: attr.sortOrder || 0,
+                isActive: attr.isActive ?? true,
+              })),
+            },
+            pricingRules: {
+              create: pricingRules?.map((rule) => ({
+                scope: rule.scope,
+                minQty: rule.minQty,
+                maxQty: rule.maxQty,
+                discountPct: rule.discountPct,
+                fixedUnitPrice: rule.fixedUnitPrice,
+                isActive: rule.isActive ?? true,
+              })),
+            },
           },
           include: {
             variants: true,
             images: true,
             collection: true,
+            attributes: true,
+            pricingRules: true,
           },
         });
       });
@@ -352,10 +386,10 @@ export class CatalogService {
     // Additive Filters (AND): Product must match all provided attribute criteria
     const andFilters: Prisma.ProductWhereInput[] = [];
 
-    if (line) andFilters.push({ attributes: { some: { type: 'LINE', name: { equals: line, mode: 'insensitive' } } } });
-    if (size) andFilters.push({ attributes: { some: { type: 'SIZE', name: { equals: size, mode: 'insensitive' } } } });
-    if (quality) andFilters.push({ attributes: { some: { type: 'QUALITY', name: { equals: quality, mode: 'insensitive' } } } });
-    if (material) andFilters.push({ attributes: { some: { type: 'MATERIAL', name: { equals: material, mode: 'insensitive' } } } });
+    if (line) andFilters.push({ attributes: { some: { type: 'LINE', value: { equals: line, mode: 'insensitive' } } } });
+    if (size) andFilters.push({ attributes: { some: { type: 'SIZE', value: { equals: size, mode: 'insensitive' } } } });
+    if (quality) andFilters.push({ attributes: { some: { type: 'QUALITY', value: { equals: quality, mode: 'insensitive' } } } });
+    if (material) andFilters.push({ attributes: { some: { type: 'MATERIAL', value: { equals: material, mode: 'insensitive' } } } });
 
     // isCustomizable logic: In this architecture, products with variants or specific attributes are customizable
     if (isCustomizable !== undefined) {
@@ -402,6 +436,39 @@ export class CatalogService {
       throw new NotFoundException(`Product with slug ${slug} not found`);
     }
     return product;
+  }
+
+  async getProductConfig(slug: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { slug },
+      include: {
+        attributes: { where: { isActive: true } },
+        pricingRules: { where: { isActive: true } },
+        personalizationRules: {
+          include: { personalization: true },
+          where: { isActive: true },
+        },
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException(`Product with slug ${slug} not found`);
+    }
+
+    // Get all available personalization options if none are linked to product
+    const personalizations = await this.prisma.personalizationOption.findMany({
+      where: { isActive: true }
+    });
+
+    return {
+      productId: product.id,
+      slug: product.slug,
+      attributes: product.attributes,
+      pricingRules: product.pricingRules,
+      personalizationOptions: product.personalizationRules.length > 0 
+        ? product.personalizationRules.map(r => ({ ...r.personalization, rule: r }))
+        : personalizations,
+    };
   }
 }
 

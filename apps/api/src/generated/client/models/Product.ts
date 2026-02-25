@@ -356,6 +356,7 @@ export type ProductWhereInput = {
   images?: Prisma.ProductImageListRelationFilter
   orderItems?: Prisma.OrderItemListRelationFilter
   pricingRules?: Prisma.PricingRuleListRelationFilter
+  personalizationRules?: Prisma.PersonalizationRuleListRelationFilter
   quoteItems?: Prisma.B2BQuoteItemListRelationFilter
   collection?: Prisma.XOR<Prisma.CollectionScalarRelationFilter, Prisma.CollectionWhereInput>
   variants?: Prisma.VariantListRelationFilter
@@ -387,6 +388,7 @@ export type ProductOrderByWithRelationInput = {
   images?: Prisma.ProductImageOrderByRelationAggregateInput
   orderItems?: Prisma.OrderItemOrderByRelationAggregateInput
   pricingRules?: Prisma.PricingRuleOrderByRelationAggregateInput
+  personalizationRules?: Prisma.PersonalizationRuleOrderByRelationAggregateInput
   quoteItems?: Prisma.B2BQuoteItemOrderByRelationAggregateInput
   collection?: Prisma.CollectionOrderByWithRelationInput
   variants?: Prisma.VariantOrderByRelationAggregateInput
@@ -421,6 +423,7 @@ export type ProductWhereUniqueInput = Prisma.AtLeast<{
   images?: Prisma.ProductImageListRelationFilter
   orderItems?: Prisma.OrderItemListRelationFilter
   pricingRules?: Prisma.PricingRuleListRelationFilter
+  personalizationRules?: Prisma.PersonalizationRuleListRelationFilter
   quoteItems?: Prisma.B2BQuoteItemListRelationFilter
   collection?: Prisma.XOR<Prisma.CollectionScalarRelationFilter, Prisma.CollectionWhereInput>
   variants?: Prisma.VariantListRelationFilter
@@ -507,6 +510,7 @@ export type ProductCreateInput = {
   images?: Prisma.ProductImageCreateNestedManyWithoutProductInput
   orderItems?: Prisma.OrderItemCreateNestedManyWithoutProductInput
   pricingRules?: Prisma.PricingRuleCreateNestedManyWithoutProductInput
+  personalizationRules?: Prisma.PersonalizationRuleCreateNestedManyWithoutProductInput
   quoteItems?: Prisma.B2BQuoteItemCreateNestedManyWithoutProductInput
   collection: Prisma.CollectionCreateNestedOneWithoutProductsInput
   variants?: Prisma.VariantCreateNestedManyWithoutProductInput
@@ -538,6 +542,7 @@ export type ProductUncheckedCreateInput = {
   images?: Prisma.ProductImageUncheckedCreateNestedManyWithoutProductInput
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutProductInput
   pricingRules?: Prisma.PricingRuleUncheckedCreateNestedManyWithoutProductInput
+  personalizationRules?: Prisma.PersonalizationRuleUncheckedCreateNestedManyWithoutProductInput
   quoteItems?: Prisma.B2BQuoteItemUncheckedCreateNestedManyWithoutProductInput
   variants?: Prisma.VariantUncheckedCreateNestedManyWithoutProductInput
 }
@@ -567,6 +572,7 @@ export type ProductUpdateInput = {
   images?: Prisma.ProductImageUpdateManyWithoutProductNestedInput
   orderItems?: Prisma.OrderItemUpdateManyWithoutProductNestedInput
   pricingRules?: Prisma.PricingRuleUpdateManyWithoutProductNestedInput
+  personalizationRules?: Prisma.PersonalizationRuleUpdateManyWithoutProductNestedInput
   quoteItems?: Prisma.B2BQuoteItemUpdateManyWithoutProductNestedInput
   collection?: Prisma.CollectionUpdateOneRequiredWithoutProductsNestedInput
   variants?: Prisma.VariantUpdateManyWithoutProductNestedInput
@@ -598,6 +604,7 @@ export type ProductUncheckedUpdateInput = {
   images?: Prisma.ProductImageUncheckedUpdateManyWithoutProductNestedInput
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutProductNestedInput
   pricingRules?: Prisma.PricingRuleUncheckedUpdateManyWithoutProductNestedInput
+  personalizationRules?: Prisma.PersonalizationRuleUncheckedUpdateManyWithoutProductNestedInput
   quoteItems?: Prisma.B2BQuoteItemUncheckedUpdateManyWithoutProductNestedInput
   variants?: Prisma.VariantUncheckedUpdateManyWithoutProductNestedInput
 }
@@ -927,6 +934,20 @@ export type ProductUpdateOneRequiredWithoutAttributesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ProductUpdateToOneWithWhereWithoutAttributesInput, Prisma.ProductUpdateWithoutAttributesInput>, Prisma.ProductUncheckedUpdateWithoutAttributesInput>
 }
 
+export type ProductCreateNestedOneWithoutPersonalizationRulesInput = {
+  create?: Prisma.XOR<Prisma.ProductCreateWithoutPersonalizationRulesInput, Prisma.ProductUncheckedCreateWithoutPersonalizationRulesInput>
+  connectOrCreate?: Prisma.ProductCreateOrConnectWithoutPersonalizationRulesInput
+  connect?: Prisma.ProductWhereUniqueInput
+}
+
+export type ProductUpdateOneRequiredWithoutPersonalizationRulesNestedInput = {
+  create?: Prisma.XOR<Prisma.ProductCreateWithoutPersonalizationRulesInput, Prisma.ProductUncheckedCreateWithoutPersonalizationRulesInput>
+  connectOrCreate?: Prisma.ProductCreateOrConnectWithoutPersonalizationRulesInput
+  upsert?: Prisma.ProductUpsertWithoutPersonalizationRulesInput
+  connect?: Prisma.ProductWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ProductUpdateToOneWithWhereWithoutPersonalizationRulesInput, Prisma.ProductUpdateWithoutPersonalizationRulesInput>, Prisma.ProductUncheckedUpdateWithoutPersonalizationRulesInput>
+}
+
 export type ProductCreateNestedOneWithoutPricingRulesInput = {
   create?: Prisma.XOR<Prisma.ProductCreateWithoutPricingRulesInput, Prisma.ProductUncheckedCreateWithoutPricingRulesInput>
   connectOrCreate?: Prisma.ProductCreateOrConnectWithoutPricingRulesInput
@@ -979,6 +1000,7 @@ export type ProductCreateWithoutImagesInput = {
   attributes?: Prisma.ProductAttributeCreateNestedManyWithoutProductInput
   orderItems?: Prisma.OrderItemCreateNestedManyWithoutProductInput
   pricingRules?: Prisma.PricingRuleCreateNestedManyWithoutProductInput
+  personalizationRules?: Prisma.PersonalizationRuleCreateNestedManyWithoutProductInput
   quoteItems?: Prisma.B2BQuoteItemCreateNestedManyWithoutProductInput
   collection: Prisma.CollectionCreateNestedOneWithoutProductsInput
   variants?: Prisma.VariantCreateNestedManyWithoutProductInput
@@ -1009,6 +1031,7 @@ export type ProductUncheckedCreateWithoutImagesInput = {
   attributes?: Prisma.ProductAttributeUncheckedCreateNestedManyWithoutProductInput
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutProductInput
   pricingRules?: Prisma.PricingRuleUncheckedCreateNestedManyWithoutProductInput
+  personalizationRules?: Prisma.PersonalizationRuleUncheckedCreateNestedManyWithoutProductInput
   quoteItems?: Prisma.B2BQuoteItemUncheckedCreateNestedManyWithoutProductInput
   variants?: Prisma.VariantUncheckedCreateNestedManyWithoutProductInput
 }
@@ -1053,6 +1076,7 @@ export type ProductUpdateWithoutImagesInput = {
   attributes?: Prisma.ProductAttributeUpdateManyWithoutProductNestedInput
   orderItems?: Prisma.OrderItemUpdateManyWithoutProductNestedInput
   pricingRules?: Prisma.PricingRuleUpdateManyWithoutProductNestedInput
+  personalizationRules?: Prisma.PersonalizationRuleUpdateManyWithoutProductNestedInput
   quoteItems?: Prisma.B2BQuoteItemUpdateManyWithoutProductNestedInput
   collection?: Prisma.CollectionUpdateOneRequiredWithoutProductsNestedInput
   variants?: Prisma.VariantUpdateManyWithoutProductNestedInput
@@ -1083,6 +1107,7 @@ export type ProductUncheckedUpdateWithoutImagesInput = {
   attributes?: Prisma.ProductAttributeUncheckedUpdateManyWithoutProductNestedInput
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutProductNestedInput
   pricingRules?: Prisma.PricingRuleUncheckedUpdateManyWithoutProductNestedInput
+  personalizationRules?: Prisma.PersonalizationRuleUncheckedUpdateManyWithoutProductNestedInput
   quoteItems?: Prisma.B2BQuoteItemUncheckedUpdateManyWithoutProductNestedInput
   variants?: Prisma.VariantUncheckedUpdateManyWithoutProductNestedInput
 }
@@ -1112,6 +1137,7 @@ export type ProductCreateWithoutCollectionInput = {
   images?: Prisma.ProductImageCreateNestedManyWithoutProductInput
   orderItems?: Prisma.OrderItemCreateNestedManyWithoutProductInput
   pricingRules?: Prisma.PricingRuleCreateNestedManyWithoutProductInput
+  personalizationRules?: Prisma.PersonalizationRuleCreateNestedManyWithoutProductInput
   quoteItems?: Prisma.B2BQuoteItemCreateNestedManyWithoutProductInput
   variants?: Prisma.VariantCreateNestedManyWithoutProductInput
 }
@@ -1141,6 +1167,7 @@ export type ProductUncheckedCreateWithoutCollectionInput = {
   images?: Prisma.ProductImageUncheckedCreateNestedManyWithoutProductInput
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutProductInput
   pricingRules?: Prisma.PricingRuleUncheckedCreateNestedManyWithoutProductInput
+  personalizationRules?: Prisma.PersonalizationRuleUncheckedCreateNestedManyWithoutProductInput
   quoteItems?: Prisma.B2BQuoteItemUncheckedCreateNestedManyWithoutProductInput
   variants?: Prisma.VariantUncheckedCreateNestedManyWithoutProductInput
 }
@@ -1223,6 +1250,7 @@ export type ProductCreateWithoutVariantsInput = {
   images?: Prisma.ProductImageCreateNestedManyWithoutProductInput
   orderItems?: Prisma.OrderItemCreateNestedManyWithoutProductInput
   pricingRules?: Prisma.PricingRuleCreateNestedManyWithoutProductInput
+  personalizationRules?: Prisma.PersonalizationRuleCreateNestedManyWithoutProductInput
   quoteItems?: Prisma.B2BQuoteItemCreateNestedManyWithoutProductInput
   collection: Prisma.CollectionCreateNestedOneWithoutProductsInput
 }
@@ -1253,6 +1281,7 @@ export type ProductUncheckedCreateWithoutVariantsInput = {
   images?: Prisma.ProductImageUncheckedCreateNestedManyWithoutProductInput
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutProductInput
   pricingRules?: Prisma.PricingRuleUncheckedCreateNestedManyWithoutProductInput
+  personalizationRules?: Prisma.PersonalizationRuleUncheckedCreateNestedManyWithoutProductInput
   quoteItems?: Prisma.B2BQuoteItemUncheckedCreateNestedManyWithoutProductInput
 }
 
@@ -1297,6 +1326,7 @@ export type ProductUpdateWithoutVariantsInput = {
   images?: Prisma.ProductImageUpdateManyWithoutProductNestedInput
   orderItems?: Prisma.OrderItemUpdateManyWithoutProductNestedInput
   pricingRules?: Prisma.PricingRuleUpdateManyWithoutProductNestedInput
+  personalizationRules?: Prisma.PersonalizationRuleUpdateManyWithoutProductNestedInput
   quoteItems?: Prisma.B2BQuoteItemUpdateManyWithoutProductNestedInput
   collection?: Prisma.CollectionUpdateOneRequiredWithoutProductsNestedInput
 }
@@ -1327,6 +1357,7 @@ export type ProductUncheckedUpdateWithoutVariantsInput = {
   images?: Prisma.ProductImageUncheckedUpdateManyWithoutProductNestedInput
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutProductNestedInput
   pricingRules?: Prisma.PricingRuleUncheckedUpdateManyWithoutProductNestedInput
+  personalizationRules?: Prisma.PersonalizationRuleUncheckedUpdateManyWithoutProductNestedInput
   quoteItems?: Prisma.B2BQuoteItemUncheckedUpdateManyWithoutProductNestedInput
 }
 
@@ -1354,6 +1385,7 @@ export type ProductCreateWithoutOrderItemsInput = {
   attributes?: Prisma.ProductAttributeCreateNestedManyWithoutProductInput
   images?: Prisma.ProductImageCreateNestedManyWithoutProductInput
   pricingRules?: Prisma.PricingRuleCreateNestedManyWithoutProductInput
+  personalizationRules?: Prisma.PersonalizationRuleCreateNestedManyWithoutProductInput
   quoteItems?: Prisma.B2BQuoteItemCreateNestedManyWithoutProductInput
   collection: Prisma.CollectionCreateNestedOneWithoutProductsInput
   variants?: Prisma.VariantCreateNestedManyWithoutProductInput
@@ -1384,6 +1416,7 @@ export type ProductUncheckedCreateWithoutOrderItemsInput = {
   attributes?: Prisma.ProductAttributeUncheckedCreateNestedManyWithoutProductInput
   images?: Prisma.ProductImageUncheckedCreateNestedManyWithoutProductInput
   pricingRules?: Prisma.PricingRuleUncheckedCreateNestedManyWithoutProductInput
+  personalizationRules?: Prisma.PersonalizationRuleUncheckedCreateNestedManyWithoutProductInput
   quoteItems?: Prisma.B2BQuoteItemUncheckedCreateNestedManyWithoutProductInput
   variants?: Prisma.VariantUncheckedCreateNestedManyWithoutProductInput
 }
@@ -1428,6 +1461,7 @@ export type ProductUpdateWithoutOrderItemsInput = {
   attributes?: Prisma.ProductAttributeUpdateManyWithoutProductNestedInput
   images?: Prisma.ProductImageUpdateManyWithoutProductNestedInput
   pricingRules?: Prisma.PricingRuleUpdateManyWithoutProductNestedInput
+  personalizationRules?: Prisma.PersonalizationRuleUpdateManyWithoutProductNestedInput
   quoteItems?: Prisma.B2BQuoteItemUpdateManyWithoutProductNestedInput
   collection?: Prisma.CollectionUpdateOneRequiredWithoutProductsNestedInput
   variants?: Prisma.VariantUpdateManyWithoutProductNestedInput
@@ -1458,6 +1492,7 @@ export type ProductUncheckedUpdateWithoutOrderItemsInput = {
   attributes?: Prisma.ProductAttributeUncheckedUpdateManyWithoutProductNestedInput
   images?: Prisma.ProductImageUncheckedUpdateManyWithoutProductNestedInput
   pricingRules?: Prisma.PricingRuleUncheckedUpdateManyWithoutProductNestedInput
+  personalizationRules?: Prisma.PersonalizationRuleUncheckedUpdateManyWithoutProductNestedInput
   quoteItems?: Prisma.B2BQuoteItemUncheckedUpdateManyWithoutProductNestedInput
   variants?: Prisma.VariantUncheckedUpdateManyWithoutProductNestedInput
 }
@@ -1486,6 +1521,7 @@ export type ProductCreateWithoutAttributesInput = {
   images?: Prisma.ProductImageCreateNestedManyWithoutProductInput
   orderItems?: Prisma.OrderItemCreateNestedManyWithoutProductInput
   pricingRules?: Prisma.PricingRuleCreateNestedManyWithoutProductInput
+  personalizationRules?: Prisma.PersonalizationRuleCreateNestedManyWithoutProductInput
   quoteItems?: Prisma.B2BQuoteItemCreateNestedManyWithoutProductInput
   collection: Prisma.CollectionCreateNestedOneWithoutProductsInput
   variants?: Prisma.VariantCreateNestedManyWithoutProductInput
@@ -1516,6 +1552,7 @@ export type ProductUncheckedCreateWithoutAttributesInput = {
   images?: Prisma.ProductImageUncheckedCreateNestedManyWithoutProductInput
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutProductInput
   pricingRules?: Prisma.PricingRuleUncheckedCreateNestedManyWithoutProductInput
+  personalizationRules?: Prisma.PersonalizationRuleUncheckedCreateNestedManyWithoutProductInput
   quoteItems?: Prisma.B2BQuoteItemUncheckedCreateNestedManyWithoutProductInput
   variants?: Prisma.VariantUncheckedCreateNestedManyWithoutProductInput
 }
@@ -1560,6 +1597,7 @@ export type ProductUpdateWithoutAttributesInput = {
   images?: Prisma.ProductImageUpdateManyWithoutProductNestedInput
   orderItems?: Prisma.OrderItemUpdateManyWithoutProductNestedInput
   pricingRules?: Prisma.PricingRuleUpdateManyWithoutProductNestedInput
+  personalizationRules?: Prisma.PersonalizationRuleUpdateManyWithoutProductNestedInput
   quoteItems?: Prisma.B2BQuoteItemUpdateManyWithoutProductNestedInput
   collection?: Prisma.CollectionUpdateOneRequiredWithoutProductsNestedInput
   variants?: Prisma.VariantUpdateManyWithoutProductNestedInput
@@ -1587,6 +1625,143 @@ export type ProductUncheckedUpdateWithoutAttributesInput = {
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  images?: Prisma.ProductImageUncheckedUpdateManyWithoutProductNestedInput
+  orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutProductNestedInput
+  pricingRules?: Prisma.PricingRuleUncheckedUpdateManyWithoutProductNestedInput
+  personalizationRules?: Prisma.PersonalizationRuleUncheckedUpdateManyWithoutProductNestedInput
+  quoteItems?: Prisma.B2BQuoteItemUncheckedUpdateManyWithoutProductNestedInput
+  variants?: Prisma.VariantUncheckedUpdateManyWithoutProductNestedInput
+}
+
+export type ProductCreateWithoutPersonalizationRulesInput = {
+  id?: string
+  name: string
+  description: string
+  basePrice: number
+  minPrice: number
+  comparePrice?: number | null
+  costPrice?: number | null
+  status?: $Enums.ProductStatus
+  slug: string
+  seoTitle?: string | null
+  seoDescription?: string | null
+  tags?: Prisma.ProductCreatetagsInput | string[]
+  deliveryTime: string
+  material?: string
+  dimensions?: string | null
+  careInstructions?: string | null
+  printType?: $Enums.PrintType
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  attributes?: Prisma.ProductAttributeCreateNestedManyWithoutProductInput
+  images?: Prisma.ProductImageCreateNestedManyWithoutProductInput
+  orderItems?: Prisma.OrderItemCreateNestedManyWithoutProductInput
+  pricingRules?: Prisma.PricingRuleCreateNestedManyWithoutProductInput
+  quoteItems?: Prisma.B2BQuoteItemCreateNestedManyWithoutProductInput
+  collection: Prisma.CollectionCreateNestedOneWithoutProductsInput
+  variants?: Prisma.VariantCreateNestedManyWithoutProductInput
+}
+
+export type ProductUncheckedCreateWithoutPersonalizationRulesInput = {
+  id?: string
+  name: string
+  description: string
+  basePrice: number
+  minPrice: number
+  comparePrice?: number | null
+  costPrice?: number | null
+  status?: $Enums.ProductStatus
+  collectionId: string
+  slug: string
+  seoTitle?: string | null
+  seoDescription?: string | null
+  tags?: Prisma.ProductCreatetagsInput | string[]
+  deliveryTime: string
+  material?: string
+  dimensions?: string | null
+  careInstructions?: string | null
+  printType?: $Enums.PrintType
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  attributes?: Prisma.ProductAttributeUncheckedCreateNestedManyWithoutProductInput
+  images?: Prisma.ProductImageUncheckedCreateNestedManyWithoutProductInput
+  orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutProductInput
+  pricingRules?: Prisma.PricingRuleUncheckedCreateNestedManyWithoutProductInput
+  quoteItems?: Prisma.B2BQuoteItemUncheckedCreateNestedManyWithoutProductInput
+  variants?: Prisma.VariantUncheckedCreateNestedManyWithoutProductInput
+}
+
+export type ProductCreateOrConnectWithoutPersonalizationRulesInput = {
+  where: Prisma.ProductWhereUniqueInput
+  create: Prisma.XOR<Prisma.ProductCreateWithoutPersonalizationRulesInput, Prisma.ProductUncheckedCreateWithoutPersonalizationRulesInput>
+}
+
+export type ProductUpsertWithoutPersonalizationRulesInput = {
+  update: Prisma.XOR<Prisma.ProductUpdateWithoutPersonalizationRulesInput, Prisma.ProductUncheckedUpdateWithoutPersonalizationRulesInput>
+  create: Prisma.XOR<Prisma.ProductCreateWithoutPersonalizationRulesInput, Prisma.ProductUncheckedCreateWithoutPersonalizationRulesInput>
+  where?: Prisma.ProductWhereInput
+}
+
+export type ProductUpdateToOneWithWhereWithoutPersonalizationRulesInput = {
+  where?: Prisma.ProductWhereInput
+  data: Prisma.XOR<Prisma.ProductUpdateWithoutPersonalizationRulesInput, Prisma.ProductUncheckedUpdateWithoutPersonalizationRulesInput>
+}
+
+export type ProductUpdateWithoutPersonalizationRulesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  basePrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  minPrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  comparePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  costPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  status?: Prisma.EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  seoTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  seoDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tags?: Prisma.ProductUpdatetagsInput | string[]
+  deliveryTime?: Prisma.StringFieldUpdateOperationsInput | string
+  material?: Prisma.StringFieldUpdateOperationsInput | string
+  dimensions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  careInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  printType?: Prisma.EnumPrintTypeFieldUpdateOperationsInput | $Enums.PrintType
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  attributes?: Prisma.ProductAttributeUpdateManyWithoutProductNestedInput
+  images?: Prisma.ProductImageUpdateManyWithoutProductNestedInput
+  orderItems?: Prisma.OrderItemUpdateManyWithoutProductNestedInput
+  pricingRules?: Prisma.PricingRuleUpdateManyWithoutProductNestedInput
+  quoteItems?: Prisma.B2BQuoteItemUpdateManyWithoutProductNestedInput
+  collection?: Prisma.CollectionUpdateOneRequiredWithoutProductsNestedInput
+  variants?: Prisma.VariantUpdateManyWithoutProductNestedInput
+}
+
+export type ProductUncheckedUpdateWithoutPersonalizationRulesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  basePrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  minPrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  comparePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  costPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  status?: Prisma.EnumProductStatusFieldUpdateOperationsInput | $Enums.ProductStatus
+  collectionId?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  seoTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  seoDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tags?: Prisma.ProductUpdatetagsInput | string[]
+  deliveryTime?: Prisma.StringFieldUpdateOperationsInput | string
+  material?: Prisma.StringFieldUpdateOperationsInput | string
+  dimensions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  careInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  printType?: Prisma.EnumPrintTypeFieldUpdateOperationsInput | $Enums.PrintType
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  attributes?: Prisma.ProductAttributeUncheckedUpdateManyWithoutProductNestedInput
   images?: Prisma.ProductImageUncheckedUpdateManyWithoutProductNestedInput
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutProductNestedInput
   pricingRules?: Prisma.PricingRuleUncheckedUpdateManyWithoutProductNestedInput
@@ -1618,6 +1793,7 @@ export type ProductCreateWithoutPricingRulesInput = {
   attributes?: Prisma.ProductAttributeCreateNestedManyWithoutProductInput
   images?: Prisma.ProductImageCreateNestedManyWithoutProductInput
   orderItems?: Prisma.OrderItemCreateNestedManyWithoutProductInput
+  personalizationRules?: Prisma.PersonalizationRuleCreateNestedManyWithoutProductInput
   quoteItems?: Prisma.B2BQuoteItemCreateNestedManyWithoutProductInput
   collection: Prisma.CollectionCreateNestedOneWithoutProductsInput
   variants?: Prisma.VariantCreateNestedManyWithoutProductInput
@@ -1648,6 +1824,7 @@ export type ProductUncheckedCreateWithoutPricingRulesInput = {
   attributes?: Prisma.ProductAttributeUncheckedCreateNestedManyWithoutProductInput
   images?: Prisma.ProductImageUncheckedCreateNestedManyWithoutProductInput
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutProductInput
+  personalizationRules?: Prisma.PersonalizationRuleUncheckedCreateNestedManyWithoutProductInput
   quoteItems?: Prisma.B2BQuoteItemUncheckedCreateNestedManyWithoutProductInput
   variants?: Prisma.VariantUncheckedCreateNestedManyWithoutProductInput
 }
@@ -1692,6 +1869,7 @@ export type ProductUpdateWithoutPricingRulesInput = {
   attributes?: Prisma.ProductAttributeUpdateManyWithoutProductNestedInput
   images?: Prisma.ProductImageUpdateManyWithoutProductNestedInput
   orderItems?: Prisma.OrderItemUpdateManyWithoutProductNestedInput
+  personalizationRules?: Prisma.PersonalizationRuleUpdateManyWithoutProductNestedInput
   quoteItems?: Prisma.B2BQuoteItemUpdateManyWithoutProductNestedInput
   collection?: Prisma.CollectionUpdateOneRequiredWithoutProductsNestedInput
   variants?: Prisma.VariantUpdateManyWithoutProductNestedInput
@@ -1722,6 +1900,7 @@ export type ProductUncheckedUpdateWithoutPricingRulesInput = {
   attributes?: Prisma.ProductAttributeUncheckedUpdateManyWithoutProductNestedInput
   images?: Prisma.ProductImageUncheckedUpdateManyWithoutProductNestedInput
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutProductNestedInput
+  personalizationRules?: Prisma.PersonalizationRuleUncheckedUpdateManyWithoutProductNestedInput
   quoteItems?: Prisma.B2BQuoteItemUncheckedUpdateManyWithoutProductNestedInput
   variants?: Prisma.VariantUncheckedUpdateManyWithoutProductNestedInput
 }
@@ -1751,6 +1930,7 @@ export type ProductCreateWithoutQuoteItemsInput = {
   images?: Prisma.ProductImageCreateNestedManyWithoutProductInput
   orderItems?: Prisma.OrderItemCreateNestedManyWithoutProductInput
   pricingRules?: Prisma.PricingRuleCreateNestedManyWithoutProductInput
+  personalizationRules?: Prisma.PersonalizationRuleCreateNestedManyWithoutProductInput
   collection: Prisma.CollectionCreateNestedOneWithoutProductsInput
   variants?: Prisma.VariantCreateNestedManyWithoutProductInput
 }
@@ -1781,6 +1961,7 @@ export type ProductUncheckedCreateWithoutQuoteItemsInput = {
   images?: Prisma.ProductImageUncheckedCreateNestedManyWithoutProductInput
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutProductInput
   pricingRules?: Prisma.PricingRuleUncheckedCreateNestedManyWithoutProductInput
+  personalizationRules?: Prisma.PersonalizationRuleUncheckedCreateNestedManyWithoutProductInput
   variants?: Prisma.VariantUncheckedCreateNestedManyWithoutProductInput
 }
 
@@ -1825,6 +2006,7 @@ export type ProductUpdateWithoutQuoteItemsInput = {
   images?: Prisma.ProductImageUpdateManyWithoutProductNestedInput
   orderItems?: Prisma.OrderItemUpdateManyWithoutProductNestedInput
   pricingRules?: Prisma.PricingRuleUpdateManyWithoutProductNestedInput
+  personalizationRules?: Prisma.PersonalizationRuleUpdateManyWithoutProductNestedInput
   collection?: Prisma.CollectionUpdateOneRequiredWithoutProductsNestedInput
   variants?: Prisma.VariantUpdateManyWithoutProductNestedInput
 }
@@ -1855,6 +2037,7 @@ export type ProductUncheckedUpdateWithoutQuoteItemsInput = {
   images?: Prisma.ProductImageUncheckedUpdateManyWithoutProductNestedInput
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutProductNestedInput
   pricingRules?: Prisma.PricingRuleUncheckedUpdateManyWithoutProductNestedInput
+  personalizationRules?: Prisma.PersonalizationRuleUncheckedUpdateManyWithoutProductNestedInput
   variants?: Prisma.VariantUncheckedUpdateManyWithoutProductNestedInput
 }
 
@@ -1906,6 +2089,7 @@ export type ProductUpdateWithoutCollectionInput = {
   images?: Prisma.ProductImageUpdateManyWithoutProductNestedInput
   orderItems?: Prisma.OrderItemUpdateManyWithoutProductNestedInput
   pricingRules?: Prisma.PricingRuleUpdateManyWithoutProductNestedInput
+  personalizationRules?: Prisma.PersonalizationRuleUpdateManyWithoutProductNestedInput
   quoteItems?: Prisma.B2BQuoteItemUpdateManyWithoutProductNestedInput
   variants?: Prisma.VariantUpdateManyWithoutProductNestedInput
 }
@@ -1935,6 +2119,7 @@ export type ProductUncheckedUpdateWithoutCollectionInput = {
   images?: Prisma.ProductImageUncheckedUpdateManyWithoutProductNestedInput
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutProductNestedInput
   pricingRules?: Prisma.PricingRuleUncheckedUpdateManyWithoutProductNestedInput
+  personalizationRules?: Prisma.PersonalizationRuleUncheckedUpdateManyWithoutProductNestedInput
   quoteItems?: Prisma.B2BQuoteItemUncheckedUpdateManyWithoutProductNestedInput
   variants?: Prisma.VariantUncheckedUpdateManyWithoutProductNestedInput
 }
@@ -1972,6 +2157,7 @@ export type ProductCountOutputType = {
   images: number
   orderItems: number
   pricingRules: number
+  personalizationRules: number
   quoteItems: number
   variants: number
 }
@@ -1981,6 +2167,7 @@ export type ProductCountOutputTypeSelect<ExtArgs extends runtime.Types.Extension
   images?: boolean | ProductCountOutputTypeCountImagesArgs
   orderItems?: boolean | ProductCountOutputTypeCountOrderItemsArgs
   pricingRules?: boolean | ProductCountOutputTypeCountPricingRulesArgs
+  personalizationRules?: boolean | ProductCountOutputTypeCountPersonalizationRulesArgs
   quoteItems?: boolean | ProductCountOutputTypeCountQuoteItemsArgs
   variants?: boolean | ProductCountOutputTypeCountVariantsArgs
 }
@@ -2026,6 +2213,13 @@ export type ProductCountOutputTypeCountPricingRulesArgs<ExtArgs extends runtime.
 /**
  * ProductCountOutputType without action
  */
+export type ProductCountOutputTypeCountPersonalizationRulesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PersonalizationRuleWhereInput
+}
+
+/**
+ * ProductCountOutputType without action
+ */
 export type ProductCountOutputTypeCountQuoteItemsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.B2BQuoteItemWhereInput
 }
@@ -2064,6 +2258,7 @@ export type ProductSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   images?: boolean | Prisma.Product$imagesArgs<ExtArgs>
   orderItems?: boolean | Prisma.Product$orderItemsArgs<ExtArgs>
   pricingRules?: boolean | Prisma.Product$pricingRulesArgs<ExtArgs>
+  personalizationRules?: boolean | Prisma.Product$personalizationRulesArgs<ExtArgs>
   quoteItems?: boolean | Prisma.Product$quoteItemsArgs<ExtArgs>
   collection?: boolean | Prisma.CollectionDefaultArgs<ExtArgs>
   variants?: boolean | Prisma.Product$variantsArgs<ExtArgs>
@@ -2150,6 +2345,7 @@ export type ProductInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs
   images?: boolean | Prisma.Product$imagesArgs<ExtArgs>
   orderItems?: boolean | Prisma.Product$orderItemsArgs<ExtArgs>
   pricingRules?: boolean | Prisma.Product$pricingRulesArgs<ExtArgs>
+  personalizationRules?: boolean | Prisma.Product$personalizationRulesArgs<ExtArgs>
   quoteItems?: boolean | Prisma.Product$quoteItemsArgs<ExtArgs>
   collection?: boolean | Prisma.CollectionDefaultArgs<ExtArgs>
   variants?: boolean | Prisma.Product$variantsArgs<ExtArgs>
@@ -2169,6 +2365,7 @@ export type $ProductPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     images: Prisma.$ProductImagePayload<ExtArgs>[]
     orderItems: Prisma.$OrderItemPayload<ExtArgs>[]
     pricingRules: Prisma.$PricingRulePayload<ExtArgs>[]
+    personalizationRules: Prisma.$PersonalizationRulePayload<ExtArgs>[]
     quoteItems: Prisma.$B2BQuoteItemPayload<ExtArgs>[]
     collection: Prisma.$CollectionPayload<ExtArgs>
     variants: Prisma.$VariantPayload<ExtArgs>[]
@@ -2593,6 +2790,7 @@ export interface Prisma__ProductClient<T, Null = never, ExtArgs extends runtime.
   images<T extends Prisma.Product$imagesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Product$imagesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProductImagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   orderItems<T extends Prisma.Product$orderItemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Product$orderItemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrderItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   pricingRules<T extends Prisma.Product$pricingRulesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Product$pricingRulesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PricingRulePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  personalizationRules<T extends Prisma.Product$personalizationRulesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Product$personalizationRulesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PersonalizationRulePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   quoteItems<T extends Prisma.Product$quoteItemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Product$quoteItemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$B2BQuoteItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   collection<T extends Prisma.CollectionDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CollectionDefaultArgs<ExtArgs>>): Prisma.Prisma__CollectionClient<runtime.Types.Result.GetResult<Prisma.$CollectionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   variants<T extends Prisma.Product$variantsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Product$variantsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VariantPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -3135,6 +3333,30 @@ export type Product$pricingRulesArgs<ExtArgs extends runtime.Types.Extensions.In
   take?: number
   skip?: number
   distinct?: Prisma.PricingRuleScalarFieldEnum | Prisma.PricingRuleScalarFieldEnum[]
+}
+
+/**
+ * Product.personalizationRules
+ */
+export type Product$personalizationRulesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PersonalizationRule
+   */
+  select?: Prisma.PersonalizationRuleSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PersonalizationRule
+   */
+  omit?: Prisma.PersonalizationRuleOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PersonalizationRuleInclude<ExtArgs> | null
+  where?: Prisma.PersonalizationRuleWhereInput
+  orderBy?: Prisma.PersonalizationRuleOrderByWithRelationInput | Prisma.PersonalizationRuleOrderByWithRelationInput[]
+  cursor?: Prisma.PersonalizationRuleWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PersonalizationRuleScalarFieldEnum | Prisma.PersonalizationRuleScalarFieldEnum[]
 }
 
 /**

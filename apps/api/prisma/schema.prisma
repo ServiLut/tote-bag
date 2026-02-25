@@ -10,34 +10,35 @@ datasource db {
 }
 
 model Product {
-  id               String         @id @default(uuid()) @map("id")
-  name             String         @map("name")
-  description      String         @map("description")
-  basePrice        Float          @map("base_price")
-  minPrice         Float          @map("min_price")
-  comparePrice     Float?         @map("compare_price")
-  costPrice        Float?         @map("cost_price")
-  status           ProductStatus  @default(BAJO_PEDIDO) @map("status")
-  collectionId     String         @map("collection_id")
-  slug             String         @unique @map("slug")
-  seoTitle         String?        @map("seo_title")
-  seoDescription   String?        @map("seo_description")
-  tags             String[]       @default([]) @map("tags")
-  deliveryTime     String         @map("delivery_time")
-  material         String         @default("Algodón resistente") @map("material")
-  dimensions       String?        @map("dimensions")
-  careInstructions String?        @map("care_instructions")
-  printType        PrintType      @default(DTF) @map("print_type")
-  isActive         Boolean        @default(true) @map("is_active")
-  createdAt        DateTime       @default(now()) @map("created_at")
-  updatedAt        DateTime       @updatedAt @map("updated_at")
-  attributes       ProductAttribute[]
-  images           ProductImage[]
-  orderItems       OrderItem[]
-  pricingRules     PricingRule[]
-  quoteItems       B2BQuoteItem[]
-  collection       Collection     @relation(fields: [collectionId], references: [id])
-  variants         Variant[]
+  id                   String                @id @default(uuid()) @map("id")
+  name                 String                @map("name")
+  description          String                @map("description")
+  basePrice            Float                 @map("base_price")
+  minPrice             Float                 @map("min_price")
+  comparePrice         Float?                @map("compare_price")
+  costPrice            Float?                @map("cost_price")
+  status               ProductStatus         @default(BAJO_PEDIDO) @map("status")
+  collectionId         String                @map("collection_id")
+  slug                 String                @unique @map("slug")
+  seoTitle             String?               @map("seo_title")
+  seoDescription       String?               @map("seo_description")
+  tags                 String[]              @default([]) @map("tags")
+  deliveryTime         String                @map("delivery_time")
+  material             String                @default("Algodón resistente") @map("material")
+  dimensions           String?               @map("dimensions")
+  careInstructions     String?               @map("care_instructions")
+  printType            PrintType             @default(DTF) @map("print_type")
+  isActive             Boolean               @default(true) @map("is_active")
+  createdAt            DateTime              @default(now()) @map("created_at")
+  updatedAt            DateTime              @updatedAt @map("updated_at")
+  attributes           ProductAttribute[]
+  images               ProductImage[]
+  orderItems           OrderItem[]
+  pricingRules         PricingRule[]
+  personalizationRules PersonalizationRule[]
+  quoteItems           B2BQuoteItem[]
+  collection           Collection            @relation(fields: [collectionId], references: [id])
+  variants             Variant[]
 
   @@map("products")
   @@schema("tote-bag")
@@ -119,7 +120,7 @@ model OrderStatusHistory {
 model OrderItem {
   id                String   @id @default(uuid()) @map("id")
   quantity          Int      @map("quantity")
-  price             Float    @map("price")
+  unitPrice         Float    @map("unit_price")
   totalPrice        Float    @default(0) @map("total_price")
   sku               String   @map("sku")
   configurationJson Json?    @map("configuration_json")
@@ -202,20 +203,20 @@ model Municipality {
 }
 
 model B2BQuote {
-  id           String   @id @default(uuid()) @map("id")
-  businessName String   @map("business_name")
-  quantity     Int      @map("quantity")
-  department   String   @map("department")
-  municipality String   @map("municipality")
-  neighborhood String   @map("neighborhood")
-  address      String   @map("address")
-  contactPhone String   @map("contact_phone")
-  qrType       String   @map("qr_type")
-  qrData       String?  @map("qr_data")
-  logoUrl      String?  @map("logo_url")
-  package      String   @map("package")
-  status       String   @default("PENDIENTE") @map("status")
-  createdAt    DateTime @default(now()) @map("created_at")
+  id           String         @id @default(uuid()) @map("id")
+  businessName String         @map("business_name")
+  quantity     Int            @map("quantity")
+  department   String         @map("department")
+  municipality String         @map("municipality")
+  neighborhood String         @map("neighborhood")
+  address      String         @map("address")
+  contactPhone String         @map("contact_phone")
+  qrType       String         @map("qr_type")
+  qrData       String?        @map("qr_data")
+  logoUrl      String?        @map("logo_url")
+  package      String         @map("package")
+  status       String         @default("PENDIENTE") @map("status")
+  createdAt    DateTime       @default(now()) @map("created_at")
   items        B2BQuoteItem[]
 
   @@map("b2b_quotes")
@@ -266,33 +267,61 @@ model ProductAttribute {
   id            String        @id @default(uuid()) @map("id")
   productId     String        @map("product_id")
   type          AttributeType @map("type")
-  name          String        @map("name")
+  value         String        @map("value")
+  sortOrder     Int           @default(0) @map("sort_order")
   priceModifier Float         @default(0) @map("price_modifier")
-  isDefault     Boolean       @default(false) @map("is_default")
+  isActive      Boolean       @default(true) @map("is_active")
   product       Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
 
+  @@index([productId, type])
   @@map("product_attributes")
   @@schema("tote-bag")
 }
 
 model PersonalizationOption {
-  id        String @id @default(uuid()) @map("id")
-  name      String @map("name")
-  code      String @unique @map("code")
-  basePrice Float  @map("base_price")
+  id          String                @id @default(uuid()) @map("id")
+  code        String                @unique @map("code")
+  name        String                @map("name")
+  description String?               @map("description")
+  basePrice   Float                 @map("base_price")
+  isActive    Boolean               @default(true) @map("is_active")
+  rules       PersonalizationRule[]
 
   @@map("personalization_options")
   @@schema("tote-bag")
 }
 
-model PricingRule {
-  id                 String       @id @default(uuid()) @map("id")
-  productId          String       @map("product_id")
-  minQuantity        Int          @map("min_quantity")
-  discountPercentage Float        @map("discount_percentage")
-  scope              PricingScope @map("scope")
-  product            Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+model PersonalizationRule {
+  id                    String                @id @default(uuid()) @map("id")
+  productId             String                @map("product_id")
+  personalizationId     String                @map("personalization_id")
+  allowedSizeValues     String[]              @map("allowed_size_values")
+  allowedQualityValues  String[]              @map("allowed_quality_values")
+  allowedMaterialValues String[]              @map("allowed_material_values")
+  extraPrice            Float                 @default(0) @map("extra_price")
+  extraDays             Int                   @default(0) @map("extra_days")
+  isActive              Boolean               @default(true) @map("is_active")
+  product               Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
+  personalization       PersonalizationOption @relation(fields: [personalizationId], references: [id], onDelete: Cascade)
 
+  @@index([productId])
+  @@index([personalizationId])
+  @@map("personalization_rules")
+  @@schema("tote-bag")
+}
+
+model PricingRule {
+  id             String         @id @default(uuid()) @map("id")
+  scope          PriceRuleScope @map("scope")
+  productId      String         @map("product_id")
+  minQty         Int            @map("min_qty")
+  maxQty         Int?           @map("max_qty")
+  discountPct    Int?           @map("discount_pct")
+  fixedUnitPrice Float?         @map("fixed_unit_price")
+  isActive       Boolean        @default(true) @map("is_active")
+  product        Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, scope])
   @@map("pricing_rules")
   @@schema("tote-bag")
 }
@@ -301,12 +330,10 @@ model B2BQuoteItem {
   id                String   @id @default(uuid()) @map("id")
   quoteId           String   @map("quote_id")
   productId         String   @map("product_id")
-  variantId         String?  @map("variant_id")
   quantity          Int      @map("quantity")
-  unitPrice         Float    @map("unit_price")
-  totalPrice        Float    @default(0) @map("total_price")
-  configurationJson Json?    @map("configuration_json")
-  pricingJson       Json?    @map("pricing_json")
+  configurationJson Json     @map("configuration_json")
+  targetUnitPrice   Float?   @map("target_unit_price")
+  notes             String?  @map("notes")
   product           Product  @relation(fields: [productId], references: [id])
   quote             B2BQuote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
 
@@ -358,7 +385,16 @@ enum AttributeType {
   @@schema("tote-bag")
 }
 
-enum PricingScope {
+enum ProductLine {
+  ECO
+  COMERCIAL
+  PREMIUM
+  CORPORATIVA
+
+  @@schema("tote-bag")
+}
+
+enum PriceRuleScope {
   B2C
   B2B
 

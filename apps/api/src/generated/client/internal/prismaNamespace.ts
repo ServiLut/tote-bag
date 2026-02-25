@@ -400,6 +400,7 @@ export const ModelName = {
   Address: 'Address',
   ProductAttribute: 'ProductAttribute',
   PersonalizationOption: 'PersonalizationOption',
+  PersonalizationRule: 'PersonalizationRule',
   PricingRule: 'PricingRule',
   B2BQuoteItem: 'B2BQuoteItem'
 } as const
@@ -417,7 +418,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "product" | "productImage" | "collection" | "variant" | "order" | "orderStatusHistory" | "orderItem" | "user" | "profile" | "department" | "municipality" | "b2BQuote" | "auditLog" | "address" | "productAttribute" | "personalizationOption" | "pricingRule" | "b2BQuoteItem"
+    modelProps: "product" | "productImage" | "collection" | "variant" | "order" | "orderStatusHistory" | "orderItem" | "user" | "profile" | "department" | "municipality" | "b2BQuote" | "auditLog" | "address" | "productAttribute" | "personalizationOption" | "personalizationRule" | "pricingRule" | "b2BQuoteItem"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1605,6 +1606,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    PersonalizationRule: {
+      payload: Prisma.$PersonalizationRulePayload<ExtArgs>
+      fields: Prisma.PersonalizationRuleFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.PersonalizationRuleFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PersonalizationRulePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.PersonalizationRuleFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PersonalizationRulePayload>
+        }
+        findFirst: {
+          args: Prisma.PersonalizationRuleFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PersonalizationRulePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.PersonalizationRuleFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PersonalizationRulePayload>
+        }
+        findMany: {
+          args: Prisma.PersonalizationRuleFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PersonalizationRulePayload>[]
+        }
+        create: {
+          args: Prisma.PersonalizationRuleCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PersonalizationRulePayload>
+        }
+        createMany: {
+          args: Prisma.PersonalizationRuleCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.PersonalizationRuleCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PersonalizationRulePayload>[]
+        }
+        delete: {
+          args: Prisma.PersonalizationRuleDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PersonalizationRulePayload>
+        }
+        update: {
+          args: Prisma.PersonalizationRuleUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PersonalizationRulePayload>
+        }
+        deleteMany: {
+          args: Prisma.PersonalizationRuleDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.PersonalizationRuleUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.PersonalizationRuleUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PersonalizationRulePayload>[]
+        }
+        upsert: {
+          args: Prisma.PersonalizationRuleUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PersonalizationRulePayload>
+        }
+        aggregate: {
+          args: Prisma.PersonalizationRuleAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregatePersonalizationRule>
+        }
+        groupBy: {
+          args: Prisma.PersonalizationRuleGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PersonalizationRuleGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.PersonalizationRuleCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PersonalizationRuleCountAggregateOutputType> | number
+        }
+      }
+    }
     PricingRule: {
       payload: Prisma.$PricingRulePayload<ExtArgs>
       fields: Prisma.PricingRuleFieldRefs
@@ -1887,7 +1962,7 @@ export type OrderStatusHistoryScalarFieldEnum = (typeof OrderStatusHistoryScalar
 export const OrderItemScalarFieldEnum = {
   id: 'id',
   quantity: 'quantity',
-  price: 'price',
+  unitPrice: 'unitPrice',
   totalPrice: 'totalPrice',
   sku: 'sku',
   configurationJson: 'configurationJson',
@@ -2012,9 +2087,10 @@ export const ProductAttributeScalarFieldEnum = {
   id: 'id',
   productId: 'productId',
   type: 'type',
-  name: 'name',
+  value: 'value',
+  sortOrder: 'sortOrder',
   priceModifier: 'priceModifier',
-  isDefault: 'isDefault'
+  isActive: 'isActive'
 } as const
 
 export type ProductAttributeScalarFieldEnum = (typeof ProductAttributeScalarFieldEnum)[keyof typeof ProductAttributeScalarFieldEnum]
@@ -2022,20 +2098,40 @@ export type ProductAttributeScalarFieldEnum = (typeof ProductAttributeScalarFiel
 
 export const PersonalizationOptionScalarFieldEnum = {
   id: 'id',
-  name: 'name',
   code: 'code',
-  basePrice: 'basePrice'
+  name: 'name',
+  description: 'description',
+  basePrice: 'basePrice',
+  isActive: 'isActive'
 } as const
 
 export type PersonalizationOptionScalarFieldEnum = (typeof PersonalizationOptionScalarFieldEnum)[keyof typeof PersonalizationOptionScalarFieldEnum]
 
 
-export const PricingRuleScalarFieldEnum = {
+export const PersonalizationRuleScalarFieldEnum = {
   id: 'id',
   productId: 'productId',
-  minQuantity: 'minQuantity',
-  discountPercentage: 'discountPercentage',
-  scope: 'scope'
+  personalizationId: 'personalizationId',
+  allowedSizeValues: 'allowedSizeValues',
+  allowedQualityValues: 'allowedQualityValues',
+  allowedMaterialValues: 'allowedMaterialValues',
+  extraPrice: 'extraPrice',
+  extraDays: 'extraDays',
+  isActive: 'isActive'
+} as const
+
+export type PersonalizationRuleScalarFieldEnum = (typeof PersonalizationRuleScalarFieldEnum)[keyof typeof PersonalizationRuleScalarFieldEnum]
+
+
+export const PricingRuleScalarFieldEnum = {
+  id: 'id',
+  scope: 'scope',
+  productId: 'productId',
+  minQty: 'minQty',
+  maxQty: 'maxQty',
+  discountPct: 'discountPct',
+  fixedUnitPrice: 'fixedUnitPrice',
+  isActive: 'isActive'
 } as const
 
 export type PricingRuleScalarFieldEnum = (typeof PricingRuleScalarFieldEnum)[keyof typeof PricingRuleScalarFieldEnum]
@@ -2045,12 +2141,10 @@ export const B2BQuoteItemScalarFieldEnum = {
   id: 'id',
   quoteId: 'quoteId',
   productId: 'productId',
-  variantId: 'variantId',
   quantity: 'quantity',
-  unitPrice: 'unitPrice',
-  totalPrice: 'totalPrice',
   configurationJson: 'configurationJson',
-  pricingJson: 'pricingJson'
+  targetUnitPrice: 'targetUnitPrice',
+  notes: 'notes'
 } as const
 
 export type B2BQuoteItemScalarFieldEnum = (typeof B2BQuoteItemScalarFieldEnum)[keyof typeof B2BQuoteItemScalarFieldEnum]
@@ -2258,16 +2352,16 @@ export type ListEnumAttributeTypeFieldRefInput<$PrismaModel> = FieldRefInputType
 
 
 /**
- * Reference to a field of type 'PricingScope'
+ * Reference to a field of type 'PriceRuleScope'
  */
-export type EnumPricingScopeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PricingScope'>
+export type EnumPriceRuleScopeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PriceRuleScope'>
     
 
 
 /**
- * Reference to a field of type 'PricingScope[]'
+ * Reference to a field of type 'PriceRuleScope[]'
  */
-export type ListEnumPricingScopeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PricingScope[]'>
+export type ListEnumPriceRuleScopeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PriceRuleScope[]'>
     
 
 /**
@@ -2381,6 +2475,7 @@ export type GlobalOmitConfig = {
   address?: Prisma.AddressOmit
   productAttribute?: Prisma.ProductAttributeOmit
   personalizationOption?: Prisma.PersonalizationOptionOmit
+  personalizationRule?: Prisma.PersonalizationRuleOmit
   pricingRule?: Prisma.PricingRuleOmit
   b2BQuoteItem?: Prisma.B2BQuoteItemOmit
 }

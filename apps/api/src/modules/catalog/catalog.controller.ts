@@ -50,6 +50,11 @@ export class CatalogController {
     return this.catalogService.findBySlug(slug);
   }
 
+  @Get('products/:slug/config')
+  getProductConfig(@Param('slug') slug: string) {
+    return this.catalogService.getProductConfig(slug);
+  }
+
   @Get(':id')
   findOne(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
     return this.catalogService.findOne(id);

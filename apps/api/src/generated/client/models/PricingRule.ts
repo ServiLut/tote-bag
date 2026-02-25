@@ -27,73 +27,99 @@ export type AggregatePricingRule = {
 }
 
 export type PricingRuleAvgAggregateOutputType = {
-  minQuantity: number | null
-  discountPercentage: number | null
+  minQty: number | null
+  maxQty: number | null
+  discountPct: number | null
+  fixedUnitPrice: number | null
 }
 
 export type PricingRuleSumAggregateOutputType = {
-  minQuantity: number | null
-  discountPercentage: number | null
+  minQty: number | null
+  maxQty: number | null
+  discountPct: number | null
+  fixedUnitPrice: number | null
 }
 
 export type PricingRuleMinAggregateOutputType = {
   id: string | null
+  scope: $Enums.PriceRuleScope | null
   productId: string | null
-  minQuantity: number | null
-  discountPercentage: number | null
-  scope: $Enums.PricingScope | null
+  minQty: number | null
+  maxQty: number | null
+  discountPct: number | null
+  fixedUnitPrice: number | null
+  isActive: boolean | null
 }
 
 export type PricingRuleMaxAggregateOutputType = {
   id: string | null
+  scope: $Enums.PriceRuleScope | null
   productId: string | null
-  minQuantity: number | null
-  discountPercentage: number | null
-  scope: $Enums.PricingScope | null
+  minQty: number | null
+  maxQty: number | null
+  discountPct: number | null
+  fixedUnitPrice: number | null
+  isActive: boolean | null
 }
 
 export type PricingRuleCountAggregateOutputType = {
   id: number
-  productId: number
-  minQuantity: number
-  discountPercentage: number
   scope: number
+  productId: number
+  minQty: number
+  maxQty: number
+  discountPct: number
+  fixedUnitPrice: number
+  isActive: number
   _all: number
 }
 
 
 export type PricingRuleAvgAggregateInputType = {
-  minQuantity?: true
-  discountPercentage?: true
+  minQty?: true
+  maxQty?: true
+  discountPct?: true
+  fixedUnitPrice?: true
 }
 
 export type PricingRuleSumAggregateInputType = {
-  minQuantity?: true
-  discountPercentage?: true
+  minQty?: true
+  maxQty?: true
+  discountPct?: true
+  fixedUnitPrice?: true
 }
 
 export type PricingRuleMinAggregateInputType = {
   id?: true
-  productId?: true
-  minQuantity?: true
-  discountPercentage?: true
   scope?: true
+  productId?: true
+  minQty?: true
+  maxQty?: true
+  discountPct?: true
+  fixedUnitPrice?: true
+  isActive?: true
 }
 
 export type PricingRuleMaxAggregateInputType = {
   id?: true
-  productId?: true
-  minQuantity?: true
-  discountPercentage?: true
   scope?: true
+  productId?: true
+  minQty?: true
+  maxQty?: true
+  discountPct?: true
+  fixedUnitPrice?: true
+  isActive?: true
 }
 
 export type PricingRuleCountAggregateInputType = {
   id?: true
-  productId?: true
-  minQuantity?: true
-  discountPercentage?: true
   scope?: true
+  productId?: true
+  minQty?: true
+  maxQty?: true
+  discountPct?: true
+  fixedUnitPrice?: true
+  isActive?: true
   _all?: true
 }
 
@@ -185,10 +211,13 @@ export type PricingRuleGroupByArgs<ExtArgs extends runtime.Types.Extensions.Inte
 
 export type PricingRuleGroupByOutputType = {
   id: string
+  scope: $Enums.PriceRuleScope
   productId: string
-  minQuantity: number
-  discountPercentage: number
-  scope: $Enums.PricingScope
+  minQty: number
+  maxQty: number | null
+  discountPct: number | null
+  fixedUnitPrice: number | null
+  isActive: boolean
   _count: PricingRuleCountAggregateOutputType | null
   _avg: PricingRuleAvgAggregateOutputType | null
   _sum: PricingRuleSumAggregateOutputType | null
@@ -216,19 +245,25 @@ export type PricingRuleWhereInput = {
   OR?: Prisma.PricingRuleWhereInput[]
   NOT?: Prisma.PricingRuleWhereInput | Prisma.PricingRuleWhereInput[]
   id?: Prisma.StringFilter<"PricingRule"> | string
+  scope?: Prisma.EnumPriceRuleScopeFilter<"PricingRule"> | $Enums.PriceRuleScope
   productId?: Prisma.StringFilter<"PricingRule"> | string
-  minQuantity?: Prisma.IntFilter<"PricingRule"> | number
-  discountPercentage?: Prisma.FloatFilter<"PricingRule"> | number
-  scope?: Prisma.EnumPricingScopeFilter<"PricingRule"> | $Enums.PricingScope
+  minQty?: Prisma.IntFilter<"PricingRule"> | number
+  maxQty?: Prisma.IntNullableFilter<"PricingRule"> | number | null
+  discountPct?: Prisma.IntNullableFilter<"PricingRule"> | number | null
+  fixedUnitPrice?: Prisma.FloatNullableFilter<"PricingRule"> | number | null
+  isActive?: Prisma.BoolFilter<"PricingRule"> | boolean
   product?: Prisma.XOR<Prisma.ProductScalarRelationFilter, Prisma.ProductWhereInput>
 }
 
 export type PricingRuleOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  productId?: Prisma.SortOrder
-  minQuantity?: Prisma.SortOrder
-  discountPercentage?: Prisma.SortOrder
   scope?: Prisma.SortOrder
+  productId?: Prisma.SortOrder
+  minQty?: Prisma.SortOrder
+  maxQty?: Prisma.SortOrderInput | Prisma.SortOrder
+  discountPct?: Prisma.SortOrderInput | Prisma.SortOrder
+  fixedUnitPrice?: Prisma.SortOrderInput | Prisma.SortOrder
+  isActive?: Prisma.SortOrder
   product?: Prisma.ProductOrderByWithRelationInput
 }
 
@@ -237,19 +272,25 @@ export type PricingRuleWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.PricingRuleWhereInput | Prisma.PricingRuleWhereInput[]
   OR?: Prisma.PricingRuleWhereInput[]
   NOT?: Prisma.PricingRuleWhereInput | Prisma.PricingRuleWhereInput[]
+  scope?: Prisma.EnumPriceRuleScopeFilter<"PricingRule"> | $Enums.PriceRuleScope
   productId?: Prisma.StringFilter<"PricingRule"> | string
-  minQuantity?: Prisma.IntFilter<"PricingRule"> | number
-  discountPercentage?: Prisma.FloatFilter<"PricingRule"> | number
-  scope?: Prisma.EnumPricingScopeFilter<"PricingRule"> | $Enums.PricingScope
+  minQty?: Prisma.IntFilter<"PricingRule"> | number
+  maxQty?: Prisma.IntNullableFilter<"PricingRule"> | number | null
+  discountPct?: Prisma.IntNullableFilter<"PricingRule"> | number | null
+  fixedUnitPrice?: Prisma.FloatNullableFilter<"PricingRule"> | number | null
+  isActive?: Prisma.BoolFilter<"PricingRule"> | boolean
   product?: Prisma.XOR<Prisma.ProductScalarRelationFilter, Prisma.ProductWhereInput>
 }, "id">
 
 export type PricingRuleOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  productId?: Prisma.SortOrder
-  minQuantity?: Prisma.SortOrder
-  discountPercentage?: Prisma.SortOrder
   scope?: Prisma.SortOrder
+  productId?: Prisma.SortOrder
+  minQty?: Prisma.SortOrder
+  maxQty?: Prisma.SortOrderInput | Prisma.SortOrder
+  discountPct?: Prisma.SortOrderInput | Prisma.SortOrder
+  fixedUnitPrice?: Prisma.SortOrderInput | Prisma.SortOrder
+  isActive?: Prisma.SortOrder
   _count?: Prisma.PricingRuleCountOrderByAggregateInput
   _avg?: Prisma.PricingRuleAvgOrderByAggregateInput
   _max?: Prisma.PricingRuleMaxOrderByAggregateInput
@@ -262,65 +303,89 @@ export type PricingRuleScalarWhereWithAggregatesInput = {
   OR?: Prisma.PricingRuleScalarWhereWithAggregatesInput[]
   NOT?: Prisma.PricingRuleScalarWhereWithAggregatesInput | Prisma.PricingRuleScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"PricingRule"> | string
+  scope?: Prisma.EnumPriceRuleScopeWithAggregatesFilter<"PricingRule"> | $Enums.PriceRuleScope
   productId?: Prisma.StringWithAggregatesFilter<"PricingRule"> | string
-  minQuantity?: Prisma.IntWithAggregatesFilter<"PricingRule"> | number
-  discountPercentage?: Prisma.FloatWithAggregatesFilter<"PricingRule"> | number
-  scope?: Prisma.EnumPricingScopeWithAggregatesFilter<"PricingRule"> | $Enums.PricingScope
+  minQty?: Prisma.IntWithAggregatesFilter<"PricingRule"> | number
+  maxQty?: Prisma.IntNullableWithAggregatesFilter<"PricingRule"> | number | null
+  discountPct?: Prisma.IntNullableWithAggregatesFilter<"PricingRule"> | number | null
+  fixedUnitPrice?: Prisma.FloatNullableWithAggregatesFilter<"PricingRule"> | number | null
+  isActive?: Prisma.BoolWithAggregatesFilter<"PricingRule"> | boolean
 }
 
 export type PricingRuleCreateInput = {
   id?: string
-  minQuantity: number
-  discountPercentage: number
-  scope: $Enums.PricingScope
+  scope: $Enums.PriceRuleScope
+  minQty: number
+  maxQty?: number | null
+  discountPct?: number | null
+  fixedUnitPrice?: number | null
+  isActive?: boolean
   product: Prisma.ProductCreateNestedOneWithoutPricingRulesInput
 }
 
 export type PricingRuleUncheckedCreateInput = {
   id?: string
+  scope: $Enums.PriceRuleScope
   productId: string
-  minQuantity: number
-  discountPercentage: number
-  scope: $Enums.PricingScope
+  minQty: number
+  maxQty?: number | null
+  discountPct?: number | null
+  fixedUnitPrice?: number | null
+  isActive?: boolean
 }
 
 export type PricingRuleUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  minQuantity?: Prisma.IntFieldUpdateOperationsInput | number
-  discountPercentage?: Prisma.FloatFieldUpdateOperationsInput | number
-  scope?: Prisma.EnumPricingScopeFieldUpdateOperationsInput | $Enums.PricingScope
+  scope?: Prisma.EnumPriceRuleScopeFieldUpdateOperationsInput | $Enums.PriceRuleScope
+  minQty?: Prisma.IntFieldUpdateOperationsInput | number
+  maxQty?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  discountPct?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  fixedUnitPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   product?: Prisma.ProductUpdateOneRequiredWithoutPricingRulesNestedInput
 }
 
 export type PricingRuleUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  scope?: Prisma.EnumPriceRuleScopeFieldUpdateOperationsInput | $Enums.PriceRuleScope
   productId?: Prisma.StringFieldUpdateOperationsInput | string
-  minQuantity?: Prisma.IntFieldUpdateOperationsInput | number
-  discountPercentage?: Prisma.FloatFieldUpdateOperationsInput | number
-  scope?: Prisma.EnumPricingScopeFieldUpdateOperationsInput | $Enums.PricingScope
+  minQty?: Prisma.IntFieldUpdateOperationsInput | number
+  maxQty?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  discountPct?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  fixedUnitPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type PricingRuleCreateManyInput = {
   id?: string
+  scope: $Enums.PriceRuleScope
   productId: string
-  minQuantity: number
-  discountPercentage: number
-  scope: $Enums.PricingScope
+  minQty: number
+  maxQty?: number | null
+  discountPct?: number | null
+  fixedUnitPrice?: number | null
+  isActive?: boolean
 }
 
 export type PricingRuleUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  minQuantity?: Prisma.IntFieldUpdateOperationsInput | number
-  discountPercentage?: Prisma.FloatFieldUpdateOperationsInput | number
-  scope?: Prisma.EnumPricingScopeFieldUpdateOperationsInput | $Enums.PricingScope
+  scope?: Prisma.EnumPriceRuleScopeFieldUpdateOperationsInput | $Enums.PriceRuleScope
+  minQty?: Prisma.IntFieldUpdateOperationsInput | number
+  maxQty?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  discountPct?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  fixedUnitPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type PricingRuleUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  scope?: Prisma.EnumPriceRuleScopeFieldUpdateOperationsInput | $Enums.PriceRuleScope
   productId?: Prisma.StringFieldUpdateOperationsInput | string
-  minQuantity?: Prisma.IntFieldUpdateOperationsInput | number
-  discountPercentage?: Prisma.FloatFieldUpdateOperationsInput | number
-  scope?: Prisma.EnumPricingScopeFieldUpdateOperationsInput | $Enums.PricingScope
+  minQty?: Prisma.IntFieldUpdateOperationsInput | number
+  maxQty?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  discountPct?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  fixedUnitPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type PricingRuleListRelationFilter = {
@@ -335,36 +400,49 @@ export type PricingRuleOrderByRelationAggregateInput = {
 
 export type PricingRuleCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  productId?: Prisma.SortOrder
-  minQuantity?: Prisma.SortOrder
-  discountPercentage?: Prisma.SortOrder
   scope?: Prisma.SortOrder
+  productId?: Prisma.SortOrder
+  minQty?: Prisma.SortOrder
+  maxQty?: Prisma.SortOrder
+  discountPct?: Prisma.SortOrder
+  fixedUnitPrice?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
 }
 
 export type PricingRuleAvgOrderByAggregateInput = {
-  minQuantity?: Prisma.SortOrder
-  discountPercentage?: Prisma.SortOrder
+  minQty?: Prisma.SortOrder
+  maxQty?: Prisma.SortOrder
+  discountPct?: Prisma.SortOrder
+  fixedUnitPrice?: Prisma.SortOrder
 }
 
 export type PricingRuleMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  productId?: Prisma.SortOrder
-  minQuantity?: Prisma.SortOrder
-  discountPercentage?: Prisma.SortOrder
   scope?: Prisma.SortOrder
+  productId?: Prisma.SortOrder
+  minQty?: Prisma.SortOrder
+  maxQty?: Prisma.SortOrder
+  discountPct?: Prisma.SortOrder
+  fixedUnitPrice?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
 }
 
 export type PricingRuleMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  productId?: Prisma.SortOrder
-  minQuantity?: Prisma.SortOrder
-  discountPercentage?: Prisma.SortOrder
   scope?: Prisma.SortOrder
+  productId?: Prisma.SortOrder
+  minQty?: Prisma.SortOrder
+  maxQty?: Prisma.SortOrder
+  discountPct?: Prisma.SortOrder
+  fixedUnitPrice?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
 }
 
 export type PricingRuleSumOrderByAggregateInput = {
-  minQuantity?: Prisma.SortOrder
-  discountPercentage?: Prisma.SortOrder
+  minQty?: Prisma.SortOrder
+  maxQty?: Prisma.SortOrder
+  discountPct?: Prisma.SortOrder
+  fixedUnitPrice?: Prisma.SortOrder
 }
 
 export type PricingRuleCreateNestedManyWithoutProductInput = {
@@ -409,22 +487,36 @@ export type PricingRuleUncheckedUpdateManyWithoutProductNestedInput = {
   deleteMany?: Prisma.PricingRuleScalarWhereInput | Prisma.PricingRuleScalarWhereInput[]
 }
 
-export type EnumPricingScopeFieldUpdateOperationsInput = {
-  set?: $Enums.PricingScope
+export type EnumPriceRuleScopeFieldUpdateOperationsInput = {
+  set?: $Enums.PriceRuleScope
+}
+
+export type NullableIntFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
 }
 
 export type PricingRuleCreateWithoutProductInput = {
   id?: string
-  minQuantity: number
-  discountPercentage: number
-  scope: $Enums.PricingScope
+  scope: $Enums.PriceRuleScope
+  minQty: number
+  maxQty?: number | null
+  discountPct?: number | null
+  fixedUnitPrice?: number | null
+  isActive?: boolean
 }
 
 export type PricingRuleUncheckedCreateWithoutProductInput = {
   id?: string
-  minQuantity: number
-  discountPercentage: number
-  scope: $Enums.PricingScope
+  scope: $Enums.PriceRuleScope
+  minQty: number
+  maxQty?: number | null
+  discountPct?: number | null
+  fixedUnitPrice?: number | null
+  isActive?: boolean
 }
 
 export type PricingRuleCreateOrConnectWithoutProductInput = {
@@ -458,78 +550,105 @@ export type PricingRuleScalarWhereInput = {
   OR?: Prisma.PricingRuleScalarWhereInput[]
   NOT?: Prisma.PricingRuleScalarWhereInput | Prisma.PricingRuleScalarWhereInput[]
   id?: Prisma.StringFilter<"PricingRule"> | string
+  scope?: Prisma.EnumPriceRuleScopeFilter<"PricingRule"> | $Enums.PriceRuleScope
   productId?: Prisma.StringFilter<"PricingRule"> | string
-  minQuantity?: Prisma.IntFilter<"PricingRule"> | number
-  discountPercentage?: Prisma.FloatFilter<"PricingRule"> | number
-  scope?: Prisma.EnumPricingScopeFilter<"PricingRule"> | $Enums.PricingScope
+  minQty?: Prisma.IntFilter<"PricingRule"> | number
+  maxQty?: Prisma.IntNullableFilter<"PricingRule"> | number | null
+  discountPct?: Prisma.IntNullableFilter<"PricingRule"> | number | null
+  fixedUnitPrice?: Prisma.FloatNullableFilter<"PricingRule"> | number | null
+  isActive?: Prisma.BoolFilter<"PricingRule"> | boolean
 }
 
 export type PricingRuleCreateManyProductInput = {
   id?: string
-  minQuantity: number
-  discountPercentage: number
-  scope: $Enums.PricingScope
+  scope: $Enums.PriceRuleScope
+  minQty: number
+  maxQty?: number | null
+  discountPct?: number | null
+  fixedUnitPrice?: number | null
+  isActive?: boolean
 }
 
 export type PricingRuleUpdateWithoutProductInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  minQuantity?: Prisma.IntFieldUpdateOperationsInput | number
-  discountPercentage?: Prisma.FloatFieldUpdateOperationsInput | number
-  scope?: Prisma.EnumPricingScopeFieldUpdateOperationsInput | $Enums.PricingScope
+  scope?: Prisma.EnumPriceRuleScopeFieldUpdateOperationsInput | $Enums.PriceRuleScope
+  minQty?: Prisma.IntFieldUpdateOperationsInput | number
+  maxQty?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  discountPct?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  fixedUnitPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type PricingRuleUncheckedUpdateWithoutProductInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  minQuantity?: Prisma.IntFieldUpdateOperationsInput | number
-  discountPercentage?: Prisma.FloatFieldUpdateOperationsInput | number
-  scope?: Prisma.EnumPricingScopeFieldUpdateOperationsInput | $Enums.PricingScope
+  scope?: Prisma.EnumPriceRuleScopeFieldUpdateOperationsInput | $Enums.PriceRuleScope
+  minQty?: Prisma.IntFieldUpdateOperationsInput | number
+  maxQty?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  discountPct?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  fixedUnitPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type PricingRuleUncheckedUpdateManyWithoutProductInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  minQuantity?: Prisma.IntFieldUpdateOperationsInput | number
-  discountPercentage?: Prisma.FloatFieldUpdateOperationsInput | number
-  scope?: Prisma.EnumPricingScopeFieldUpdateOperationsInput | $Enums.PricingScope
+  scope?: Prisma.EnumPriceRuleScopeFieldUpdateOperationsInput | $Enums.PriceRuleScope
+  minQty?: Prisma.IntFieldUpdateOperationsInput | number
+  maxQty?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  discountPct?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  fixedUnitPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 
 
 export type PricingRuleSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  productId?: boolean
-  minQuantity?: boolean
-  discountPercentage?: boolean
   scope?: boolean
+  productId?: boolean
+  minQty?: boolean
+  maxQty?: boolean
+  discountPct?: boolean
+  fixedUnitPrice?: boolean
+  isActive?: boolean
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["pricingRule"]>
 
 export type PricingRuleSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  productId?: boolean
-  minQuantity?: boolean
-  discountPercentage?: boolean
   scope?: boolean
+  productId?: boolean
+  minQty?: boolean
+  maxQty?: boolean
+  discountPct?: boolean
+  fixedUnitPrice?: boolean
+  isActive?: boolean
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["pricingRule"]>
 
 export type PricingRuleSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  productId?: boolean
-  minQuantity?: boolean
-  discountPercentage?: boolean
   scope?: boolean
+  productId?: boolean
+  minQty?: boolean
+  maxQty?: boolean
+  discountPct?: boolean
+  fixedUnitPrice?: boolean
+  isActive?: boolean
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["pricingRule"]>
 
 export type PricingRuleSelectScalar = {
   id?: boolean
-  productId?: boolean
-  minQuantity?: boolean
-  discountPercentage?: boolean
   scope?: boolean
+  productId?: boolean
+  minQty?: boolean
+  maxQty?: boolean
+  discountPct?: boolean
+  fixedUnitPrice?: boolean
+  isActive?: boolean
 }
 
-export type PricingRuleOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "productId" | "minQuantity" | "discountPercentage" | "scope", ExtArgs["result"]["pricingRule"]>
+export type PricingRuleOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "scope" | "productId" | "minQty" | "maxQty" | "discountPct" | "fixedUnitPrice" | "isActive", ExtArgs["result"]["pricingRule"]>
 export type PricingRuleInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
 }
@@ -547,10 +666,13 @@ export type $PricingRulePayload<ExtArgs extends runtime.Types.Extensions.Interna
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
+    scope: $Enums.PriceRuleScope
     productId: string
-    minQuantity: number
-    discountPercentage: number
-    scope: $Enums.PricingScope
+    minQty: number
+    maxQty: number | null
+    discountPct: number | null
+    fixedUnitPrice: number | null
+    isActive: boolean
   }, ExtArgs["result"]["pricingRule"]>
   composites: {}
 }
@@ -976,10 +1098,13 @@ export interface Prisma__PricingRuleClient<T, Null = never, ExtArgs extends runt
  */
 export interface PricingRuleFieldRefs {
   readonly id: Prisma.FieldRef<"PricingRule", 'String'>
+  readonly scope: Prisma.FieldRef<"PricingRule", 'PriceRuleScope'>
   readonly productId: Prisma.FieldRef<"PricingRule", 'String'>
-  readonly minQuantity: Prisma.FieldRef<"PricingRule", 'Int'>
-  readonly discountPercentage: Prisma.FieldRef<"PricingRule", 'Float'>
-  readonly scope: Prisma.FieldRef<"PricingRule", 'PricingScope'>
+  readonly minQty: Prisma.FieldRef<"PricingRule", 'Int'>
+  readonly maxQty: Prisma.FieldRef<"PricingRule", 'Int'>
+  readonly discountPct: Prisma.FieldRef<"PricingRule", 'Int'>
+  readonly fixedUnitPrice: Prisma.FieldRef<"PricingRule", 'Float'>
+  readonly isActive: Prisma.FieldRef<"PricingRule", 'Boolean'>
 }
     
 

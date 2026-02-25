@@ -43,9 +43,9 @@ export class ConfigurationService {
       }
       acc[attr.type].push({
         id: attr.id,
-        name: attr.name,
+        value: attr.value,
         priceModifier: attr.priceModifier,
-        isDefault: attr.isDefault,
+        isActive: attr.isActive,
       });
       return acc;
     }, {} as Record<string, any[]>);

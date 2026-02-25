@@ -27,10 +27,12 @@ export type AggregateProductAttribute = {
 }
 
 export type ProductAttributeAvgAggregateOutputType = {
+  sortOrder: number | null
   priceModifier: number | null
 }
 
 export type ProductAttributeSumAggregateOutputType = {
+  sortOrder: number | null
   priceModifier: number | null
 }
 
@@ -38,36 +40,41 @@ export type ProductAttributeMinAggregateOutputType = {
   id: string | null
   productId: string | null
   type: $Enums.AttributeType | null
-  name: string | null
+  value: string | null
+  sortOrder: number | null
   priceModifier: number | null
-  isDefault: boolean | null
+  isActive: boolean | null
 }
 
 export type ProductAttributeMaxAggregateOutputType = {
   id: string | null
   productId: string | null
   type: $Enums.AttributeType | null
-  name: string | null
+  value: string | null
+  sortOrder: number | null
   priceModifier: number | null
-  isDefault: boolean | null
+  isActive: boolean | null
 }
 
 export type ProductAttributeCountAggregateOutputType = {
   id: number
   productId: number
   type: number
-  name: number
+  value: number
+  sortOrder: number
   priceModifier: number
-  isDefault: number
+  isActive: number
   _all: number
 }
 
 
 export type ProductAttributeAvgAggregateInputType = {
+  sortOrder?: true
   priceModifier?: true
 }
 
 export type ProductAttributeSumAggregateInputType = {
+  sortOrder?: true
   priceModifier?: true
 }
 
@@ -75,27 +82,30 @@ export type ProductAttributeMinAggregateInputType = {
   id?: true
   productId?: true
   type?: true
-  name?: true
+  value?: true
+  sortOrder?: true
   priceModifier?: true
-  isDefault?: true
+  isActive?: true
 }
 
 export type ProductAttributeMaxAggregateInputType = {
   id?: true
   productId?: true
   type?: true
-  name?: true
+  value?: true
+  sortOrder?: true
   priceModifier?: true
-  isDefault?: true
+  isActive?: true
 }
 
 export type ProductAttributeCountAggregateInputType = {
   id?: true
   productId?: true
   type?: true
-  name?: true
+  value?: true
+  sortOrder?: true
   priceModifier?: true
-  isDefault?: true
+  isActive?: true
   _all?: true
 }
 
@@ -189,9 +199,10 @@ export type ProductAttributeGroupByOutputType = {
   id: string
   productId: string
   type: $Enums.AttributeType
-  name: string
+  value: string
+  sortOrder: number
   priceModifier: number
-  isDefault: boolean
+  isActive: boolean
   _count: ProductAttributeCountAggregateOutputType | null
   _avg: ProductAttributeAvgAggregateOutputType | null
   _sum: ProductAttributeSumAggregateOutputType | null
@@ -221,9 +232,10 @@ export type ProductAttributeWhereInput = {
   id?: Prisma.StringFilter<"ProductAttribute"> | string
   productId?: Prisma.StringFilter<"ProductAttribute"> | string
   type?: Prisma.EnumAttributeTypeFilter<"ProductAttribute"> | $Enums.AttributeType
-  name?: Prisma.StringFilter<"ProductAttribute"> | string
+  value?: Prisma.StringFilter<"ProductAttribute"> | string
+  sortOrder?: Prisma.IntFilter<"ProductAttribute"> | number
   priceModifier?: Prisma.FloatFilter<"ProductAttribute"> | number
-  isDefault?: Prisma.BoolFilter<"ProductAttribute"> | boolean
+  isActive?: Prisma.BoolFilter<"ProductAttribute"> | boolean
   product?: Prisma.XOR<Prisma.ProductScalarRelationFilter, Prisma.ProductWhereInput>
 }
 
@@ -231,9 +243,10 @@ export type ProductAttributeOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   productId?: Prisma.SortOrder
   type?: Prisma.SortOrder
-  name?: Prisma.SortOrder
+  value?: Prisma.SortOrder
+  sortOrder?: Prisma.SortOrder
   priceModifier?: Prisma.SortOrder
-  isDefault?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
   product?: Prisma.ProductOrderByWithRelationInput
 }
 
@@ -244,9 +257,10 @@ export type ProductAttributeWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.ProductAttributeWhereInput | Prisma.ProductAttributeWhereInput[]
   productId?: Prisma.StringFilter<"ProductAttribute"> | string
   type?: Prisma.EnumAttributeTypeFilter<"ProductAttribute"> | $Enums.AttributeType
-  name?: Prisma.StringFilter<"ProductAttribute"> | string
+  value?: Prisma.StringFilter<"ProductAttribute"> | string
+  sortOrder?: Prisma.IntFilter<"ProductAttribute"> | number
   priceModifier?: Prisma.FloatFilter<"ProductAttribute"> | number
-  isDefault?: Prisma.BoolFilter<"ProductAttribute"> | boolean
+  isActive?: Prisma.BoolFilter<"ProductAttribute"> | boolean
   product?: Prisma.XOR<Prisma.ProductScalarRelationFilter, Prisma.ProductWhereInput>
 }, "id">
 
@@ -254,9 +268,10 @@ export type ProductAttributeOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   productId?: Prisma.SortOrder
   type?: Prisma.SortOrder
-  name?: Prisma.SortOrder
+  value?: Prisma.SortOrder
+  sortOrder?: Prisma.SortOrder
   priceModifier?: Prisma.SortOrder
-  isDefault?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
   _count?: Prisma.ProductAttributeCountOrderByAggregateInput
   _avg?: Prisma.ProductAttributeAvgOrderByAggregateInput
   _max?: Prisma.ProductAttributeMaxOrderByAggregateInput
@@ -271,17 +286,19 @@ export type ProductAttributeScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"ProductAttribute"> | string
   productId?: Prisma.StringWithAggregatesFilter<"ProductAttribute"> | string
   type?: Prisma.EnumAttributeTypeWithAggregatesFilter<"ProductAttribute"> | $Enums.AttributeType
-  name?: Prisma.StringWithAggregatesFilter<"ProductAttribute"> | string
+  value?: Prisma.StringWithAggregatesFilter<"ProductAttribute"> | string
+  sortOrder?: Prisma.IntWithAggregatesFilter<"ProductAttribute"> | number
   priceModifier?: Prisma.FloatWithAggregatesFilter<"ProductAttribute"> | number
-  isDefault?: Prisma.BoolWithAggregatesFilter<"ProductAttribute"> | boolean
+  isActive?: Prisma.BoolWithAggregatesFilter<"ProductAttribute"> | boolean
 }
 
 export type ProductAttributeCreateInput = {
   id?: string
   type: $Enums.AttributeType
-  name: string
+  value: string
+  sortOrder?: number
   priceModifier?: number
-  isDefault?: boolean
+  isActive?: boolean
   product: Prisma.ProductCreateNestedOneWithoutAttributesInput
 }
 
@@ -289,17 +306,19 @@ export type ProductAttributeUncheckedCreateInput = {
   id?: string
   productId: string
   type: $Enums.AttributeType
-  name: string
+  value: string
+  sortOrder?: number
   priceModifier?: number
-  isDefault?: boolean
+  isActive?: boolean
 }
 
 export type ProductAttributeUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumAttributeTypeFieldUpdateOperationsInput | $Enums.AttributeType
-  name?: Prisma.StringFieldUpdateOperationsInput | string
+  value?: Prisma.StringFieldUpdateOperationsInput | string
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   priceModifier?: Prisma.FloatFieldUpdateOperationsInput | number
-  isDefault?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   product?: Prisma.ProductUpdateOneRequiredWithoutAttributesNestedInput
 }
 
@@ -307,35 +326,39 @@ export type ProductAttributeUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   productId?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumAttributeTypeFieldUpdateOperationsInput | $Enums.AttributeType
-  name?: Prisma.StringFieldUpdateOperationsInput | string
+  value?: Prisma.StringFieldUpdateOperationsInput | string
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   priceModifier?: Prisma.FloatFieldUpdateOperationsInput | number
-  isDefault?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type ProductAttributeCreateManyInput = {
   id?: string
   productId: string
   type: $Enums.AttributeType
-  name: string
+  value: string
+  sortOrder?: number
   priceModifier?: number
-  isDefault?: boolean
+  isActive?: boolean
 }
 
 export type ProductAttributeUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumAttributeTypeFieldUpdateOperationsInput | $Enums.AttributeType
-  name?: Prisma.StringFieldUpdateOperationsInput | string
+  value?: Prisma.StringFieldUpdateOperationsInput | string
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   priceModifier?: Prisma.FloatFieldUpdateOperationsInput | number
-  isDefault?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type ProductAttributeUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   productId?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumAttributeTypeFieldUpdateOperationsInput | $Enums.AttributeType
-  name?: Prisma.StringFieldUpdateOperationsInput | string
+  value?: Prisma.StringFieldUpdateOperationsInput | string
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   priceModifier?: Prisma.FloatFieldUpdateOperationsInput | number
-  isDefault?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type ProductAttributeListRelationFilter = {
@@ -352,12 +375,14 @@ export type ProductAttributeCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   productId?: Prisma.SortOrder
   type?: Prisma.SortOrder
-  name?: Prisma.SortOrder
+  value?: Prisma.SortOrder
+  sortOrder?: Prisma.SortOrder
   priceModifier?: Prisma.SortOrder
-  isDefault?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
 }
 
 export type ProductAttributeAvgOrderByAggregateInput = {
+  sortOrder?: Prisma.SortOrder
   priceModifier?: Prisma.SortOrder
 }
 
@@ -365,21 +390,24 @@ export type ProductAttributeMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   productId?: Prisma.SortOrder
   type?: Prisma.SortOrder
-  name?: Prisma.SortOrder
+  value?: Prisma.SortOrder
+  sortOrder?: Prisma.SortOrder
   priceModifier?: Prisma.SortOrder
-  isDefault?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
 }
 
 export type ProductAttributeMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   productId?: Prisma.SortOrder
   type?: Prisma.SortOrder
-  name?: Prisma.SortOrder
+  value?: Prisma.SortOrder
+  sortOrder?: Prisma.SortOrder
   priceModifier?: Prisma.SortOrder
-  isDefault?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
 }
 
 export type ProductAttributeSumOrderByAggregateInput = {
+  sortOrder?: Prisma.SortOrder
   priceModifier?: Prisma.SortOrder
 }
 
@@ -432,17 +460,19 @@ export type EnumAttributeTypeFieldUpdateOperationsInput = {
 export type ProductAttributeCreateWithoutProductInput = {
   id?: string
   type: $Enums.AttributeType
-  name: string
+  value: string
+  sortOrder?: number
   priceModifier?: number
-  isDefault?: boolean
+  isActive?: boolean
 }
 
 export type ProductAttributeUncheckedCreateWithoutProductInput = {
   id?: string
   type: $Enums.AttributeType
-  name: string
+  value: string
+  sortOrder?: number
   priceModifier?: number
-  isDefault?: boolean
+  isActive?: boolean
 }
 
 export type ProductAttributeCreateOrConnectWithoutProductInput = {
@@ -478,41 +508,46 @@ export type ProductAttributeScalarWhereInput = {
   id?: Prisma.StringFilter<"ProductAttribute"> | string
   productId?: Prisma.StringFilter<"ProductAttribute"> | string
   type?: Prisma.EnumAttributeTypeFilter<"ProductAttribute"> | $Enums.AttributeType
-  name?: Prisma.StringFilter<"ProductAttribute"> | string
+  value?: Prisma.StringFilter<"ProductAttribute"> | string
+  sortOrder?: Prisma.IntFilter<"ProductAttribute"> | number
   priceModifier?: Prisma.FloatFilter<"ProductAttribute"> | number
-  isDefault?: Prisma.BoolFilter<"ProductAttribute"> | boolean
+  isActive?: Prisma.BoolFilter<"ProductAttribute"> | boolean
 }
 
 export type ProductAttributeCreateManyProductInput = {
   id?: string
   type: $Enums.AttributeType
-  name: string
+  value: string
+  sortOrder?: number
   priceModifier?: number
-  isDefault?: boolean
+  isActive?: boolean
 }
 
 export type ProductAttributeUpdateWithoutProductInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumAttributeTypeFieldUpdateOperationsInput | $Enums.AttributeType
-  name?: Prisma.StringFieldUpdateOperationsInput | string
+  value?: Prisma.StringFieldUpdateOperationsInput | string
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   priceModifier?: Prisma.FloatFieldUpdateOperationsInput | number
-  isDefault?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type ProductAttributeUncheckedUpdateWithoutProductInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumAttributeTypeFieldUpdateOperationsInput | $Enums.AttributeType
-  name?: Prisma.StringFieldUpdateOperationsInput | string
+  value?: Prisma.StringFieldUpdateOperationsInput | string
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   priceModifier?: Prisma.FloatFieldUpdateOperationsInput | number
-  isDefault?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type ProductAttributeUncheckedUpdateManyWithoutProductInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumAttributeTypeFieldUpdateOperationsInput | $Enums.AttributeType
-  name?: Prisma.StringFieldUpdateOperationsInput | string
+  value?: Prisma.StringFieldUpdateOperationsInput | string
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   priceModifier?: Prisma.FloatFieldUpdateOperationsInput | number
-  isDefault?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 
@@ -521,9 +556,10 @@ export type ProductAttributeSelect<ExtArgs extends runtime.Types.Extensions.Inte
   id?: boolean
   productId?: boolean
   type?: boolean
-  name?: boolean
+  value?: boolean
+  sortOrder?: boolean
   priceModifier?: boolean
-  isDefault?: boolean
+  isActive?: boolean
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["productAttribute"]>
 
@@ -531,9 +567,10 @@ export type ProductAttributeSelectCreateManyAndReturn<ExtArgs extends runtime.Ty
   id?: boolean
   productId?: boolean
   type?: boolean
-  name?: boolean
+  value?: boolean
+  sortOrder?: boolean
   priceModifier?: boolean
-  isDefault?: boolean
+  isActive?: boolean
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["productAttribute"]>
 
@@ -541,9 +578,10 @@ export type ProductAttributeSelectUpdateManyAndReturn<ExtArgs extends runtime.Ty
   id?: boolean
   productId?: boolean
   type?: boolean
-  name?: boolean
+  value?: boolean
+  sortOrder?: boolean
   priceModifier?: boolean
-  isDefault?: boolean
+  isActive?: boolean
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["productAttribute"]>
 
@@ -551,12 +589,13 @@ export type ProductAttributeSelectScalar = {
   id?: boolean
   productId?: boolean
   type?: boolean
-  name?: boolean
+  value?: boolean
+  sortOrder?: boolean
   priceModifier?: boolean
-  isDefault?: boolean
+  isActive?: boolean
 }
 
-export type ProductAttributeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "productId" | "type" | "name" | "priceModifier" | "isDefault", ExtArgs["result"]["productAttribute"]>
+export type ProductAttributeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "productId" | "type" | "value" | "sortOrder" | "priceModifier" | "isActive", ExtArgs["result"]["productAttribute"]>
 export type ProductAttributeInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
 }
@@ -576,9 +615,10 @@ export type $ProductAttributePayload<ExtArgs extends runtime.Types.Extensions.In
     id: string
     productId: string
     type: $Enums.AttributeType
-    name: string
+    value: string
+    sortOrder: number
     priceModifier: number
-    isDefault: boolean
+    isActive: boolean
   }, ExtArgs["result"]["productAttribute"]>
   composites: {}
 }
@@ -1006,9 +1046,10 @@ export interface ProductAttributeFieldRefs {
   readonly id: Prisma.FieldRef<"ProductAttribute", 'String'>
   readonly productId: Prisma.FieldRef<"ProductAttribute", 'String'>
   readonly type: Prisma.FieldRef<"ProductAttribute", 'AttributeType'>
-  readonly name: Prisma.FieldRef<"ProductAttribute", 'String'>
+  readonly value: Prisma.FieldRef<"ProductAttribute", 'String'>
+  readonly sortOrder: Prisma.FieldRef<"ProductAttribute", 'Int'>
   readonly priceModifier: Prisma.FieldRef<"ProductAttribute", 'Float'>
-  readonly isDefault: Prisma.FieldRef<"ProductAttribute", 'Boolean'>
+  readonly isActive: Prisma.FieldRef<"ProductAttribute", 'Boolean'>
 }
     
 

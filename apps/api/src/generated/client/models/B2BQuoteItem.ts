@@ -28,92 +28,80 @@ export type AggregateB2BQuoteItem = {
 
 export type B2BQuoteItemAvgAggregateOutputType = {
   quantity: number | null
-  unitPrice: number | null
-  totalPrice: number | null
+  targetUnitPrice: number | null
 }
 
 export type B2BQuoteItemSumAggregateOutputType = {
   quantity: number | null
-  unitPrice: number | null
-  totalPrice: number | null
+  targetUnitPrice: number | null
 }
 
 export type B2BQuoteItemMinAggregateOutputType = {
   id: string | null
   quoteId: string | null
   productId: string | null
-  variantId: string | null
   quantity: number | null
-  unitPrice: number | null
-  totalPrice: number | null
+  targetUnitPrice: number | null
+  notes: string | null
 }
 
 export type B2BQuoteItemMaxAggregateOutputType = {
   id: string | null
   quoteId: string | null
   productId: string | null
-  variantId: string | null
   quantity: number | null
-  unitPrice: number | null
-  totalPrice: number | null
+  targetUnitPrice: number | null
+  notes: string | null
 }
 
 export type B2BQuoteItemCountAggregateOutputType = {
   id: number
   quoteId: number
   productId: number
-  variantId: number
   quantity: number
-  unitPrice: number
-  totalPrice: number
   configurationJson: number
-  pricingJson: number
+  targetUnitPrice: number
+  notes: number
   _all: number
 }
 
 
 export type B2BQuoteItemAvgAggregateInputType = {
   quantity?: true
-  unitPrice?: true
-  totalPrice?: true
+  targetUnitPrice?: true
 }
 
 export type B2BQuoteItemSumAggregateInputType = {
   quantity?: true
-  unitPrice?: true
-  totalPrice?: true
+  targetUnitPrice?: true
 }
 
 export type B2BQuoteItemMinAggregateInputType = {
   id?: true
   quoteId?: true
   productId?: true
-  variantId?: true
   quantity?: true
-  unitPrice?: true
-  totalPrice?: true
+  targetUnitPrice?: true
+  notes?: true
 }
 
 export type B2BQuoteItemMaxAggregateInputType = {
   id?: true
   quoteId?: true
   productId?: true
-  variantId?: true
   quantity?: true
-  unitPrice?: true
-  totalPrice?: true
+  targetUnitPrice?: true
+  notes?: true
 }
 
 export type B2BQuoteItemCountAggregateInputType = {
   id?: true
   quoteId?: true
   productId?: true
-  variantId?: true
   quantity?: true
-  unitPrice?: true
-  totalPrice?: true
   configurationJson?: true
-  pricingJson?: true
+  targetUnitPrice?: true
+  notes?: true
   _all?: true
 }
 
@@ -207,12 +195,10 @@ export type B2BQuoteItemGroupByOutputType = {
   id: string
   quoteId: string
   productId: string
-  variantId: string | null
   quantity: number
-  unitPrice: number
-  totalPrice: number
-  configurationJson: runtime.JsonValue | null
-  pricingJson: runtime.JsonValue | null
+  configurationJson: runtime.JsonValue
+  targetUnitPrice: number | null
+  notes: string | null
   _count: B2BQuoteItemCountAggregateOutputType | null
   _avg: B2BQuoteItemAvgAggregateOutputType | null
   _sum: B2BQuoteItemSumAggregateOutputType | null
@@ -242,12 +228,10 @@ export type B2BQuoteItemWhereInput = {
   id?: Prisma.StringFilter<"B2BQuoteItem"> | string
   quoteId?: Prisma.StringFilter<"B2BQuoteItem"> | string
   productId?: Prisma.StringFilter<"B2BQuoteItem"> | string
-  variantId?: Prisma.StringNullableFilter<"B2BQuoteItem"> | string | null
   quantity?: Prisma.IntFilter<"B2BQuoteItem"> | number
-  unitPrice?: Prisma.FloatFilter<"B2BQuoteItem"> | number
-  totalPrice?: Prisma.FloatFilter<"B2BQuoteItem"> | number
-  configurationJson?: Prisma.JsonNullableFilter<"B2BQuoteItem">
-  pricingJson?: Prisma.JsonNullableFilter<"B2BQuoteItem">
+  configurationJson?: Prisma.JsonFilter<"B2BQuoteItem">
+  targetUnitPrice?: Prisma.FloatNullableFilter<"B2BQuoteItem"> | number | null
+  notes?: Prisma.StringNullableFilter<"B2BQuoteItem"> | string | null
   product?: Prisma.XOR<Prisma.ProductScalarRelationFilter, Prisma.ProductWhereInput>
   quote?: Prisma.XOR<Prisma.B2BQuoteScalarRelationFilter, Prisma.B2BQuoteWhereInput>
 }
@@ -256,12 +240,10 @@ export type B2BQuoteItemOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   quoteId?: Prisma.SortOrder
   productId?: Prisma.SortOrder
-  variantId?: Prisma.SortOrderInput | Prisma.SortOrder
   quantity?: Prisma.SortOrder
-  unitPrice?: Prisma.SortOrder
-  totalPrice?: Prisma.SortOrder
-  configurationJson?: Prisma.SortOrderInput | Prisma.SortOrder
-  pricingJson?: Prisma.SortOrderInput | Prisma.SortOrder
+  configurationJson?: Prisma.SortOrder
+  targetUnitPrice?: Prisma.SortOrderInput | Prisma.SortOrder
+  notes?: Prisma.SortOrderInput | Prisma.SortOrder
   product?: Prisma.ProductOrderByWithRelationInput
   quote?: Prisma.B2BQuoteOrderByWithRelationInput
 }
@@ -273,12 +255,10 @@ export type B2BQuoteItemWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.B2BQuoteItemWhereInput | Prisma.B2BQuoteItemWhereInput[]
   quoteId?: Prisma.StringFilter<"B2BQuoteItem"> | string
   productId?: Prisma.StringFilter<"B2BQuoteItem"> | string
-  variantId?: Prisma.StringNullableFilter<"B2BQuoteItem"> | string | null
   quantity?: Prisma.IntFilter<"B2BQuoteItem"> | number
-  unitPrice?: Prisma.FloatFilter<"B2BQuoteItem"> | number
-  totalPrice?: Prisma.FloatFilter<"B2BQuoteItem"> | number
-  configurationJson?: Prisma.JsonNullableFilter<"B2BQuoteItem">
-  pricingJson?: Prisma.JsonNullableFilter<"B2BQuoteItem">
+  configurationJson?: Prisma.JsonFilter<"B2BQuoteItem">
+  targetUnitPrice?: Prisma.FloatNullableFilter<"B2BQuoteItem"> | number | null
+  notes?: Prisma.StringNullableFilter<"B2BQuoteItem"> | string | null
   product?: Prisma.XOR<Prisma.ProductScalarRelationFilter, Prisma.ProductWhereInput>
   quote?: Prisma.XOR<Prisma.B2BQuoteScalarRelationFilter, Prisma.B2BQuoteWhereInput>
 }, "id">
@@ -287,12 +267,10 @@ export type B2BQuoteItemOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   quoteId?: Prisma.SortOrder
   productId?: Prisma.SortOrder
-  variantId?: Prisma.SortOrderInput | Prisma.SortOrder
   quantity?: Prisma.SortOrder
-  unitPrice?: Prisma.SortOrder
-  totalPrice?: Prisma.SortOrder
-  configurationJson?: Prisma.SortOrderInput | Prisma.SortOrder
-  pricingJson?: Prisma.SortOrderInput | Prisma.SortOrder
+  configurationJson?: Prisma.SortOrder
+  targetUnitPrice?: Prisma.SortOrderInput | Prisma.SortOrder
+  notes?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.B2BQuoteItemCountOrderByAggregateInput
   _avg?: Prisma.B2BQuoteItemAvgOrderByAggregateInput
   _max?: Prisma.B2BQuoteItemMaxOrderByAggregateInput
@@ -307,22 +285,18 @@ export type B2BQuoteItemScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"B2BQuoteItem"> | string
   quoteId?: Prisma.StringWithAggregatesFilter<"B2BQuoteItem"> | string
   productId?: Prisma.StringWithAggregatesFilter<"B2BQuoteItem"> | string
-  variantId?: Prisma.StringNullableWithAggregatesFilter<"B2BQuoteItem"> | string | null
   quantity?: Prisma.IntWithAggregatesFilter<"B2BQuoteItem"> | number
-  unitPrice?: Prisma.FloatWithAggregatesFilter<"B2BQuoteItem"> | number
-  totalPrice?: Prisma.FloatWithAggregatesFilter<"B2BQuoteItem"> | number
-  configurationJson?: Prisma.JsonNullableWithAggregatesFilter<"B2BQuoteItem">
-  pricingJson?: Prisma.JsonNullableWithAggregatesFilter<"B2BQuoteItem">
+  configurationJson?: Prisma.JsonWithAggregatesFilter<"B2BQuoteItem">
+  targetUnitPrice?: Prisma.FloatNullableWithAggregatesFilter<"B2BQuoteItem"> | number | null
+  notes?: Prisma.StringNullableWithAggregatesFilter<"B2BQuoteItem"> | string | null
 }
 
 export type B2BQuoteItemCreateInput = {
   id?: string
-  variantId?: string | null
   quantity: number
-  unitPrice: number
-  totalPrice?: number
-  configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  configurationJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  targetUnitPrice?: number | null
+  notes?: string | null
   product: Prisma.ProductCreateNestedOneWithoutQuoteItemsInput
   quote: Prisma.B2BQuoteCreateNestedOneWithoutItemsInput
 }
@@ -331,22 +305,18 @@ export type B2BQuoteItemUncheckedCreateInput = {
   id?: string
   quoteId: string
   productId: string
-  variantId?: string | null
   quantity: number
-  unitPrice: number
-  totalPrice?: number
-  configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  configurationJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  targetUnitPrice?: number | null
+  notes?: string | null
 }
 
 export type B2BQuoteItemUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
-  unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  configurationJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  targetUnitPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   product?: Prisma.ProductUpdateOneRequiredWithoutQuoteItemsNestedInput
   quote?: Prisma.B2BQuoteUpdateOneRequiredWithoutItemsNestedInput
 }
@@ -355,46 +325,38 @@ export type B2BQuoteItemUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   quoteId?: Prisma.StringFieldUpdateOperationsInput | string
   productId?: Prisma.StringFieldUpdateOperationsInput | string
-  variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
-  unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  configurationJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  targetUnitPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type B2BQuoteItemCreateManyInput = {
   id?: string
   quoteId: string
   productId: string
-  variantId?: string | null
   quantity: number
-  unitPrice: number
-  totalPrice?: number
-  configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  configurationJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  targetUnitPrice?: number | null
+  notes?: string | null
 }
 
 export type B2BQuoteItemUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
-  unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  configurationJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  targetUnitPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type B2BQuoteItemUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   quoteId?: Prisma.StringFieldUpdateOperationsInput | string
   productId?: Prisma.StringFieldUpdateOperationsInput | string
-  variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
-  unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  configurationJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  targetUnitPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type B2BQuoteItemListRelationFilter = {
@@ -411,44 +373,38 @@ export type B2BQuoteItemCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   quoteId?: Prisma.SortOrder
   productId?: Prisma.SortOrder
-  variantId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
-  unitPrice?: Prisma.SortOrder
-  totalPrice?: Prisma.SortOrder
   configurationJson?: Prisma.SortOrder
-  pricingJson?: Prisma.SortOrder
+  targetUnitPrice?: Prisma.SortOrder
+  notes?: Prisma.SortOrder
 }
 
 export type B2BQuoteItemAvgOrderByAggregateInput = {
   quantity?: Prisma.SortOrder
-  unitPrice?: Prisma.SortOrder
-  totalPrice?: Prisma.SortOrder
+  targetUnitPrice?: Prisma.SortOrder
 }
 
 export type B2BQuoteItemMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   quoteId?: Prisma.SortOrder
   productId?: Prisma.SortOrder
-  variantId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
-  unitPrice?: Prisma.SortOrder
-  totalPrice?: Prisma.SortOrder
+  targetUnitPrice?: Prisma.SortOrder
+  notes?: Prisma.SortOrder
 }
 
 export type B2BQuoteItemMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   quoteId?: Prisma.SortOrder
   productId?: Prisma.SortOrder
-  variantId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
-  unitPrice?: Prisma.SortOrder
-  totalPrice?: Prisma.SortOrder
+  targetUnitPrice?: Prisma.SortOrder
+  notes?: Prisma.SortOrder
 }
 
 export type B2BQuoteItemSumOrderByAggregateInput = {
   quantity?: Prisma.SortOrder
-  unitPrice?: Prisma.SortOrder
-  totalPrice?: Prisma.SortOrder
+  targetUnitPrice?: Prisma.SortOrder
 }
 
 export type B2BQuoteItemCreateNestedManyWithoutProductInput = {
@@ -537,24 +493,20 @@ export type B2BQuoteItemUncheckedUpdateManyWithoutQuoteNestedInput = {
 
 export type B2BQuoteItemCreateWithoutProductInput = {
   id?: string
-  variantId?: string | null
   quantity: number
-  unitPrice: number
-  totalPrice?: number
-  configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  configurationJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  targetUnitPrice?: number | null
+  notes?: string | null
   quote: Prisma.B2BQuoteCreateNestedOneWithoutItemsInput
 }
 
 export type B2BQuoteItemUncheckedCreateWithoutProductInput = {
   id?: string
   quoteId: string
-  variantId?: string | null
   quantity: number
-  unitPrice: number
-  totalPrice?: number
-  configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  configurationJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  targetUnitPrice?: number | null
+  notes?: string | null
 }
 
 export type B2BQuoteItemCreateOrConnectWithoutProductInput = {
@@ -590,34 +542,28 @@ export type B2BQuoteItemScalarWhereInput = {
   id?: Prisma.StringFilter<"B2BQuoteItem"> | string
   quoteId?: Prisma.StringFilter<"B2BQuoteItem"> | string
   productId?: Prisma.StringFilter<"B2BQuoteItem"> | string
-  variantId?: Prisma.StringNullableFilter<"B2BQuoteItem"> | string | null
   quantity?: Prisma.IntFilter<"B2BQuoteItem"> | number
-  unitPrice?: Prisma.FloatFilter<"B2BQuoteItem"> | number
-  totalPrice?: Prisma.FloatFilter<"B2BQuoteItem"> | number
-  configurationJson?: Prisma.JsonNullableFilter<"B2BQuoteItem">
-  pricingJson?: Prisma.JsonNullableFilter<"B2BQuoteItem">
+  configurationJson?: Prisma.JsonFilter<"B2BQuoteItem">
+  targetUnitPrice?: Prisma.FloatNullableFilter<"B2BQuoteItem"> | number | null
+  notes?: Prisma.StringNullableFilter<"B2BQuoteItem"> | string | null
 }
 
 export type B2BQuoteItemCreateWithoutQuoteInput = {
   id?: string
-  variantId?: string | null
   quantity: number
-  unitPrice: number
-  totalPrice?: number
-  configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  configurationJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  targetUnitPrice?: number | null
+  notes?: string | null
   product: Prisma.ProductCreateNestedOneWithoutQuoteItemsInput
 }
 
 export type B2BQuoteItemUncheckedCreateWithoutQuoteInput = {
   id?: string
   productId: string
-  variantId?: string | null
   quantity: number
-  unitPrice: number
-  totalPrice?: number
-  configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  configurationJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  targetUnitPrice?: number | null
+  notes?: string | null
 }
 
 export type B2BQuoteItemCreateOrConnectWithoutQuoteInput = {
@@ -649,89 +595,73 @@ export type B2BQuoteItemUpdateManyWithWhereWithoutQuoteInput = {
 export type B2BQuoteItemCreateManyProductInput = {
   id?: string
   quoteId: string
-  variantId?: string | null
   quantity: number
-  unitPrice: number
-  totalPrice?: number
-  configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  configurationJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  targetUnitPrice?: number | null
+  notes?: string | null
 }
 
 export type B2BQuoteItemUpdateWithoutProductInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
-  unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  configurationJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  targetUnitPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quote?: Prisma.B2BQuoteUpdateOneRequiredWithoutItemsNestedInput
 }
 
 export type B2BQuoteItemUncheckedUpdateWithoutProductInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   quoteId?: Prisma.StringFieldUpdateOperationsInput | string
-  variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
-  unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  configurationJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  targetUnitPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type B2BQuoteItemUncheckedUpdateManyWithoutProductInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   quoteId?: Prisma.StringFieldUpdateOperationsInput | string
-  variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
-  unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  configurationJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  targetUnitPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type B2BQuoteItemCreateManyQuoteInput = {
   id?: string
   productId: string
-  variantId?: string | null
   quantity: number
-  unitPrice: number
-  totalPrice?: number
-  configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  configurationJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  targetUnitPrice?: number | null
+  notes?: string | null
 }
 
 export type B2BQuoteItemUpdateWithoutQuoteInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
-  unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  configurationJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  targetUnitPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   product?: Prisma.ProductUpdateOneRequiredWithoutQuoteItemsNestedInput
 }
 
 export type B2BQuoteItemUncheckedUpdateWithoutQuoteInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   productId?: Prisma.StringFieldUpdateOperationsInput | string
-  variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
-  unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  configurationJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  targetUnitPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type B2BQuoteItemUncheckedUpdateManyWithoutQuoteInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   productId?: Prisma.StringFieldUpdateOperationsInput | string
-  variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
-  unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalPrice?: Prisma.FloatFieldUpdateOperationsInput | number
-  configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  configurationJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  targetUnitPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 
@@ -740,12 +670,10 @@ export type B2BQuoteItemSelect<ExtArgs extends runtime.Types.Extensions.Internal
   id?: boolean
   quoteId?: boolean
   productId?: boolean
-  variantId?: boolean
   quantity?: boolean
-  unitPrice?: boolean
-  totalPrice?: boolean
   configurationJson?: boolean
-  pricingJson?: boolean
+  targetUnitPrice?: boolean
+  notes?: boolean
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
   quote?: boolean | Prisma.B2BQuoteDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["b2BQuoteItem"]>
@@ -754,12 +682,10 @@ export type B2BQuoteItemSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   id?: boolean
   quoteId?: boolean
   productId?: boolean
-  variantId?: boolean
   quantity?: boolean
-  unitPrice?: boolean
-  totalPrice?: boolean
   configurationJson?: boolean
-  pricingJson?: boolean
+  targetUnitPrice?: boolean
+  notes?: boolean
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
   quote?: boolean | Prisma.B2BQuoteDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["b2BQuoteItem"]>
@@ -768,12 +694,10 @@ export type B2BQuoteItemSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   id?: boolean
   quoteId?: boolean
   productId?: boolean
-  variantId?: boolean
   quantity?: boolean
-  unitPrice?: boolean
-  totalPrice?: boolean
   configurationJson?: boolean
-  pricingJson?: boolean
+  targetUnitPrice?: boolean
+  notes?: boolean
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
   quote?: boolean | Prisma.B2BQuoteDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["b2BQuoteItem"]>
@@ -782,15 +706,13 @@ export type B2BQuoteItemSelectScalar = {
   id?: boolean
   quoteId?: boolean
   productId?: boolean
-  variantId?: boolean
   quantity?: boolean
-  unitPrice?: boolean
-  totalPrice?: boolean
   configurationJson?: boolean
-  pricingJson?: boolean
+  targetUnitPrice?: boolean
+  notes?: boolean
 }
 
-export type B2BQuoteItemOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "quoteId" | "productId" | "variantId" | "quantity" | "unitPrice" | "totalPrice" | "configurationJson" | "pricingJson", ExtArgs["result"]["b2BQuoteItem"]>
+export type B2BQuoteItemOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "quoteId" | "productId" | "quantity" | "configurationJson" | "targetUnitPrice" | "notes", ExtArgs["result"]["b2BQuoteItem"]>
 export type B2BQuoteItemInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
   quote?: boolean | Prisma.B2BQuoteDefaultArgs<ExtArgs>
@@ -814,12 +736,10 @@ export type $B2BQuoteItemPayload<ExtArgs extends runtime.Types.Extensions.Intern
     id: string
     quoteId: string
     productId: string
-    variantId: string | null
     quantity: number
-    unitPrice: number
-    totalPrice: number
-    configurationJson: runtime.JsonValue | null
-    pricingJson: runtime.JsonValue | null
+    configurationJson: runtime.JsonValue
+    targetUnitPrice: number | null
+    notes: string | null
   }, ExtArgs["result"]["b2BQuoteItem"]>
   composites: {}
 }
@@ -1248,12 +1168,10 @@ export interface B2BQuoteItemFieldRefs {
   readonly id: Prisma.FieldRef<"B2BQuoteItem", 'String'>
   readonly quoteId: Prisma.FieldRef<"B2BQuoteItem", 'String'>
   readonly productId: Prisma.FieldRef<"B2BQuoteItem", 'String'>
-  readonly variantId: Prisma.FieldRef<"B2BQuoteItem", 'String'>
   readonly quantity: Prisma.FieldRef<"B2BQuoteItem", 'Int'>
-  readonly unitPrice: Prisma.FieldRef<"B2BQuoteItem", 'Float'>
-  readonly totalPrice: Prisma.FieldRef<"B2BQuoteItem", 'Float'>
   readonly configurationJson: Prisma.FieldRef<"B2BQuoteItem", 'Json'>
-  readonly pricingJson: Prisma.FieldRef<"B2BQuoteItem", 'Json'>
+  readonly targetUnitPrice: Prisma.FieldRef<"B2BQuoteItem", 'Float'>
+  readonly notes: Prisma.FieldRef<"B2BQuoteItem", 'String'>
 }
     
 

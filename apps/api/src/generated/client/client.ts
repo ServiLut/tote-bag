@@ -118,6 +118,11 @@ export type ProductAttribute = Prisma.ProductAttributeModel
  */
 export type PersonalizationOption = Prisma.PersonalizationOptionModel
 /**
+ * Model PersonalizationRule
+ * 
+ */
+export type PersonalizationRule = Prisma.PersonalizationRuleModel
+/**
  * Model PricingRule
  * 
  */

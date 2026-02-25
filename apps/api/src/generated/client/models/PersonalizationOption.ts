@@ -36,23 +36,29 @@ export type PersonalizationOptionSumAggregateOutputType = {
 
 export type PersonalizationOptionMinAggregateOutputType = {
   id: string | null
-  name: string | null
   code: string | null
+  name: string | null
+  description: string | null
   basePrice: number | null
+  isActive: boolean | null
 }
 
 export type PersonalizationOptionMaxAggregateOutputType = {
   id: string | null
-  name: string | null
   code: string | null
+  name: string | null
+  description: string | null
   basePrice: number | null
+  isActive: boolean | null
 }
 
 export type PersonalizationOptionCountAggregateOutputType = {
   id: number
-  name: number
   code: number
+  name: number
+  description: number
   basePrice: number
+  isActive: number
   _all: number
 }
 
@@ -67,23 +73,29 @@ export type PersonalizationOptionSumAggregateInputType = {
 
 export type PersonalizationOptionMinAggregateInputType = {
   id?: true
-  name?: true
   code?: true
+  name?: true
+  description?: true
   basePrice?: true
+  isActive?: true
 }
 
 export type PersonalizationOptionMaxAggregateInputType = {
   id?: true
-  name?: true
   code?: true
+  name?: true
+  description?: true
   basePrice?: true
+  isActive?: true
 }
 
 export type PersonalizationOptionCountAggregateInputType = {
   id?: true
-  name?: true
   code?: true
+  name?: true
+  description?: true
   basePrice?: true
+  isActive?: true
   _all?: true
 }
 
@@ -175,9 +187,11 @@ export type PersonalizationOptionGroupByArgs<ExtArgs extends runtime.Types.Exten
 
 export type PersonalizationOptionGroupByOutputType = {
   id: string
-  name: string
   code: string
+  name: string
+  description: string | null
   basePrice: number
+  isActive: boolean
   _count: PersonalizationOptionCountAggregateOutputType | null
   _avg: PersonalizationOptionAvgAggregateOutputType | null
   _sum: PersonalizationOptionSumAggregateOutputType | null
@@ -205,16 +219,22 @@ export type PersonalizationOptionWhereInput = {
   OR?: Prisma.PersonalizationOptionWhereInput[]
   NOT?: Prisma.PersonalizationOptionWhereInput | Prisma.PersonalizationOptionWhereInput[]
   id?: Prisma.StringFilter<"PersonalizationOption"> | string
-  name?: Prisma.StringFilter<"PersonalizationOption"> | string
   code?: Prisma.StringFilter<"PersonalizationOption"> | string
+  name?: Prisma.StringFilter<"PersonalizationOption"> | string
+  description?: Prisma.StringNullableFilter<"PersonalizationOption"> | string | null
   basePrice?: Prisma.FloatFilter<"PersonalizationOption"> | number
+  isActive?: Prisma.BoolFilter<"PersonalizationOption"> | boolean
+  rules?: Prisma.PersonalizationRuleListRelationFilter
 }
 
 export type PersonalizationOptionOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  name?: Prisma.SortOrder
   code?: Prisma.SortOrder
+  name?: Prisma.SortOrder
+  description?: Prisma.SortOrderInput | Prisma.SortOrder
   basePrice?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
+  rules?: Prisma.PersonalizationRuleOrderByRelationAggregateInput
 }
 
 export type PersonalizationOptionWhereUniqueInput = Prisma.AtLeast<{
@@ -224,14 +244,19 @@ export type PersonalizationOptionWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.PersonalizationOptionWhereInput[]
   NOT?: Prisma.PersonalizationOptionWhereInput | Prisma.PersonalizationOptionWhereInput[]
   name?: Prisma.StringFilter<"PersonalizationOption"> | string
+  description?: Prisma.StringNullableFilter<"PersonalizationOption"> | string | null
   basePrice?: Prisma.FloatFilter<"PersonalizationOption"> | number
+  isActive?: Prisma.BoolFilter<"PersonalizationOption"> | boolean
+  rules?: Prisma.PersonalizationRuleListRelationFilter
 }, "id" | "code">
 
 export type PersonalizationOptionOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  name?: Prisma.SortOrder
   code?: Prisma.SortOrder
+  name?: Prisma.SortOrder
+  description?: Prisma.SortOrderInput | Prisma.SortOrder
   basePrice?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
   _count?: Prisma.PersonalizationOptionCountOrderByAggregateInput
   _avg?: Prisma.PersonalizationOptionAvgOrderByAggregateInput
   _max?: Prisma.PersonalizationOptionMaxOrderByAggregateInput
@@ -244,65 +269,87 @@ export type PersonalizationOptionScalarWhereWithAggregatesInput = {
   OR?: Prisma.PersonalizationOptionScalarWhereWithAggregatesInput[]
   NOT?: Prisma.PersonalizationOptionScalarWhereWithAggregatesInput | Prisma.PersonalizationOptionScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"PersonalizationOption"> | string
-  name?: Prisma.StringWithAggregatesFilter<"PersonalizationOption"> | string
   code?: Prisma.StringWithAggregatesFilter<"PersonalizationOption"> | string
+  name?: Prisma.StringWithAggregatesFilter<"PersonalizationOption"> | string
+  description?: Prisma.StringNullableWithAggregatesFilter<"PersonalizationOption"> | string | null
   basePrice?: Prisma.FloatWithAggregatesFilter<"PersonalizationOption"> | number
+  isActive?: Prisma.BoolWithAggregatesFilter<"PersonalizationOption"> | boolean
 }
 
 export type PersonalizationOptionCreateInput = {
   id?: string
-  name: string
   code: string
+  name: string
+  description?: string | null
   basePrice: number
+  isActive?: boolean
+  rules?: Prisma.PersonalizationRuleCreateNestedManyWithoutPersonalizationInput
 }
 
 export type PersonalizationOptionUncheckedCreateInput = {
   id?: string
-  name: string
   code: string
+  name: string
+  description?: string | null
   basePrice: number
+  isActive?: boolean
+  rules?: Prisma.PersonalizationRuleUncheckedCreateNestedManyWithoutPersonalizationInput
 }
 
 export type PersonalizationOptionUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
   code?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   basePrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  rules?: Prisma.PersonalizationRuleUpdateManyWithoutPersonalizationNestedInput
 }
 
 export type PersonalizationOptionUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
   code?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   basePrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  rules?: Prisma.PersonalizationRuleUncheckedUpdateManyWithoutPersonalizationNestedInput
 }
 
 export type PersonalizationOptionCreateManyInput = {
   id?: string
-  name: string
   code: string
+  name: string
+  description?: string | null
   basePrice: number
+  isActive?: boolean
 }
 
 export type PersonalizationOptionUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
   code?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   basePrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type PersonalizationOptionUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
   code?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   basePrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type PersonalizationOptionCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  name?: Prisma.SortOrder
   code?: Prisma.SortOrder
+  name?: Prisma.SortOrder
+  description?: Prisma.SortOrder
   basePrice?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
 }
 
 export type PersonalizationOptionAvgOrderByAggregateInput = {
@@ -311,62 +358,186 @@ export type PersonalizationOptionAvgOrderByAggregateInput = {
 
 export type PersonalizationOptionMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  name?: Prisma.SortOrder
   code?: Prisma.SortOrder
+  name?: Prisma.SortOrder
+  description?: Prisma.SortOrder
   basePrice?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
 }
 
 export type PersonalizationOptionMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  name?: Prisma.SortOrder
   code?: Prisma.SortOrder
+  name?: Prisma.SortOrder
+  description?: Prisma.SortOrder
   basePrice?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
 }
 
 export type PersonalizationOptionSumOrderByAggregateInput = {
   basePrice?: Prisma.SortOrder
 }
 
+export type PersonalizationOptionScalarRelationFilter = {
+  is?: Prisma.PersonalizationOptionWhereInput
+  isNot?: Prisma.PersonalizationOptionWhereInput
+}
+
+export type PersonalizationOptionCreateNestedOneWithoutRulesInput = {
+  create?: Prisma.XOR<Prisma.PersonalizationOptionCreateWithoutRulesInput, Prisma.PersonalizationOptionUncheckedCreateWithoutRulesInput>
+  connectOrCreate?: Prisma.PersonalizationOptionCreateOrConnectWithoutRulesInput
+  connect?: Prisma.PersonalizationOptionWhereUniqueInput
+}
+
+export type PersonalizationOptionUpdateOneRequiredWithoutRulesNestedInput = {
+  create?: Prisma.XOR<Prisma.PersonalizationOptionCreateWithoutRulesInput, Prisma.PersonalizationOptionUncheckedCreateWithoutRulesInput>
+  connectOrCreate?: Prisma.PersonalizationOptionCreateOrConnectWithoutRulesInput
+  upsert?: Prisma.PersonalizationOptionUpsertWithoutRulesInput
+  connect?: Prisma.PersonalizationOptionWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.PersonalizationOptionUpdateToOneWithWhereWithoutRulesInput, Prisma.PersonalizationOptionUpdateWithoutRulesInput>, Prisma.PersonalizationOptionUncheckedUpdateWithoutRulesInput>
+}
+
+export type PersonalizationOptionCreateWithoutRulesInput = {
+  id?: string
+  code: string
+  name: string
+  description?: string | null
+  basePrice: number
+  isActive?: boolean
+}
+
+export type PersonalizationOptionUncheckedCreateWithoutRulesInput = {
+  id?: string
+  code: string
+  name: string
+  description?: string | null
+  basePrice: number
+  isActive?: boolean
+}
+
+export type PersonalizationOptionCreateOrConnectWithoutRulesInput = {
+  where: Prisma.PersonalizationOptionWhereUniqueInput
+  create: Prisma.XOR<Prisma.PersonalizationOptionCreateWithoutRulesInput, Prisma.PersonalizationOptionUncheckedCreateWithoutRulesInput>
+}
+
+export type PersonalizationOptionUpsertWithoutRulesInput = {
+  update: Prisma.XOR<Prisma.PersonalizationOptionUpdateWithoutRulesInput, Prisma.PersonalizationOptionUncheckedUpdateWithoutRulesInput>
+  create: Prisma.XOR<Prisma.PersonalizationOptionCreateWithoutRulesInput, Prisma.PersonalizationOptionUncheckedCreateWithoutRulesInput>
+  where?: Prisma.PersonalizationOptionWhereInput
+}
+
+export type PersonalizationOptionUpdateToOneWithWhereWithoutRulesInput = {
+  where?: Prisma.PersonalizationOptionWhereInput
+  data: Prisma.XOR<Prisma.PersonalizationOptionUpdateWithoutRulesInput, Prisma.PersonalizationOptionUncheckedUpdateWithoutRulesInput>
+}
+
+export type PersonalizationOptionUpdateWithoutRulesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  code?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  basePrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+}
+
+export type PersonalizationOptionUncheckedUpdateWithoutRulesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  code?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  basePrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+}
+
+
+/**
+ * Count Type PersonalizationOptionCountOutputType
+ */
+
+export type PersonalizationOptionCountOutputType = {
+  rules: number
+}
+
+export type PersonalizationOptionCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  rules?: boolean | PersonalizationOptionCountOutputTypeCountRulesArgs
+}
+
+/**
+ * PersonalizationOptionCountOutputType without action
+ */
+export type PersonalizationOptionCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PersonalizationOptionCountOutputType
+   */
+  select?: Prisma.PersonalizationOptionCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * PersonalizationOptionCountOutputType without action
+ */
+export type PersonalizationOptionCountOutputTypeCountRulesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PersonalizationRuleWhereInput
+}
 
 
 export type PersonalizationOptionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  name?: boolean
   code?: boolean
+  name?: boolean
+  description?: boolean
   basePrice?: boolean
+  isActive?: boolean
+  rules?: boolean | Prisma.PersonalizationOption$rulesArgs<ExtArgs>
+  _count?: boolean | Prisma.PersonalizationOptionCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["personalizationOption"]>
 
 export type PersonalizationOptionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  name?: boolean
   code?: boolean
+  name?: boolean
+  description?: boolean
   basePrice?: boolean
+  isActive?: boolean
 }, ExtArgs["result"]["personalizationOption"]>
 
 export type PersonalizationOptionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  name?: boolean
   code?: boolean
+  name?: boolean
+  description?: boolean
   basePrice?: boolean
+  isActive?: boolean
 }, ExtArgs["result"]["personalizationOption"]>
 
 export type PersonalizationOptionSelectScalar = {
   id?: boolean
-  name?: boolean
   code?: boolean
+  name?: boolean
+  description?: boolean
   basePrice?: boolean
+  isActive?: boolean
 }
 
-export type PersonalizationOptionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "code" | "basePrice", ExtArgs["result"]["personalizationOption"]>
+export type PersonalizationOptionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "code" | "name" | "description" | "basePrice" | "isActive", ExtArgs["result"]["personalizationOption"]>
+export type PersonalizationOptionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  rules?: boolean | Prisma.PersonalizationOption$rulesArgs<ExtArgs>
+  _count?: boolean | Prisma.PersonalizationOptionCountOutputTypeDefaultArgs<ExtArgs>
+}
+export type PersonalizationOptionIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
+export type PersonalizationOptionIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
 
 export type $PersonalizationOptionPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "PersonalizationOption"
-  objects: {}
+  objects: {
+    rules: Prisma.$PersonalizationRulePayload<ExtArgs>[]
+  }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    name: string
     code: string
+    name: string
+    description: string | null
     basePrice: number
+    isActive: boolean
   }, ExtArgs["result"]["personalizationOption"]>
   composites: {}
 }
@@ -761,6 +932,7 @@ readonly fields: PersonalizationOptionFieldRefs;
  */
 export interface Prisma__PersonalizationOptionClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  rules<T extends Prisma.PersonalizationOption$rulesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PersonalizationOption$rulesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PersonalizationRulePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -791,9 +963,11 @@ export interface Prisma__PersonalizationOptionClient<T, Null = never, ExtArgs ex
  */
 export interface PersonalizationOptionFieldRefs {
   readonly id: Prisma.FieldRef<"PersonalizationOption", 'String'>
-  readonly name: Prisma.FieldRef<"PersonalizationOption", 'String'>
   readonly code: Prisma.FieldRef<"PersonalizationOption", 'String'>
+  readonly name: Prisma.FieldRef<"PersonalizationOption", 'String'>
+  readonly description: Prisma.FieldRef<"PersonalizationOption", 'String'>
   readonly basePrice: Prisma.FieldRef<"PersonalizationOption", 'Float'>
+  readonly isActive: Prisma.FieldRef<"PersonalizationOption", 'Boolean'>
 }
     
 
@@ -810,6 +984,10 @@ export type PersonalizationOptionFindUniqueArgs<ExtArgs extends runtime.Types.Ex
    * Omit specific fields from the PersonalizationOption
    */
   omit?: Prisma.PersonalizationOptionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PersonalizationOptionInclude<ExtArgs> | null
   /**
    * Filter, which PersonalizationOption to fetch.
    */
@@ -829,6 +1007,10 @@ export type PersonalizationOptionFindUniqueOrThrowArgs<ExtArgs extends runtime.T
    */
   omit?: Prisma.PersonalizationOptionOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PersonalizationOptionInclude<ExtArgs> | null
+  /**
    * Filter, which PersonalizationOption to fetch.
    */
   where: Prisma.PersonalizationOptionWhereUniqueInput
@@ -846,6 +1028,10 @@ export type PersonalizationOptionFindFirstArgs<ExtArgs extends runtime.Types.Ext
    * Omit specific fields from the PersonalizationOption
    */
   omit?: Prisma.PersonalizationOptionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PersonalizationOptionInclude<ExtArgs> | null
   /**
    * Filter, which PersonalizationOption to fetch.
    */
@@ -895,6 +1081,10 @@ export type PersonalizationOptionFindFirstOrThrowArgs<ExtArgs extends runtime.Ty
    */
   omit?: Prisma.PersonalizationOptionOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PersonalizationOptionInclude<ExtArgs> | null
+  /**
    * Filter, which PersonalizationOption to fetch.
    */
   where?: Prisma.PersonalizationOptionWhereInput
@@ -943,6 +1133,10 @@ export type PersonalizationOptionFindManyArgs<ExtArgs extends runtime.Types.Exte
    */
   omit?: Prisma.PersonalizationOptionOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PersonalizationOptionInclude<ExtArgs> | null
+  /**
    * Filter, which PersonalizationOptions to fetch.
    */
   where?: Prisma.PersonalizationOptionWhereInput
@@ -985,6 +1179,10 @@ export type PersonalizationOptionCreateArgs<ExtArgs extends runtime.Types.Extens
    * Omit specific fields from the PersonalizationOption
    */
   omit?: Prisma.PersonalizationOptionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PersonalizationOptionInclude<ExtArgs> | null
   /**
    * The data needed to create a PersonalizationOption.
    */
@@ -1033,6 +1231,10 @@ export type PersonalizationOptionUpdateArgs<ExtArgs extends runtime.Types.Extens
    * Omit specific fields from the PersonalizationOption
    */
   omit?: Prisma.PersonalizationOptionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PersonalizationOptionInclude<ExtArgs> | null
   /**
    * The data needed to update a PersonalizationOption.
    */
@@ -1100,6 +1302,10 @@ export type PersonalizationOptionUpsertArgs<ExtArgs extends runtime.Types.Extens
    */
   omit?: Prisma.PersonalizationOptionOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PersonalizationOptionInclude<ExtArgs> | null
+  /**
    * The filter to search for the PersonalizationOption to update in case it exists.
    */
   where: Prisma.PersonalizationOptionWhereUniqueInput
@@ -1126,6 +1332,10 @@ export type PersonalizationOptionDeleteArgs<ExtArgs extends runtime.Types.Extens
    */
   omit?: Prisma.PersonalizationOptionOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PersonalizationOptionInclude<ExtArgs> | null
+  /**
    * Filter which PersonalizationOption to delete.
    */
   where: Prisma.PersonalizationOptionWhereUniqueInput
@@ -1146,6 +1356,30 @@ export type PersonalizationOptionDeleteManyArgs<ExtArgs extends runtime.Types.Ex
 }
 
 /**
+ * PersonalizationOption.rules
+ */
+export type PersonalizationOption$rulesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PersonalizationRule
+   */
+  select?: Prisma.PersonalizationRuleSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PersonalizationRule
+   */
+  omit?: Prisma.PersonalizationRuleOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PersonalizationRuleInclude<ExtArgs> | null
+  where?: Prisma.PersonalizationRuleWhereInput
+  orderBy?: Prisma.PersonalizationRuleOrderByWithRelationInput | Prisma.PersonalizationRuleOrderByWithRelationInput[]
+  cursor?: Prisma.PersonalizationRuleWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PersonalizationRuleScalarFieldEnum | Prisma.PersonalizationRuleScalarFieldEnum[]
+}
+
+/**
  * PersonalizationOption without action
  */
 export type PersonalizationOptionDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1157,4 +1391,8 @@ export type PersonalizationOptionDefaultArgs<ExtArgs extends runtime.Types.Exten
    * Omit specific fields from the PersonalizationOption
    */
   omit?: Prisma.PersonalizationOptionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PersonalizationOptionInclude<ExtArgs> | null
 }

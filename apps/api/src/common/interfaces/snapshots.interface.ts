@@ -1,5 +1,6 @@
 export interface ConfigurationSnapshot {
   version: string;
+  configCode: string;
   productId: string;
   productName: string;
   line: string;
@@ -15,6 +16,7 @@ export interface ConfigurationSnapshot {
 
 export interface PricingSnapshot {
   version: string;
+  configCode: string;
   basePrice: number;
   attributeModifiers: Array<{
     type: string;

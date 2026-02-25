@@ -4,7 +4,7 @@ import pg from 'pg';
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
-import { AttributeType, PricingScope, ProductStatus, PrintType } from '../src/generated/client/enums';
+import { AttributeType, PriceRuleScope, ProductStatus, PrintType, ProductLine } from '../src/generated/client/enums';
 
 dotenv.config();
 
@@ -103,23 +103,49 @@ async function main() {
     },
   });
 
-  // 4. Atributos
-  console.log('✨ Creando Atributos de Prueba...');
-  const attributes = [
-    { productId: product.id, type: AttributeType.SIZE, name: 'Estándar', priceModifier: 0, isDefault: true },
-    { productId: product.id, type: AttributeType.SIZE, name: 'Grande', priceModifier: 5000, isDefault: false },
-    { productId: product.id, type: AttributeType.QUALITY, name: 'Económica', priceModifier: 0, isDefault: true },
-    { productId: product.id, type: AttributeType.QUALITY, name: 'Premium', priceModifier: 7000, isDefault: false },
-    // Línea requerida por DTO
-    { productId: product.id, type: AttributeType.LINE, name: 'BASICA', priceModifier: 0, isDefault: true },
-    { productId: product.id, type: AttributeType.LINE, name: 'PREMIUM', priceModifier: 10000, isDefault: false },
+  // 4. Atributos Maestros
+  console.log('✨ Creando Atributos Maestros (Marca Dual)...');
+  const masterAttributes = [
+    // Tamaños
+    { productId: product.id, type: AttributeType.SIZE, value: 'Standard', sortOrder: 1, priceModifier: 0 },
+    { productId: product.id, type: AttributeType.SIZE, value: 'Mini', sortOrder: 2, priceModifier: -3000 },
+    { productId: product.id, type: AttributeType.SIZE, value: 'XL', sortOrder: 3, priceModifier: 5000 },
+    { productId: product.id, type: AttributeType.SIZE, value: 'Tote', sortOrder: 4, priceModifier: 2000 },
+
+    // Calidades
+    { productId: product.id, type: AttributeType.QUALITY, value: 'Básica', sortOrder: 1, priceModifier: 0 },
+    { productId: product.id, type: AttributeType.QUALITY, value: 'Estándar', sortOrder: 2, priceModifier: 4000 },
+    { productId: product.id, type: AttributeType.QUALITY, value: 'Premium', sortOrder: 3, priceModifier: 9000 },
+
+    // Líneas
+    { productId: product.id, type: AttributeType.LINE, value: 'ECO', sortOrder: 1, priceModifier: -2000 },
+    { productId: product.id, type: AttributeType.LINE, value: 'COMERCIAL', sortOrder: 2, priceModifier: 0 },
+    { productId: product.id, type: AttributeType.LINE, value: 'PREMIUM', sortOrder: 3, priceModifier: 12000 },
+    { productId: product.id, type: AttributeType.LINE, value: 'CORPORATIVA', sortOrder: 4, priceModifier: 5000 },
+
+    // Materiales
+    { productId: product.id, type: AttributeType.MATERIAL, value: 'Lona', sortOrder: 1, priceModifier: 3000 },
+    { productId: product.id, type: AttributeType.MATERIAL, value: 'Algodón', sortOrder: 2, priceModifier: 0 },
+    { productId: product.id, type: AttributeType.MATERIAL, value: 'Poliéster', sortOrder: 3, priceModifier: -1000 },
   ];
 
-  for (const attr of attributes) {
+  for (const attr of masterAttributes) {
     await prisma.productAttribute.deleteMany({
-      where: { productId: product.id, type: attr.type, name: attr.name }
+      where: { productId: product.id, type: attr.type, value: attr.value }
     });
     await prisma.productAttribute.create({ data: attr });
+  }
+
+  // 5. Reglas de Precio (B2B/B2C)
+  console.log('💰 Creando Reglas de Precio...');
+  const pricingRules = [
+    { productId: product.id, scope: PriceRuleScope.B2B, minQty: 50, discountPct: 10 },
+    { productId: product.id, scope: PriceRuleScope.B2B, minQty: 100, discountPct: 20 },
+    { productId: product.id, scope: PriceRuleScope.B2B, minQty: 500, fixedUnitPrice: 15000 },
+  ];
+
+  for (const rule of pricingRules) {
+    await prisma.pricingRule.create({ data: rule });
   }
 
   console.log('✅ Seed completado exitosamente.');

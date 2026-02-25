@@ -95,7 +95,7 @@ export default function FilterSidebar({ collections, filters, onFilterChange }: 
       </div>
 
       {/* Brand Lines */}
-      {renderCheckboxGroup('Líneas', 'lines', ['ECO', 'PREMIUM', 'COMERCIAL', 'CORPORATIVA'], 'line')}
+      {renderCheckboxGroup('Líneas', 'lines', ['ECO', 'COMERCIAL', 'PREMIUM', 'CORPORATIVA'], 'line')}
 
       {/* Attributes Group */}
       <div className="border-b border-theme pb-6">
@@ -111,7 +111,7 @@ export default function FilterSidebar({ collections, filters, onFilterChange }: 
             <div>
               <p className="text-[9px] font-black uppercase text-muted mb-3 tracking-widest opacity-60">Tamaño</p>
               <div className="space-y-2">
-                {['Estándar', 'Grande', 'Pequeña'].map(s => (
+                {['Standard', 'Mini', 'XL', 'Tote'].map(s => (
                   <label key={s} className="flex items-center gap-2 cursor-pointer group">
                     <input 
                       type="checkbox" 
@@ -127,7 +127,7 @@ export default function FilterSidebar({ collections, filters, onFilterChange }: 
             <div>
               <p className="text-[9px] font-black uppercase text-muted mb-3 tracking-widest opacity-60">Calidad</p>
               <div className="space-y-2">
-                {['Económica', 'Premium', 'Básica'].map(q => (
+                {['Premium', 'Estándar', 'Básica'].map(q => (
                   <label key={q} className="flex items-center gap-2 cursor-pointer group">
                     <input 
                       type="checkbox" 

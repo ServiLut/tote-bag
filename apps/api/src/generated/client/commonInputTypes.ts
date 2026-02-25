@@ -391,21 +391,48 @@ export type EnumAttributeTypeWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumAttributeTypeFilter<$PrismaModel>
 }
 
-export type EnumPricingScopeFilter<$PrismaModel = never> = {
-  equals?: $Enums.PricingScope | Prisma.EnumPricingScopeFieldRefInput<$PrismaModel>
-  in?: $Enums.PricingScope[] | Prisma.ListEnumPricingScopeFieldRefInput<$PrismaModel>
-  notIn?: $Enums.PricingScope[] | Prisma.ListEnumPricingScopeFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumPricingScopeFilter<$PrismaModel> | $Enums.PricingScope
+export type EnumPriceRuleScopeFilter<$PrismaModel = never> = {
+  equals?: $Enums.PriceRuleScope | Prisma.EnumPriceRuleScopeFieldRefInput<$PrismaModel>
+  in?: $Enums.PriceRuleScope[] | Prisma.ListEnumPriceRuleScopeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.PriceRuleScope[] | Prisma.ListEnumPriceRuleScopeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumPriceRuleScopeFilter<$PrismaModel> | $Enums.PriceRuleScope
 }
 
-export type EnumPricingScopeWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.PricingScope | Prisma.EnumPricingScopeFieldRefInput<$PrismaModel>
-  in?: $Enums.PricingScope[] | Prisma.ListEnumPricingScopeFieldRefInput<$PrismaModel>
-  notIn?: $Enums.PricingScope[] | Prisma.ListEnumPricingScopeFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumPricingScopeWithAggregatesFilter<$PrismaModel> | $Enums.PricingScope
+export type IntNullableFilter<$PrismaModel = never> = {
+  equals?: number | Prisma.IntFieldRefInput<$PrismaModel> | null
+  in?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel> | null
+  notIn?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel> | null
+  lt?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  lte?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  gt?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  gte?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedIntNullableFilter<$PrismaModel> | number | null
+}
+
+export type EnumPriceRuleScopeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.PriceRuleScope | Prisma.EnumPriceRuleScopeFieldRefInput<$PrismaModel>
+  in?: $Enums.PriceRuleScope[] | Prisma.ListEnumPriceRuleScopeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.PriceRuleScope[] | Prisma.ListEnumPriceRuleScopeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumPriceRuleScopeWithAggregatesFilter<$PrismaModel> | $Enums.PriceRuleScope
   _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumPricingScopeFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumPricingScopeFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumPriceRuleScopeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumPriceRuleScopeFilter<$PrismaModel>
+}
+
+export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: number | Prisma.IntFieldRefInput<$PrismaModel> | null
+  in?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel> | null
+  notIn?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel> | null
+  lt?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  lte?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  gt?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  gte?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _avg?: Prisma.NestedFloatNullableFilter<$PrismaModel>
+  _sum?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _min?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _max?: Prisma.NestedIntNullableFilter<$PrismaModel>
 }
 
 export type NestedStringFilter<$PrismaModel = never> = {
@@ -733,21 +760,37 @@ export type NestedEnumAttributeTypeWithAggregatesFilter<$PrismaModel = never> = 
   _max?: Prisma.NestedEnumAttributeTypeFilter<$PrismaModel>
 }
 
-export type NestedEnumPricingScopeFilter<$PrismaModel = never> = {
-  equals?: $Enums.PricingScope | Prisma.EnumPricingScopeFieldRefInput<$PrismaModel>
-  in?: $Enums.PricingScope[] | Prisma.ListEnumPricingScopeFieldRefInput<$PrismaModel>
-  notIn?: $Enums.PricingScope[] | Prisma.ListEnumPricingScopeFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumPricingScopeFilter<$PrismaModel> | $Enums.PricingScope
+export type NestedEnumPriceRuleScopeFilter<$PrismaModel = never> = {
+  equals?: $Enums.PriceRuleScope | Prisma.EnumPriceRuleScopeFieldRefInput<$PrismaModel>
+  in?: $Enums.PriceRuleScope[] | Prisma.ListEnumPriceRuleScopeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.PriceRuleScope[] | Prisma.ListEnumPriceRuleScopeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumPriceRuleScopeFilter<$PrismaModel> | $Enums.PriceRuleScope
 }
 
-export type NestedEnumPricingScopeWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.PricingScope | Prisma.EnumPricingScopeFieldRefInput<$PrismaModel>
-  in?: $Enums.PricingScope[] | Prisma.ListEnumPricingScopeFieldRefInput<$PrismaModel>
-  notIn?: $Enums.PricingScope[] | Prisma.ListEnumPricingScopeFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumPricingScopeWithAggregatesFilter<$PrismaModel> | $Enums.PricingScope
+export type NestedEnumPriceRuleScopeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.PriceRuleScope | Prisma.EnumPriceRuleScopeFieldRefInput<$PrismaModel>
+  in?: $Enums.PriceRuleScope[] | Prisma.ListEnumPriceRuleScopeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.PriceRuleScope[] | Prisma.ListEnumPriceRuleScopeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumPriceRuleScopeWithAggregatesFilter<$PrismaModel> | $Enums.PriceRuleScope
   _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumPricingScopeFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumPricingScopeFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumPriceRuleScopeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumPriceRuleScopeFilter<$PrismaModel>
+}
+
+export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: number | Prisma.IntFieldRefInput<$PrismaModel> | null
+  in?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel> | null
+  notIn?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel> | null
+  lt?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  lte?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  gt?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  gte?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _avg?: Prisma.NestedFloatNullableFilter<$PrismaModel>
+  _sum?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _min?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _max?: Prisma.NestedIntNullableFilter<$PrismaModel>
 }
 
 

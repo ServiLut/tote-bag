@@ -58,9 +58,19 @@ export const AttributeType = {
 export type AttributeType = (typeof AttributeType)[keyof typeof AttributeType]
 
 
-export const PricingScope = {
+export const ProductLine = {
+  ECO: 'ECO',
+  COMERCIAL: 'COMERCIAL',
+  PREMIUM: 'PREMIUM',
+  CORPORATIVA: 'CORPORATIVA'
+} as const
+
+export type ProductLine = (typeof ProductLine)[keyof typeof ProductLine]
+
+
+export const PriceRuleScope = {
   B2C: 'B2C',
   B2B: 'B2B'
 } as const
 
-export type PricingScope = (typeof PricingScope)[keyof typeof PricingScope]
+export type PriceRuleScope = (typeof PriceRuleScope)[keyof typeof PriceRuleScope]

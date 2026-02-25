@@ -4,7 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateQuoteDto, B2BPackage } from './dto/create-quote.dto';
 import { createClient } from '@supabase/supabase-js';
 import { PricingService } from '../pricing/pricing.service';
-import { PricingScope } from '../../generated/client/enums';
+import { PriceRuleScope } from '../../generated/client/enums';
 import { Prisma } from '../../generated/client/client';
 import { ConfigurationSnapshot } from '../../common/interfaces/snapshots.interface';
 
@@ -92,12 +92,13 @@ export class B2bService {
         let pricingJson: any = null;
 
         if (item.configuration) {
-          const quote = await this.pricingService.calculateQuote(item.configuration, PricingScope.B2B);
+          const quote = await this.pricingService.calculateQuote(item.configuration, PriceRuleScope.B2B);
           unitPrice = quote.unitPrice;
           totalPrice = quote.total;
           
           const configSnapshot: ConfigurationSnapshot = {
-            version: '1.0',
+            version: '1.1',
+            configCode: quote.snapshot.configCode,
             productId: item.productId,
             productName: `Product ${item.productId}`,
             line: item.configuration.line,

@@ -8,20 +8,45 @@ import { twMerge } from 'tailwind-merge';
 import Image from 'next/image';
 import { ApiResponse } from '@/types/api';
 import { toast } from 'sonner';
+import { Combobox } from '@/components/ui/Combobox';
 
 // Utility for cleaner tailwind classes
 function cn(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
 }
 
+const ATTRIBUTE_OPTIONS: Record<AttributeType, string[]> = {
+  SIZE: ['Pequeña', 'Estándar', 'Grande'],
+  MATERIAL: ['Lona', 'Algodón', 'Poliéster', 'Cuero Sintético'],
+  QUALITY: ['Económica', 'Comercial', 'Premium'],
+  LINE: ['ECO', 'COMERCIAL', 'PREMIUM', 'CORPORATIVA'],
+};
+
 // Types based on the backend DTOs implicitly
 export type ProductStatus = 'DISPONIBLE' | 'BAJO_PEDIDO' | 'PREVENTA';
+export type AttributeType = 'SIZE' | 'MATERIAL' | 'QUALITY' | 'LINE';
+export type PriceRuleScope = 'B2C' | 'B2B';
 
 export interface VariantData {
   sku: string;
   color: string;
   imageUrl: string;
   stock: number;
+}
+
+export interface AttributeData {
+  type: AttributeType;
+  value: string;
+  priceModifier: number;
+  sortOrder: number;
+}
+
+export interface PricingRuleData {
+  scope: PriceRuleScope;
+  minQty: number;
+  maxQty?: number;
+  discountPct?: number;
+  fixedUnitPrice?: number;
 }
 
 interface ProductImage {
@@ -44,16 +69,20 @@ interface ProductFormData {
   status: ProductStatus;
   images: ProductImage[];
   variants: VariantData[];
+  attributes: AttributeData[];
+  pricingRules: PricingRuleData[];
 }
 
 interface AdminProductFormProps {
-  initialData?: Omit<Partial<ProductFormData>, 'tags' | 'costPrice' | 'comparePrice' | 'images' | 'collection'> & { 
+  initialData?: Omit<Partial<ProductFormData>, 'tags' | 'costPrice' | 'comparePrice' | 'images' | 'collection' | 'attributes' | 'pricingRules'> & { 
     id?: string; 
     tags?: string | string[];
     costPrice?: number | null;
     comparePrice?: number | null;
     images?: ProductImage[] | string[];
     collection?: string | { name: string };
+    attributes?: AttributeData[];
+    pricingRules?: PricingRuleData[];
   };
 }
 
@@ -73,6 +102,8 @@ const INITIAL_STATE: ProductFormData = {
   variants: [
     { sku: '', color: '', imageUrl: '', stock: 0 }
   ],
+  attributes: [],
+  pricingRules: [],
 };
 
 interface Collection {
@@ -95,6 +126,8 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
           tags: Array.isArray(initialData.tags) ? initialData.tags.join(', ') : initialData.tags || '',
           costPrice: initialData.costPrice ?? 0,
           comparePrice: initialData.comparePrice ?? 0,
+          attributes: initialData.attributes || [],
+          pricingRules: initialData.pricingRules || [],
         } 
       : INITIAL_STATE
   );
@@ -266,6 +299,53 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
     });
   };
 
+  // Attributes Logic
+  const addAttribute = () => {
+    setFormData(prev => ({
+      ...prev,
+      attributes: [...prev.attributes, { type: 'SIZE', value: '', priceModifier: 0, sortOrder: prev.attributes.length + 1 }]
+    }));
+  };
+
+  const updateAttribute = (index: number, field: keyof AttributeData, value: any) => {
+    setFormData(prev => {
+      const newAttrs = [...prev.attributes];
+      let updatedAttr = { ...newAttrs[index], [field]: value };
+      
+      // Reset value if type changes to prevent data inconsistency
+      if (field === 'type') {
+        updatedAttr.value = '';
+      }
+      
+      newAttrs[index] = updatedAttr;
+      return { ...prev, attributes: newAttrs };
+    });
+  };
+
+  const removeAttribute = (index: number) => {
+    setFormData(prev => ({ ...prev, attributes: prev.attributes.filter((_, i) => i !== index) }));
+  };
+
+  // Pricing Rules Logic
+  const addPricingRule = () => {
+    setFormData(prev => ({
+      ...prev,
+      pricingRules: [...prev.pricingRules, { scope: 'B2B', minQty: 12 }]
+    }));
+  };
+
+  const updatePricingRule = (index: number, field: keyof PricingRuleData, value: any) => {
+    setFormData(prev => {
+      const newRules = [...prev.pricingRules];
+      newRules[index] = { ...newRules[index], [field]: value };
+      return { ...prev, pricingRules: newRules };
+    });
+  };
+
+  const removePricingRule = (index: number) => {
+    setFormData(prev => ({ ...prev, pricingRules: prev.pricingRules.filter((_, i) => i !== index) }));
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (isPriceWarning) {
@@ -307,6 +387,8 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
         status: formData.status,
         images: formData.images.map((img, index) => ({ url: img.url, position: index })),
         variants: cleanVariants,
+        attributes: formData.attributes,
+        pricingRules: formData.pricingRules,
         tags: typeof formData.tags === 'string' 
           ? formData.tags.split(',').map(t => t.trim()).filter(Boolean)
           : formData.tags,
@@ -361,7 +443,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
   };
 
   return (
-    <div className="w-full h-full max-w-4xl mx-auto p-8 bg-surface text-primary rounded-lg shadow-sm font-sans overflow-y-auto overscroll-contain transition-colors">
+    <div className="w-full max-w-4xl mx-auto p-8 bg-surface text-primary rounded-lg shadow-sm font-sans transition-colors">
       <div className="mb-8">
         <h2 className="text-2xl font-black tracking-tight mb-2">
           {isEditMode ? 'Editar Producto' : 'Nuevo Producto'}
@@ -790,6 +872,144 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
             ))}
           </div>
         </section>
+
+        <hr className="border-theme" />
+
+        {/* Sección Atributos de Configuración */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-black text-primary tracking-tight">Atributos de Configuración</h3>
+            <button
+              type="button"
+              onClick={addAttribute}
+              className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-primary hover:opacity-70 transition-all active:scale-95"
+            >
+              <Plus size={18} />
+              Agregar Atributo
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {formData.attributes.map((attr, index) => (
+              <div key={index} className="grid grid-cols-12 gap-4 items-end p-5 border border-theme rounded-2xl bg-base/20 shadow-sm transition-all hover:bg-base/30">
+                <div className="col-span-12 md:col-span-3 space-y-1">
+                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Tipo</label>
+                  <select
+                    value={attr.type}
+                    onChange={(e) => updateAttribute(index, 'type', e.target.value)}
+                    className="w-full p-2.5 border border-theme rounded-xl bg-surface text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer"
+                  >
+                    <option value="SIZE">Tamaño</option>
+                    <option value="MATERIAL">Material</option>
+                    <option value="QUALITY">Calidad</option>
+                    <option value="LINE">Línea</option>
+                  </select>
+                </div>
+                <div className="col-span-12 md:col-span-5 space-y-1">
+                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Valor</label>
+                  <Combobox
+                    options={ATTRIBUTE_OPTIONS[attr.type].map(opt => ({ value: opt, label: opt }))}
+                    value={attr.value}
+                    onChange={(val) => updateAttribute(index, 'value', val)}
+                    placeholder="Seleccionar valor..."
+                    className="bg-surface"
+                  />
+                </div>
+                <div className="col-span-12 md:col-span-3 space-y-1">
+                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Modificador Precio</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted">$</span>
+                    <input
+                      type="number"
+                      value={attr.priceModifier}
+                      onChange={(e) => updateAttribute(index, 'priceModifier', parseFloat(e.target.value) || 0)}
+                      placeholder="0"
+                      className="w-full pl-7 p-2.5 border border-theme rounded-xl bg-surface text-xs font-black focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+                <div className="col-span-12 md:col-span-1 flex justify-end pb-1">
+                  <button
+                    type="button"
+                    onClick={() => removeAttribute(index)}
+                    className="p-2.5 text-muted hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                    title="Eliminar atributo"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <hr className="border-theme" />
+
+        {/* Sección Reglas de Precio y Volumen */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-black text-primary tracking-tight">Reglas de Precio y Volumen</h3>
+            <button
+              type="button"
+              onClick={addPricingRule}
+              className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-primary hover:opacity-70 transition-all active:scale-95"
+            >
+              <Plus size={18} />
+              Agregar Regla
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {formData.pricingRules.map((rule, index) => (
+              <div key={index} className="p-4 border border-theme rounded-2xl bg-base/20 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Alcance (Scope)</label>
+                    <select
+                      value={rule.scope}
+                      onChange={(e) => updatePricingRule(index, 'scope', e.target.value)}
+                      className="w-full p-2 border border-theme rounded-xl bg-surface text-xs font-bold"
+                    >
+                      <option value="B2C">B2C (Retail)</option>
+                      <option value="B2B">B2B (Por mayor)</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Cant. Mínima</label>
+                    <input
+                      type="number"
+                      value={rule.minQty}
+                      onChange={(e) => updatePricingRule(index, 'minQty', parseInt(e.target.value) || 0)}
+                      className="w-full p-2 border border-theme rounded-xl bg-surface text-xs font-bold"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">% Descuento</label>
+                    <input
+                      type="number"
+                      value={rule.discountPct || ''}
+                      onChange={(e) => updatePricingRule(index, 'discountPct', parseInt(e.target.value) || undefined)}
+                      placeholder="0"
+                      className="w-full p-2 border border-theme rounded-xl bg-surface text-xs font-bold"
+                    />
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => removePricingRule(index)}
+                      className="p-2 text-muted hover:text-red-600 transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <hr className="border-theme" />
 
         <div className="pt-8 flex justify-end">
           <button

@@ -7,9 +7,10 @@ import {
   Min,
   IsArray,
   ValidateNested,
+  IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ProductStatus, PrintType } from '../../../generated/client/enums';
+import { ProductStatus, PrintType, AttributeType, PriceRuleScope } from '../../../generated/client/enums';
 
 export class CreateProductImageDto {
   @IsString()
@@ -41,6 +42,51 @@ export class CreateVariantDto {
   @IsNumber()
   @Min(0)
   stock: number;
+}
+
+export class CreateProductAttributeDto {
+  @IsEnum(AttributeType)
+  type: AttributeType;
+
+  @IsString()
+  @IsNotEmpty()
+  value: string;
+
+  @IsNumber()
+  priceModifier: number;
+
+  @IsNumber()
+  @IsOptional()
+  sortOrder?: number;
+
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
+}
+
+export class CreatePricingRuleDto {
+  @IsEnum(PriceRuleScope)
+  scope: PriceRuleScope;
+
+  @IsNumber()
+  @Min(1)
+  minQty: number;
+
+  @IsNumber()
+  @IsOptional()
+  maxQty?: number;
+
+  @IsNumber()
+  @IsOptional()
+  discountPct?: number;
+
+  @IsNumber()
+  @IsOptional()
+  fixedUnitPrice?: number;
+
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
 }
 
 export class CreateProductDto {
@@ -129,6 +175,18 @@ export class CreateProductDto {
   @ValidateNested({ each: true })
   @Type(() => CreateVariantDto)
   variants: CreateVariantDto[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateProductAttributeDto)
+  @IsOptional()
+  attributes?: CreateProductAttributeDto[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreatePricingRuleDto)
+  @IsOptional()
+  pricingRules?: CreatePricingRuleDto[];
 }
 
 

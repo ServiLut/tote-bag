@@ -5,10 +5,13 @@ import { Product, Variant } from '@/types/product';
 import { toast } from 'sonner';
 
 export interface CartItem {
-  id: string; // unique ID for cart item (e.g. sku)
+  id: string; // unique ID for cart item (sku + configCode if applicable)
   product: Product;
   variant: Variant;
   quantity: number;
+  configuration?: any;
+  unitPrice: number;
+  configCode?: string;
 }
 
 interface CartContextType {
@@ -16,7 +19,7 @@ interface CartContextType {
   isOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
-  addToCart: (product: Product, variant: Variant, quantity?: number) => void;
+  addToCart: (product: Product, variant: Variant, quantity?: number, configuration?: any, unitPrice?: number, configCode?: string) => void;
   removeFromCart: (cartItemId: string) => void;
   updateQuantity: (cartItemId: string, quantity: number) => void;
   clearCart: () => void;
@@ -33,7 +36,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   // Load cart from local storage on mount
   useEffect(() => {
-    // eslint-disable-next-line
     setIsMounted(true);
     const savedCart = localStorage.getItem('tote-cart');
     if (savedCart) {
@@ -55,21 +57,39 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const openCart = () => setIsOpen(true);
   const closeCart = () => setIsOpen(false);
 
-  const addToCart = (product: Product, variant: Variant, quantity = 1) => {
+  const addToCart = (
+    product: Product, 
+    variant: Variant, 
+    quantity = 1, 
+    configuration?: any, 
+    unitPrice?: number, 
+    configCode?: string
+  ) => {
     setItems((currentItems) => {
+      const itemId = configCode ? `${variant.sku}-${configCode}` : variant.sku;
       const existingItemIndex = currentItems.findIndex(
-        (item) => item.variant.sku === variant.sku
+        (item) => item.id === itemId
       );
+
+      const price = unitPrice !== undefined ? unitPrice : product.basePrice;
 
       if (existingItemIndex > -1) {
         const newItems = [...currentItems];
         newItems[existingItemIndex].quantity += quantity;
-        toast.success(`Cantidad actualizada: ${product.name} (${variant.color})`);
+        toast.success(`Cantidad actualizada: ${product.name}`);
         return newItems;
       }
 
       toast.success(`Agregado al carrito: ${product.name}`);
-      return [...currentItems, { id: variant.sku, product, variant, quantity }];
+      return [...currentItems, { 
+        id: itemId, 
+        product, 
+        variant, 
+        quantity, 
+        configuration, 
+        unitPrice: price,
+        configCode
+      }];
     });
     setIsOpen(true);
   };
@@ -89,7 +109,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = () => setItems([]);
 
-  const subtotal = items.reduce((total, item) => total + item.product.basePrice * item.quantity, 0);
+  const subtotal = items.reduce((total, item) => total + item.unitPrice * item.quantity, 0);
   const count = items.reduce((total, item) => total + item.quantity, 0);
 
   return (

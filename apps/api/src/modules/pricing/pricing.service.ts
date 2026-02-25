@@ -1,14 +1,15 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProductConfigInputDto } from '../../common/dto/product-config.dto';
-import { PricingScope } from '../../generated/client/enums';
+import { PriceRuleScope } from '../../generated/client/enums';
 import { PricingSnapshot } from '../../common/interfaces/snapshots.interface';
+import { generateConfigCode } from '../../common/utils/hash.util';
 
 @Injectable()
 export class PricingService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async calculateQuote(input: ProductConfigInputDto, scope: PricingScope = PricingScope.B2C) {
+  async calculateQuote(input: ProductConfigInputDto, scope: PriceRuleScope = PriceRuleScope.B2C) {
     const product = await this.prisma.product.findUnique({
       where: { id: input.productId },
       include: {
@@ -21,8 +22,19 @@ export class PricingService {
       throw new NotFoundException(`Product with ID ${input.productId} not found`);
     }
 
+    // Generate Config Code based on technical attributes
+    const configCode = generateConfigCode({
+      productId: input.productId,
+      size: input.size,
+      material: input.material,
+      quality: input.quality,
+      line: input.line,
+      personalizations: input.personalizations?.map(p => p.code).sort() || [],
+    });
+
     const snapshot: PricingSnapshot = {
-      version: '1.0',
+      version: '1.2',
+      configCode,
       basePrice: product.basePrice,
       attributeModifiers: [],
       personalizationSurcharges: [],
@@ -37,65 +49,91 @@ export class PricingService {
     let unitPrice = product.basePrice;
 
     const inputAttributes = [
-      { type: 'SIZE', name: input.size },
-      { type: 'MATERIAL', name: input.material },
-      { type: 'QUALITY', name: input.quality },
-      { type: 'LINE', name: input.line }
+      { type: 'SIZE', value: input.size },
+      { type: 'MATERIAL', value: input.material },
+      { type: 'QUALITY', value: input.quality },
+      { type: 'LINE', value: input.line }
     ];
 
     for (const inputAttr of inputAttributes) {
+      if (!inputAttr.value) continue;
+      
       const matchingAttr = product.attributes.find(
-        a => a.type === inputAttr.type && a.name === inputAttr.name
+        a => a.type === inputAttr.type && a.value === inputAttr.value
       );
       
       if (matchingAttr) {
         unitPrice += matchingAttr.priceModifier;
         snapshot.attributeModifiers.push({
           type: inputAttr.type,
-          name: inputAttr.name,
+          name: inputAttr.value,
           modifier: matchingAttr.priceModifier,
         });
       }
     }
 
+    // Personalization logic
     if (input.personalizations && input.personalizations.length > 0) {
       const personalizationCodes = input.personalizations.map(p => p.code);
       const options = await this.prisma.personalizationOption.findMany({
-        where: { code: { in: personalizationCodes } }
+        where: { code: { in: personalizationCodes }, isActive: true }
       });
 
       for (const p of input.personalizations) {
         const option = options.find(o => o.code === p.code);
         if (option) {
           unitPrice += option.basePrice;
-          snapshot.personalizationSurcharges.push({
-            code: p.code,
-            surcharge: option.basePrice,
+          
+          // Rule validation (optional but recommended for Phase 1)
+          const rule = await this.prisma.personalizationRule.findFirst({
+            where: { 
+              productId: product.id, 
+              personalizationId: option.id,
+              isActive: true
+            }
           });
-        } else {
-          throw new BadRequestException(`Invalid personalization code: ${p.code}`);
+
+          if (rule) {
+             unitPrice += rule.extraPrice;
+             snapshot.personalizationSurcharges.push({
+              code: p.code,
+              surcharge: option.basePrice + rule.extraPrice,
+            });
+          } else {
+            snapshot.personalizationSurcharges.push({
+              code: p.code,
+              surcharge: option.basePrice,
+            });
+          }
         }
       }
     }
 
-    if (scope === PricingScope.B2B) {
-      const applicableRule = product.pricingRules
-        .filter(rule => rule.scope === PricingScope.B2B && input.quantity >= rule.minQuantity)
-        .sort((a, b) => b.minQuantity - a.minQuantity)[0];
+    // Applying PricingRules (B2C/B2B)
+    const applicableRule = product.pricingRules
+      .filter(rule => 
+        rule.isActive && 
+        rule.scope === scope && 
+        input.quantity >= rule.minQty && 
+        (!rule.maxQty || input.quantity <= rule.maxQty)
+      )
+      .sort((a, b) => b.minQty - a.minQty)[0];
 
-      if (applicableRule) {
-        const discountPercentage = applicableRule.discountPercentage;
-        const discountAmount = unitPrice * (discountPercentage / 100);
-        unitPrice -= discountAmount;
-        
-        snapshot.volumeDiscount = {
-          minQuantity: applicableRule.minQuantity,
-          percentage: discountPercentage,
-          amount: discountAmount,
-        };
+    if (applicableRule) {
+      if (applicableRule.fixedUnitPrice) {
+        unitPrice = applicableRule.fixedUnitPrice;
+      } else if (applicableRule.discountPct) {
+        unitPrice = unitPrice * (1 - applicableRule.discountPct / 100);
       }
+      
+      snapshot.volumeDiscount = {
+        minQuantity: applicableRule.minQty,
+        percentage: applicableRule.discountPct || 0,
+        amount: 0, // Calculated post-hoc if needed
+      };
     }
 
+    // REGLA DE ORO: Min Price Guard
     if (unitPrice < product.minPrice) {
       unitPrice = product.minPrice;
       snapshot.minPriceGuardApplied = true;

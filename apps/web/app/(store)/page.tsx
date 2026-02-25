@@ -43,17 +43,17 @@ export default function Home() {
         <div className="relative z-10 text-center space-y-6 max-w-2xl px-4">
           <span className="text-secondary font-bold tracking-widest uppercase text-sm">Colección 2026</span>
           <h1 className="text-5xl md:text-7xl font-serif text-primary leading-tight">
-            Menos plástico, <br/> más estilo.
+            Marca Dual: <br/> Stock y Producción.
           </h1>
           <p className="text-lg text-muted max-w-lg mx-auto">
-            Bolsos artesanales hechos con algodón 100% orgánico. Diseñados para durar, creados para el planeta.
+            Descubre nuestras piezas en stock para entrega inmediata o personaliza tu producción al por mayor. Calidad artesanal para cada necesidad.
           </p>
           <div className="pt-4 flex gap-4 justify-center">
             <Link href="/catalog" className="px-8 py-3 btn-primary font-medium rounded-sm uppercase tracking-wider text-xs">
-              Ver Colección
+              Compra en Stock
             </Link>
-            <Link href="/about" className="px-8 py-3 btn-outline font-medium rounded-sm uppercase tracking-wider text-xs">
-              Nuestra Historia
+            <Link href="/corporativo" className="px-8 py-3 btn-outline font-medium rounded-sm uppercase tracking-wider text-xs">
+              Área Corporativa
             </Link>
           </div>
         </div>
@@ -63,11 +63,11 @@ export default function Home() {
       <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
         <div className="flex justify-between items-end mb-12 border-b border-theme pb-6">
           <div>
-            <h2 className="text-3xl font-serif text-primary mb-2 uppercase tracking-tight">Nuestros Favoritos</h2>
-            <p className="text-muted text-sm">Piezas atemporales gestionadas desde nuestro catálogo.</p>
+            <h2 className="text-3xl font-serif text-primary mb-2 uppercase tracking-tight">Selección Destacada</h2>
+            <p className="text-muted text-sm">Stock disponible para envío hoy o diseños listos para producción personalizada.</p>
           </div>
-          <Link href="/catalog" className="hidden sm:block text-primary font-bold uppercase text-xs tracking-widest hover:text-accent transition-colors">
-            Ver catálogo completo &rarr;
+          <Link href="/lineas" className="hidden sm:block text-primary font-bold uppercase text-xs tracking-widest hover:text-accent transition-colors">
+            Explorar Líneas &rarr;
           </Link>
         </div>
 

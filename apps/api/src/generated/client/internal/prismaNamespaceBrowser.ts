@@ -67,6 +67,7 @@ export const ModelName = {
   Address: 'Address',
   ProductAttribute: 'ProductAttribute',
   PersonalizationOption: 'PersonalizationOption',
+  PersonalizationRule: 'PersonalizationRule',
   PricingRule: 'PricingRule',
   B2BQuoteItem: 'B2BQuoteItem'
 } as const
@@ -182,7 +183,7 @@ export type OrderStatusHistoryScalarFieldEnum = (typeof OrderStatusHistoryScalar
 export const OrderItemScalarFieldEnum = {
   id: 'id',
   quantity: 'quantity',
-  price: 'price',
+  unitPrice: 'unitPrice',
   totalPrice: 'totalPrice',
   sku: 'sku',
   configurationJson: 'configurationJson',
@@ -307,9 +308,10 @@ export const ProductAttributeScalarFieldEnum = {
   id: 'id',
   productId: 'productId',
   type: 'type',
-  name: 'name',
+  value: 'value',
+  sortOrder: 'sortOrder',
   priceModifier: 'priceModifier',
-  isDefault: 'isDefault'
+  isActive: 'isActive'
 } as const
 
 export type ProductAttributeScalarFieldEnum = (typeof ProductAttributeScalarFieldEnum)[keyof typeof ProductAttributeScalarFieldEnum]
@@ -317,20 +319,40 @@ export type ProductAttributeScalarFieldEnum = (typeof ProductAttributeScalarFiel
 
 export const PersonalizationOptionScalarFieldEnum = {
   id: 'id',
-  name: 'name',
   code: 'code',
-  basePrice: 'basePrice'
+  name: 'name',
+  description: 'description',
+  basePrice: 'basePrice',
+  isActive: 'isActive'
 } as const
 
 export type PersonalizationOptionScalarFieldEnum = (typeof PersonalizationOptionScalarFieldEnum)[keyof typeof PersonalizationOptionScalarFieldEnum]
 
 
-export const PricingRuleScalarFieldEnum = {
+export const PersonalizationRuleScalarFieldEnum = {
   id: 'id',
   productId: 'productId',
-  minQuantity: 'minQuantity',
-  discountPercentage: 'discountPercentage',
-  scope: 'scope'
+  personalizationId: 'personalizationId',
+  allowedSizeValues: 'allowedSizeValues',
+  allowedQualityValues: 'allowedQualityValues',
+  allowedMaterialValues: 'allowedMaterialValues',
+  extraPrice: 'extraPrice',
+  extraDays: 'extraDays',
+  isActive: 'isActive'
+} as const
+
+export type PersonalizationRuleScalarFieldEnum = (typeof PersonalizationRuleScalarFieldEnum)[keyof typeof PersonalizationRuleScalarFieldEnum]
+
+
+export const PricingRuleScalarFieldEnum = {
+  id: 'id',
+  scope: 'scope',
+  productId: 'productId',
+  minQty: 'minQty',
+  maxQty: 'maxQty',
+  discountPct: 'discountPct',
+  fixedUnitPrice: 'fixedUnitPrice',
+  isActive: 'isActive'
 } as const
 
 export type PricingRuleScalarFieldEnum = (typeof PricingRuleScalarFieldEnum)[keyof typeof PricingRuleScalarFieldEnum]
@@ -340,12 +362,10 @@ export const B2BQuoteItemScalarFieldEnum = {
   id: 'id',
   quoteId: 'quoteId',
   productId: 'productId',
-  variantId: 'variantId',
   quantity: 'quantity',
-  unitPrice: 'unitPrice',
-  totalPrice: 'totalPrice',
   configurationJson: 'configurationJson',
-  pricingJson: 'pricingJson'
+  targetUnitPrice: 'targetUnitPrice',
+  notes: 'notes'
 } as const
 
 export type B2BQuoteItemScalarFieldEnum = (typeof B2BQuoteItemScalarFieldEnum)[keyof typeof B2BQuoteItemScalarFieldEnum]
