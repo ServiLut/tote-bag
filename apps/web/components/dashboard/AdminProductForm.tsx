@@ -80,6 +80,18 @@ interface AdminProductFormProps {
   };
 }
 
+// Default templates for new products
+const DEFAULT_PRODUCT_ATTRIBUTES: AttributeData[] = [
+  { type: 'SIZE', value: '', priceModifier: 0, sortOrder: 1 },
+  { type: 'MATERIAL', value: '', priceModifier: 0, sortOrder: 2 },
+  { type: 'QUALITY', value: '', priceModifier: 0, sortOrder: 3 },
+  { type: 'LINE', value: '', priceModifier: 0, sortOrder: 4 },
+];
+
+const DEFAULT_PRICING_RULES: PricingRuleData[] = [
+  { scope: 'B2B', minQty: 12, discountPct: 0 },
+];
+
 const INITIAL_STATE: ProductFormData = {
   name: '',
   slug: '',
@@ -96,8 +108,8 @@ const INITIAL_STATE: ProductFormData = {
   variants: [
     { sku: '', color: '', imageUrl: '', stock: 0 }
   ],
-  attributes: [],
-  pricingRules: [],
+  attributes: DEFAULT_PRODUCT_ATTRIBUTES,
+  pricingRules: DEFAULT_PRICING_RULES,
 };
 
 interface Collection {
@@ -120,8 +132,12 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
           tags: Array.isArray(initialData.tags) ? initialData.tags.join(', ') : initialData.tags || '',
           costPrice: initialData.costPrice ?? 0,
           comparePrice: initialData.comparePrice ?? 0,
-          attributes: initialData.attributes || [],
-          pricingRules: initialData.pricingRules || [],
+          attributes: initialData.attributes && initialData.attributes.length > 0 
+            ? initialData.attributes 
+            : [],
+          pricingRules: initialData.pricingRules && initialData.pricingRules.length > 0
+            ? initialData.pricingRules
+            : [],
         } 
       : INITIAL_STATE
   );
@@ -328,7 +344,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
     }));
   };
 
-  const updatePricingRule = (index: number, field: keyof PricingRuleData, value: string | number) => {
+  const updatePricingRule = (index: number, field: keyof PricingRuleData, value: string | number | undefined) => {
     setFormData(prev => {
       const newRules = [...prev.pricingRules];
       newRules[index] = { ...newRules[index], [field]: value } as PricingRuleData;
@@ -381,8 +397,19 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
         status: formData.status,
         images: formData.images.map((img, index) => ({ url: img.url, position: index })),
         variants: cleanVariants,
-        attributes: formData.attributes,
-        pricingRules: formData.pricingRules,
+        attributes: formData.attributes.map(attr => ({
+          type: attr.type,
+          value: attr.value,
+          priceModifier: attr.priceModifier,
+          sortOrder: attr.sortOrder,
+        })),
+        pricingRules: formData.pricingRules.map(rule => ({
+          scope: rule.scope,
+          minQty: rule.minQty,
+          maxQty: rule.maxQty,
+          discountPct: rule.discountPct,
+          fixedUnitPrice: rule.fixedUnitPrice,
+        })),
         tags: typeof formData.tags === 'string' 
           ? formData.tags.split(',').map(t => t.trim()).filter(Boolean)
           : formData.tags,
@@ -884,56 +911,65 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
           </div>
 
           <div className="space-y-3">
-            {formData.attributes.map((attr, index) => (
-              <div key={index} className="grid grid-cols-12 gap-4 items-end p-5 border border-theme rounded-2xl bg-base/20 shadow-sm transition-all hover:bg-base/30">
-                <div className="col-span-12 md:col-span-3 space-y-1">
-                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Tipo</label>
-                  <select
-                    value={attr.type}
-                    onChange={(e) => updateAttribute(index, 'type', e.target.value)}
-                    className="w-full p-2.5 border border-theme rounded-xl bg-surface text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer"
-                  >
-                    <option value="SIZE">Tamaño</option>
-                    <option value="MATERIAL">Material</option>
-                    <option value="QUALITY">Calidad</option>
-                    <option value="LINE">Línea</option>
-                  </select>
-                </div>
-                <div className="col-span-12 md:col-span-5 space-y-1">
-                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Valor</label>
-                  <Combobox
-                    options={CATALOG_ATTRIBUTES[attr.type as keyof typeof CATALOG_ATTRIBUTES].map(opt => ({ value: opt, label: opt }))}
-                    value={attr.value}
-                    onChange={(val) => updateAttribute(index, 'value', val)}
-                    placeholder="Seleccionar valor..."
-                    className="bg-surface"
-                  />
-                </div>
-                <div className="col-span-12 md:col-span-3 space-y-1">
-                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Modificador Precio</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted">$</span>
-                    <input
-                      type="number"
-                      value={attr.priceModifier}
-                      onChange={(e) => updateAttribute(index, 'priceModifier', parseFloat(e.target.value) || 0)}
-                      placeholder="0"
-                      className="w-full pl-7 p-2.5 border border-theme rounded-xl bg-surface text-xs font-black focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+            {formData.attributes.map((attr, index) => {
+              // Lock type if it's one of the first 4 default attributes on a NEW product
+              const isLocked = !isEditMode && index < 4;
+              
+              return (
+                <div key={index} className="grid grid-cols-12 gap-4 items-end p-5 border border-theme rounded-2xl bg-base/20 shadow-sm transition-all hover:bg-base/30">
+                  <div className="col-span-12 md:col-span-3 space-y-1">
+                    <label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Tipo</label>
+                    <select
+                      value={attr.type}
+                      onChange={(e) => updateAttribute(index, 'type', e.target.value)}
+                      disabled={isLocked}
+                      className={cn(
+                        "w-full p-2.5 border border-theme rounded-xl bg-surface text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer",
+                        isLocked && "opacity-60 cursor-not-allowed bg-slate-50"
+                      )}
+                    >
+                      <option value="SIZE">Tamaño</option>
+                      <option value="MATERIAL">Material</option>
+                      <option value="QUALITY">Calidad</option>
+                      <option value="LINE">Línea</option>
+                    </select>
+                  </div>
+                  <div className="col-span-12 md:col-span-5 space-y-1">
+                    <label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Valor</label>
+                    <Combobox
+                      options={CATALOG_ATTRIBUTES[attr.type as keyof typeof CATALOG_ATTRIBUTES].map(opt => ({ value: opt, label: opt }))}
+                      value={attr.value}
+                      onChange={(val) => updateAttribute(index, 'value', val)}
+                      placeholder="Seleccionar valor..."
+                      className="bg-surface"
                     />
                   </div>
+                  <div className="col-span-12 md:col-span-3 space-y-1">
+                    <label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Modificador Precio</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted">$</span>
+                      <input
+                        type="number"
+                        value={attr.priceModifier}
+                        onChange={(e) => updateAttribute(index, 'priceModifier', parseFloat(e.target.value) || 0)}
+                        placeholder="0"
+                        className="w-full pl-7 p-2.5 border border-theme rounded-xl bg-surface text-xs font-black focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+                  <div className="col-span-12 md:col-span-1 flex justify-end pb-1">
+                    <button
+                      type="button"
+                      onClick={() => removeAttribute(index)}
+                      className="p-2.5 text-muted hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                      title="Eliminar atributo"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
                 </div>
-                <div className="col-span-12 md:col-span-1 flex justify-end pb-1">
-                  <button
-                    type="button"
-                    onClick={() => removeAttribute(index)}
-                    className="p-2.5 text-muted hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                    title="Eliminar atributo"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 

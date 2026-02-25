@@ -12,10 +12,12 @@ interface ProductDetailClientProps {
 }
 
 interface Attribute {
+  id: string;
   type: string;
   value: string;
   priceModifier: number;
   isActive: boolean;
+  sortOrder: number;
 }
 
 interface ProductConfig {
@@ -196,7 +198,10 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
           {['SIZE', 'QUALITY', 'MATERIAL'].map((type) => (
             <div key={type}>
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary block mb-4">
-                {type === 'SIZE' ? 'Tamaño' : type === 'QUALITY' ? 'Calidad' : 'Material'}:
+                {type === 'SIZE' ? 'TAMAÑO' : type === 'QUALITY' ? 'CALIDAD' : 'MATERIAL'}:
+                <span className="ml-2 text-slate-900 font-bold">
+                  {product.attributes?.find(a => a.type === type)?.value || 'N/A'}
+                </span>
               </span>
               <div className="flex flex-wrap gap-2">
                 {groupedAttributes[type]?.map((attr) => (

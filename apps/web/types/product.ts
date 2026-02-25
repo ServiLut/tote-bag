@@ -12,6 +12,15 @@ export interface Variant {
   stock: number;
 }
 
+export interface Attribute {
+  id: string;
+  type: 'SIZE' | 'MATERIAL' | 'QUALITY' | 'LINE';
+  value: string;
+  priceModifier: number;
+  sortOrder: number;
+  isActive: boolean;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -27,4 +36,5 @@ export interface Product {
     slug: string;
   };
   tags: string[];
+  attributes?: Attribute[];
 }

@@ -16,11 +16,12 @@ export interface FilterState {
 }
 
 interface FilterSidebarProps {
+  collections: string[];
   filters: FilterState;
   onFilterChange: (newFilters: FilterState) => void;
 }
 
-export default function FilterSidebar({ filters, onFilterChange }: FilterSidebarProps) {
+export default function FilterSidebar({ collections, filters, onFilterChange }: FilterSidebarProps) {
   const [openSections, setOpenSections] = useState({
     price: true,
     collection: true,
@@ -96,6 +97,9 @@ export default function FilterSidebar({ filters, onFilterChange }: FilterSidebar
 
       {/* Brand Lines */}
       {renderCheckboxGroup('Líneas', 'lines', [...CATALOG_ATTRIBUTES.LINE], 'line')}
+
+      {/* Collections */}
+      {collections.length > 0 && renderCheckboxGroup('Colecciones', 'collections', collections, 'collection')}
 
       {/* Attributes Group */}
       <div className="border-b border-theme pb-6">

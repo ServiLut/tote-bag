@@ -36,6 +36,21 @@ interface ProductImage {
   position: number;
 }
 
+interface Attribute {
+  id: string;
+  type: 'SIZE' | 'MATERIAL' | 'QUALITY' | 'LINE';
+  value: string;
+  priceModifier: number;
+}
+
+interface PricingRule {
+  id: string;
+  scope: 'B2C' | 'B2B';
+  minQty: number;
+  discountPct?: number;
+  fixedUnitPrice?: number;
+}
+
 interface Product {
   id: string;
   name: string;
@@ -49,6 +64,8 @@ interface Product {
   comparePrice?: number;
   status: 'DISPONIBLE' | 'BAJO_PEDIDO' | 'PREVENTA';
   variants: Variant[];
+  attributes: Attribute[];
+  pricingRules: PricingRule[];
 }
 
 export default function ProductsTable() {
@@ -398,6 +415,47 @@ export default function ProductsTable() {
                       </table>
                     </div>
                   </div>
+
+                  {/* Attributes Section */}
+                  <div>
+                    <h3 className="text-xs font-black text-primary uppercase tracking-widest mb-3">ATRIBUTOS DE CONFIGURACIÓN</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { label: 'Línea', type: 'LINE' },
+                        { label: 'Tamaño', type: 'SIZE' },
+                        { label: 'Material', type: 'MATERIAL' },
+                        { label: 'Calidad', type: 'QUALITY' }
+                      ].map((item) => {
+                        const attr = selectedProduct.attributes?.find(a => a.type === item.type);
+                        return (
+                          <div key={item.type} className="p-3 bg-base/30 rounded-xl border border-theme/50 flex flex-col gap-1">
+                            <span className="text-[8px] font-black uppercase text-muted tracking-widest">{item.label}</span>
+                            <span className="text-[11px] font-bold text-primary">{attr?.value || 'No definido'}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Pricing Rules Section */}
+                  {selectedProduct.pricingRules && selectedProduct.pricingRules.length > 0 && (
+                    <div>
+                      <h3 className="text-xs font-black text-primary uppercase tracking-widest mb-3">REGLAS DE PRECIO</h3>
+                      <div className="space-y-2">
+                        {selectedProduct.pricingRules.map((rule) => (
+                          <div key={rule.id} className="px-4 py-3 bg-secondary/5 rounded-xl border border-secondary/20 flex items-center justify-between text-[11px]">
+                            <div className="flex items-center gap-2">
+                              <span className="font-black text-secondary uppercase tracking-tighter">{rule.scope}</span>
+                              <span className="text-muted">Min. {rule.minQty} unidades</span>
+                            </div>
+                            <div className="font-black text-primary">
+                              {rule.discountPct ? `${rule.discountPct}% dto.` : rule.fixedUnitPrice ? formatCurrency(rule.fixedUnitPrice) : 'N/A'}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {selectedProduct.description && (
                     <div>

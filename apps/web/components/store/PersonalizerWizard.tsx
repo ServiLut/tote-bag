@@ -33,7 +33,7 @@ interface Attribute {
 interface ProductConfig {
   productId: string;
   attributes: Attribute[];
-  product?: unknown;
+  product?: any;
 }
 
 interface PricingSnapshot {
