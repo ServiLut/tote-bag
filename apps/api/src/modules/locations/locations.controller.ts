@@ -15,4 +15,3 @@ export class LocationsController {
     return this.locationsService.getMunicipalities(departmentId);
   }
 }
-

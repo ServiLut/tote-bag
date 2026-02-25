@@ -1,7 +1,7 @@
 'use client';
 
 import { createClient } from '@/utils/supabase/client';
-import { useState, ChangeEvent, FormEvent, useRef } from 'react';
+import { useState, useEffect, ChangeEvent, FormEvent, useRef } from 'react';
 import { Plus, Trash2, AlertCircle, UploadCloud, Loader2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -43,6 +43,13 @@ export interface PricingRuleData {
   fixedUnitPrice?: number;
 }
 
+export interface PersonalizationRuleData {
+  personalizationId: string;
+  personalizationCode: string;
+  allowedMaterialValues: string[];
+  isActive: boolean;
+}
+
 interface ProductImage {
   id?: string;
   url: string;
@@ -65,10 +72,18 @@ interface ProductFormData {
   variants: VariantData[];
   attributes: AttributeData[];
   pricingRules: PricingRuleData[];
+  personalizations: PersonalizationRuleData[];
+}
+
+interface GlobalPersonalizationOption {
+  id: string;
+  code: string;
+  name: string;
+  basePrice: number;
 }
 
 interface AdminProductFormProps {
-  initialData?: Omit<Partial<ProductFormData>, 'tags' | 'costPrice' | 'comparePrice' | 'images' | 'collection' | 'attributes' | 'pricingRules'> & { 
+  initialData?: Omit<Partial<ProductFormData>, 'tags' | 'costPrice' | 'comparePrice' | 'images' | 'collection' | 'attributes' | 'pricingRules' | 'personalizations'> & { 
     id?: string; 
     tags?: string | string[];
     costPrice?: number | null;
@@ -77,6 +92,12 @@ interface AdminProductFormProps {
     collection?: string | { name: string };
     attributes?: AttributeData[];
     pricingRules?: PricingRuleData[];
+    personalizationRules?: {
+      personalizationId: string;
+      personalization?: { code: string };
+      allowedMaterialValues: string[];
+      isActive: boolean;
+    }[];
   };
 }
 
@@ -110,6 +131,7 @@ const INITIAL_STATE: ProductFormData = {
   ],
   attributes: DEFAULT_PRODUCT_ATTRIBUTES,
   pricingRules: DEFAULT_PRICING_RULES,
+  personalizations: [],
 };
 
 interface Collection {
@@ -138,6 +160,14 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
           pricingRules: initialData.pricingRules && initialData.pricingRules.length > 0
             ? initialData.pricingRules
             : [],
+          personalizations: initialData.personalizationRules 
+            ? initialData.personalizationRules.map(r => ({
+                personalizationId: r.personalizationId,
+                personalizationCode: r.personalization?.code || '',
+                allowedMaterialValues: r.allowedMaterialValues || [],
+                isActive: r.isActive ?? true,
+              }))
+            : [],
         } 
       : INITIAL_STATE
   );
@@ -148,6 +178,58 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const supabase = createClient();
+  const [globalOptions, setGlobalOptions] = useState<GlobalPersonalizationOption[]>([]);
+
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+        const res = await fetch(`${apiUrl}/pricing/personalization-options`);
+        if (res.ok) {
+          const body = await res.json();
+          setGlobalOptions(body.data || []);
+        }
+      } catch (err) {
+        console.error('Error fetching personalization options:', err);
+      }
+    };
+    fetchOptions();
+  }, []);
+
+  const togglePersonalization = (opt: GlobalPersonalizationOption) => {
+    setFormData(prev => {
+      const exists = prev.personalizations.find(p => p.personalizationId === opt.id);
+      if (exists) {
+        return { ...prev, personalizations: prev.personalizations.filter(p => p.personalizationId !== opt.id) };
+      } else {
+        return {
+          ...prev,
+          personalizations: [
+            ...prev.personalizations,
+            { 
+              personalizationId: opt.id, 
+              personalizationCode: opt.code, 
+              allowedMaterialValues: [...CATALOG_ATTRIBUTES.MATERIAL], // Default to all
+              isActive: true 
+            }
+          ]
+        };
+      }
+    });
+  };
+
+  const toggleMaterial = (personalizationId: string, material: string) => {
+    setFormData(prev => ({
+      ...prev,
+      personalizations: prev.personalizations.map(p => {
+        if (p.personalizationId !== personalizationId) return p;
+        const materials = p.allowedMaterialValues.includes(material)
+          ? p.allowedMaterialValues.filter(m => m !== material)
+          : [...p.allowedMaterialValues, material];
+        return { ...p, allowedMaterialValues: materials };
+      })
+    }));
+  };
 
   // Derived state for validation
   const isPriceWarning = formData.basePrice > 0 && formData.basePrice < formData.minPrice;
@@ -409,6 +491,11 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
           maxQty: rule.maxQty,
           discountPct: rule.discountPct,
           fixedUnitPrice: rule.fixedUnitPrice,
+        })),
+        personalizationRules: formData.personalizations.map(p => ({
+          personalizationId: p.personalizationId,
+          allowedMaterialValues: p.allowedMaterialValues,
+          isActive: p.isActive,
         })),
         tags: typeof formData.tags === 'string' 
           ? formData.tags.split(',').map(t => t.trim()).filter(Boolean)
@@ -1036,6 +1123,73 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
                 </div>
               </div>
             ))}
+          </div>
+        </section>
+
+        <hr className="border-theme" />
+
+        {/* Sección Gestión de Personalización */}
+        <section className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-black text-primary tracking-tight">Opciones de Personalización</h3>
+            <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Configura qué técnicas están permitidas</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {globalOptions.map((opt) => {
+              const rule = formData.personalizations.find(p => p.personalizationId === opt.id);
+              const isActive = !!rule;
+
+              return (
+                <div key={opt.id} className={cn(
+                  "p-5 rounded-2xl border transition-all",
+                  isActive ? "bg-primary/5 border-primary/20 shadow-sm" : "bg-base/20 border-theme/50 opacity-60"
+                )}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-black text-primary">{opt.name}</span>
+                      <span className="text-[10px] font-bold text-muted uppercase tracking-widest">Base: ${opt.basePrice.toLocaleString()}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => togglePersonalization(opt)}
+                      className={cn(
+                        "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                        isActive ? "bg-primary text-white" : "bg-white border border-theme text-muted"
+                      )}
+                    >
+                      {isActive ? 'Habilitado' : 'Deshabilitado'}
+                    </button>
+                  </div>
+
+                  {isActive && (
+                    <div className="space-y-3 pt-4 border-t border-primary/10">
+                      <label className="text-[9px] font-black uppercase tracking-widest text-muted block mb-2">Materiales Compatibles:</label>
+                      <div className="flex flex-wrap gap-2">
+                        {CATALOG_ATTRIBUTES.MATERIAL.map((mat) => {
+                          const isMatAllowed = rule.allowedMaterialValues.includes(mat);
+                          return (
+                            <button
+                              key={mat}
+                              type="button"
+                              onClick={() => toggleMaterial(opt.id, mat)}
+                              className={cn(
+                                "px-3 py-1.5 rounded-md text-[10px] font-bold transition-all border",
+                                isMatAllowed 
+                                  ? "bg-white border-primary text-primary shadow-sm" 
+                                  : "bg-transparent border-theme/50 text-muted opacity-50"
+                              )}
+                            >
+                              {mat}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </section>
 

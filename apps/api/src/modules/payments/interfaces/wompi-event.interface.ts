@@ -32,4 +32,3 @@ export interface WompiEvent {
   timestamp: number;
   sent_at: string;
 }
-

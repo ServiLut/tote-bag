@@ -10,4 +10,3 @@ import { PricingModule } from '../pricing/pricing.module';
   providers: [OrdersService],
 })
 export class OrdersModule {}
-

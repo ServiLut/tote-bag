@@ -19,4 +19,3 @@ export class RegisterDto {
   @Equals(true, { message: 'Debes aceptar los términos y condiciones' })
   acceptTerms: boolean;
 }
-

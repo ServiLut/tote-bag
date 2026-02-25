@@ -32,4 +32,3 @@ export class OrdersController {
     return this.ordersService.update(id, updateOrderDto);
   }
 }
-

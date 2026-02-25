@@ -148,6 +148,23 @@ async function main() {
     await prisma.pricingRule.create({ data: rule });
   }
 
+  // 6. Opciones de Personalización Globales
+  console.log('🎨 Creando Opciones de Personalización...');
+  const personalizationOptions = [
+    { code: 'STAMP', name: 'Estampado', basePrice: 8000 },
+    { code: 'EMBROIDERY', name: 'Bordado', basePrice: 12000 },
+    { code: 'ZIPPER', name: 'Cierre / Cremallera', basePrice: 5000 },
+    { code: 'BUTTONS', name: 'Botones', basePrice: 3000 },
+  ];
+
+  for (const opt of personalizationOptions) {
+    await prisma.personalizationOption.upsert({
+      where: { code: opt.code },
+      update: { basePrice: opt.basePrice, name: opt.name },
+      create: opt,
+    });
+  }
+
   console.log('✅ Seed completado exitosamente.');
 }
 

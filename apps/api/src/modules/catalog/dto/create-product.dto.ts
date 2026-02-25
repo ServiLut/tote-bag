@@ -10,7 +10,12 @@ import {
   IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ProductStatus, PrintType, AttributeType, PriceRuleScope } from '../../../generated/client/enums';
+import {
+  ProductStatus,
+  PrintType,
+  AttributeType,
+  PriceRuleScope,
+} from '../../../generated/client/enums';
 
 export class CreateProductImageDto {
   @IsString()
@@ -188,5 +193,3 @@ export class CreateProductDto {
   @IsOptional()
   pricingRules?: CreatePricingRuleDto[];
 }
-
-

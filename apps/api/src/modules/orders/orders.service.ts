@@ -29,15 +29,18 @@ export class OrdersService {
       items.map(async (item) => {
         let unitPrice = item.price || 0;
         let totalPrice = unitPrice * item.quantity;
-        let configurationJson: any = null;
-        let pricingJson: any = null;
+        let configurationJson: Prisma.InputJsonValue | undefined = undefined;
+        let pricingJson: Prisma.InputJsonValue | undefined = undefined;
 
         if (item.configuration) {
           const scope = isB2B ? PriceRuleScope.B2B : PriceRuleScope.B2C;
-          const quote = await this.pricingService.calculateQuote(item.configuration, scope);
+          const quote = await this.pricingService.calculateQuote(
+            item.configuration,
+            scope,
+          );
           unitPrice = quote.unitPrice;
           totalPrice = quote.total;
-          
+
           // Generate Configuration Snapshot
           const configSnapshot: ConfigurationSnapshot = {
             version: '1.1',
@@ -52,7 +55,8 @@ export class OrdersService {
             timestamp: new Date().toISOString(),
           };
 
-          configurationJson = configSnapshot as unknown as Prisma.InputJsonValue;
+          configurationJson =
+            configSnapshot as unknown as Prisma.InputJsonValue;
           pricingJson = quote.snapshot as unknown as Prisma.InputJsonValue;
         }
 
@@ -60,8 +64,10 @@ export class OrdersService {
           ...item,
           unitPrice,
           totalPrice,
-          configurationJson,
-          pricingJson,
+          configurationJson:
+            configurationJson ?? (null as unknown as Prisma.InputJsonValue),
+          pricingJson:
+            pricingJson ?? (null as unknown as Prisma.InputJsonValue),
         };
       }),
     );

@@ -37,23 +37,26 @@ export class ConfigurationService {
     ]);
 
     // Group attributes by type for better frontend consumption
-    const groupedAttributes = attributes.reduce((acc, attr) => {
-      if (!acc[attr.type]) {
-        acc[attr.type] = [];
-      }
-      acc[attr.type].push({
-        id: attr.id,
-        value: attr.value,
-        priceModifier: attr.priceModifier,
-        isActive: attr.isActive,
-      });
-      return acc;
-    }, {} as Record<string, any[]>);
+    const groupedAttributes = attributes.reduce(
+      (acc, attr) => {
+        if (!acc[attr.type]) {
+          acc[attr.type] = [];
+        }
+        acc[attr.type].push({
+          id: attr.id,
+          value: attr.value,
+          priceModifier: attr.priceModifier,
+          isActive: attr.isActive,
+        });
+        return acc;
+      },
+      {} as Record<string, any[]>,
+    );
 
     return {
       productId,
       attributes: groupedAttributes,
-      personalizationOptions: personalizationOptions.map(opt => ({
+      personalizationOptions: personalizationOptions.map((opt) => ({
         id: opt.id,
         name: opt.name,
         code: opt.code,

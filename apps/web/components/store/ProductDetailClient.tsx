@@ -20,14 +20,23 @@ interface Attribute {
   sortOrder: number;
 }
 
+interface PersonalizationOption {
+  id: string;
+  code: string;
+  name: string;
+  basePrice: number;
+  allowedMaterialValues?: string[]; // Derived from rules
+}
+
+interface ApiPersonalizationOption extends PersonalizationOption {
+  rule?: {
+    allowedMaterialValues: string[];
+  }
+}
+
 interface ProductConfig {
   attributes: Attribute[];
-  personalizationOptions: Array<{
-    id: string;
-    name: string;
-    code: string;
-    basePrice: number;
-  }>;
+  personalizationOptions: PersonalizationOption[];
 }
 
 interface PricingSnapshot {
@@ -49,6 +58,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     material: '',
     quality: '',
     line: 'COMERCIAL', // Default line
+    personalizations: [] as Array<{ code: string; options: string[] }>,
   });
   
   const [quantity, setQuantity] = useState(1);
@@ -69,7 +79,17 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
         const res = await fetch(`${API_URL}/catalog/products/${product.slug}/config`);
         if (!res.ok) throw new Error('Failed to load config');
         const data = await res.json();
-        setConfig(data);
+        
+        // Transform personalization options to include material restriction data
+        const transformedOptions = (data.personalizationOptions as ApiPersonalizationOption[]).map(opt => ({
+          ...opt,
+          allowedMaterialValues: opt.rule?.allowedMaterialValues || []
+        }));
+
+        setConfig({
+          attributes: data.attributes,
+          personalizationOptions: transformedOptions
+        });
         
         // Initialize defaults from active attributes
         const attrs = (data.attributes as Attribute[]) || [];
@@ -77,12 +97,13 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
         const defaultMaterial = attrs.find((a) => a.type === 'MATERIAL')?.value || '';
         const defaultQuality = attrs.find((a) => a.type === 'QUALITY')?.value || '';
         
-        setSelections({
+        setSelections(prev => ({
+          ...prev,
           size: defaultSize,
           material: defaultMaterial,
           quality: defaultQuality,
           line: 'COMERCIAL',
-        });
+        }));
       } catch (err) {
         console.error('Config fetch error:', err);
       }
@@ -102,7 +123,8 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
         body: JSON.stringify({
           productId: product.id,
           quantity,
-          ...selections
+          ...selections,
+          personalizations: selections.personalizations.map(p => ({ code: p.code }))
         }),
       });
       
@@ -126,17 +148,33 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
   const handleAddToCart = () => {
     if (!selectedVariant.sku) return;
     
-    const configuration = {
-      ...selections,
-      personalizations: [] // Placeholder for now
-    };
-
-    addToCart(product, selectedVariant, quantity, configuration, calculatedPrice, configCode);
+    addToCart(product, selectedVariant, quantity, selections, calculatedPrice, configCode);
     toast.success('Producto personalizado agregado al carrito');
   };
 
   const handleSelectionChange = (type: string, value: string) => {
-    setSelections(prev => ({ ...prev, [type]: value }));
+    setSelections(prev => {
+      // If material changes, validate current personalizations
+      if (type === 'material') {
+        const validPerso = prev.personalizations.filter(p => {
+          const opt = config?.personalizationOptions.find(o => o.code === p.code);
+          return !opt?.allowedMaterialValues?.length || opt.allowedMaterialValues.includes(value);
+        });
+        return { ...prev, [type]: value, personalizations: validPerso };
+      }
+      return { ...prev, [type]: value };
+    });
+  };
+
+  const togglePersonalization = (opt: PersonalizationOption) => {
+    setSelections(prev => {
+      const exists = prev.personalizations.find(p => p.code === opt.code);
+      if (exists) {
+        return { ...prev, personalizations: prev.personalizations.filter(p => p.code !== opt.code) };
+      } else {
+        return { ...prev, personalizations: [...prev.personalizations, { code: opt.code, options: [] }] };
+      }
+    });
   };
 
   const allImages = [
@@ -199,8 +237,8 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
             <div key={type}>
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary block mb-4">
                 {type === 'SIZE' ? 'TAMAÑO' : type === 'QUALITY' ? 'CALIDAD' : 'MATERIAL'}:
-                <span className="ml-2 text-slate-900 font-bold">
-                  {product.attributes?.find(a => a.type === type)?.value || 'N/A'}
+                <span className="ml-2 text-slate-900 font-bold uppercase">
+                  {(selections[type.toLowerCase() as keyof typeof selections] as string) || '...'}
                 </span>
               </span>
               <div className="flex flex-wrap gap-2">
@@ -220,6 +258,35 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
               </div>
             </div>
           ))}
+
+          {/* Personalization Options */}
+          {config?.personalizationOptions && config.personalizationOptions.length > 0 && (
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary block mb-4">Personalización Extra:</span>
+              <div className="flex flex-wrap gap-3">
+                {config.personalizationOptions.map((opt) => {
+                  const isCompatible = !opt.allowedMaterialValues?.length || opt.allowedMaterialValues.includes(selections.material);
+                  const isSelected = !!selections.personalizations.find(p => p.code === opt.code);
+
+                  if (!isCompatible) return null;
+
+                  return (
+                    <button
+                      key={opt.code}
+                      onClick={() => togglePersonalization(opt)}
+                      className={`px-4 py-2 rounded-full border text-[10px] font-black uppercase tracking-widest transition-all ${
+                        isSelected 
+                          ? 'bg-secondary border-secondary text-white shadow-md' 
+                          : 'bg-white border-theme text-muted hover:border-secondary hover:text-secondary'
+                      }`}
+                    >
+                      {opt.name} (+${opt.basePrice.toLocaleString()})
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Color Selector (Variants) */}
           {product.variants.length > 0 && (

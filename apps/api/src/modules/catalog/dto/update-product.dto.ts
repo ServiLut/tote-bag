@@ -10,5 +10,3 @@ export class UpdateProductDto extends PartialType(CreateProductDto) {
   @Type(() => CreateVariantDto)
   variants?: CreateVariantDto[];
 }
-
-

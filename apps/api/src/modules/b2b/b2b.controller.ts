@@ -36,4 +36,3 @@ export class B2bController {
     return this.b2bService.approveDesign(id);
   }
 }
-

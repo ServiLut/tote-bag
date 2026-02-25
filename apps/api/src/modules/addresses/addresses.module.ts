@@ -11,4 +11,3 @@ import { ProfilesModule } from '../profiles/profiles.module';
   exports: [AddressesService],
 })
 export class AddressesModule {}
-

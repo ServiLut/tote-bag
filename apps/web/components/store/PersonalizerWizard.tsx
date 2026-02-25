@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Image from 'next/image';
+import { Product } from '@/types/product';
 
 interface PersonalizerWizardProps {
   productId: string;
@@ -33,7 +34,7 @@ interface Attribute {
 interface ProductConfig {
   productId: string;
   attributes: Attribute[];
-  product?: any;
+  product?: Product;
 }
 
 interface PricingSnapshot {

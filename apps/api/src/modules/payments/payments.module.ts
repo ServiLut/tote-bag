@@ -10,4 +10,3 @@ import { ConfigModule } from '@nestjs/config';
   providers: [PaymentsService],
 })
 export class PaymentsModule {}
-

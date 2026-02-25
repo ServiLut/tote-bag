@@ -85,5 +85,3 @@ export class CreateQuoteDto {
   @IsOptional()
   items?: CreateQuoteItemDto[];
 }
-
-

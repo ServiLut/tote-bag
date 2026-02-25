@@ -10,7 +10,7 @@ export class PricingController {
   @Post('quote')
   async calculateQuote(
     @Body() config: ProductConfigInputDto,
-    @Query('scope') scope: PriceRuleScope = PriceRuleScope.B2C
+    @Query('scope') scope: PriceRuleScope = PriceRuleScope.B2C,
   ) {
     return this.pricingService.calculateQuote(config, scope);
   }

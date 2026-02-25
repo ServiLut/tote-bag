@@ -16,4 +16,3 @@ export class PaymentsController {
     return this.paymentsService.handleWompiEvent(event);
   }
 }
-

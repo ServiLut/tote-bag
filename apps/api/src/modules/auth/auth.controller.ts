@@ -33,4 +33,3 @@ export class AuthController {
     return this.authService.forgotPassword(forgotPasswordDto.email);
   }
 }
-

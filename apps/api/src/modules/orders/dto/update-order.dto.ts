@@ -14,5 +14,3 @@ export class UpdateOrderDto {
   @IsOptional()
   carrier?: string;
 }
-
-

@@ -11,9 +11,16 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { Product, Prisma } from '../../generated/client/client';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { ProductStatus } from '../../generated/client/enums';
 
 export type ProductWithRelations = Prisma.ProductGetPayload<{
-  include: { variants: true; images: true; collection: true };
+  include: {
+    variants: true;
+    images: true;
+    collection: true;
+    attributes: true;
+    pricingRules: true;
+  };
 }>;
 
 @Injectable()
@@ -29,8 +36,15 @@ export class CatalogService {
     id: string,
     updateProductDto: UpdateProductDto,
   ): Promise<ProductWithRelations> {
-    const { variants, images, attributes, pricingRules, collectionId, collectionName, ...data } =
-      updateProductDto;
+    const {
+      variants,
+      images,
+      attributes,
+      pricingRules,
+      collectionId,
+      collectionName,
+      ...data
+    } = updateProductDto;
 
     console.log(`Updating product ${id}`);
 
@@ -177,7 +191,13 @@ export class CatalogService {
       return prisma.product.update({
         where: { id },
         data: updateData,
-        include: { variants: true, images: true, collection: true },
+        include: {
+          variants: true,
+          images: true,
+          collection: true,
+          attributes: true,
+          pricingRules: true,
+        },
       });
     });
 
@@ -237,8 +257,15 @@ export class CatalogService {
   async create(
     createProductDto: CreateProductDto,
   ): Promise<ProductWithRelations> {
-    const { variants, collectionId, collectionName, images, attributes, pricingRules, ...productData } =
-      createProductDto;
+    const {
+      variants,
+      collectionId,
+      collectionName,
+      images,
+      attributes,
+      pricingRules,
+      ...productData
+    } = createProductDto;
 
     // 2. Fetch or Create Collection for SKU validation
     let collection: { id: string; name: string } | null = null;
@@ -369,7 +396,15 @@ export class CatalogService {
     status?: string;
     isCustomizable?: boolean;
   }): Promise<ProductWithRelations[]> {
-    const { collectionId, line, size, quality, material, status, isCustomizable } = filters;
+    const {
+      collectionId,
+      line,
+      size,
+      quality,
+      material,
+      status,
+      isCustomizable,
+    } = filters;
 
     const where: Prisma.ProductWhereInput = {
       isActive: true,
@@ -380,16 +415,42 @@ export class CatalogService {
     }
 
     if (status) {
-      where.status = status as any;
+      where.status = status as ProductStatus;
     }
 
     // Additive Filters (AND): Product must match all provided attribute criteria
     const andFilters: Prisma.ProductWhereInput[] = [];
 
-    if (line) andFilters.push({ attributes: { some: { type: 'LINE', value: { equals: line, mode: 'insensitive' } } } });
-    if (size) andFilters.push({ attributes: { some: { type: 'SIZE', value: { equals: size, mode: 'insensitive' } } } });
-    if (quality) andFilters.push({ attributes: { some: { type: 'QUALITY', value: { equals: quality, mode: 'insensitive' } } } });
-    if (material) andFilters.push({ attributes: { some: { type: 'MATERIAL', value: { equals: material, mode: 'insensitive' } } } });
+    if (line)
+      andFilters.push({
+        attributes: {
+          some: { type: 'LINE', value: { equals: line, mode: 'insensitive' } },
+        },
+      });
+    if (size)
+      andFilters.push({
+        attributes: {
+          some: { type: 'SIZE', value: { equals: size, mode: 'insensitive' } },
+        },
+      });
+    if (quality)
+      andFilters.push({
+        attributes: {
+          some: {
+            type: 'QUALITY',
+            value: { equals: quality, mode: 'insensitive' },
+          },
+        },
+      });
+    if (material)
+      andFilters.push({
+        attributes: {
+          some: {
+            type: 'MATERIAL',
+            value: { equals: material, mode: 'insensitive' },
+          },
+        },
+      });
 
     // isCustomizable logic: In this architecture, products with variants or specific attributes are customizable
     if (isCustomizable !== undefined) {
@@ -403,12 +464,12 @@ export class CatalogService {
 
     const products = await this.prisma.product.findMany({
       where,
-      include: { 
-        variants: true, 
-        images: true, 
-        collection: true, 
+      include: {
+        variants: true,
+        images: true,
+        collection: true,
         attributes: true,
-        pricingRules: true 
+        pricingRules: true,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -419,7 +480,13 @@ export class CatalogService {
   async findOne(id: string): Promise<ProductWithRelations> {
     const product = await this.prisma.product.findUnique({
       where: { id },
-      include: { variants: true, images: true, collection: true },
+      include: {
+        variants: true,
+        images: true,
+        collection: true,
+        attributes: true,
+        pricingRules: true,
+      },
     });
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
@@ -430,7 +497,13 @@ export class CatalogService {
   async findBySlug(slug: string): Promise<ProductWithRelations> {
     const product = await this.prisma.product.findUnique({
       where: { slug },
-      include: { variants: true, images: true, collection: true },
+      include: {
+        variants: true,
+        images: true,
+        collection: true,
+        attributes: true,
+        pricingRules: true,
+      },
     });
     if (!product) {
       throw new NotFoundException(`Product with slug ${slug} not found`);
@@ -457,18 +530,26 @@ export class CatalogService {
 
     // Get all available personalization options if none are linked to product
     const personalizations = await this.prisma.personalizationOption.findMany({
-      where: { isActive: true }
+      where: { isActive: true },
     });
+
+    const transformedGlobal = personalizations.map((p) => ({
+      ...p,
+      rule: { allowedMaterialValues: [] }, // Global options allow all materials by default
+    }));
 
     return {
       productId: product.id,
       slug: product.slug,
       attributes: product.attributes,
       pricingRules: product.pricingRules,
-      personalizationOptions: product.personalizationRules.length > 0 
-        ? product.personalizationRules.map(r => ({ ...r.personalization, rule: r }))
-        : personalizations,
+      personalizationOptions:
+        product.personalizationRules.length > 0
+          ? product.personalizationRules.map((r) => ({
+              ...r.personalization,
+              rule: r,
+            }))
+          : transformedGlobal,
     };
   }
 }
-

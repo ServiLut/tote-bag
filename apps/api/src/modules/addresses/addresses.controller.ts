@@ -76,4 +76,3 @@ export class AddressesController {
     return this.addressesService.remove(id, profile.id);
   }
 }
-

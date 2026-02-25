@@ -84,45 +84,54 @@ export class B2bService {
       logoUrl = publicUrlData.publicUrl;
     }
 
-    const quoteItems = createQuoteDto.items ? await Promise.all(
-      createQuoteDto.items.map(async (item) => {
-        let unitPrice = 0;
-        let totalPrice = 0;
-        let configurationJson: any = null;
-        let pricingJson: any = null;
+    const quoteItems = createQuoteDto.items
+      ? await Promise.all(
+          createQuoteDto.items.map(async (item) => {
+            let unitPrice = 0;
+            let totalPrice = 0;
+            let configurationJson: Prisma.InputJsonValue | undefined =
+              undefined;
+            let pricingJson: Prisma.InputJsonValue | undefined = undefined;
 
-        if (item.configuration) {
-          const quote = await this.pricingService.calculateQuote(item.configuration, PriceRuleScope.B2B);
-          unitPrice = quote.unitPrice;
-          totalPrice = quote.total;
-          
-          const configSnapshot: ConfigurationSnapshot = {
-            version: '1.1',
-            configCode: quote.snapshot.configCode,
-            productId: item.productId,
-            productName: `Product ${item.productId}`,
-            line: item.configuration.line,
-            size: item.configuration.size,
-            material: item.configuration.material,
-            quality: item.configuration.quality,
-            personalizations: item.configuration.personalizations,
-            timestamp: new Date().toISOString(),
-          };
+            if (item.configuration) {
+              const quote = await this.pricingService.calculateQuote(
+                item.configuration,
+                PriceRuleScope.B2B,
+              );
+              unitPrice = quote.unitPrice;
+              totalPrice = quote.total;
 
-          configurationJson = configSnapshot as unknown as Prisma.InputJsonValue;
-          pricingJson = quote.snapshot as unknown as Prisma.InputJsonValue;
-        }
+              const configSnapshot: ConfigurationSnapshot = {
+                version: '1.1',
+                configCode: quote.snapshot.configCode,
+                productId: item.productId,
+                productName: `Product ${item.productId}`,
+                line: item.configuration.line,
+                size: item.configuration.size,
+                material: item.configuration.material,
+                quality: item.configuration.quality,
+                personalizations: item.configuration.personalizations,
+                timestamp: new Date().toISOString(),
+              };
 
-        return {
-          productId: item.productId,
-          quantity: item.quantity,
-          unitPrice,
-          totalPrice,
-          configurationJson,
-          pricingJson,
-        };
-      })
-    ) : [];
+              configurationJson =
+                configSnapshot as unknown as Prisma.InputJsonValue;
+              pricingJson = quote.snapshot as unknown as Prisma.InputJsonValue;
+            }
+
+            return {
+              productId: item.productId,
+              quantity: item.quantity,
+              unitPrice,
+              totalPrice,
+              configurationJson:
+                configurationJson ?? (null as unknown as Prisma.InputJsonValue),
+              pricingJson:
+                pricingJson ?? (null as unknown as Prisma.InputJsonValue),
+            };
+          }),
+        )
+      : [];
 
     const quote = await this.prisma.b2BQuote.create({
       data: {
