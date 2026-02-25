@@ -11,7 +11,6 @@ import {
   Check, 
   Loader2, 
   AlertCircle, 
-  Image as ImageIcon,
   Truck,
   Leaf,
   ShoppingBag,
@@ -23,6 +22,24 @@ import Image from 'next/image';
 
 interface PersonalizerWizardProps {
   productId: string;
+}
+
+interface Attribute {
+  type: string;
+  value: string;
+  priceModifier: number;
+}
+
+interface ProductConfig {
+  productId: string;
+  attributes: Attribute[];
+  product?: unknown;
+}
+
+interface PricingSnapshot {
+  configCode: string;
+  minPriceGuardApplied: boolean;
+  [key: string]: unknown;
 }
 
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -55,9 +72,9 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
   });
 
   // Config State
-  const [config, setConfig] = useState<any>(null);
+  const [config, setConfig] = useState<ProductConfig | null>(null);
   const [calculatedPrice, setCalculatedPrice] = useState(0);
-  const [pricingSnapshot, setPricingSnapshot] = useState<any>(null);
+  const [pricingSnapshot, setPricingSnapshot] = useState<PricingSnapshot | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -74,10 +91,10 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
         setConfig(data);
         
         // Initialize defaults with defensive checks
-        const attrs = data.attributes || [];
-        const defaultSize = attrs.find((a: any) => a.type === 'SIZE')?.value || '';
-        const defaultMat = attrs.find((a: any) => a.type === 'MATERIAL')?.value || '';
-        const defaultQual = attrs.find((a: any) => a.type === 'QUALITY')?.value || '';
+        const attrs = (data.attributes as Attribute[]) || [];
+        const defaultSize = attrs.find((a) => a.type === 'SIZE')?.value || '';
+        const defaultMat = attrs.find((a) => a.type === 'MATERIAL')?.value || '';
+        const defaultQual = attrs.find((a) => a.type === 'QUALITY')?.value || '';
         
         setSelections(prev => ({
           ...prev,
@@ -132,7 +149,6 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
     if (!file) return;
 
     // Validation
-    const allowedTypes = ['image/png', 'application/pdf', 'application/postscript']; // .ai is postscript usually
     if (file.size > 5 * 1024 * 1024) {
       toast.error('El archivo supera los 5MB permitidos');
       return;
@@ -194,7 +210,7 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
     );
   }
 
-  const groupedAttrs = config?.attributes?.reduce((acc: any, attr: any) => {
+  const groupedAttrs = config?.attributes?.reduce((acc: Record<string, Attribute[]>, attr) => {
     if (!acc[attr.type]) acc[attr.type] = [];
     acc[attr.type].push(attr);
     return acc;
@@ -279,7 +295,7 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
                 <p className="text-muted text-sm">Dimensiones adaptadas a cada necesidad.</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                {groupedAttrs['SIZE']?.map((attr: any) => (
+                {groupedAttrs['SIZE']?.map((attr: Attribute) => (
                   <button
                     key={attr.value}
                     onClick={() => setSelections(prev => ({ ...prev, size: attr.value }))}
@@ -299,7 +315,7 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
               <section className="space-y-4">
                 <h4 className="text-xs font-black uppercase tracking-widest text-primary">Material Base</h4>
                 <div className="flex flex-wrap gap-3">
-                  {groupedAttrs['MATERIAL']?.map((attr: any) => (
+                  {groupedAttrs['MATERIAL']?.map((attr: Attribute) => (
                     <button
                       key={attr.value}
                       onClick={() => setSelections(prev => ({ ...prev, material: attr.value }))}
@@ -314,7 +330,7 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
               <section className="space-y-4">
                 <h4 className="text-xs font-black uppercase tracking-widest text-primary">Calidad de Confección</h4>
                 <div className="grid gap-3">
-                  {groupedAttrs['QUALITY']?.map((attr: any) => (
+                  {groupedAttrs['QUALITY']?.map((attr: Attribute) => (
                     <button
                       key={attr.value}
                       onClick={() => setSelections(prev => ({ ...prev, quality: attr.value }))}

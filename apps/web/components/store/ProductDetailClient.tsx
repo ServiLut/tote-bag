@@ -4,26 +4,34 @@ import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { Product, Variant } from '@/types/product';
 import { useCart } from '@/context/CartContext';
-import { Minus, Plus, ShoppingBag, Truck, ShieldCheck, Ruler, Loader2, AlertCircle } from 'lucide-react';
+import { Minus, Plus, ShoppingBag, Truck, ShieldCheck, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ProductDetailClientProps {
   product: Product;
 }
 
+interface Attribute {
+  type: string;
+  value: string;
+  priceModifier: number;
+  isActive: boolean;
+}
+
 interface ProductConfig {
-  attributes: Array<{
-    type: string;
-    value: string;
-    priceModifier: number;
-    isActive: boolean;
-  }>;
+  attributes: Attribute[];
   personalizationOptions: Array<{
     id: string;
     name: string;
     code: string;
     basePrice: number;
   }>;
+}
+
+interface PricingSnapshot {
+  configCode: string;
+  minPriceGuardApplied: boolean;
+  [key: string]: unknown;
 }
 
 export default function ProductDetailClient({ product }: ProductDetailClientProps) {
@@ -48,7 +56,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
   const [calculatedPrice, setCalculatedPrice] = useState<number>(product.basePrice);
   const [isPricingLoading, setIsPricingLoading] = useState(false);
   const [configCode, setConfigCode] = useState<string | undefined>();
-  const [pricingSnapshot, setPricingSnapshot] = useState<any>(null);
+  const [pricingSnapshot, setPricingSnapshot] = useState<PricingSnapshot | null>(null);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -62,9 +70,9 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
         setConfig(data);
         
         // Initialize defaults from active attributes
-        const defaultSize = data.attributes.find((a: any) => a.type === 'SIZE')?.value || '';
-        const defaultMaterial = data.attributes.find((a: any) => a.type === 'MATERIAL')?.value || '';
-        const defaultQuality = data.attributes.find((a: any) => a.type === 'QUALITY')?.value || '';
+        const defaultSize = (data.attributes as Attribute[]).find((a) => a.type === 'SIZE')?.value || '';
+        const defaultMaterial = (data.attributes as Attribute[]).find((a) => a.type === 'MATERIAL')?.value || '';
+        const defaultQuality = (data.attributes as Attribute[]).find((a) => a.type === 'QUALITY')?.value || '';
         
         setSelections({
           size: defaultSize,
@@ -139,7 +147,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     if (!acc[attr.type]) acc[attr.type] = [];
     acc[attr.type].push(attr);
     return acc;
-  }, {} as Record<string, any[]>) || {};
+  }, {} as Record<string, Attribute[]>) || {};
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-start">

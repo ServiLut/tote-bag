@@ -6,20 +6,20 @@
 - Environments: .env
 
   Creating an optimized production build ...
-✓ Compiled successfully in 8.1s
+✓ Compiled successfully in 9.2s
   Running TypeScript ...
   Collecting page data using 7 workers ...
   Generating static pages using 7 workers (0/28) ...
   Generating static pages using 7 workers (7/28) 
   Generating static pages using 7 workers (14/28) 
+  Generating static pages using 7 workers (21/28) 
 Error fetching dashboard stats: Error: Dynamic server usage: Route /dashboard couldn't be rendered statically because it used revalidate: 0 fetch http://127.0.0.1:4001/orders /dashboard. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
     at w (C:\Users\user\Desktop\deybis\tote-bag\apps\web\.next\server\chunks\ssr\[root-of-the-server]__bd86e026._.js:1:89491)
     at <unknown> (C:\Users\user\Desktop\deybis\tote-bag\apps\web\.next\server\chunks\ssr\[root-of-the-server]__bd86e026._.js:8:10522) {
   description: "Route /dashboard couldn't be rendered statically because it used revalidate: 0 fetch http://127.0.0.1:4001/orders /dashboard. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
   digest: 'DYNAMIC_SERVER_USAGE'
 }
-  Generating static pages using 7 workers (21/28) 
-✓ Generating static pages using 7 workers (28/28) in 653.5ms
+✓ Generating static pages using 7 workers (28/28) in 954.5ms
   Finalizing page optimization ...
 
 Route (app)

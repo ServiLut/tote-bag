@@ -9,7 +9,7 @@ export interface CartItem {
   product: Product;
   variant: Variant;
   quantity: number;
-  configuration?: any;
+  configuration?: Record<string, unknown>;
   unitPrice: number;
   configCode?: string;
 }
@@ -19,7 +19,7 @@ interface CartContextType {
   isOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
-  addToCart: (product: Product, variant: Variant, quantity?: number, configuration?: any, unitPrice?: number, configCode?: string) => void;
+  addToCart: (product: Product, variant: Variant, quantity?: number, configuration?: Record<string, unknown>, unitPrice?: number, configCode?: string) => void;
   removeFromCart: (cartItemId: string) => void;
   updateQuantity: (cartItemId: string, quantity: number) => void;
   clearCart: () => void;
@@ -34,13 +34,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
-  // Load cart from local storage on mount
+  // Set mounted flag after first render
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
+  }, []);
+
+  // Load cart from local storage ONLY ONCE on mount, but after we know we are on client
+  useEffect(() => {
     const savedCart = localStorage.getItem('tote-cart');
     if (savedCart) {
       try {
-        setItems(JSON.parse(savedCart));
+        const parsed = JSON.parse(savedCart);
+        if (Array.isArray(parsed)) {
+           // eslint-disable-next-line react-hooks/set-state-in-effect
+           setItems(parsed);
+        }
       } catch (e) {
         console.error('Failed to parse cart', e);
       }
@@ -61,7 +70,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     product: Product, 
     variant: Variant, 
     quantity = 1, 
-    configuration?: any, 
+    configuration?: Record<string, unknown>, 
     unitPrice?: number, 
     configCode?: string
   ) => {

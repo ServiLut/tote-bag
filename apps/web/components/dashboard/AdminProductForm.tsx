@@ -9,18 +9,12 @@ import Image from 'next/image';
 import { ApiResponse } from '@/types/api';
 import { toast } from 'sonner';
 import { Combobox } from '@/components/ui/Combobox';
+import { CATALOG_ATTRIBUTES } from '@/utils/catalog-constants';
 
 // Utility for cleaner tailwind classes
 function cn(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
 }
-
-const ATTRIBUTE_OPTIONS: Record<AttributeType, string[]> = {
-  SIZE: ['Pequeña', 'Estándar', 'Grande'],
-  MATERIAL: ['Lona', 'Algodón', 'Poliéster', 'Cuero Sintético'],
-  QUALITY: ['Económica', 'Comercial', 'Premium'],
-  LINE: ['ECO', 'COMERCIAL', 'PREMIUM', 'CORPORATIVA'],
-};
 
 // Types based on the backend DTOs implicitly
 export type ProductStatus = 'DISPONIBLE' | 'BAJO_PEDIDO' | 'PREVENTA';
@@ -307,10 +301,10 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
     }));
   };
 
-  const updateAttribute = (index: number, field: keyof AttributeData, value: any) => {
+  const updateAttribute = (index: number, field: keyof AttributeData, value: string | number) => {
     setFormData(prev => {
       const newAttrs = [...prev.attributes];
-      let updatedAttr = { ...newAttrs[index], [field]: value };
+      const updatedAttr = { ...newAttrs[index], [field]: value } as AttributeData;
       
       // Reset value if type changes to prevent data inconsistency
       if (field === 'type') {
@@ -334,10 +328,10 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
     }));
   };
 
-  const updatePricingRule = (index: number, field: keyof PricingRuleData, value: any) => {
+  const updatePricingRule = (index: number, field: keyof PricingRuleData, value: string | number) => {
     setFormData(prev => {
       const newRules = [...prev.pricingRules];
-      newRules[index] = { ...newRules[index], [field]: value };
+      newRules[index] = { ...newRules[index], [field]: value } as PricingRuleData;
       return { ...prev, pricingRules: newRules };
     });
   };
@@ -908,7 +902,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
                 <div className="col-span-12 md:col-span-5 space-y-1">
                   <label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Valor</label>
                   <Combobox
-                    options={ATTRIBUTE_OPTIONS[attr.type].map(opt => ({ value: opt, label: opt }))}
+                    options={CATALOG_ATTRIBUTES[attr.type as keyof typeof CATALOG_ATTRIBUTES].map(opt => ({ value: opt, label: opt }))}
                     value={attr.value}
                     onChange={(val) => updateAttribute(index, 'value', val)}
                     placeholder="Seleccionar valor..."

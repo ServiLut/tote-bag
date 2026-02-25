@@ -1,5 +1,4 @@
 import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import ProductGrid from '@/components/store/ProductGrid';
 import { Product } from '@/types/product';
 import { ApiResponse } from '@/types/api';

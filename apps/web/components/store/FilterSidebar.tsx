@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { CATALOG_ATTRIBUTES } from '@/utils/catalog-constants';
 
 export interface FilterState {
   minPrice: number;
@@ -15,12 +16,11 @@ export interface FilterState {
 }
 
 interface FilterSidebarProps {
-  collections: string[];
   filters: FilterState;
   onFilterChange: (newFilters: FilterState) => void;
 }
 
-export default function FilterSidebar({ collections, filters, onFilterChange }: FilterSidebarProps) {
+export default function FilterSidebar({ filters, onFilterChange }: FilterSidebarProps) {
   const [openSections, setOpenSections] = useState({
     price: true,
     collection: true,
@@ -95,7 +95,7 @@ export default function FilterSidebar({ collections, filters, onFilterChange }: 
       </div>
 
       {/* Brand Lines */}
-      {renderCheckboxGroup('Líneas', 'lines', ['ECO', 'COMERCIAL', 'PREMIUM', 'CORPORATIVA'], 'line')}
+      {renderCheckboxGroup('Líneas', 'lines', [...CATALOG_ATTRIBUTES.LINE], 'line')}
 
       {/* Attributes Group */}
       <div className="border-b border-theme pb-6">
@@ -111,7 +111,7 @@ export default function FilterSidebar({ collections, filters, onFilterChange }: 
             <div>
               <p className="text-[9px] font-black uppercase text-muted mb-3 tracking-widest opacity-60">Tamaño</p>
               <div className="space-y-2">
-                {['Standard', 'Mini', 'XL', 'Tote'].map(s => (
+                {CATALOG_ATTRIBUTES.SIZE.map(s => (
                   <label key={s} className="flex items-center gap-2 cursor-pointer group">
                     <input 
                       type="checkbox" 
@@ -127,7 +127,7 @@ export default function FilterSidebar({ collections, filters, onFilterChange }: 
             <div>
               <p className="text-[9px] font-black uppercase text-muted mb-3 tracking-widest opacity-60">Calidad</p>
               <div className="space-y-2">
-                {['Premium', 'Estándar', 'Básica'].map(q => (
+                {CATALOG_ATTRIBUTES.QUALITY.map(q => (
                   <label key={q} className="flex items-center gap-2 cursor-pointer group">
                     <input 
                       type="checkbox" 
@@ -136,6 +136,22 @@ export default function FilterSidebar({ collections, filters, onFilterChange }: 
                       onChange={() => handleCheckboxChange('qualities', q)} 
                     />
                     <span className="text-[11px] font-bold text-muted uppercase tracking-wider group-hover:text-primary transition-colors">{q}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-[9px] font-black uppercase text-muted mb-3 tracking-widest opacity-60">Material</p>
+              <div className="space-y-2">
+                {CATALOG_ATTRIBUTES.MATERIAL.map(m => (
+                  <label key={m} className="flex items-center gap-2 cursor-pointer group">
+                    <input 
+                      type="checkbox" 
+                      className="w-3.5 h-3.5 accent-primary border-theme" 
+                      checked={filters.materials.includes(m)} 
+                      onChange={() => handleCheckboxChange('materials', m)} 
+                    />
+                    <span className="text-[11px] font-bold text-muted uppercase tracking-wider group-hover:text-primary transition-colors">{m}</span>
                   </label>
                 ))}
               </div>
