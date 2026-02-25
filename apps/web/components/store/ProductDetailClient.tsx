@@ -70,9 +70,10 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
         setConfig(data);
         
         // Initialize defaults from active attributes
-        const defaultSize = (data.attributes as Attribute[]).find((a) => a.type === 'SIZE')?.value || '';
-        const defaultMaterial = (data.attributes as Attribute[]).find((a) => a.type === 'MATERIAL')?.value || '';
-        const defaultQuality = (data.attributes as Attribute[]).find((a) => a.type === 'QUALITY')?.value || '';
+        const attrs = (data.attributes as Attribute[]) || [];
+        const defaultSize = attrs.find((a) => a.type === 'SIZE')?.value || '';
+        const defaultMaterial = attrs.find((a) => a.type === 'MATERIAL')?.value || '';
+        const defaultQuality = attrs.find((a) => a.type === 'QUALITY')?.value || '';
         
         setSelections({
           size: defaultSize,
@@ -143,7 +144,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
 
   const currentImageUrl = allImages[currentImageIndex]?.url || '/placeholder.svg';
 
-  const groupedAttributes = config?.attributes.reduce((acc, attr) => {
+  const groupedAttributes = (config?.attributes || []).reduce((acc, attr) => {
     if (!acc[attr.type]) acc[attr.type] = [];
     acc[attr.type].push(attr);
     return acc;
