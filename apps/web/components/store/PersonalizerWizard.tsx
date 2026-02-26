@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { createClient } from '@/utils/supabase/client';
@@ -15,43 +15,45 @@ import {
   Leaf,
   ShoppingBag,
   Star,
-  Briefcase
+  Briefcase,
+  Box
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import { Product } from '@/types/product';
-import { CATALOG_ATTRIBUTES } from '@/utils/catalog-constants';
+
+interface WizardOption {
+  id: string;
+  category: string;
+  name: string;
+  code: string;
+  description?: string;
+  basePriceModifier: number;
+  allowedMaterialValues?: string[];
+}
+
+interface GroupedOptions {
+  LINE: WizardOption[];
+  DIMENSION: WizardOption[];
+  MATERIAL: WizardOption[];
+  QUALITY: WizardOption[];
+  TECHNIQUE: WizardOption[];
+}
 
 interface PersonalizerWizardProps {
   productId: string;
 }
 
-interface Attribute {
-  type: string;
-  value: string;
-  priceModifier: number;
-}
-
-interface ProductConfig {
-  productId: string;
-  attributes: Attribute[];
-  product?: Product;
-}
-
-interface PricingSnapshot {
-  configCode: string;
-  minPriceGuardApplied: boolean;
-  [key: string]: unknown;
-}
-
 type Step = 1 | 2 | 3 | 4 | 5;
 
-const LINES = [
-  { id: 'ECO', name: 'Línea ECO', icon: Leaf, description: 'Materiales reciclados y ecológicos.' },
-  { id: 'COMERCIAL', name: 'Línea COMERCIAL', icon: ShoppingBag, description: 'Ideal para retail y uso diario.' },
-  { id: 'PREMIUM', name: 'Línea PREMIUM', icon: Star, description: 'Alta gama con acabados de lujo.' },
-  { id: 'CORPORATIVA', name: 'Línea CORPORATIVA', icon: Briefcase, description: 'Producción masiva y B2B.' },
-];
+// Icon mapping helper
+const getLineIcon = (code: string) => {
+  if (code.includes('ECO')) return Leaf;
+  if (code.includes('COMERCIAL')) return ShoppingBag;
+  if (code.includes('PREMIUM')) return Star;
+  if (code.includes('CORPORATIVA')) return Briefcase;
+  return Box;
+};
 
 export default function PersonalizerWizard({ productId }: PersonalizerWizardProps) {
   const router = useRouter();
@@ -59,129 +61,114 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
   const supabase = createClient();
   
   const [step, setStep] = useState<Step>(1);
-  const [loading, setLoading] = useState(false);
+  const [loadingOptions, setLoadingOptions] = useState(true);
   const [isPricingLoading, setIsPricingLoading] = useState(false);
   
+  // Dynamic Options State
+  const [wizardOptions, setWizardOptions] = useState<GroupedOptions | null>(null);
+
   // Selection State
   const [selections, setSelections] = useState({
-    line: 'COMERCIAL',
+    line: '',
     size: '',
     material: '',
-    quality: '',
     quantity: 1,
-    markingType: 'Estampado',
+    markingType: '',
     designUrl: '',
   });
 
-  // Config State
-  const [config, setConfig] = useState<ProductConfig | null>(null);
   const [calculatedPrice, setCalculatedPrice] = useState(0);
-  const [pricingSnapshot, setPricingSnapshot] = useState<PricingSnapshot | null>(null);
+  const [configCode, setConfigCode] = useState('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
 
-  // Fetch Product Config
+  // 1. Fetch Dynamic Options
   useEffect(() => {
-    const fetchConfig = async () => {
-      setLoading(true);
+    const fetchOptions = async () => {
       try {
-        const res = await fetch(`${API_URL}/catalog/products/tote-bag-clasica/config`); 
-        if (!res.ok) throw new Error('Error al cargar configuración');
-        const body = await res.json();
-        const data = body.data; // Correctly extract the data from the ApiResponse wrapper
-        setConfig(data);
-        
-        // Initialize defaults with defensive checks
-        const attrs = (data.attributes as Attribute[]) || [];
-        const defaultSize = attrs.find((a) => a.type === 'SIZE')?.value || '';
-        const defaultMat = attrs.find((a) => a.type === 'MATERIAL')?.value || '';
-        const defaultQual = attrs.find((a) => a.type === 'QUALITY')?.value || '';
-        
+        setLoadingOptions(true);
+        const res = await fetch(`${API_URL}/wizard-options/grouped`);
+        if (!res.ok) throw new Error('Error al cargar opciones del configurador');
+        const resBody = await res.json();
+        const data = resBody.data as GroupedOptions;
+        setWizardOptions(data);
+
+        // Auto-select first options as defaults
         setSelections(prev => ({
           ...prev,
-          size: defaultSize,
-          material: defaultMat,
-          quality: defaultQual
+          line: data.LINE?.[0]?.code || '',
+          size: data.DIMENSION?.[0]?.name || '',
+          material: data.MATERIAL?.[0]?.name || '',
+          markingType: data.TECHNIQUE?.[0]?.code || '',
         }));
       } catch (err) {
         console.error(err);
-        toast.error('No se pudo cargar la configuración del producto');
+        toast.error('No se pudo inicializar el configurador');
       } finally {
-        setLoading(false);
+        setLoadingOptions(false);
       }
     };
-    fetchConfig();
+    fetchOptions();
   }, [API_URL]);
 
-  // Real-time Pricing
+  // 2. Real-time Pricing Logic
   const fetchPricing = useCallback(async () => {
-    if (!selections.size || !selections.material || !selections.quality) return;
+    if (!selections.size || !selections.material || !wizardOptions) return;
     
     setIsPricingLoading(true);
     try {
+      // We use the quote endpoint which is already designed for this
       const res = await fetch(`${API_URL}/pricing/quote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          productId: config?.productId || productId,
+          productId, // Standard ID or specific product
           ...selections,
           personalizations: selections.designUrl ? [{ code: 'LOGO', options: [selections.markingType] }] : []
         })
       });
       
-      if (!res.ok) throw new Error('Pricing error');
+      if (!res.ok) {
+        const errBody = await res.json();
+        console.error('[Pricing Error Details]:', errBody);
+        throw new Error(errBody.message || 'Pricing error');
+      }
       const body = await res.json();
-      const data = body.data;
-      setCalculatedPrice(data.unitPrice);
-      setPricingSnapshot(data.snapshot);
+      setCalculatedPrice(body.data.unitPrice);
+      setConfigCode(body.data.snapshot.configCode);
     } catch (err) {
       console.error(err);
     } finally {
       setIsPricingLoading(false);
     }
-  }, [API_URL, selections, productId, config?.productId]);
+  }, [API_URL, selections, productId, wizardOptions]);
 
   useEffect(() => {
-    if (step > 1) fetchPricing();
-  }, [fetchPricing, step, selections.quantity]);
+    if (step > 1 && wizardOptions) fetchPricing();
+  }, [fetchPricing, step, selections.quantity, wizardOptions]);
 
-  // File Upload
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Validation
     if (file.size > 5 * 1024 * 1024) {
       toast.error('El archivo supera los 5MB permitidos');
       return;
     }
 
-    setLoading(true);
+    setIsPricingLoading(true);
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `designs/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('product-assets')
-        .upload(fileName, file);
-
+      const { error: uploadError } = await supabase.storage.from('product-assets').upload(fileName, file);
       if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage
-        .from('product-assets')
-        .getPublicUrl(fileName);
-
-      if (!data?.publicUrl) throw new Error('No se pudo obtener la URL pública');
-
+      const { data } = supabase.storage.from('product-assets').getPublicUrl(fileName);
       setSelections(prev => ({ ...prev, designUrl: data.publicUrl }));
-      toast.success('Diseño cargado correctamente');
+      toast.success('Diseño cargado');
     } catch (err) {
-      console.error(err);
       toast.error('Error al subir el archivo');
     } finally {
-      setLoading(false);
+      setIsPricingLoading(false);
     }
   };
 
@@ -189,61 +176,34 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
   const prevStep = () => setStep(prev => (prev > 1 ? (prev - 1) as Step : prev));
 
   const handleFinish = () => {
-    const cartItemConfig = {
-      ...selections,
-      personalizations: selections.designUrl ? [{ code: 'LOGO', options: [selections.markingType, selections.designUrl] }] : []
-    };
-
     addToCart(
-      config?.product || ({ 
+      { 
         id: productId, 
         name: 'Tote Bag Personalizada', 
         basePrice: calculatedPrice,
         slug: 'custom-tote',
-        description: 'Tote bag personalizada',
+        description: 'Tote bag configurada dinámicamente',
         images: [],
         variants: [],
         tags: []
-      } as Product),
-      { sku: `CUSTOM-${pricingSnapshot?.configCode}`, color: 'Custom', imageUrl: selections.designUrl || '', stock: 999 },
+      } as unknown as Product,
+      { sku: `CUSTOM-${configCode}`, color: 'Custom', imageUrl: selections.designUrl || '', stock: 999 },
       selections.quantity,
-      cartItemConfig,
+      { ...selections, configCode },
       calculatedPrice,
-      pricingSnapshot?.configCode
+      configCode
     );
-    
-    toast.success('Configuración agregada al carrito');
     router.push('/checkout');
   };
 
-  if (loading && step === 1) {
+  if (loadingOptions) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 gap-4">
-        <Loader2 className="w-10 h-10 animate-spin text-primary" />
-        <p className="text-muted font-medium">Cargando configurador...</p>
+      <div className="w-full max-w-4xl mx-auto bg-surface border border-theme rounded-[2.5rem] flex flex-col items-center justify-center py-40 gap-4 shadow-xl">
+        <Loader2 className="w-12 h-12 animate-spin text-primary" />
+        <p className="text-sm font-black uppercase tracking-[0.2em] text-muted">Construyendo tu experiencia...</p>
       </div>
     );
   }
-
-  const groupedAttrs = config?.attributes?.reduce((acc: Record<string, Attribute[]>, attr) => {
-    if (!acc[attr.type]) acc[attr.type] = [];
-    acc[attr.type].push(attr);
-    return acc;
-  }, {}) || {};
-
-  // Fallbacks from constants
-  const sizeOptions = (groupedAttrs['SIZE']?.length > 0 
-    ? groupedAttrs['SIZE'] 
-    : CATALOG_ATTRIBUTES.SIZE.map(s => ({ type: 'SIZE', value: s, priceModifier: 0 })))
-    .filter(attr => attr.value !== 'Mini' && attr.value !== 'XL');
-
-  const materialOptions = groupedAttrs['MATERIAL']?.length > 0 
-    ? groupedAttrs['MATERIAL'] 
-    : CATALOG_ATTRIBUTES.MATERIAL.map(m => ({ type: 'MATERIAL', value: m, priceModifier: 0 }));
-
-  const qualityOptions = groupedAttrs['QUALITY']?.length > 0 
-    ? groupedAttrs['QUALITY'] 
-    : CATALOG_ATTRIBUTES.QUALITY.map(q => ({ type: 'QUALITY', value: q, priceModifier: 0 }));
 
   return (
     <div className="w-full max-w-4xl mx-auto bg-surface border border-theme rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col md:flex-row min-h-[600px]">
@@ -296,22 +256,25 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
                 <p className="text-muted text-sm">Cada línea define el propósito y acabado de tu tote bag.</p>
               </div>
               <div className="grid gap-4">
-                {LINES.map(line => (
-                  <button
-                    key={line.id}
-                    onClick={() => setSelections(prev => ({ ...prev, line: line.id }))}
-                    className={`flex items-center gap-6 p-6 rounded-2xl border-2 transition-all text-left group ${selections.line === line.id ? 'border-primary bg-primary/5' : 'border-theme hover:border-primary/30'}`}
-                  >
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${selections.line === line.id ? 'bg-primary text-white' : 'bg-base text-primary group-hover:bg-primary/10'}`}>
-                      <line.icon size={24} />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-primary">{line.name}</h4>
-                      <p className="text-xs text-muted">{line.description}</p>
-                    </div>
-                    {selections.line === line.id && <Check className="ml-auto text-primary" size={20} />}
-                  </button>
-                ))}
+                {wizardOptions?.LINE.map(line => {
+                  const Icon = getLineIcon(line.code);
+                  return (
+                    <button
+                      key={line.id}
+                      onClick={() => setSelections(prev => ({ ...prev, line: line.code }))}
+                      className={`flex items-center gap-6 p-6 rounded-2xl border-2 transition-all text-left group ${selections.line === line.code ? 'border-primary bg-primary/5' : 'border-theme hover:border-primary/30'}`}
+                    >
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${selections.line === line.code ? 'bg-primary text-white' : 'bg-base text-primary group-hover:bg-primary/10'}`}>
+                        <Icon size={24} />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-primary">{line.name}</h4>
+                        <p className="text-xs text-muted">{line.description}</p>
+                      </div>
+                      {selections.line === line.code && <Check className="ml-auto text-primary" size={20} />}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -324,49 +287,37 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
                 <p className="text-muted text-sm">Dimensiones adaptadas a cada necesidad.</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                {sizeOptions.map((attr: Attribute) => (
+                {wizardOptions?.DIMENSION.map(dim => (
                   <button
-                    key={attr.value}
-                    onClick={() => setSelections(prev => ({ ...prev, size: attr.value }))}
-                    className={`p-8 rounded-3xl border-2 flex flex-col items-center justify-center gap-4 transition-all ${selections.size === attr.value ? 'border-primary bg-primary/5' : 'border-theme hover:border-primary/30'}`}
+                    key={dim.id}
+                    onClick={() => setSelections(prev => ({ ...prev, size: dim.name }))}
+                    className={`p-8 rounded-3xl border-2 flex flex-col items-center justify-center gap-4 transition-all ${selections.size === dim.name ? 'border-primary bg-primary/5' : 'border-theme hover:border-primary/30'}`}
                   >
-                    <div className={`w-16 h-20 border-2 rounded-lg transition-all ${selections.size === attr.value ? 'border-primary bg-primary/20' : 'border-muted opacity-30'}`} style={{ transform: `scale(${attr.value === 'Pequeña' ? 0.7 : attr.value === 'Grande' ? 1.2 : 1})` }} />
-                    <span className="font-black uppercase tracking-widest text-[10px]">{attr.value}</span>
+                    <div 
+                      className={`w-16 h-20 border-2 rounded-lg transition-all ${selections.size === dim.name ? 'border-primary bg-primary/20' : 'border-muted opacity-30'}`} 
+                      style={{ transform: `scale(${dim.name.toLowerCase().includes('peque') ? 0.75 : dim.name.toLowerCase().includes('grand') ? 1.2 : 1})` }} 
+                    />
+                    <span className="font-black uppercase tracking-widest text-[10px]">{dim.name}</span>
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Step 3: Material & Quality */}
+          {/* Step 3: Material */}
           {step === 3 && (
             <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-500">
               <section className="space-y-4">
-                <h4 className="text-xs font-black uppercase tracking-widest text-primary">Material Base</h4>
-                <div className="flex flex-wrap gap-3">
-                  {materialOptions.map((attr: Attribute) => (
+                <h3 className="text-2xl font-serif text-primary mb-2">Material Base</h3>
+                <p className="text-muted text-sm">Elige la textura y resistencia para tu tote bag.</p>
+                <div className="flex flex-wrap gap-3 mt-6">
+                  {wizardOptions?.MATERIAL.map(mat => (
                     <button
-                      key={attr.value}
-                      onClick={() => setSelections(prev => ({ ...prev, material: attr.value }))}
-                      className={`px-6 py-3 rounded-full border-2 font-bold text-xs transition-all ${selections.material === attr.value ? 'bg-primary border-primary text-white' : 'border-theme text-muted'}`}
+                      key={mat.id}
+                      onClick={() => setSelections(prev => ({ ...prev, material: mat.name }))}
+                      className={`px-6 py-3 rounded-full border-2 font-bold text-xs transition-all ${selections.material === mat.name ? 'bg-primary border-primary text-white' : 'border-theme text-muted'}`}
                     >
-                      {attr.value}
-                    </button>
-                  ))}
-                </div>
-              </section>
-
-              <section className="space-y-4">
-                <h4 className="text-xs font-black uppercase tracking-widest text-primary">Calidad de Confección</h4>
-                <div className="grid gap-3">
-                  {qualityOptions.map((attr: Attribute) => (
-                    <button
-                      key={attr.value}
-                      onClick={() => setSelections(prev => ({ ...prev, quality: attr.value }))}
-                      className={`p-5 rounded-2xl border-2 flex items-center justify-between transition-all ${selections.quality === attr.value ? 'border-secondary bg-secondary/5' : 'border-theme'}`}
-                    >
-                      <span className="font-bold">{attr.value}</span>
-                      {attr.priceModifier > 0 && <span className="text-[10px] font-black text-secondary">+{attr.priceModifier.toLocaleString('es-CO')}</span>}
+                      {mat.name}
                     </button>
                   ))}
                 </div>
@@ -410,16 +361,36 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
 
               <div className="space-y-4">
                 <h4 className="text-xs font-black uppercase tracking-widest text-primary">Técnica de Marcado</h4>
-                <div className="flex gap-4">
-                  {['Estampado', 'Bordado'].map(t => (
-                    <button
-                      key={t}
-                      onClick={() => setSelections(prev => ({ ...prev, markingType: t }))}
-                      className={`flex-1 py-4 rounded-2xl border-2 font-bold transition-all ${selections.markingType === t ? 'border-primary bg-primary text-white shadow-lg shadow-primary/20' : 'border-theme text-muted'}`}
-                    >
-                      {t}
-                    </button>
-                  ))}
+                <div className="flex flex-wrap gap-4">
+                  {(() => {
+                    const available = wizardOptions?.TECHNIQUE.filter(t => 
+                      !t.allowedMaterialValues || 
+                      t.allowedMaterialValues.length === 0 || 
+                      t.allowedMaterialValues.includes(selections.material)
+                    ) || [];
+
+                    if (available.length === 0) {
+                      return (
+                        <div className="w-full p-6 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3">
+                          <AlertCircle className="text-red-500 shrink-0" size={18} />
+                          <p className="text-xs font-medium text-red-700">
+                            No hay técnicas de personalización compatibles con el material seleccionado ({selections.material}). 
+                            Por favor regresa al paso anterior y elige otro material.
+                          </p>
+                        </div>
+                      );
+                    }
+
+                    return available.map(t => (
+                      <button
+                        key={t.id}
+                        onClick={() => setSelections(prev => ({ ...prev, markingType: t.code }))}
+                        className={`flex-1 min-w-[140px] py-4 rounded-2xl border-2 font-bold transition-all ${selections.markingType === t.code ? 'border-primary bg-primary text-white shadow-lg shadow-primary/20' : 'border-theme text-muted'}`}
+                      >
+                        {t.name}
+                      </button>
+                    ));
+                  })()}
                 </div>
               </div>
             </div>
@@ -438,7 +409,12 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
                   <div><p className="text-[9px] font-black uppercase text-muted tracking-[0.2em] mb-1">Línea</p><p className="font-bold text-primary">{selections.line}</p></div>
                   <div><p className="text-[9px] font-black uppercase text-muted tracking-[0.2em] mb-1">Tamaño</p><p className="font-bold text-primary">{selections.size}</p></div>
                   <div><p className="text-[9px] font-black uppercase text-muted tracking-[0.2em] mb-1">Material</p><p className="font-bold text-primary">{selections.material}</p></div>
-                  <div><p className="text-[9px] font-black uppercase text-muted tracking-[0.2em] mb-1">Calidad</p><p className="font-bold text-primary">{selections.quality}</p></div>
+                  <div>
+                    <p className="text-[9px] font-black uppercase text-muted tracking-[0.2em] mb-1">Técnica</p>
+                    <p className="font-bold text-primary">
+                      {wizardOptions?.TECHNIQUE.find(t => t.code === selections.markingType)?.name || selections.markingType}
+                    </p>
+                  </div>
                 </div>
                 
                 <div className="pt-6 border-t border-theme flex items-center justify-between">
@@ -459,18 +435,11 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
                   </div>
                 </div>
               </div>
-
-              {pricingSnapshot?.minPriceGuardApplied && (
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex gap-3 text-amber-800 text-[11px] font-medium leading-relaxed">
-                  <AlertCircle size={18} className="shrink-0" />
-                  Se ha aplicado la tarifa base mínima de producción para esta configuración.
-                </div>
-              )}
             </div>
           )}
         </div>
 
-        {/* Footer Navigation - Sticky on Mobile */}
+        {/* Footer Navigation */}
         <div className="mt-auto flex gap-4 pt-8 border-t border-theme bg-surface sticky bottom-0 left-0 right-0 md:relative z-20 pb-4 md:pb-0">
           {step > 1 && (
             <button
@@ -483,7 +452,7 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
           {step < 5 ? (
             <button
               onClick={nextStep}
-              disabled={isPricingLoading || (step === 2 && !selections.size) || (step === 3 && (!selections.material || !selections.quality))}
+              disabled={isPricingLoading || (step === 2 && !selections.size) || (step === 3 && !selections.material)}
               className="flex-1 px-8 py-4 bg-primary text-base-color rounded-2xl font-black uppercase tracking-widest text-[10px] hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-xl shadow-primary/20 disabled:opacity-50"
             >
               Continuar <ChevronRight size={16} />

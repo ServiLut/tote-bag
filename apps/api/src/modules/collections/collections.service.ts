@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCollectionDto } from './dto/create-collection.dto';
+import { UpdateCollectionDto } from './dto/update-collection.dto';
 import { Prisma } from '../../generated/client/client';
 
 @Injectable()
@@ -36,6 +37,27 @@ export class CollectionsService {
         throw new ConflictException(
           'A collection with this slug already exists',
         );
+      }
+      throw error;
+    }
+  }
+
+  async update(id: string, updateCollectionDto: UpdateCollectionDto) {
+    try {
+      return await this.prisma.collection.update({
+        where: { id },
+        data: updateCollectionDto,
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          throw new ConflictException(
+            'A collection with this slug already exists',
+          );
+        }
+        if (error.code === 'P2025') {
+          throw new NotFoundException(`Collection with ID ${id} not found`);
+        }
       }
       throw error;
     }

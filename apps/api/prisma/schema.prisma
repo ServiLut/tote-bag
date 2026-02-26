@@ -401,3 +401,31 @@ enum PriceRuleScope {
 
   @@schema("tote-bag")
 }
+
+enum WizardCategory {
+  LINE
+  DIMENSION
+  MATERIAL
+  QUALITY
+  TECHNIQUE
+
+  @@schema("tote-bag")
+}
+
+model WizardOption {
+  id                 String         @id @default(uuid()) @map("id")
+  category           WizardCategory @map("category")
+  name               String         @map("name")
+  code               String         @unique @map("code")
+  description        String?        @map("description")
+  basePriceModifier  Float          @default(0) @map("base_price_modifier")
+  isActive           Boolean        @default(true) @map("is_active")
+  sortOrder          Int            @default(0) @map("sort_order")
+  allowedMaterialValues String[]    @default([]) @map("allowed_material_values")
+  metadata           Json?          @map("metadata")
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+
+  @@map("wizard_options")
+  @@schema("tote-bag")
+}

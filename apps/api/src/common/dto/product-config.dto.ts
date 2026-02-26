@@ -10,12 +10,6 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-export enum ProductLine {
-  BASICA = 'BASICA',
-  ESTANDAR = 'ESTANDAR',
-  PREMIUM = 'PREMIUM',
-}
-
 export class PersonalizationInputDto {
   @IsString()
   @IsNotEmpty()
@@ -36,9 +30,9 @@ export class ProductConfigInputDto {
   @IsOptional()
   variantId?: string;
 
-  @IsEnum(ProductLine)
+  @IsString()
   @IsNotEmpty()
-  line: ProductLine;
+  line: string;
 
   @IsString()
   @IsNotEmpty()
@@ -49,8 +43,8 @@ export class ProductConfigInputDto {
   material: string;
 
   @IsString()
-  @IsNotEmpty()
-  quality: string;
+  @IsOptional()
+  quality?: string;
 
   @IsNumber()
   @Min(1)

@@ -57,6 +57,19 @@ export class PricingService {
 
     let unitPrice = product.basePrice;
 
+    // Fetch dynamic wizard options for modifiers
+    const wizardOptions = await this.prisma.wizardOption.findMany({
+      where: {
+        isActive: true,
+        OR: [
+          { category: 'LINE', code: input.line },
+          { category: 'DIMENSION', name: input.size },
+          { category: 'MATERIAL', name: input.material },
+          input.quality ? { category: 'QUALITY', name: input.quality } : undefined,
+        ].filter(Boolean) as any,
+      },
+    });
+
     const inputAttributes = [
       { type: 'SIZE', value: input.size },
       { type: 'MATERIAL', value: input.material },
@@ -67,6 +80,7 @@ export class PricingService {
     for (const inputAttr of inputAttributes) {
       if (!inputAttr.value) continue;
 
+      // 1. Try to find product-specific attribute first
       const matchingAttr = product.attributes.find(
         (a) => a.type === inputAttr.type && a.value === inputAttr.value,
       );
@@ -78,20 +92,44 @@ export class PricingService {
           name: inputAttr.value,
           modifier: matchingAttr.priceModifier,
         });
+      } else {
+        // 2. Fallback to global WizardOption modifier
+        const globalOpt = wizardOptions.find((o) => 
+          (o.category === inputAttr.type && (o.name === inputAttr.value || o.code === inputAttr.value)) ||
+          (o.category === 'DIMENSION' && inputAttr.type === 'SIZE' && o.name === inputAttr.value)
+        );
+
+        if (globalOpt && globalOpt.basePriceModifier !== 0) {
+          unitPrice += globalOpt.basePriceModifier;
+          snapshot.attributeModifiers.push({
+            type: inputAttr.type,
+            name: inputAttr.value,
+            modifier: globalOpt.basePriceModifier,
+          });
+        }
       }
     }
 
-    // Personalization logic
+    // Personalization logic using both systems for compatibility
     if (input.personalizations && input.personalizations.length > 0) {
       const personalizationCodes = input.personalizations.map((p) => p.code);
-      const options = await this.prisma.personalizationOption.findMany({
-        where: { code: { in: personalizationCodes }, isActive: true },
-      });
+      
+      // Try both tables
+      const [pOptions, wOptions] = await Promise.all([
+        this.prisma.personalizationOption.findMany({
+          where: { code: { in: personalizationCodes }, isActive: true },
+        }),
+        this.prisma.wizardOption.findMany({
+          where: { category: 'TECHNIQUE', code: { in: personalizationCodes }, isActive: true },
+        })
+      ]);
 
       for (const p of input.personalizations) {
-        const option = options.find((o) => o.code === p.code);
+        const option = pOptions.find((o) => o.code === p.code);
+        const wizardOpt = wOptions.find((o) => o.code === p.code);
+
         if (option) {
-          // Rule validation & Compatibility Check
+          // Legacy logic for PersonalizationOption
           const rule = await this.prisma.personalizationRule.findFirst({
             where: {
               productId: product.id,
@@ -100,35 +138,38 @@ export class PricingService {
             },
           });
 
-          if (!rule) {
-            throw new BadRequestException(
-              `La personalización '${option.name}' no está habilitada para este producto.`,
-            );
+          if (rule) {
+            const effectiveAllowedMaterials =
+              rule.allowedMaterialValues && rule.allowedMaterialValues.length > 0
+                ? rule.allowedMaterialValues
+                : option.allowedMaterialValues;
+
+            if (
+              !effectiveAllowedMaterials ||
+              effectiveAllowedMaterials.length === 0 ||
+              effectiveAllowedMaterials.includes(input.material)
+            ) {
+              const surcharge = option.basePrice + rule.extraPrice;
+              unitPrice += surcharge;
+              snapshot.personalizationSurcharges.push({
+                code: p.code,
+                surcharge: surcharge,
+              });
+            }
           }
-
-          // Check material compatibility (Inherit global rules if product rule is empty)
-          const effectiveAllowedMaterials =
-            rule.allowedMaterialValues && rule.allowedMaterialValues.length > 0
-              ? rule.allowedMaterialValues
-              : option.allowedMaterialValues;
-
+        } else if (wizardOpt) {
+          // Dynamic logic for WizardOption (TECHNIQUE)
           if (
-            effectiveAllowedMaterials &&
-            effectiveAllowedMaterials.length > 0 &&
-            !effectiveAllowedMaterials.includes(input.material)
+            !wizardOpt.allowedMaterialValues ||
+            wizardOpt.allowedMaterialValues.length === 0 ||
+            wizardOpt.allowedMaterialValues.includes(input.material)
           ) {
-            throw new BadRequestException(
-              `La técnica '${option.name}' no es compatible con el material '${input.material}'.`,
-            );
+            unitPrice += wizardOpt.basePriceModifier;
+            snapshot.personalizationSurcharges.push({
+              code: p.code,
+              surcharge: wizardOpt.basePriceModifier,
+            });
           }
-
-          const surcharge = option.basePrice + rule.extraPrice;
-          unitPrice += surcharge;
-
-          snapshot.personalizationSurcharges.push({
-            code: p.code,
-            surcharge: surcharge,
-          });
         }
       }
     }

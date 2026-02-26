@@ -6,7 +6,7 @@ export interface ConfigurationSnapshot {
   line: string;
   size: string;
   material: string;
-  quality: string;
+  quality?: string;
   personalizations: Array<{
     code: string;
     options: string[];

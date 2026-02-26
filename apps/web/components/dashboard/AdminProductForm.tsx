@@ -6,6 +6,7 @@ import { Plus, Trash2, AlertCircle, UploadCloud, Loader2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import Image from 'next/image';
+import Link from 'next/link';
 import { ApiResponse } from '@/types/api';
 import { toast } from 'sonner';
 import { Combobox } from '@/components/ui/Combobox';
@@ -578,7 +579,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
             {/* Images List */}
             {formData.images.filter(img => img.url && img.url.trim() !== '').map((img, idx) => (
               <div key={idx} className="relative w-24 h-24 flex-shrink-0 bg-base border border-theme rounded-xl overflow-hidden group shadow-sm">
-                <Image src={img.url || '/placeholder.svg'} alt={`Preview ${idx}`} fill className="object-cover" unoptimized />
+                <Image src={img.url || '/placeholder.svg'} alt={`Preview ${idx}`} fill className="object-cover" />
                 <button
                   type="button"
                   onClick={() => removeImage(idx)}
@@ -1105,7 +1106,13 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
 
         <hr className="border-theme" />
 
-        <div className="pt-8 flex justify-end">
+        <div className="pt-8 flex justify-end gap-4">
+          <Link
+            href="/dashboard/products"
+            className="px-8 py-4 border border-theme text-primary font-black uppercase tracking-[0.2em] text-xs rounded-2xl hover:bg-base active:scale-95 transition-all"
+          >
+            Volver a productos
+          </Link>
           <button
             type="submit"
             disabled={isSubmitting}

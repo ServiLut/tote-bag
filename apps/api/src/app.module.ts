@@ -24,6 +24,7 @@ import { CartModule } from './modules/cart/cart.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { PersonalizationsModule } from './modules/personalizations/personalizations.module';
 import { CollectionsModule } from './modules/collections/collections.module';
+import { WizardModule } from './modules/wizard/wizard.module';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthMiddleware } from './common/middleware/auth.middleware';
@@ -89,6 +90,7 @@ import envValidationSchema from './config/env.validation';
     AdminModule,
     PersonalizationsModule,
     CollectionsModule,
+    WizardModule,
   ],
   controllers: [AppController],
   providers: [

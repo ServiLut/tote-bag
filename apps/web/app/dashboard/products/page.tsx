@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import ProductsTable from '@/components/dashboard/ProductsTable';
 import CollectionsManager from '@/components/dashboard/CollectionsManager';
-import PersonalizationManager from '@/components/dashboard/PersonalizationManager';
+import WizardConfigManager from '@/components/dashboard/WizardConfigManager';
+import FabricCompatibilityMatrix from '@/components/dashboard/FabricCompatibilityMatrix';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
@@ -43,7 +44,8 @@ export default function ProductsDashboardPage() {
         <TabsList className="mb-8">
           <TabsTrigger value="productos">Catálogo</TabsTrigger>
           <TabsTrigger value="colecciones">Colecciones</TabsTrigger>
-          <TabsTrigger value="personalizaciones">Personalizaciones</TabsTrigger>
+          <TabsTrigger value="configuracion">Configuración Técnica</TabsTrigger>
+          <TabsTrigger value="matriz">Matriz de Compatibilidad</TabsTrigger>
         </TabsList>
 
         <TabsContent value="productos" className="bg-surface rounded-3xl border border-theme shadow-sm overflow-hidden">
@@ -54,8 +56,12 @@ export default function ProductsDashboardPage() {
           <CollectionsManager />
         </TabsContent>
 
-        <TabsContent value="personalizaciones" className="bg-surface rounded-3xl border border-theme shadow-sm overflow-hidden">
-          <PersonalizationManager />
+        <TabsContent value="configuracion" className="bg-surface rounded-3xl border border-theme shadow-sm overflow-hidden p-8">
+          <WizardConfigManager />
+        </TabsContent>
+
+        <TabsContent value="matriz" className="bg-surface rounded-3xl border border-theme shadow-sm overflow-hidden p-8">
+          <FabricCompatibilityMatrix />
         </TabsContent>
       </Tabs>
     </div>
