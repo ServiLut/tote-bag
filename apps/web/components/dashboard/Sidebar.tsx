@@ -14,7 +14,8 @@ import {
   Moon,
   X,
   ShieldCheck,
-  Settings
+  Settings,
+  Sparkles
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
@@ -26,6 +27,7 @@ const menuItems = [
   { name: 'Productos', href: '/dashboard/products', icon: Package },
   { name: 'Clientes', href: '/dashboard/customers', icon: Users },
   { name: 'Corporativo (B2B)', href: '/dashboard/b2b', icon: Briefcase },
+  { name: 'Personalizaciones', href: '/dashboard/personalizaciones', icon: Sparkles },
   { name: 'Auditoría', href: '/dashboard/audit', icon: ShieldCheck },
   { name: 'Configuración', href: '/dashboard/settings', icon: Settings },
 ];

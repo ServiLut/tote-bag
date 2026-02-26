@@ -15,7 +15,7 @@ try {
 
 const pool = new pg.Pool({
   connectionString,
-  ssl: { rejectUnauthorized: false }
+  ssl: false
 });
 
 async function main() {

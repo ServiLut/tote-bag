@@ -20,6 +20,7 @@ import {
 import { toast } from 'sonner';
 import Image from 'next/image';
 import { Product } from '@/types/product';
+import { CATALOG_ATTRIBUTES } from '@/utils/catalog-constants';
 
 interface PersonalizerWizardProps {
   productId: string;
@@ -79,7 +80,7 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
 
   // Fetch Product Config
   useEffect(() => {
@@ -88,7 +89,8 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
       try {
         const res = await fetch(`${API_URL}/catalog/products/tote-bag-clasica/config`); 
         if (!res.ok) throw new Error('Error al cargar configuración');
-        const data = await res.json();
+        const body = await res.json();
+        const data = body.data; // Correctly extract the data from the ApiResponse wrapper
         setConfig(data);
         
         // Initialize defaults with defensive checks
@@ -130,7 +132,8 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
       });
       
       if (!res.ok) throw new Error('Pricing error');
-      const data = await res.json();
+      const body = await res.json();
+      const data = body.data;
       setCalculatedPrice(data.unitPrice);
       setPricingSnapshot(data.snapshot);
     } catch (err) {
@@ -170,6 +173,8 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
         .from('product-assets')
         .getPublicUrl(fileName);
 
+      if (!data?.publicUrl) throw new Error('No se pudo obtener la URL pública');
+
       setSelections(prev => ({ ...prev, designUrl: data.publicUrl }));
       toast.success('Diseño cargado correctamente');
     } catch (err) {
@@ -190,7 +195,16 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
     };
 
     addToCart(
-      config?.product || { id: productId, name: 'Tote Bag Personalizada', basePrice: calculatedPrice },
+      config?.product || ({ 
+        id: productId, 
+        name: 'Tote Bag Personalizada', 
+        basePrice: calculatedPrice,
+        slug: 'custom-tote',
+        description: 'Tote bag personalizada',
+        images: [],
+        variants: [],
+        tags: []
+      } as Product),
       { sku: `CUSTOM-${pricingSnapshot?.configCode}`, color: 'Custom', imageUrl: selections.designUrl || '', stock: 999 },
       selections.quantity,
       cartItemConfig,
@@ -216,6 +230,20 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
     acc[attr.type].push(attr);
     return acc;
   }, {}) || {};
+
+  // Fallbacks from constants
+  const sizeOptions = (groupedAttrs['SIZE']?.length > 0 
+    ? groupedAttrs['SIZE'] 
+    : CATALOG_ATTRIBUTES.SIZE.map(s => ({ type: 'SIZE', value: s, priceModifier: 0 })))
+    .filter(attr => attr.value !== 'Mini' && attr.value !== 'XL');
+
+  const materialOptions = groupedAttrs['MATERIAL']?.length > 0 
+    ? groupedAttrs['MATERIAL'] 
+    : CATALOG_ATTRIBUTES.MATERIAL.map(m => ({ type: 'MATERIAL', value: m, priceModifier: 0 }));
+
+  const qualityOptions = groupedAttrs['QUALITY']?.length > 0 
+    ? groupedAttrs['QUALITY'] 
+    : CATALOG_ATTRIBUTES.QUALITY.map(q => ({ type: 'QUALITY', value: q, priceModifier: 0 }));
 
   return (
     <div className="w-full max-w-4xl mx-auto bg-surface border border-theme rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col md:flex-row min-h-[600px]">
@@ -296,13 +324,13 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
                 <p className="text-muted text-sm">Dimensiones adaptadas a cada necesidad.</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                {groupedAttrs['SIZE']?.map((attr: Attribute) => (
+                {sizeOptions.map((attr: Attribute) => (
                   <button
                     key={attr.value}
                     onClick={() => setSelections(prev => ({ ...prev, size: attr.value }))}
                     className={`p-8 rounded-3xl border-2 flex flex-col items-center justify-center gap-4 transition-all ${selections.size === attr.value ? 'border-primary bg-primary/5' : 'border-theme hover:border-primary/30'}`}
                   >
-                    <div className={`w-16 h-20 border-2 rounded-lg transition-all ${selections.size === attr.value ? 'border-primary bg-primary/20' : 'border-muted opacity-30'}`} style={{ transform: `scale(${attr.value === 'Mini' ? 0.7 : attr.value === 'XL' ? 1.2 : 1})` }} />
+                    <div className={`w-16 h-20 border-2 rounded-lg transition-all ${selections.size === attr.value ? 'border-primary bg-primary/20' : 'border-muted opacity-30'}`} style={{ transform: `scale(${attr.value === 'Pequeña' ? 0.7 : attr.value === 'Grande' ? 1.2 : 1})` }} />
                     <span className="font-black uppercase tracking-widest text-[10px]">{attr.value}</span>
                   </button>
                 ))}
@@ -316,7 +344,7 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
               <section className="space-y-4">
                 <h4 className="text-xs font-black uppercase tracking-widest text-primary">Material Base</h4>
                 <div className="flex flex-wrap gap-3">
-                  {groupedAttrs['MATERIAL']?.map((attr: Attribute) => (
+                  {materialOptions.map((attr: Attribute) => (
                     <button
                       key={attr.value}
                       onClick={() => setSelections(prev => ({ ...prev, material: attr.value }))}
@@ -331,7 +359,7 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
               <section className="space-y-4">
                 <h4 className="text-xs font-black uppercase tracking-widest text-primary">Calidad de Confección</h4>
                 <div className="grid gap-3">
-                  {groupedAttrs['QUALITY']?.map((attr: Attribute) => (
+                  {qualityOptions.map((attr: Attribute) => (
                     <button
                       key={attr.value}
                       onClick={() => setSelections(prev => ({ ...prev, quality: attr.value }))}

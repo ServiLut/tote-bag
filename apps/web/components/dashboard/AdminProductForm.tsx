@@ -183,7 +183,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
   useEffect(() => {
     const fetchOptions = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
         const res = await fetch(`${apiUrl}/pricing/personalization-options`);
         if (res.ok) {
           const body = await res.json();
@@ -209,26 +209,13 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
             { 
               personalizationId: opt.id, 
               personalizationCode: opt.code, 
-              allowedMaterialValues: [...CATALOG_ATTRIBUTES.MATERIAL], // Default to all
+              allowedMaterialValues: [], // Inherit global
               isActive: true 
             }
           ]
         };
       }
     });
-  };
-
-  const toggleMaterial = (personalizationId: string, material: string) => {
-    setFormData(prev => ({
-      ...prev,
-      personalizations: prev.personalizations.map(p => {
-        if (p.personalizationId !== personalizationId) return p;
-        const materials = p.allowedMaterialValues.includes(material)
-          ? p.allowedMaterialValues.filter(m => m !== material)
-          : [...p.allowedMaterialValues, material];
-        return { ...p, allowedMaterialValues: materials };
-      })
-    }));
   };
 
   // Derived state for validation
@@ -454,7 +441,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
     setIsSubmitting(true);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
 
       // 1. Clean Variants: Remove IDs and other metadata
       const cleanVariants = formData.variants.map(v => ({
@@ -1150,41 +1137,28 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
                       <span className="text-sm font-black text-primary">{opt.name}</span>
                       <span className="text-[10px] font-bold text-muted uppercase tracking-widest">Base: ${opt.basePrice.toLocaleString()}</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => togglePersonalization(opt)}
-                      className={cn(
-                        "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
-                        isActive ? "bg-primary text-white" : "bg-white border border-theme text-muted"
-                      )}
-                    >
-                      {isActive ? 'Habilitado' : 'Deshabilitado'}
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={isActive}
+                        onChange={() => togglePersonalization(opt)}
+                        className="w-5 h-5 rounded border-theme text-primary focus:ring-primary/20 cursor-pointer"
+                        id={`personalization-${opt.id}`}
+                      />
+                      <label 
+                        htmlFor={`personalization-${opt.id}`}
+                        className="text-[10px] font-black uppercase tracking-widest cursor-pointer"
+                      >
+                        {isActive ? 'Habilitado' : 'Habilitar'}
+                      </label>
+                    </div>
                   </div>
 
                   {isActive && (
-                    <div className="space-y-3 pt-4 border-t border-primary/10">
-                      <label className="text-[9px] font-black uppercase tracking-widest text-muted block mb-2">Materiales Compatibles:</label>
-                      <div className="flex flex-wrap gap-2">
-                        {CATALOG_ATTRIBUTES.MATERIAL.map((mat) => {
-                          const isMatAllowed = rule.allowedMaterialValues.includes(mat);
-                          return (
-                            <button
-                              key={mat}
-                              type="button"
-                              onClick={() => toggleMaterial(opt.id, mat)}
-                              className={cn(
-                                "px-3 py-1.5 rounded-md text-[10px] font-bold transition-all border",
-                                isMatAllowed 
-                                  ? "bg-white border-primary text-primary shadow-sm" 
-                                  : "bg-transparent border-theme/50 text-muted opacity-50"
-                              )}
-                            >
-                              {mat}
-                            </button>
-                          );
-                        })}
-                      </div>
+                    <div className="space-y-3 pt-3 border-t border-primary/10">
+                      <p className="text-[9px] font-bold text-primary/60 italic uppercase tracking-widest">
+                        Se aplican las restricciones de material configuradas globalmente.
+                      </p>
                     </div>
                   )}
                 </div>

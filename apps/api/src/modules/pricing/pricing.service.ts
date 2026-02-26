@@ -106,11 +106,15 @@ export class PricingService {
             );
           }
 
-          // Check material compatibility if rule defines restricted materials
+          // Check material compatibility (Inherit global rules if product rule is empty)
+          const effectiveAllowedMaterials = (rule.allowedMaterialValues && rule.allowedMaterialValues.length > 0)
+            ? rule.allowedMaterialValues
+            : option.allowedMaterialValues;
+
           if (
-            rule.allowedMaterialValues &&
-            rule.allowedMaterialValues.length > 0 &&
-            !rule.allowedMaterialValues.includes(input.material)
+            effectiveAllowedMaterials &&
+            effectiveAllowedMaterials.length > 0 &&
+            !effectiveAllowedMaterials.includes(input.material)
           ) {
             throw new BadRequestException(
               `La técnica '${option.name}' no es compatible con el material '${input.material}'.`,

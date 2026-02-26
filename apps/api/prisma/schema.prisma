@@ -31,12 +31,12 @@ model Product {
   isActive             Boolean               @default(true) @map("is_active")
   createdAt            DateTime              @default(now()) @map("created_at")
   updatedAt            DateTime              @updatedAt @map("updated_at")
+  quoteItems           B2BQuoteItem[]
+  orderItems           OrderItem[]
+  personalizationRules PersonalizationRule[]
+  pricingRules         PricingRule[]
   attributes           ProductAttribute[]
   images               ProductImage[]
-  orderItems           OrderItem[]
-  pricingRules         PricingRule[]
-  personalizationRules PersonalizationRule[]
-  quoteItems           B2BQuoteItem[]
   collection           Collection            @relation(fields: [collectionId], references: [id])
   variants             Variant[]
 
@@ -120,7 +120,6 @@ model OrderStatusHistory {
 model OrderItem {
   id                String   @id @default(uuid()) @map("id")
   quantity          Int      @map("quantity")
-  unitPrice         Float    @map("unit_price")
   totalPrice        Float    @default(0) @map("total_price")
   sku               String   @map("sku")
   configurationJson Json?    @map("configuration_json")
@@ -128,6 +127,7 @@ model OrderItem {
   orderId           String   @map("order_id")
   productId         String   @map("product_id")
   variantId         String?  @map("variant_id")
+  unitPrice         Float    @default(0) @map("unit_price")
   order             Order    @relation(fields: [orderId], references: [id])
   product           Product  @relation(fields: [productId], references: [id])
   variant           Variant? @relation(fields: [variantId], references: [id])
@@ -267,10 +267,10 @@ model ProductAttribute {
   id            String        @id @default(uuid()) @map("id")
   productId     String        @map("product_id")
   type          AttributeType @map("type")
-  value         String        @map("value")
-  sortOrder     Int           @default(0) @map("sort_order")
   priceModifier Float         @default(0) @map("price_modifier")
   isActive      Boolean       @default(true) @map("is_active")
+  sortOrder     Int           @default(0) @map("sort_order")
+  value         String        @default("") @map("value")
   product       Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId, type])
@@ -279,13 +279,14 @@ model ProductAttribute {
 }
 
 model PersonalizationOption {
-  id          String                @id @default(uuid()) @map("id")
-  code        String                @unique @map("code")
-  name        String                @map("name")
-  description String?               @map("description")
-  basePrice   Float                 @map("base_price")
-  isActive    Boolean               @default(true) @map("is_active")
-  rules       PersonalizationRule[]
+  id                    String                @id @default(uuid()) @map("id")
+  code                  String                @unique @map("code")
+  name                  String                @map("name")
+  description           String?               @map("description")
+  basePrice             Float                 @map("base_price")
+  isActive              Boolean               @default(true) @map("is_active")
+  allowedMaterialValues String[]              @default([]) @map("allowed_material_values")
+  rules                 PersonalizationRule[]
 
   @@map("personalization_options")
   @@schema("tote-bag")
@@ -301,8 +302,8 @@ model PersonalizationRule {
   extraPrice            Float                 @default(0) @map("extra_price")
   extraDays             Int                   @default(0) @map("extra_days")
   isActive              Boolean               @default(true) @map("is_active")
-  product               Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
   personalization       PersonalizationOption @relation(fields: [personalizationId], references: [id], onDelete: Cascade)
+  product               Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
   @@index([personalizationId])
@@ -312,13 +313,13 @@ model PersonalizationRule {
 
 model PricingRule {
   id             String         @id @default(uuid()) @map("id")
-  scope          PriceRuleScope @map("scope")
   productId      String         @map("product_id")
-  minQty         Int            @map("min_qty")
-  maxQty         Int?           @map("max_qty")
   discountPct    Int?           @map("discount_pct")
   fixedUnitPrice Float?         @map("fixed_unit_price")
   isActive       Boolean        @default(true) @map("is_active")
+  maxQty         Int?           @map("max_qty")
+  minQty         Int            @default(1) @map("min_qty")
+  scope          PriceRuleScope @default(B2C) @map("scope")
   product        Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId, scope])
@@ -332,8 +333,8 @@ model B2BQuoteItem {
   productId         String   @map("product_id")
   quantity          Int      @map("quantity")
   configurationJson Json     @map("configuration_json")
-  targetUnitPrice   Float?   @map("target_unit_price")
   notes             String?  @map("notes")
+  targetUnitPrice   Float?   @map("target_unit_price")
   product           Product  @relation(fields: [productId], references: [id])
   quote             B2BQuote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
 
