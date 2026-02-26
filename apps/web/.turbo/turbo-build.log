@@ -6,7 +6,7 @@
 - Environments: .env
 
   Creating an optimized production build ...
-✓ Compiled successfully in 10.5s
+✓ Compiled successfully in 12.7s
   Running TypeScript ...
   Collecting page data using 7 workers ...
   Generating static pages using 7 workers (0/28) ...
@@ -19,7 +19,7 @@ Error fetching dashboard stats: Error: Dynamic server usage: Route /dashboard co
   digest: 'DYNAMIC_SERVER_USAGE'
 }
   Generating static pages using 7 workers (21/28) 
-✓ Generating static pages using 7 workers (28/28) in 1123.5ms
+✓ Generating static pages using 7 workers (28/28) in 736.0ms
   Finalizing page optimization ...
 
 Route (app)

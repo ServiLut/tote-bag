@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpdatePersonalizationDto } from './dto/update-personalization.dto';
+import { CreatePersonalizationDto } from './dto/create-personalization.dto';
 import { Prisma } from '../../generated/client/client';
 
 @Injectable()
@@ -15,6 +16,28 @@ export class PersonalizationsService {
       return options;
     } catch (error) {
       console.error('[PersonalizationsService] Error in findAll:', error);
+      throw error;
+    }
+  }
+
+  async create(data: CreatePersonalizationDto) {
+    try {
+      // Generate code from name if not provided
+      const code = data.code || data.name.toUpperCase().replace(/\s+/g, '_').replace(/[^\w-]/g, '');
+      
+      return await this.prisma.personalizationOption.create({
+        data: {
+          name: data.name,
+          code,
+          basePrice: data.basePrice,
+          allowedMaterialValues: data.allowedMaterialValues || [],
+          isActive: data.isActive !== undefined ? data.isActive : true,
+        },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException('A personalization with this code already exists');
+      }
       throw error;
     }
   }
@@ -38,6 +61,19 @@ export class PersonalizationsService {
         throw new NotFoundException(
           `Personalization option with ID ${id} not found`,
         );
+      }
+      throw error;
+    }
+  }
+
+  async remove(id: string) {
+    try {
+      return await this.prisma.personalizationOption.delete({
+        where: { id },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException(`Personalization option with ID ${id} not found`);
       }
       throw error;
     }
