@@ -9,6 +9,7 @@ import { Loader2, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-re
 
 export default function CatalogPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [collections, setCollections] = useState<{ id: string, name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -28,6 +29,22 @@ export default function CatalogPage() {
   });
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
+
+  useEffect(() => {
+    const fetchCollections = async () => {
+      try {
+        const res = await fetch(`${API_URL}/collections`);
+        if (res.ok) {
+          const body = await res.json();
+          // API returns { success: true, data: Collection[], ... }
+          setCollections(body.data || []);
+        }
+      } catch (err) {
+        console.error('Error fetching collections:', err);
+      }
+    };
+    fetchCollections();
+  }, [API_URL]);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -55,11 +72,6 @@ export default function CatalogPage() {
 
     fetchProducts();
   }, [API_URL, filters]);
-
-  // Extract unique collections from initial products load (simplified)
-  const availableCollections = useMemo(() => {
-    return ['Básicos', 'Test Collection']; // Should ideally come from an API
-  }, []);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -106,7 +118,7 @@ export default function CatalogPage() {
         {/* Filters Sidebar (Desktop + Mobile logic) */}
         <div className={`${showMobileFilters ? 'block' : 'hidden'} lg:block`}>
           <FilterSidebar 
-            collections={availableCollections} 
+            collections={collections} 
             filters={filters} 
             onFilterChange={setFilters} 
           />

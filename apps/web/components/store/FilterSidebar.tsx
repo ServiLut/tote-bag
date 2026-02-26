@@ -16,7 +16,7 @@ export interface FilterState {
 }
 
 interface FilterSidebarProps {
-  collections: string[];
+  collections: { id: string, name: string }[];
   filters: FilterState;
   onFilterChange: (newFilters: FilterState) => void;
 }
@@ -86,6 +86,45 @@ export default function FilterSidebar({ collections, filters, onFilterChange }: 
     </div>
   );
 
+  const renderCollectionGroup = () => (
+    <div className="border-b border-theme pb-6">
+      <button
+        onClick={() => toggleSection('collection')}
+        className="flex justify-between items-center w-full text-xs font-black uppercase tracking-[0.2em] mb-4 text-primary"
+      >
+        Colecciones
+        {openSections.collection ? <ChevronUp className="w-3 h-3 opacity-50" /> : <ChevronDown className="w-3 h-3 opacity-50" />}
+      </button>
+      
+      {openSections.collection && (
+        <div className="space-y-3">
+          {collections.map((coll) => (
+            <label key={coll.id} className="flex items-center gap-3 cursor-pointer group">
+              <div className={`w-4 h-4 border flex items-center justify-center transition-all rounded-sm ${
+                filters.collections.includes(coll.id) 
+                  ? 'bg-primary border-primary' 
+                  : 'border-theme group-hover:border-primary'
+              }`}>
+                {filters.collections.includes(coll.id) && (
+                  <div className="w-1.5 h-1.5 bg-base-color" />
+                )}
+              </div>
+              <input
+                type="checkbox"
+                className="hidden"
+                checked={filters.collections.includes(coll.id)}
+                onChange={() => handleCheckboxChange('collections', coll.id)}
+              />
+              <span className="text-[11px] font-bold text-muted uppercase tracking-wider group-hover:text-primary transition-colors">
+                {coll.name}
+              </span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <aside className="w-full lg:w-64 flex-shrink-0 space-y-8 pr-8 hidden lg:block border-r border-theme">
       <div>
@@ -99,7 +138,7 @@ export default function FilterSidebar({ collections, filters, onFilterChange }: 
       {renderCheckboxGroup('Líneas', 'lines', [...CATALOG_ATTRIBUTES.LINE], 'line')}
 
       {/* Collections */}
-      {collections.length > 0 && renderCheckboxGroup('Colecciones', 'collections', collections, 'collection')}
+      {renderCollectionGroup()}
 
       {/* Attributes Group */}
       <div className="border-b border-theme pb-6">

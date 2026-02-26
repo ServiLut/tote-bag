@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Delete,
+  Param,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import { CollectionsService } from './collections.service';
 import { CreateCollectionDto } from './dto/create-collection.dto';
 
@@ -14,5 +22,10 @@ export class CollectionsController {
   @Post()
   async create(@Body() createCollectionDto: CreateCollectionDto) {
     return this.collectionsService.create(createCollectionDto);
+  }
+
+  @Delete(':id')
+  async remove(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
+    return this.collectionsService.remove(id);
   }
 }

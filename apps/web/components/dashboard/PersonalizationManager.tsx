@@ -26,11 +26,7 @@ export default function PersonalizationManager() {
 
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchOptions();
-  }, []);
-
-  const fetchOptions = async () => {
+  const fetchOptions = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -53,7 +49,11 @@ export default function PersonalizationManager() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [supabase]);
+
+  useEffect(() => {
+    fetchOptions();
+  }, [fetchOptions]);
 
   const startEditing = (option: PersonalizationOption) => {
     setEditingId(option.id);

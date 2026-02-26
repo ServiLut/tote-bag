@@ -9,6 +9,7 @@ import Image from 'next/image';
 import { ApiResponse } from '@/types/api';
 import { toast } from 'sonner';
 import { Combobox } from '@/components/ui/Combobox';
+import { CreatableCombobox } from '@/components/ui/CreatableCombobox';
 import { CATALOG_ATTRIBUTES } from '@/utils/catalog-constants';
 
 // Utility for cleaner tailwind classes
@@ -43,13 +44,6 @@ export interface PricingRuleData {
   fixedUnitPrice?: number;
 }
 
-export interface PersonalizationRuleData {
-  personalizationId: string;
-  personalizationCode: string;
-  allowedMaterialValues: string[];
-  isActive: boolean;
-}
-
 interface ProductImage {
   id?: string;
   url: string;
@@ -61,6 +55,7 @@ interface ProductFormData {
   slug: string;
   description: string;
   collection: string;
+  collectionId: string;
   tags: string;
   basePrice: number;
   minPrice: number;
@@ -72,32 +67,18 @@ interface ProductFormData {
   variants: VariantData[];
   attributes: AttributeData[];
   pricingRules: PricingRuleData[];
-  personalizations: PersonalizationRuleData[];
-}
-
-interface GlobalPersonalizationOption {
-  id: string;
-  code: string;
-  name: string;
-  basePrice: number;
 }
 
 interface AdminProductFormProps {
-  initialData?: Omit<Partial<ProductFormData>, 'tags' | 'costPrice' | 'comparePrice' | 'images' | 'collection' | 'attributes' | 'pricingRules' | 'personalizations'> & { 
+  initialData?: Omit<Partial<ProductFormData>, 'tags' | 'costPrice' | 'comparePrice' | 'images' | 'collection' | 'attributes' | 'pricingRules'> & { 
     id?: string; 
     tags?: string | string[];
     costPrice?: number | null;
     comparePrice?: number | null;
     images?: ProductImage[] | string[];
-    collection?: string | { name: string };
+    collection?: string | { id: string, name: string };
     attributes?: AttributeData[];
     pricingRules?: PricingRuleData[];
-    personalizationRules?: {
-      personalizationId: string;
-      personalization?: { code: string };
-      allowedMaterialValues: string[];
-      isActive: boolean;
-    }[];
   };
 }
 
@@ -118,6 +99,7 @@ const INITIAL_STATE: ProductFormData = {
   slug: '',
   description: '',
   collection: '',
+  collectionId: '',
   tags: '',
   basePrice: 0,
   minPrice: 0,
@@ -131,10 +113,10 @@ const INITIAL_STATE: ProductFormData = {
   ],
   attributes: DEFAULT_PRODUCT_ATTRIBUTES,
   pricingRules: DEFAULT_PRICING_RULES,
-  personalizations: [],
 };
 
 interface Collection {
+  id: string;
   name: string;
 }
 
@@ -148,6 +130,9 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
           collection: typeof initialData.collection === 'object' && initialData.collection !== null 
             ? (initialData.collection as unknown as Collection).name 
             : (initialData.collection as string) || '',
+          collectionId: typeof initialData.collection === 'object' && initialData.collection !== null 
+            ? (initialData.collection as unknown as Collection).id 
+            : '',
           images: initialData.images 
             ? initialData.images.map((img: string | ProductImage) => typeof img === 'string' ? { url: img } : img)
             : [],
@@ -160,14 +145,6 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
           pricingRules: initialData.pricingRules && initialData.pricingRules.length > 0
             ? initialData.pricingRules
             : [],
-          personalizations: initialData.personalizationRules 
-            ? initialData.personalizationRules.map(r => ({
-                personalizationId: r.personalizationId,
-                personalizationCode: r.personalization?.code || '',
-                allowedMaterialValues: r.allowedMaterialValues || [],
-                isActive: r.isActive ?? true,
-              }))
-            : [],
         } 
       : INITIAL_STATE
   );
@@ -178,44 +155,63 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const supabase = createClient();
-  const [globalOptions, setGlobalOptions] = useState<GlobalPersonalizationOption[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [isLoadingCollections, setIsLoadingCollections] = useState(false);
 
   useEffect(() => {
-    const fetchOptions = async () => {
+    const fetchCollections = async () => {
+      setIsLoadingCollections(true);
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
-        const res = await fetch(`${apiUrl}/pricing/personalization-options`);
+        const res = await fetch(`${apiUrl}/collections`);
         if (res.ok) {
           const body = await res.json();
-          setGlobalOptions(body.data || []);
+          // API returns { success: true, data: Collection[], ... }
+          setCollections(body.data || []);
         }
       } catch (err) {
-        console.error('Error fetching personalization options:', err);
+        console.error('Error fetching collections:', err);
+      } finally {
+        setIsLoadingCollections(false);
       }
     };
-    fetchOptions();
+
+    fetchCollections();
   }, []);
 
-  const togglePersonalization = (opt: GlobalPersonalizationOption) => {
-    setFormData(prev => {
-      const exists = prev.personalizations.find(p => p.personalizationId === opt.id);
-      if (exists) {
-        return { ...prev, personalizations: prev.personalizations.filter(p => p.personalizationId !== opt.id) };
-      } else {
-        return {
+  const handleCreateCollection = async (name: string) => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
+      const slug = name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const res = await fetch(`${apiUrl}/collections`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ name, slug }),
+      });
+
+      if (res.ok) {
+        const resBody = await res.json();
+        const newCollection = resBody.data;
+        setCollections(prev => [...prev, newCollection]);
+        setFormData(prev => ({
           ...prev,
-          personalizations: [
-            ...prev.personalizations,
-            { 
-              personalizationId: opt.id, 
-              personalizationCode: opt.code, 
-              allowedMaterialValues: [], // Inherit global
-              isActive: true 
-            }
-          ]
-        };
+          collection: newCollection.name,
+          collectionId: newCollection.id
+        }));
+        toast.success(`Colección "${name}" creada`);
+      } else {
+        toast.error('Error al crear colección');
       }
-    });
+    } catch (err) {
+      console.error('Error creating collection:', err);
+      toast.error('Error al crear colección');
+    }
   };
 
   // Derived state for validation
@@ -457,6 +453,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
         name: formData.name,
         slug: formData.slug,
         description: formData.description,
+        collectionId: formData.collectionId,
         collectionName: formData.collection,
         basePrice: formData.basePrice,
         minPrice: formData.minPrice,
@@ -478,11 +475,6 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
           maxQty: rule.maxQty,
           discountPct: rule.discountPct,
           fixedUnitPrice: rule.fixedUnitPrice,
-        })),
-        personalizationRules: formData.personalizations.map(p => ({
-          personalizationId: p.personalizationId,
-          allowedMaterialValues: p.allowedMaterialValues,
-          isActive: p.isActive,
         })),
         tags: typeof formData.tags === 'string' 
           ? formData.tags.split(',').map(t => t.trim()).filter(Boolean)
@@ -641,15 +633,13 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
 
             <div className="space-y-2">
               <label htmlFor="collection" className="block text-[10px] font-black uppercase tracking-widest text-primary">Colección</label>
-              <input
-                type="text"
-                id="collection"
-                name="collection"
-                value={formData.collection}
-                onChange={handleChange}
-                placeholder="Ej. Verano 2026"
-                className="w-full p-3 border border-theme rounded-xl bg-base text-primary font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                required
+              <CreatableCombobox
+                options={collections.map(c => ({ value: c.id, label: c.name }))}
+                value={formData.collectionId}
+                onChange={(id, name) => setFormData(prev => ({ ...prev, collection: name, collectionId: id }))}
+                onCreate={handleCreateCollection}
+                placeholder="Seleccionar colección..."
+                isLoading={isLoadingCollections}
               />
             </div>
           </div>
@@ -1110,60 +1100,6 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
                 </div>
               </div>
             ))}
-          </div>
-        </section>
-
-        <hr className="border-theme" />
-
-        {/* Sección Gestión de Personalización */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-black text-primary tracking-tight">Opciones de Personalización</h3>
-            <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Configura qué técnicas están permitidas</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {globalOptions.map((opt) => {
-              const rule = formData.personalizations.find(p => p.personalizationId === opt.id);
-              const isActive = !!rule;
-
-              return (
-                <div key={opt.id} className={cn(
-                  "p-5 rounded-2xl border transition-all",
-                  isActive ? "bg-primary/5 border-primary/20 shadow-sm" : "bg-base/20 border-theme/50 opacity-60"
-                )}>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex flex-col">
-                      <span className="text-sm font-black text-primary">{opt.name}</span>
-                      <span className="text-[10px] font-bold text-muted uppercase tracking-widest">Base: ${opt.basePrice.toLocaleString()}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={isActive}
-                        onChange={() => togglePersonalization(opt)}
-                        className="w-5 h-5 rounded border-theme text-primary focus:ring-primary/20 cursor-pointer"
-                        id={`personalization-${opt.id}`}
-                      />
-                      <label 
-                        htmlFor={`personalization-${opt.id}`}
-                        className="text-[10px] font-black uppercase tracking-widest cursor-pointer"
-                      >
-                        {isActive ? 'Habilitado' : 'Habilitar'}
-                      </label>
-                    </div>
-                  </div>
-
-                  {isActive && (
-                    <div className="space-y-3 pt-3 border-t border-primary/10">
-                      <p className="text-[9px] font-bold text-primary/60 italic uppercase tracking-widest">
-                        Se aplican las restricciones de material configuradas globalmente.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
           </div>
         </section>
 
