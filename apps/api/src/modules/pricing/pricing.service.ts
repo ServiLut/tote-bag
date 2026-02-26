@@ -107,9 +107,10 @@ export class PricingService {
           }
 
           // Check material compatibility (Inherit global rules if product rule is empty)
-          const effectiveAllowedMaterials = (rule.allowedMaterialValues && rule.allowedMaterialValues.length > 0)
-            ? rule.allowedMaterialValues
-            : option.allowedMaterialValues;
+          const effectiveAllowedMaterials =
+            rule.allowedMaterialValues && rule.allowedMaterialValues.length > 0
+              ? rule.allowedMaterialValues
+              : option.allowedMaterialValues;
 
           if (
             effectiveAllowedMaterials &&

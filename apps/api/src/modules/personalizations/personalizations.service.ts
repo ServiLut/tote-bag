@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { UpdatePersonalizationDto } from './dto/update-personalization.dto';
+import { Prisma } from '../../generated/client/client';
 
 @Injectable()
 export class PersonalizationsService {
@@ -17,7 +19,7 @@ export class PersonalizationsService {
     }
   }
 
-  async update(id: string, data: any) {
+  async update(id: string, data: UpdatePersonalizationDto) {
     try {
       const option = await this.prisma.personalizationOption.update({
         where: { id },
@@ -29,8 +31,13 @@ export class PersonalizationsService {
       });
       return option;
     } catch (error) {
-      if (error.code === 'P2025') {
-        throw new NotFoundException(`Personalization option with ID ${id} not found`);
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        throw new NotFoundException(
+          `Personalization option with ID ${id} not found`,
+        );
       }
       throw error;
     }

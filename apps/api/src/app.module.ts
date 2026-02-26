@@ -23,6 +23,7 @@ import { CatalogModule } from './modules/catalog/catalog.module';
 import { CartModule } from './modules/cart/cart.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { PersonalizationsModule } from './modules/personalizations/personalizations.module';
+import { CollectionsModule } from './modules/collections/collections.module';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthMiddleware } from './common/middleware/auth.middleware';
@@ -87,6 +88,7 @@ import envValidationSchema from './config/env.validation';
     CartModule,
     AdminModule,
     PersonalizationsModule,
+    CollectionsModule,
   ],
   controllers: [AppController],
   providers: [
