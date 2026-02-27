@@ -5,7 +5,6 @@ import { createClient } from '@/utils/supabase/client';
 import { 
   Loader2, 
   Check, 
-  X, 
   Layers, 
   MousePointer2,
   RefreshCw,
@@ -45,8 +44,7 @@ export default function FabricCompatibilityMatrix() {
       
       setMaterials(allOptions.filter(o => o.category === 'MATERIAL' && o.isActive));
       setTechniques(allOptions.filter(o => o.category === 'TECHNIQUE' && o.isActive));
-    } catch (err) {
-      console.error(err);
+    } catch {
       toast.error('No se pudo cargar la matriz de compatibilidad');
     } finally {
       setLoading(false);
@@ -85,7 +83,7 @@ export default function FabricCompatibilityMatrix() {
       ));
       
       toast.success(`Regla actualizada: ${technique.name} ${isCompatible ? 'deshabilitado' : 'habilitado'} para ${materialName}`);
-    } catch (err) {
+    } catch {
       toast.error('Error al guardar el cambio');
     } finally {
       setUpdatingId(null);

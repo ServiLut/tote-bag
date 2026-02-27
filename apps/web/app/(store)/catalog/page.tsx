@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import ProductGrid from '@/components/store/ProductGrid';
 import FilterSidebar, { type FilterState } from '@/components/store/FilterSidebar';
 import { Product } from '@/types/product';
@@ -52,11 +52,14 @@ export default function CatalogPage() {
       try {
         // Construct query params from filters
         const params = new URLSearchParams();
-        if (filters.collections.length > 0) params.append('collection', filters.collections[0]); // Backend takes one ID currently
-        if (filters.lines.length > 0) params.append('line', filters.lines[0]);
-        if (filters.sizes.length > 0) params.append('size', filters.sizes[0]);
-        if (filters.qualities.length > 0) params.append('quality', filters.qualities[0]);
+        if (filters.collections.length > 0) params.append('collection', filters.collections.join(',')); 
+        if (filters.lines.length > 0) params.append('lines', filters.lines.join(','));
+        if (filters.sizes.length > 0) params.append('sizes', filters.sizes.join(','));
+        if (filters.qualities.length > 0) params.append('qualities', filters.qualities.join(','));
+        if (filters.materials.length > 0) params.append('materials', filters.materials.join(','));
         if (filters.status.length > 0) params.append('status', filters.status[0]);
+        if (filters.minPrice > 0) params.append('minPrice', filters.minPrice.toString());
+        if (filters.maxPrice < 1000000) params.append('maxPrice', filters.maxPrice.toString());
 
         const res = await fetch(`${API_URL}/catalog/products?${params.toString()}`);
         if (!res.ok) throw new Error('Error al cargar catálogo');
@@ -117,11 +120,13 @@ export default function CatalogPage() {
 
         {/* Filters Sidebar (Desktop + Mobile logic) */}
         <div className={`${showMobileFilters ? 'block' : 'hidden'} lg:block`}>
-          <FilterSidebar 
-            collections={collections} 
-            filters={filters} 
-            onFilterChange={setFilters} 
-          />
+          <Suspense fallback={<div className="w-64 animate-pulse bg-slate-100 h-96 rounded-lg" />}>
+            <FilterSidebar 
+              collections={collections} 
+              filters={filters} 
+              onFilterChange={setFilters} 
+            />
+          </Suspense>
         </div>
 
         {/* Product Grid */}

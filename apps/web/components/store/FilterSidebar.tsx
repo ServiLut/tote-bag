@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { CATALOG_ATTRIBUTES } from '@/utils/catalog-constants';
 
@@ -22,6 +23,19 @@ interface FilterSidebarProps {
 }
 
 export default function FilterSidebar({ collections, filters, onFilterChange }: FilterSidebarProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Initial fallback mapping from static constants
+  const initialWizardOptions = {
+    LINE: (CATALOG_ATTRIBUTES?.LINE || []).map(name => ({ id: name, name, code: name })),
+    DIMENSION: (CATALOG_ATTRIBUTES?.SIZE || []).map(name => ({ id: name, name, code: name })),
+    QUALITY: (CATALOG_ATTRIBUTES?.QUALITY || []).map(name => ({ id: name, name, code: name })),
+    MATERIAL: (CATALOG_ATTRIBUTES?.MATERIAL || []).map(name => ({ id: name, name, code: name })),
+  };
+
+  const [wizardOptions, setWizardOptions] = useState<Record<string, Array<{ id: string, name: string, code: string }>>>(initialWizardOptions);
+
   const [openSections, setOpenSections] = useState({
     price: true,
     collection: true,
@@ -29,6 +43,85 @@ export default function FilterSidebar({ collections, filters, onFilterChange }: 
     attributes: true,
     availability: true,
   });
+
+  const updateURL = useCallback((newFilters: FilterState) => {
+    const params = new URLSearchParams();
+    if (newFilters.collections.length > 0) params.set('collection', newFilters.collections.join(','));
+    if (newFilters.lines.length > 0) params.set('lines', newFilters.lines.join(','));
+    if (newFilters.sizes.length > 0) params.set('sizes', newFilters.sizes.join(','));
+    if (newFilters.qualities.length > 0) params.set('qualities', newFilters.qualities.join(','));
+    if (newFilters.materials.length > 0) params.set('materials', newFilters.materials.join(','));
+    if (newFilters.status.length > 0) params.set('status', newFilters.status.join(','));
+    
+    if (newFilters.minPrice > 0) params.set('minPrice', newFilters.minPrice.toString());
+    if (newFilters.maxPrice < 1000000) params.set('maxPrice', newFilters.maxPrice.toString());
+
+    const query = params.toString();
+    router.push(`${window.location.pathname}${query ? '?' + query : ''}`, { scroll: false });
+  }, [router]);
+
+  // Sync state from URL on initial load
+  useEffect(() => {
+    const newFilters = { ...filters };
+    let hasChanges = false;
+
+    const sync = (key: string, field: Extract<keyof FilterState, 'collections' | 'lines' | 'sizes' | 'qualities' | 'materials' | 'status'>) => {
+      const val = searchParams.get(key);
+      if (val) {
+        (newFilters[field] as string[]) = val.split(',');
+        hasChanges = true;
+      }
+    };
+
+    sync('collection', 'collections');
+    sync('lines', 'lines');
+    sync('sizes', 'sizes');
+    sync('qualities', 'qualities');
+    sync('materials', 'materials');
+    sync('status', 'status');
+
+    const minP = searchParams.get('minPrice');
+    if (minP) {
+      newFilters.minPrice = Number(minP);
+      hasChanges = true;
+    }
+    const maxP = searchParams.get('maxPrice');
+    if (maxP) {
+      newFilters.maxPrice = Number(maxP);
+      hasChanges = true;
+    }
+
+    if (hasChanges) {
+      onFilterChange(newFilters);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only once on mount
+
+  useEffect(() => {
+    const fetchWizardOptions = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
+        const res = await fetch(`${apiUrl}/wizard-options/grouped`);
+        if (res.ok) {
+          const response = await res.json();
+          const data = response.data || response;
+          console.log('Filtros recibidos:', data);
+          setWizardOptions(data);
+        }
+      } catch (err) {
+        console.error('Error fetching wizard options:', err);
+      }
+    };
+    fetchWizardOptions();
+  }, []);
+
+  // Debounced URL update for price
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      updateURL(filters);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [filters, updateURL]);
 
   const toggleSection = (section: keyof typeof openSections) => {
     setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
@@ -39,12 +132,19 @@ export default function FilterSidebar({ collections, filters, onFilterChange }: 
     const newValues = currentValues.includes(value)
       ? currentValues.filter((v) => v !== value)
       : [...currentValues, value];
-    onFilterChange({ ...filters, [field]: newValues });
+    
+    const nextFilters = { ...filters, [field]: newValues };
+    onFilterChange(nextFilters);
+    updateURL(nextFilters);
   };
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     onFilterChange({ ...filters, [name]: Number(value) || 0 });
+  };
+
+  const blockInvalidChar = (e: React.KeyboardEvent) => {
+    if (e.key === '-' || e.key === 'e' || e.key === '+') e.preventDefault();
   };
 
   const renderCheckboxGroup = (title: string, field: keyof FilterState, options: string[], section: keyof typeof openSections) => (
@@ -135,7 +235,7 @@ export default function FilterSidebar({ collections, filters, onFilterChange }: 
       </div>
 
       {/* Brand Lines */}
-      {renderCheckboxGroup('Líneas', 'lines', [...CATALOG_ATTRIBUTES.LINE], 'line')}
+      {renderCheckboxGroup('Líneas', 'lines', (wizardOptions.LINE || []).length > 0 ? (wizardOptions.LINE || []).map(l => l.name) : [], 'line')}
 
       {/* Collections */}
       {renderCollectionGroup()}
@@ -154,49 +254,55 @@ export default function FilterSidebar({ collections, filters, onFilterChange }: 
             <div>
               <p className="text-[9px] font-black uppercase text-muted mb-3 tracking-widest opacity-60">Tamaño</p>
               <div className="space-y-2">
-                {CATALOG_ATTRIBUTES.SIZE.map(s => (
-                  <label key={s} className="flex items-center gap-2 cursor-pointer group">
+                {(wizardOptions.DIMENSION || []).length > 0 ? (wizardOptions.DIMENSION || []).map(dim => (
+                  <label key={dim.id} className="flex items-center gap-2 cursor-pointer group">
                     <input 
                       type="checkbox" 
                       className="w-3.5 h-3.5 accent-primary border-theme" 
-                      checked={filters.sizes.includes(s)} 
-                      onChange={() => handleCheckboxChange('sizes', s)} 
+                      checked={filters.sizes.includes(dim.name)} 
+                      onChange={() => handleCheckboxChange('sizes', dim.name)} 
                     />
-                    <span className="text-[11px] font-bold text-muted uppercase tracking-wider group-hover:text-primary transition-colors">{s}</span>
+                    <span className="text-[11px] font-bold text-muted uppercase tracking-wider group-hover:text-primary transition-colors">{dim.name}</span>
                   </label>
-                ))}
+                )) : (
+                  <p className="text-[10px] text-muted italic">Sin opciones disponibles</p>
+                )}
               </div>
             </div>
             <div>
               <p className="text-[9px] font-black uppercase text-muted mb-3 tracking-widest opacity-60">Calidad</p>
               <div className="space-y-2">
-                {CATALOG_ATTRIBUTES.QUALITY.map(q => (
-                  <label key={q} className="flex items-center gap-2 cursor-pointer group">
+                {(wizardOptions.QUALITY || []).length > 0 ? (wizardOptions.QUALITY || []).map(q => (
+                  <label key={q.id} className="flex items-center gap-2 cursor-pointer group">
                     <input 
                       type="checkbox" 
                       className="w-3.5 h-3.5 accent-primary border-theme" 
-                      checked={filters.qualities.includes(q)} 
-                      onChange={() => handleCheckboxChange('qualities', q)} 
+                      checked={filters.qualities.includes(q.name)} 
+                      onChange={() => handleCheckboxChange('qualities', q.name)} 
                     />
-                    <span className="text-[11px] font-bold text-muted uppercase tracking-wider group-hover:text-primary transition-colors">{q}</span>
+                    <span className="text-[11px] font-bold text-muted uppercase tracking-wider group-hover:text-primary transition-colors">{q.name}</span>
                   </label>
-                ))}
+                )) : (
+                  <p className="text-[10px] text-muted italic">Sin opciones disponibles</p>
+                )}
               </div>
             </div>
             <div>
               <p className="text-[9px] font-black uppercase text-muted mb-3 tracking-widest opacity-60">Material</p>
               <div className="space-y-2">
-                {CATALOG_ATTRIBUTES.MATERIAL.map(m => (
-                  <label key={m} className="flex items-center gap-2 cursor-pointer group">
+                {(wizardOptions.MATERIAL || []).length > 0 ? (wizardOptions.MATERIAL || []).map(m => (
+                  <label key={m.id} className="flex items-center gap-2 cursor-pointer group">
                     <input 
                       type="checkbox" 
                       className="w-3.5 h-3.5 accent-primary border-theme" 
-                      checked={filters.materials.includes(m)} 
-                      onChange={() => handleCheckboxChange('materials', m)} 
+                      checked={filters.materials.includes(m.name)} 
+                      onChange={() => handleCheckboxChange('materials', m.name)} 
                     />
-                    <span className="text-[11px] font-bold text-muted uppercase tracking-wider group-hover:text-primary transition-colors">{m}</span>
+                    <span className="text-[11px] font-bold text-muted uppercase tracking-wider group-hover:text-primary transition-colors">{m.name}</span>
                   </label>
-                ))}
+                )) : (
+                  <p className="text-[10px] text-muted italic">Sin opciones disponibles</p>
+                )}
               </div>
             </div>
           </div>
@@ -222,6 +328,8 @@ export default function FilterSidebar({ collections, filters, onFilterChange }: 
                    <input
                     type="number"
                     name="minPrice"
+                    min={0}
+                    onKeyDown={blockInvalidChar}
                     value={filters.minPrice}
                     onChange={handlePriceChange}
                     className="w-full pl-6 py-2 border border-theme bg-base text-primary text-xs font-bold focus:border-primary outline-none transition-all rounded-lg"
@@ -236,6 +344,8 @@ export default function FilterSidebar({ collections, filters, onFilterChange }: 
                    <input
                     type="number"
                     name="maxPrice"
+                    min={0}
+                    onKeyDown={blockInvalidChar}
                     value={filters.maxPrice}
                     onChange={handlePriceChange}
                     className="w-full pl-6 py-2 border border-theme bg-base text-primary text-xs font-bold focus:border-primary outline-none transition-all rounded-lg"

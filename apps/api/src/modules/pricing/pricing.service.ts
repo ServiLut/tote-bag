@@ -1,11 +1,7 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProductConfigInputDto } from '../../common/dto/product-config.dto';
-import { PriceRuleScope } from '../../generated/client/enums';
+import { PriceRuleScope, WizardCategory } from '../../generated/client/enums';
 import { PricingSnapshot } from '../../common/interfaces/snapshots.interface';
 import { generateConfigCode } from '../../common/utils/hash.util';
 
@@ -62,11 +58,13 @@ export class PricingService {
       where: {
         isActive: true,
         OR: [
-          { category: 'LINE', code: input.line },
-          { category: 'DIMENSION', name: input.size },
-          { category: 'MATERIAL', name: input.material },
-          input.quality ? { category: 'QUALITY', name: input.quality } : undefined,
-        ].filter(Boolean) as any,
+          { category: WizardCategory.LINE, code: input.line },
+          { category: WizardCategory.DIMENSION, name: input.size },
+          { category: WizardCategory.MATERIAL, name: input.material },
+          ...(input.quality
+            ? [{ category: WizardCategory.QUALITY, name: input.quality }]
+            : []),
+        ],
       },
     });
 
@@ -94,9 +92,13 @@ export class PricingService {
         });
       } else {
         // 2. Fallback to global WizardOption modifier
-        const globalOpt = wizardOptions.find((o) => 
-          (o.category === inputAttr.type && (o.name === inputAttr.value || o.code === inputAttr.value)) ||
-          (o.category === 'DIMENSION' && inputAttr.type === 'SIZE' && o.name === inputAttr.value)
+        const globalOpt = wizardOptions.find(
+          (o) =>
+            (o.category === inputAttr.type &&
+              (o.name === inputAttr.value || o.code === inputAttr.value)) ||
+            (o.category === 'DIMENSION' &&
+              inputAttr.type === 'SIZE' &&
+              o.name === inputAttr.value),
         );
 
         if (globalOpt && globalOpt.basePriceModifier !== 0) {
@@ -113,15 +115,19 @@ export class PricingService {
     // Personalization logic using both systems for compatibility
     if (input.personalizations && input.personalizations.length > 0) {
       const personalizationCodes = input.personalizations.map((p) => p.code);
-      
+
       // Try both tables
       const [pOptions, wOptions] = await Promise.all([
         this.prisma.personalizationOption.findMany({
           where: { code: { in: personalizationCodes }, isActive: true },
         }),
         this.prisma.wizardOption.findMany({
-          where: { category: 'TECHNIQUE', code: { in: personalizationCodes }, isActive: true },
-        })
+          where: {
+            category: 'TECHNIQUE',
+            code: { in: personalizationCodes },
+            isActive: true,
+          },
+        }),
       ]);
 
       for (const p of input.personalizations) {
@@ -140,7 +146,8 @@ export class PricingService {
 
           if (rule) {
             const effectiveAllowedMaterials =
-              rule.allowedMaterialValues && rule.allowedMaterialValues.length > 0
+              rule.allowedMaterialValues &&
+              rule.allowedMaterialValues.length > 0
                 ? rule.allowedMaterialValues
                 : option.allowedMaterialValues;
 

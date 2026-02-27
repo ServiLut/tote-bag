@@ -1,4 +1,13 @@
-import { Controller, Get, Put, Post, Delete, Body, Param, ParseUUIDPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Put,
+  Post,
+  Delete,
+  Body,
+  Param,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import { PersonalizationsService } from './personalizations.service';
 import { UpdatePersonalizationDto } from './dto/update-personalization.dto';
 import { CreatePersonalizationDto } from './dto/create-personalization.dto';

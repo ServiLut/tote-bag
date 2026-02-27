@@ -395,6 +395,8 @@ export class CatalogService {
     material?: string;
     status?: string;
     isCustomizable?: boolean;
+    minPrice?: number;
+    maxPrice?: number;
   }): Promise<ProductWithRelations[]> {
     const {
       collectionId,
@@ -404,6 +406,8 @@ export class CatalogService {
       material,
       status,
       isCustomizable,
+      minPrice,
+      maxPrice,
     } = filters;
 
     const where: Prisma.ProductWhereInput = {
@@ -418,39 +422,51 @@ export class CatalogService {
       where.status = status as ProductStatus;
     }
 
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      where.basePrice = {
+        ...(minPrice !== undefined && { gte: minPrice }),
+        ...(maxPrice !== undefined && { lte: maxPrice }),
+      };
+    }
+
     // Additive Filters (AND): Product must match all provided attribute criteria
     const andFilters: Prisma.ProductWhereInput[] = [];
 
-    if (line)
+    if (line) {
+      const values = line.split(',');
       andFilters.push({
         attributes: {
-          some: { type: 'LINE', value: { equals: line, mode: 'insensitive' } },
+          some: { type: 'LINE', value: { in: values, mode: 'insensitive' } },
         },
       });
-    if (size)
+    }
+    if (size) {
+      const values = size.split(',');
       andFilters.push({
         attributes: {
-          some: { type: 'SIZE', value: { equals: size, mode: 'insensitive' } },
+          some: { type: 'SIZE', value: { in: values, mode: 'insensitive' } },
         },
       });
-    if (quality)
+    }
+    if (quality) {
+      const values = quality.split(',');
       andFilters.push({
         attributes: {
-          some: {
-            type: 'QUALITY',
-            value: { equals: quality, mode: 'insensitive' },
-          },
+          some: { type: 'QUALITY', value: { in: values, mode: 'insensitive' } },
         },
       });
-    if (material)
+    }
+    if (material) {
+      const values = material.split(',');
       andFilters.push({
         attributes: {
           some: {
             type: 'MATERIAL',
-            value: { equals: material, mode: 'insensitive' },
+            value: { in: values, mode: 'insensitive' },
           },
         },
       });
+    }
 
     // isCustomizable logic: In this architecture, products with variants or specific attributes are customizable
     if (isCustomizable !== undefined) {

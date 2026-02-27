@@ -276,6 +276,7 @@ export default function B2BQuoteForm() {
               type="number"
               name="quantity"
               min={currentMin}
+              onKeyDown={(e) => { if (['-', 'e', '+'].includes(e.key)) e.preventDefault(); }}
               value={formData.quantity}
               onChange={handleChange}
               required

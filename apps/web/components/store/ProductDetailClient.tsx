@@ -54,10 +54,10 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
   
   // Selection State
   const [selections, setSelections] = useState({
-    size: '',
-    material: '',
-    quality: '',
-    line: 'COMERCIAL', // Default line
+    size: product.attributes?.find(a => a.type === 'SIZE' && a.isActive)?.value || '',
+    material: product.attributes?.find(a => a.type === 'MATERIAL' && a.isActive)?.value || '',
+    quality: product.attributes?.find(a => a.type === 'QUALITY' && a.isActive)?.value || '',
+    line: product.attributes?.find(a => a.type === 'LINE' && a.isActive)?.value || 'COMERCIAL',
     personalizations: [] as Array<{ code: string; options: string[] }>,
   });
   
@@ -81,28 +81,29 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
         const data = await res.json();
         
         // Transform personalization options to include material restriction data
-        const transformedOptions = (data.personalizationOptions as ApiPersonalizationOption[]).map(opt => ({
+        const transformedOptions = ((data.personalizationOptions as ApiPersonalizationOption[]) || []).map(opt => ({
           ...opt,
           allowedMaterialValues: opt.rule?.allowedMaterialValues || []
         }));
 
         setConfig({
-          attributes: data.attributes,
+          attributes: data.attributes || [],
           personalizationOptions: transformedOptions
         });
         
-        // Initialize defaults from active attributes
+        // Initialize defaults from active attributes only if they are not already set
         const attrs = (data.attributes as Attribute[]) || [];
-        const defaultSize = attrs.find((a) => a.type === 'SIZE')?.value || '';
-        const defaultMaterial = attrs.find((a) => a.type === 'MATERIAL')?.value || '';
-        const defaultQuality = attrs.find((a) => a.type === 'QUALITY')?.value || '';
+        const defaultSize = attrs.find((a) => a.type === 'SIZE')?.value;
+        const defaultMaterial = attrs.find((a) => a.type === 'MATERIAL')?.value;
+        const defaultQuality = attrs.find((a) => a.type === 'QUALITY')?.value;
+        const defaultLine = attrs.find((a) => a.type === 'LINE')?.value;
         
         setSelections(prev => ({
           ...prev,
-          size: defaultSize,
-          material: defaultMaterial,
-          quality: defaultQuality,
-          line: 'COMERCIAL',
+          size: defaultSize || prev.size,
+          material: defaultMaterial || prev.material,
+          quality: defaultQuality || prev.quality,
+          line: defaultLine || prev.line || 'COMERCIAL',
         }));
       } catch (err) {
         console.error('Config fetch error:', err);
@@ -131,15 +132,19 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
       if (!res.ok) throw new Error('Pricing error');
       const data = await res.json();
       
-      setCalculatedPrice(data.unitPrice);
-      setConfigCode(data.snapshot.configCode);
-      setPricingSnapshot(data.snapshot);
+      if (data) {
+        setCalculatedPrice(data.unitPrice || product.basePrice);
+        if (data.snapshot) {
+          setConfigCode(data.snapshot.configCode);
+          setPricingSnapshot(data.snapshot);
+        }
+      }
     } catch (err) {
       console.error('Pricing calculation error:', err);
     } finally {
       setIsPricingLoading(false);
     }
-  }, [API_URL, product.id, quantity, selections]);
+  }, [API_URL, product.id, product.basePrice, quantity, selections]);
 
   useEffect(() => {
     calculatePricing();

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpdatePersonalizationDto } from './dto/update-personalization.dto';
 import { CreatePersonalizationDto } from './dto/create-personalization.dto';
@@ -23,8 +27,13 @@ export class PersonalizationsService {
   async create(data: CreatePersonalizationDto) {
     try {
       // Generate code from name if not provided
-      const code = data.code || data.name.toUpperCase().replace(/\s+/g, '_').replace(/[^\w-]/g, '');
-      
+      const code =
+        data.code ||
+        data.name
+          .toUpperCase()
+          .replace(/\s+/g, '_')
+          .replace(/[^\w-]/g, '');
+
       return await this.prisma.personalizationOption.create({
         data: {
           name: data.name,
@@ -35,8 +44,13 @@ export class PersonalizationsService {
         },
       });
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ConflictException('A personalization with this code already exists');
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'A personalization with this code already exists',
+        );
       }
       throw error;
     }
@@ -72,8 +86,13 @@ export class PersonalizationsService {
         where: { id },
       });
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-        throw new NotFoundException(`Personalization option with ID ${id} not found`);
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        throw new NotFoundException(
+          `Personalization option with ID ${id} not found`,
+        );
       }
       throw error;
     }

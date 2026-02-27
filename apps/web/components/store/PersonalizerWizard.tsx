@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { createClient } from '@/utils/supabase/client';
@@ -165,7 +165,7 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
       const { data } = supabase.storage.from('product-assets').getPublicUrl(fileName);
       setSelections(prev => ({ ...prev, designUrl: data.publicUrl }));
       toast.success('Diseño cargado');
-    } catch (err) {
+    } catch {
       toast.error('Error al subir el archivo');
     } finally {
       setIsPricingLoading(false);

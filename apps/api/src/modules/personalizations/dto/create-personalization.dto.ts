@@ -1,4 +1,11 @@
-import { IsBoolean, IsNumber, IsOptional, IsString, IsArray, IsNotEmpty } from 'class-validator';
+import {
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsArray,
+  IsNotEmpty,
+} from 'class-validator';
 
 export class CreatePersonalizationDto {
   @IsString()

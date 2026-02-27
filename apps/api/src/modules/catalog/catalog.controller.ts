@@ -27,21 +27,25 @@ export class CatalogController {
   @Get('products')
   findAll(
     @Query('collection') collection?: string,
-    @Query('line') line?: string,
-    @Query('size') size?: string,
-    @Query('quality') quality?: string,
-    @Query('material') material?: string,
+    @Query('lines') lines?: string,
+    @Query('sizes') sizes?: string,
+    @Query('qualities') qualities?: string,
+    @Query('materials') materials?: string,
     @Query('status') status?: string,
     @Query('isCustomizable') isCustomizable?: string,
+    @Query('minPrice') minPrice?: string,
+    @Query('maxPrice') maxPrice?: string,
   ) {
     return this.catalogService.findAll({
       collectionId: collection,
-      line,
-      size,
-      quality,
-      material,
+      line: lines,
+      size: sizes,
+      quality: qualities,
+      material: materials,
       status,
       isCustomizable: isCustomizable === 'true',
+      minPrice: minPrice ? Number(minPrice) : undefined,
+      maxPrice: maxPrice ? Number(maxPrice) : undefined,
     });
   }
 

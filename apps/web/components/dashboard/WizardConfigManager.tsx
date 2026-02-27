@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { 
   Loader2, Pencil, Check, X, Sparkles, DollarSign, Layers, 
-  AlertCircle, RefreshCw, Plus, Trash2, AlertTriangle, 
+  Plus, Trash2, AlertTriangle, 
   ChevronDown, ChevronUp, Maximize, Box, MousePointer2
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -42,7 +42,7 @@ const INITIAL_FORM: FormData = {
   allowedMaterialValues: [],
 };
 
-const CATEGORIES: { id: WizardCategory; label: string; icon: any; desc: string }[] = [
+const CATEGORIES: { id: WizardCategory; label: string; icon: React.ElementType; desc: string }[] = [
   { id: 'LINE', label: 'Líneas de Producción', icon: Box, desc: 'Define las categorías principales de fabricación (ECO, Premium, etc.)' },
   { id: 'DIMENSION', label: 'Dimensiones / Tamaños', icon: Maximize, desc: 'Gestiona las medidas disponibles para las tote bags.' },
   { id: 'MATERIAL', label: 'Materiales y Telas', icon: Layers, desc: 'Administra los tipos de tela y texturas base.' },
@@ -79,7 +79,7 @@ export default function WizardConfigManager() {
       const resBody = await res.json();
       setOptions(resBody.data || []);
     } catch (err) {
-      console.error(err);
+      console.error('Fetch error:', err);
       toast.error('No se pudieron cargar las configuraciones');
     } finally {
       setLoading(false);
@@ -132,6 +132,7 @@ export default function WizardConfigManager() {
       setShowFormModal(false);
       fetchOptions();
     } catch (err) {
+      console.error('Submit error:', err);
       toast.error('Error al procesar la solicitud');
     } finally {
       setIsSubmitting(false);
@@ -150,6 +151,7 @@ export default function WizardConfigManager() {
       toast.success('Eliminado correctamente');
       setOptions(prev => prev.filter(o => o.id !== id));
     } catch (err) {
+      console.error('Delete error:', err);
       toast.error('No se pudo eliminar');
     } finally {
       setIsDeletingId(null);
@@ -290,6 +292,7 @@ export default function WizardConfigManager() {
                       <label className="text-[10px] font-black uppercase tracking-widest text-muted">Precio Extra</label>
                       <input
                         type="number"
+                        onKeyDown={(e) => { if (['e', '+'].includes(e.key)) e.preventDefault(); }}
                         value={formData.basePriceModifier}
                         onChange={e => setFormData({ ...formData, basePriceModifier: parseFloat(e.target.value) || 0 })}
                         className="w-full bg-base border border-theme rounded-xl p-4 font-bold outline-none focus:ring-2 focus:ring-primary/20 transition-all"
@@ -311,6 +314,8 @@ export default function WizardConfigManager() {
                     <label className="text-[10px] font-black uppercase tracking-widest text-muted">Orden de Aparición</label>
                     <input
                       type="number"
+                      min="0"
+                      onKeyDown={(e) => { if (['-', 'e', '+'].includes(e.key)) e.preventDefault(); }}
                       value={formData.sortOrder}
                       onChange={e => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })}
                       className="w-full bg-base border border-theme rounded-xl p-4 font-bold outline-none focus:ring-2 focus:ring-primary/20 transition-all"

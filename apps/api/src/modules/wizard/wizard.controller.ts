@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseUUIDPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import { WizardService } from './wizard.service';
 import { CreateWizardOptionDto } from './dto/create-wizard-option.dto';
 import { UpdateWizardOptionDto } from './dto/update-wizard-option.dto';

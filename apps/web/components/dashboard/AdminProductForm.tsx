@@ -11,7 +11,6 @@ import { ApiResponse } from '@/types/api';
 import { toast } from 'sonner';
 import { Combobox } from '@/components/ui/Combobox';
 import { CreatableCombobox } from '@/components/ui/CreatableCombobox';
-import { CATALOG_ATTRIBUTES } from '@/utils/catalog-constants';
 
 // Utility for cleaner tailwind classes
 function cn(...inputs: (string | undefined | null | false)[]) {
@@ -123,6 +122,7 @@ interface Collection {
 
 export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
   const isEditMode = !!initialData;
+  const [wizardOptions, setWizardOptions] = useState<Record<string, Array<{ id: string, name: string, code: string }>>>({});
   const [formData, setFormData] = useState<ProductFormData>(
     initialData 
       ? {
@@ -160,14 +160,14 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
   const [isLoadingCollections, setIsLoadingCollections] = useState(false);
 
   useEffect(() => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
+    
     const fetchCollections = async () => {
       setIsLoadingCollections(true);
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
         const res = await fetch(`${apiUrl}/collections`);
         if (res.ok) {
           const body = await res.json();
-          // API returns { success: true, data: Collection[], ... }
           setCollections(body.data || []);
         }
       } catch (err) {
@@ -177,7 +177,22 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
       }
     };
 
+    const fetchWizardOptions = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/wizard-options/grouped`);
+        if (res.ok) {
+          const response = await res.json();
+          const data = response.data || response;
+          console.log('Wizard Options recibidos:', data);
+          setWizardOptions(data);
+        }
+      } catch (err) {
+        console.error('Error fetching wizard options:', err);
+      }
+    };
+
     fetchCollections();
+    fetchWizardOptions();
   }, []);
 
   const handleCreateCollection = async (name: string) => {
@@ -695,6 +710,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
                   id="basePrice"
                   name="basePrice"
                   min="0"
+                  onKeyDown={(e) => { if (['-', 'e', '+'].includes(e.key)) e.preventDefault(); }}
                   value={formData.basePrice === 0 ? '' : formData.basePrice}
                   onChange={handleChange}
                   placeholder="0.00"
@@ -718,6 +734,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
                   id="comparePrice"
                   name="comparePrice"
                   min="0"
+                  onKeyDown={(e) => { if (['-', 'e', '+'].includes(e.key)) e.preventDefault(); }}
                   value={formData.comparePrice === 0 ? '' : formData.comparePrice}
                   onChange={handleChange}
                   placeholder="0.00"
@@ -737,6 +754,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
                   id="costPrice"
                   name="costPrice"
                   min="0"
+                  onKeyDown={(e) => { if (['-', 'e', '+'].includes(e.key)) e.preventDefault(); }}
                   value={formData.costPrice === 0 ? '' : formData.costPrice}
                   onChange={handleChange}
                   placeholder="0.00"
@@ -756,6 +774,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
                   id="minPrice"
                   name="minPrice"
                   min="0"
+                  onKeyDown={(e) => { if (['-', 'e', '+'].includes(e.key)) e.preventDefault(); }}
                   value={formData.minPrice === 0 ? '' : formData.minPrice}
                   onChange={handleChange}
                   placeholder="0.00"
@@ -926,6 +945,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
                   <input
                     type="number"
                     min="0"
+                    onKeyDown={(e) => { if (['-', 'e', '+'].includes(e.key)) e.preventDefault(); }}
                     placeholder="0"
                     value={variant.stock}
                     onChange={(e) => updateVariant(index, 'stock', parseInt(e.target.value) || 0)}
@@ -1002,7 +1022,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
                   <div className="col-span-12 md:col-span-5 space-y-1">
                     <label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Valor</label>
                     <Combobox
-                      options={CATALOG_ATTRIBUTES[attr.type as keyof typeof CATALOG_ATTRIBUTES].map(opt => ({ value: opt, label: opt }))}
+                      options={(wizardOptions[attr.type === 'SIZE' ? 'DIMENSION' : attr.type] || []).map(opt => ({ value: opt.name, label: opt.name }))}
                       value={attr.value}
                       onChange={(val) => updateAttribute(index, 'value', val)}
                       placeholder="Seleccionar valor..."
@@ -1015,6 +1035,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted">$</span>
                       <input
                         type="number"
+                        onKeyDown={(e) => { if (['e', '+'].includes(e.key)) e.preventDefault(); }}
                         value={attr.priceModifier}
                         onChange={(e) => updateAttribute(index, 'priceModifier', parseFloat(e.target.value) || 0)}
                         placeholder="0"
@@ -1073,6 +1094,8 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
                     <label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Cant. Mínima</label>
                     <input
                       type="number"
+                      min="1"
+                      onKeyDown={(e) => { if (['-', 'e', '+'].includes(e.key)) e.preventDefault(); }}
                       value={rule.minQty}
                       onChange={(e) => updatePricingRule(index, 'minQty', parseInt(e.target.value) || 0)}
                       className="w-full p-2 border border-theme rounded-xl bg-surface text-xs font-bold"

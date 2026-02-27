@@ -1,4 +1,12 @@
-import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, IsBoolean, IsArray } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsBoolean,
+  IsArray,
+} from 'class-validator';
 import { WizardCategory } from '../../../generated/client/enums';
 
 export class CreateWizardOptionDto {
