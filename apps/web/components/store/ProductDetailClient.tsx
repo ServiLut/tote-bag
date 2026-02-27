@@ -182,10 +182,14 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     });
   };
 
-  const allImages = [
-    ...(selectedVariant?.imageUrl ? [{ url: selectedVariant.imageUrl, id: 'variant-img' }] : []),
-    ...(product.images || [])
-  ];
+  // Jerarquía: 1. Imágenes principales, 2. Imágenes de variantes (todas para galería)
+  const mainImages = (product.images || []).map(img => ({ url: img.url, id: img.id || Math.random().toString() }));
+  const variantImages = (product.variants || [])
+    .map(v => v.imageUrl ? { url: v.imageUrl, id: v.sku } : null)
+    .filter(Boolean) as Array<{ url: string, id: string }>;
+  
+  // Concatenar en el orden correcto
+  const allImages = [...mainImages, ...variantImages];
 
   const currentImageUrl = allImages[currentImageIndex]?.url || '/placeholder.svg';
 

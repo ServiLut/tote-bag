@@ -11,7 +11,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
 
 async function getProductsByLine(line: string): Promise<Product[]> {
   try {
-    const res = await fetch(`${API_URL}/catalog/products?line=${line.toUpperCase()}`, {
+    const res = await fetch(`${API_URL}/catalog/products?lines=${line.toUpperCase()}`, {
       next: { revalidate: 60 },
     });
     if (!res.ok) throw new Error('Failed to fetch products');

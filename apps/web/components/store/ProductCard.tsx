@@ -33,6 +33,18 @@ export default function ProductCard({ product }: ProductCardProps) {
     ? Math.round(((product.comparePrice - product.basePrice) / product.comparePrice) * 100)
     : 0;
 
+  // Lógica de jerarquía: 1. Imágenes principales, 2. Imágenes de variantes
+  const allMainImages = product.images?.map(i => i.url) || [];
+  const allVariantImages = product.variants?.map(v => v.imageUrl).filter(Boolean) || [];
+  const orderedImages = [...allMainImages, ...allVariantImages];
+
+  // Estado para rastrear si el usuario ha interactuado con los swatches
+  const [userSelectedImage, setUserSelectedImage] = useState<string | null>(null);
+
+  // displayImage sigue la jerarquía a menos que el usuario elija un color específico
+  const displayImage = userSelectedImage || orderedImages[0] || '/placeholder.png';
+  const hoverImage = orderedImages.find(img => img !== displayImage) || displayImage;
+
   return (
     <div 
       className="group relative flex flex-col gap-3"
@@ -48,11 +60,20 @@ export default function ProductCard({ product }: ProductCardProps) {
           
           {/* Main Image */}
           <Image
-            src={selectedVariant.imageUrl || product.images[0]?.url || '/placeholder.svg'}
+            src={displayImage}
             alt={product.name}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            className="object-cover transition-all duration-700 group-hover:scale-110 group-hover:opacity-0"
+          />
+
+          {/* Hover Image */}
+          <Image
+            src={hoverImage}
+            alt={product.name}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="object-cover transition-all duration-700 scale-105 opacity-0 group-hover:opacity-100 group-hover:scale-100"
           />
 
           {/* Quick Add Button (Desktop) */}
@@ -93,6 +114,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               onClick={(e) => {
                 e.preventDefault();
                 setSelectedVariant(variant);
+                if (variant.imageUrl) setUserSelectedImage(variant.imageUrl);
               }}
               className={`w-4 h-4 rounded-full border border-theme ring-1 ring-offset-1 transition-all ${
                 selectedVariant.sku === variant.sku 

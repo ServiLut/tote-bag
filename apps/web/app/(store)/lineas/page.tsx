@@ -25,14 +25,6 @@ const lines = [
     features: ['Algodón orgánico certificado', 'Bordados de alta definición', 'Diseño exclusivo'],
     color: 'text-amber-600',
     bg: 'bg-amber-50'
-  },
-  {
-    name: 'Línea CORPORATIVA',
-    icon: Briefcase,
-    description: 'Soluciones integrales para marcas y eventos con producción bajo pedido.',
-    features: ['Personalización total', 'Escalabilidad', 'Logística dedicada'],
-    color: 'text-slate-900',
-    bg: 'bg-slate-100'
   }
 ];
 
