@@ -123,8 +123,11 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          productId, // Standard ID or specific product
-          ...selections,
+          productId,
+          line: selections.line,
+          size: selections.size,
+          material: selections.material,
+          quantity: Number(selections.quantity),
           personalizations: selections.designUrl ? [{ code: 'LOGO', options: [selections.markingType] }] : []
         })
       });

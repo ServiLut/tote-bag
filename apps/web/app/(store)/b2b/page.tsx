@@ -6,8 +6,7 @@ export default function B2BPage() {
   return (
     <>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 flex-1">
-        <ImageCarousel />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start mb-16">
           
           {/* Left Column: Info & Value Prop */}
           <div className="space-y-10 animate-in slide-in-from-left duration-500">
@@ -83,6 +82,7 @@ export default function B2BPage() {
           </div>
 
         </div>
+        <ImageCarousel />
       </main>
     </>
   );

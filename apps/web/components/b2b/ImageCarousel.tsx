@@ -24,7 +24,7 @@ export default function ImageCarousel() {
   }, []);
 
   return (
-    <div className="w-full overflow-hidden rounded-2xl border border-theme bg-surface shadow-xl mb-12">
+    <div className="w-full overflow-hidden rounded-2xl border border-theme bg-surface shadow-xl mt-12">
       <div className="relative aspect-[16/9] md:aspect-[21/9]">
         {images.map((src, index) => (
           <div
