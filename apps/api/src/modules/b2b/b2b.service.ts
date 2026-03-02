@@ -146,6 +146,8 @@ export class B2bService {
         qrData: createQuoteDto.qrData,
         package: assignedPackage,
         logoUrl: logoUrl,
+        size: createQuoteDto.size,
+        material: createQuoteDto.material,
         items: {
           create: quoteItems,
         },

@@ -2116,6 +2116,8 @@ export const B2BQuoteScalarFieldEnum = {
   logoUrl: 'logoUrl',
   package: 'package',
   status: 'status',
+  size: 'size',
+  material: 'material',
   createdAt: 'createdAt'
 } as const
 

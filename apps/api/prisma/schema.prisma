@@ -216,6 +216,8 @@ model B2BQuote {
   logoUrl      String?        @map("logo_url")
   package      String         @map("package")
   status       String         @default("PENDIENTE") @map("status")
+  size         String?        @map("size")
+  material     String?        @map("material")
   createdAt    DateTime       @default(now()) @map("created_at")
   items        B2BQuoteItem[]
 

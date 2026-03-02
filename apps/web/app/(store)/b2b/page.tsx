@@ -61,14 +61,11 @@ export default function B2BPage() {
               </div>
             </div>
 
-            {/* Client Logos / Trust Badges could go here */}
-            <div className="pt-8 border-t border-theme">
-              <p className="text-xs text-muted uppercase tracking-widest mb-4">Confían en nosotros</p>
-              <div className="flex gap-6 opacity-50 grayscale mix-blend-multiply dark:invert dark:mix-blend-normal">
-                 {/* Placeholders for client logos */}
-                 <div className="h-8 w-24 bg-zinc-300 dark:bg-zinc-700 rounded"></div>
-                 <div className="h-8 w-24 bg-zinc-300 dark:bg-zinc-700 rounded"></div>
-                 <div className="h-8 w-24 bg-zinc-300 dark:bg-zinc-700 rounded"></div>
+            {/* Nueva ubicación del Carrete */}
+            <div className="mt-8 w-full rounded-2xl overflow-hidden shadow-lg border border-theme bg-surface p-1">
+
+              <div className="relative w-full aspect-video bg-base rounded-xl overflow-hidden">
+                <ImageCarousel />
               </div>
             </div>
           </div>
@@ -82,7 +79,6 @@ export default function B2BPage() {
           </div>
 
         </div>
-        <ImageCarousel />
       </main>
     </>
   );

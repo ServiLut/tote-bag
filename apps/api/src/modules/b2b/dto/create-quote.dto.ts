@@ -76,6 +76,14 @@ export class CreateQuoteDto {
   contactPhone: string;
 
   @IsOptional()
+  @IsString()
+  size?: string;
+
+  @IsOptional()
+  @IsString()
+  material?: string;
+
+  @IsOptional()
   @IsEnum(B2BPackage)
   package?: B2BPackage;
 

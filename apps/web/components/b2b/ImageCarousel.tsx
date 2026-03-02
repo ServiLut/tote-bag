@@ -24,8 +24,8 @@ export default function ImageCarousel() {
   }, []);
 
   return (
-    <div className="w-full overflow-hidden rounded-2xl border border-theme bg-surface shadow-xl mt-12">
-      <div className="relative aspect-[16/9] md:aspect-[21/9]">
+    <div className="w-full h-full relative group">
+      <div className="absolute inset-0">
         {images.map((src, index) => (
           <div
             key={src}
@@ -42,19 +42,19 @@ export default function ImageCarousel() {
             />
           </div>
         ))}
-        
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-          {images.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentIndex(index)}
-              className={`w-2 h-2 rounded-full transition-all ${
-                index === currentIndex ? 'bg-white w-6' : 'bg-white/50'
-              }`}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
-        </div>
+      </div>
+      
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+        {images.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => setCurrentIndex(index)}
+            className={`w-1.5 h-1.5 rounded-full transition-all ${
+              index === currentIndex ? 'bg-white w-4' : 'bg-white/50'
+            }`}
+            aria-label={`Go to slide ${index + 1}`}
+          />
+        ))}
       </div>
     </div>
   );

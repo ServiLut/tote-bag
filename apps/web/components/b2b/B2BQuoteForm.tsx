@@ -62,6 +62,8 @@ export default function B2BQuoteForm() {
     qrType: string;
     qrData: string;
     package: PackageType;
+    size: string;
+    material: string;
   }>({
     businessName: '',
     quantity: 12,
@@ -73,6 +75,8 @@ export default function B2BQuoteForm() {
     qrType: 'WHATSAPP',
     qrData: '',
     package: 'Starter',
+    size: '',
+    material: '',
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
 
@@ -80,6 +84,13 @@ export default function B2BQuoteForm() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
   const [selectedDeptId, setSelectedDeptId] = useState<string>('');
+
+  // Options State
+  const [options, setOptions] = useState<{
+    sizes: { id: string; name: string }[];
+    materials: { id: string; name: string }[];
+  }>({ sizes: [], materials: [] });
+  const [loadingOptions, setLoadingOptions] = useState(true);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
 
@@ -96,7 +107,48 @@ export default function B2BQuoteForm() {
         console.error('Error fetching departments:', err);
       }
     };
+    
+    const fetchOptions = async () => {
+      setLoadingOptions(true);
+      try {
+        const res = await fetch(`${API_URL}/wizard-options/grouped`);
+        if (res.ok) {
+          const responseData = await res.json();
+          const data = responseData.data || responseData;
+          console.log('Data recibida en B2B:', data);
+
+          // Robust mapping logic: handle both grouped (by category) and flat arrays
+          let sizesArr: any[] = [];
+          let materialsArr: any[] = [];
+
+          if (Array.isArray(data)) {
+            // If it's a flat array (from /wizard-options)
+            sizesArr = data.filter((item: any) => 
+              item.category === 'DIMENSION' || item.category === 'SIZE' || item.type === 'SIZE'
+            );
+            materialsArr = data.filter((item: any) => 
+              item.category === 'MATERIAL' || item.type === 'MATERIAL'
+            );
+          } else {
+            // If it's grouped (from /wizard-options/grouped)
+            sizesArr = data.DIMENSION || data.SIZE || [];
+            materialsArr = data.MATERIAL || [];
+          }
+
+          setOptions({
+            sizes: sizesArr.map((o: any) => ({ id: o.name || o.value, name: o.name || o.value })),
+            materials: materialsArr.map((o: any) => ({ id: o.name || o.value, name: o.name || o.value })),
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching options B2B:', err);
+      } finally {
+        setLoadingOptions(false);
+      }
+    };
+
     fetchDepartments();
+    fetchOptions();
   }, [API_URL]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -174,6 +226,8 @@ export default function B2BQuoteForm() {
       data.append('qrType', formData.qrType);
       data.append('qrData', formData.qrData);
       data.append('package', formData.package);
+      data.append('size', formData.size);
+      data.append('material', formData.material);
       data.append('logo', logoFile);
 
       const res = await fetch(`${API_URL}/b2b/quote`, {
@@ -209,7 +263,7 @@ export default function B2BQuoteForm() {
         <button
           onClick={() => {
             setSuccess(false);
-            setFormData({ businessName: '', quantity: 12, department: '', municipality: '', neighborhood: '', address: '', contactPhone: '', qrType: 'WHATSAPP', qrData: '', package: 'Starter' });
+            setFormData({ businessName: '', quantity: 12, department: '', municipality: '', neighborhood: '', address: '', contactPhone: '', qrType: 'WHATSAPP', qrData: '', package: 'Starter', size: '', material: '' });
             setLogoFile(null);
             setSelectedDeptId('');
             setMunicipalities([]);
@@ -349,6 +403,32 @@ export default function B2BQuoteForm() {
             required
             className="w-full p-3 bg-base/50 border border-theme rounded-lg focus:ring-2 focus:ring-primary focus:bg-surface transition-all outline-none text-primary placeholder:text-muted/50"
             placeholder="Ej. Calle 123 # 45 - 67, Apto 301"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-theme/50">
+        <div className="space-y-2">
+          <label className="text-xs font-bold uppercase tracking-wide text-muted">Tamaño / Dimensión</label>
+          <Combobox
+            options={options.sizes.map(s => ({ value: s.name, label: s.name }))}
+            value={formData.size}
+            onChange={(val) => setFormData({ ...formData, size: val })}
+            placeholder={loadingOptions ? "Cargando tamaños..." : "Selecciona el tamaño"}
+            searchPlaceholder="Buscar tamaño..."
+            emptyMessage={loadingOptions ? "Cargando..." : "No se encontraron tamaños"}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-xs font-bold uppercase tracking-wide text-muted">Material / Tela</label>
+          <Combobox
+            options={options.materials.map(m => ({ value: m.name, label: m.name }))}
+            value={formData.material}
+            onChange={(val) => setFormData({ ...formData, material: val })}
+            placeholder={loadingOptions ? "Cargando materiales..." : "Selecciona el material"}
+            searchPlaceholder="Buscar material..."
+            emptyMessage={loadingOptions ? "Cargando..." : "No se encontraron materiales"}
           />
         </div>
       </div>
