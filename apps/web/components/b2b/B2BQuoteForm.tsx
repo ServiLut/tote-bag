@@ -48,6 +48,22 @@ const PACKAGES = [
   },
 ] as const;
 
+interface WizardOption {
+  id?: string;
+  name?: string;
+  value?: string;
+  category?: string;
+  type?: string;
+  code?: string;
+}
+
+interface GroupedWizardOptions {
+  DIMENSION?: WizardOption[];
+  SIZE?: WizardOption[];
+  MATERIAL?: WizardOption[];
+  [key: string]: WizardOption[] | undefined;
+}
+
 export default function B2BQuoteForm() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -114,19 +130,19 @@ export default function B2BQuoteForm() {
         const res = await fetch(`${API_URL}/wizard-options/grouped`);
         if (res.ok) {
           const responseData = await res.json();
-          const data = responseData.data || responseData;
+          const data = (responseData.data || responseData) as GroupedWizardOptions | WizardOption[];
           console.log('Data recibida en B2B:', data);
 
           // Robust mapping logic: handle both grouped (by category) and flat arrays
-          let sizesArr: any[] = [];
-          let materialsArr: any[] = [];
+          let sizesArr: WizardOption[] = [];
+          let materialsArr: WizardOption[] = [];
 
           if (Array.isArray(data)) {
             // If it's a flat array (from /wizard-options)
-            sizesArr = data.filter((item: any) => 
+            sizesArr = data.filter((item: WizardOption) => 
               item.category === 'DIMENSION' || item.category === 'SIZE' || item.type === 'SIZE'
             );
-            materialsArr = data.filter((item: any) => 
+            materialsArr = data.filter((item: WizardOption) => 
               item.category === 'MATERIAL' || item.type === 'MATERIAL'
             );
           } else {
@@ -136,8 +152,8 @@ export default function B2BQuoteForm() {
           }
 
           setOptions({
-            sizes: sizesArr.map((o: any) => ({ id: o.name || o.value, name: o.name || o.value })),
-            materials: materialsArr.map((o: any) => ({ id: o.name || o.value, name: o.name || o.value })),
+            sizes: sizesArr.map((o: WizardOption) => ({ id: (o.name || o.value) as string, name: (o.name || o.value) as string })),
+            materials: materialsArr.map((o: WizardOption) => ({ id: (o.name || o.value) as string, name: (o.name || o.value) as string })),
           });
         }
       } catch (err) {

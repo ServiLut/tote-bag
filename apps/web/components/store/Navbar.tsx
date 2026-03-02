@@ -1,7 +1,7 @@
 'use client';
 
 import { useCart } from '@/context/CartContext';
-import { ShoppingBag, Menu, User, Search, UserCircle, Sun, Moon, X, ChevronDown, Sparkles } from 'lucide-react';
+import { ShoppingBag, Menu, User, Search, UserCircle, Sun, Moon, X, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';

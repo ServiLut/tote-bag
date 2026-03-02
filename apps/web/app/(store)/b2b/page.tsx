@@ -6,10 +6,10 @@ export default function B2BPage() {
   return (
     <>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 flex-1">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start mb-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-stretch mb-16">
           
           {/* Left Column: Info & Value Prop */}
-          <div className="space-y-10 animate-in slide-in-from-left duration-500">
+          <div className="space-y-10 animate-in slide-in-from-left duration-500 flex flex-col h-full">
             <div>
               <span className="inline-block px-3 py-1 bg-secondary text-white text-[10px] font-bold uppercase tracking-widest rounded-full mb-4">
                 Tote Bag Corporate
@@ -62,9 +62,8 @@ export default function B2BPage() {
             </div>
 
             {/* Nueva ubicación del Carrete */}
-            <div className="mt-8 w-full rounded-2xl overflow-hidden shadow-lg border border-theme bg-surface p-1">
-
-              <div className="relative w-full aspect-video bg-base rounded-xl overflow-hidden">
+            <div className="mt-8 w-full rounded-2xl overflow-hidden shadow-lg border border-theme bg-surface p-1 flex-1 flex flex-col">
+              <div className="relative w-full flex-1 bg-base rounded-xl overflow-hidden min-h-[300px]">
                 <ImageCarousel />
               </div>
             </div>

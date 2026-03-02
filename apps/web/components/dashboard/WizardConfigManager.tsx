@@ -10,6 +10,8 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/utils/cn';
 
+import Image from 'next/image';
+
 type WizardCategory = 'LINE' | 'DIMENSION' | 'MATERIAL' | 'QUALITY' | 'TECHNIQUE';
 
 interface WizardOption {
@@ -257,8 +259,8 @@ export default function WizardConfigManager() {
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex gap-4">
                               {opt.imageUrl && (
-                                <div className="w-10 h-10 rounded-lg bg-white border border-theme overflow-hidden flex-shrink-0">
-                                  <img src={opt.imageUrl} alt={opt.name} className="w-full h-full object-cover" />
+                                <div className="w-10 h-10 rounded-lg bg-white border border-theme overflow-hidden flex-shrink-0 relative">
+                                  <Image src={opt.imageUrl} alt={opt.name} fill className="object-cover" />
                                 </div>
                               )}
                               <div>
@@ -362,11 +364,11 @@ export default function WizardConfigManager() {
                       <div className="flex items-center gap-4">
                         {formData.imageUrl && (
                           <div className="w-20 h-20 rounded-2xl bg-white border border-theme overflow-hidden relative group">
-                            <img src={formData.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                            <Image src={formData.imageUrl} alt="Preview" fill className="object-cover" />
                             <button 
                               type="button"
                               onClick={() => setFormData(prev => ({ ...prev, imageUrl: '' }))}
-                              className="absolute inset-0 bg-red-500/80 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="absolute inset-0 bg-red-500/80 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
                             >
                               <Trash2 size={16} />
                             </button>

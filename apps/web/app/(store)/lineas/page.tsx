@@ -25,6 +25,14 @@ const lines = [
     features: ['Algodón orgánico certificado', 'Bordados de alta definición', 'Diseño exclusivo'],
     color: 'text-amber-600',
     bg: 'bg-amber-50'
+  },
+  {
+    name: 'Línea CORPORATIVA',
+    icon: Briefcase,
+    description: 'Soluciones a gran escala con personalización avanzada y precios por volumen.',
+    features: ['Precios mayoristas', 'Personalización QR', 'Logística nacional'],
+    color: 'text-indigo-600',
+    bg: 'bg-indigo-50'
   }
 ];
 
@@ -42,7 +50,7 @@ export default function LineasPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {lines.map((line) => (
             <div key={line.name} className="flex flex-col bg-white border border-theme rounded-lg p-8 transition-all hover:shadow-xl hover:-translate-y-1">
-              <div className={`w-12 h-12 ${line.bg} ${line.color} rounded-full flex items-center justify-center mb-6`}>
+              <div className={`w-12 h-12 ${line.bg || 'bg-slate-50'} ${line.color || 'text-slate-600'} rounded-full flex items-center justify-center mb-6`}>
                 <line.icon size={24} />
               </div>
               <h3 className="text-xl font-bold text-primary mb-4">{line.name}</h3>
@@ -58,14 +66,14 @@ export default function LineasPage() {
               {line.name === 'Línea CORPORATIVA' ? (
                 <Link 
                   href="/corporativo" 
-                  className="w-full py-3 bg-primary text-white text-center rounded text-xs font-bold uppercase tracking-widest hover:bg-primary/90 transition-colors"
+                  className="w-full py-3 bg-primary text-base-color text-center rounded text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-all"
                 >
                   Consultar B2B
                 </Link>
               ) : (
                 <Link 
                   href="/catalog" 
-                  className="w-full py-3 border border-primary text-primary text-center rounded text-xs font-bold uppercase tracking-widest hover:bg-primary hover:text-white transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-3 border border-primary text-primary text-center rounded text-xs font-bold uppercase tracking-widest hover:bg-primary hover:text-base-color transition-colors flex items-center justify-center gap-2"
                 >
                   Ver Productos <ArrowRight size={14} />
                 </Link>

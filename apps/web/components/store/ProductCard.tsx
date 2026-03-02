@@ -15,8 +15,10 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCart();
   const [selectedVariant, setSelectedVariant] = useState<Variant>(product.variants[0]);
+  // Estado para rastrear si el usuario ha interactuado con los swatches
+  const [userSelectedImage, setUserSelectedImage] = useState<string | null>(null);
 
-  // Fallback if no variants
+  // Fallback if no variants - moved after hooks
   if (!product.variants || product.variants.length === 0) return null;
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -37,9 +39,6 @@ export default function ProductCard({ product }: ProductCardProps) {
   const allMainImages = product.images?.map(i => i.url) || [];
   const allVariantImages = product.variants?.map(v => v.imageUrl).filter(Boolean) || [];
   const orderedImages = [...allMainImages, ...allVariantImages];
-
-  // Estado para rastrear si el usuario ha interactuado con los swatches
-  const [userSelectedImage, setUserSelectedImage] = useState<string | null>(null);
 
   // displayImage sigue la jerarquía a menos que el usuario elija un color específico
   const displayImage = userSelectedImage || orderedImages[0] || '/placeholder.png';

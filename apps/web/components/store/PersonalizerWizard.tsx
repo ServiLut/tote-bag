@@ -59,7 +59,6 @@ const getLineIcon = (code: string) => {
 export default function PersonalizerWizard({ productId }: PersonalizerWizardProps) {
   const router = useRouter();
   const { addToCart } = useCart();
-  const supabase = createClient();
   
   const [step, setStep] = useState<Step>(1);
   const [loadingOptions, setLoadingOptions] = useState(true);
@@ -168,30 +167,6 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
     setUploadedLogo(previewUrl);
     setSelections(prev => ({ ...prev, customFile: file }));
     toast.success('Diseño cargado para previsualización');
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('El archivo supera los 5MB permitidos');
-      return;
-    }
-
-    setIsPricingLoading(true);
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `designs/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage.from('product-assets').upload(fileName, file);
-      if (uploadError) throw uploadError;
-      const { data } = supabase.storage.from('product-assets').getPublicUrl(fileName);
-      setSelections(prev => ({ ...prev, designUrl: data.publicUrl }));
-      toast.success('Diseño cargado');
-    } catch {
-      toast.error('Error al subir el archivo');
-    } finally {
-      setIsPricingLoading(false);
-    }
   };
 
   const nextStep = () => setStep(prev => (prev < 5 ? (prev + 1) as Step : prev));
@@ -450,9 +425,11 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
                     <div className="absolute top-[44%] left-[28%] w-[45%] h-[35%] border-2 border-dashed border-gray-400/50 rounded-lg flex items-center justify-center z-10 overflow-hidden">
                       {uploadedLogo ? (
                         <div className="relative w-full h-full flex items-center justify-center p-2">
-                          <img 
+                          <Image 
                             src={uploadedLogo} 
                             alt="Logo preview" 
+                            width={200}
+                            height={200}
                             style={{ width: `${logoScale}%`, height: 'auto', objectFit: 'contain' }}
                             className="animate-in zoom-in-50 duration-300 transition-all"
                           />
