@@ -25,7 +25,7 @@ export default function RegisterPage() {
     setSuccess(null);
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
       console.log("DEBUG: Connecting to API at:", API_URL);
 
       const response = await fetch(`${API_URL}/auth/register`, {

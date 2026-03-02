@@ -58,7 +58,7 @@ export default function ProfilePage() {
   
   const router = useRouter();
   const supabase = createClient();
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
 
   const fetchData = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();

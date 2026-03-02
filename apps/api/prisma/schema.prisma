@@ -423,6 +423,7 @@ model WizardOption {
   sortOrder          Int            @default(0) @map("sort_order")
   allowedMaterialValues String[]    @default([]) @map("allowed_material_values")
   metadata           Json?          @map("metadata")
+  imageUrl           String?        @map("image_url")
   createdAt          DateTime       @default(now()) @map("created_at")
   updatedAt          DateTime       @updatedAt @map("updated_at")
 

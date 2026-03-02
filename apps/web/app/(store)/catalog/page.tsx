@@ -28,7 +28,7 @@ export default function CatalogPage() {
     status: [],
   });
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4001';
 
   useEffect(() => {
     const fetchCollections = async () => {

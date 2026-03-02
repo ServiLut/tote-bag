@@ -81,7 +81,7 @@ export default function B2BQuoteForm() {
   const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
   const [selectedDeptId, setSelectedDeptId] = useState<string>('');
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
 
   useEffect(() => {
     // Fetch departments on load

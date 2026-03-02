@@ -160,7 +160,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
   const [isLoadingCollections, setIsLoadingCollections] = useState(false);
 
   useEffect(() => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4001';
     
     const fetchCollections = async () => {
       setIsLoadingCollections(true);
@@ -197,7 +197,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
 
   const handleCreateCollection = async (name: string) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4001';
       const slug = name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
       
       const { data: { session } } = await supabase.auth.getSession();
@@ -453,7 +453,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
     setIsSubmitting(true);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4001';
 
       // 1. Clean Variants: Remove IDs and other metadata
       const cleanVariants = formData.variants.map(v => ({

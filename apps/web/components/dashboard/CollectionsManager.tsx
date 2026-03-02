@@ -36,7 +36,7 @@ export default function CollectionsManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4001';
   const supabase = createClient();
 
   const fetchCollections = useCallback(async () => {

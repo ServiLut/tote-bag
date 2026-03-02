@@ -119,7 +119,7 @@ export default function CheckoutPage() {
   const [selectedDeptId, setSelectedDeptId] = useState<string>('');
   const [selectedCityId, setSelectedCityId] = useState<string>('');
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
 
   // Check Session on mount
   useEffect(() => {

@@ -16,7 +16,7 @@ interface Product {
 }
 
 async function getDashboardStats() {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
   
   try {
     const [ordersRes, productsRes, quotesRes] = await Promise.all([

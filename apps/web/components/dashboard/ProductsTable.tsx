@@ -76,7 +76,7 @@ export default function ProductsTable() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [role, setRole] = useState<string | null>(null);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
   const supabase = createClient();
 
   useEffect(() => {

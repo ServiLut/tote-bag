@@ -70,7 +70,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
   const [configCode, setConfigCode] = useState<string | undefined>();
   const [pricingSnapshot, setPricingSnapshot] = useState<PricingSnapshot | null>(null);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
 
   // Fetch product config
   useEffect(() => {

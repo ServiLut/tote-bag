@@ -42,4 +42,8 @@ export class CreateWizardOptionDto {
   @IsString({ each: true })
   @IsOptional()
   allowedMaterialValues?: string[];
+
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
 }

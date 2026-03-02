@@ -7,7 +7,7 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4001';
 
 async function getProductsByLine(line: string): Promise<Product[]> {
   try {

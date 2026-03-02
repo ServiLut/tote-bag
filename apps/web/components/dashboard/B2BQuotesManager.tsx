@@ -47,7 +47,7 @@ export default function B2BQuotesManager() {
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
   
   const ITEMS_PER_PAGE = 10;
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
   const supabase = createClient();
 
   useEffect(() => {

@@ -22,6 +22,7 @@ interface WizardOption {
   isActive: boolean;
   sortOrder: number;
   allowedMaterialValues: string[];
+  imageUrl?: string;
 }
 
 interface FormData {
@@ -31,6 +32,7 @@ interface FormData {
   basePriceModifier: number;
   sortOrder: number;
   allowedMaterialValues: string[];
+  imageUrl: string;
 }
 
 const INITIAL_FORM: FormData = {
@@ -40,6 +42,7 @@ const INITIAL_FORM: FormData = {
   basePriceModifier: 0,
   sortOrder: 0,
   allowedMaterialValues: [],
+  imageUrl: '',
 };
 
 const CATEGORIES: { id: WizardCategory; label: string; icon: React.ElementType; desc: string }[] = [
@@ -66,7 +69,7 @@ export default function WizardConfigManager() {
   const [showConfirmDeleteId, setShowConfirmDeleteId] = useState<string | null>(null);
 
   const supabase = createClient();
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4001';
 
   const fetchOptions = useCallback(async () => {
     try {
@@ -105,8 +108,32 @@ export default function WizardConfigManager() {
       basePriceModifier: option.basePriceModifier,
       sortOrder: option.sortOrder,
       allowedMaterialValues: option.allowedMaterialValues || [],
+      imageUrl: option.imageUrl || '',
     });
     setShowFormModal(true);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsSubmitting(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `wizard/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from('product-assets').upload(fileName, file);
+      
+      if (uploadError) throw uploadError;
+      
+      const { data: { publicUrl } } = supabase.storage.from('product-assets').getPublicUrl(fileName);
+      setFormData(prev => ({ ...prev, imageUrl: publicUrl }));
+      toast.success('Imagen de lienzo cargada');
+    } catch (err) {
+      console.error('Upload error:', err);
+      toast.error('Error al subir la imagen');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -228,9 +255,16 @@ export default function WizardConfigManager() {
                       catOptions.map((opt) => (
                         <div key={opt.id} className="p-5 bg-base/30 border border-theme rounded-2xl group hover:border-primary/30 transition-all">
                           <div className="flex items-start justify-between mb-3">
-                            <div>
-                              <h4 className="font-black text-primary text-sm uppercase tracking-tight">{opt.name}</h4>
-                              <p className="text-[10px] text-muted font-mono">{opt.code}</p>
+                            <div className="flex gap-4">
+                              {opt.imageUrl && (
+                                <div className="w-10 h-10 rounded-lg bg-white border border-theme overflow-hidden flex-shrink-0">
+                                  <img src={opt.imageUrl} alt={opt.name} className="w-full h-full object-cover" />
+                                </div>
+                              )}
+                              <div>
+                                <h4 className="font-black text-primary text-sm uppercase tracking-tight">{opt.name}</h4>
+                                <p className="text-[10px] text-muted font-mono">{opt.code}</p>
+                              </div>
                             </div>
                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button onClick={() => openEdit(opt)} className="p-2 text-muted hover:text-primary transition-colors"><Pencil size={14}/></button>
@@ -321,6 +355,33 @@ export default function WizardConfigManager() {
                       className="w-full bg-base border border-theme rounded-xl p-4 font-bold outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                     />
                   </div>
+
+                  {formData.category === 'MATERIAL' && (
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-muted block">Imagen del Mockup (Lienzo)</label>
+                      <div className="flex items-center gap-4">
+                        {formData.imageUrl && (
+                          <div className="w-20 h-20 rounded-2xl bg-white border border-theme overflow-hidden relative group">
+                            <img src={formData.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                            <button 
+                              type="button"
+                              onClick={() => setFormData(prev => ({ ...prev, imageUrl: '' }))}
+                              className="absolute inset-0 bg-red-500/80 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        )}
+                        <label className="flex-1 cursor-pointer">
+                          <div className="border-2 border-dashed border-theme rounded-2xl p-4 flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-all">
+                            <Layers size={20} className="text-muted" />
+                            <span className="text-[10px] font-black uppercase text-primary">Subir Lienzo</span>
+                            <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  )}
 
                   {formData.category === 'TECHNIQUE' && (
                     <div className="space-y-3">

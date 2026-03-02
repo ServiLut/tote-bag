@@ -30,6 +30,7 @@ interface WizardOption {
   description?: string;
   basePriceModifier: number;
   allowedMaterialValues?: string[];
+  imageUrl?: string;
 }
 
 interface GroupedOptions {
@@ -75,13 +76,16 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
     quantity: 1,
     markingType: '',
     designUrl: '',
+    customFile: null as File | null,
   });
 
+  const [uploadedLogo, setUploadedLogo] = useState<string | null>(null);
+  const [logoScale, setLogoScale] = useState(50);
   const [calculatedPrice, setCalculatedPrice] = useState(0);
   const [configCode, setConfigCode] = useState('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4001';
 
   // 1. Fetch Dynamic Options
   useEffect(() => {
@@ -128,7 +132,7 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
           size: selections.size,
           material: selections.material,
           quantity: Number(selections.quantity),
-          personalizations: selections.designUrl ? [{ code: 'LOGO', options: [selections.markingType] }] : []
+          personalizations: (selections.designUrl || uploadedLogo) ? [{ code: 'LOGO', options: [selections.markingType] }] : []
         })
       });
       
@@ -145,11 +149,26 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
     } finally {
       setIsPricingLoading(false);
     }
-  }, [API_URL, selections, productId, wizardOptions]);
+  }, [API_URL, selections, productId, wizardOptions, uploadedLogo]);
 
   useEffect(() => {
     if (step > 1 && wizardOptions) fetchPricing();
   }, [fetchPricing, step, selections.quantity, wizardOptions]);
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('El archivo supera los 5MB permitidos');
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    setUploadedLogo(previewUrl);
+    setSelections(prev => ({ ...prev, customFile: file }));
+    toast.success('Diseño cargado para previsualización');
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -190,7 +209,7 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
         variants: [],
         tags: []
       } as unknown as Product,
-      { sku: `CUSTOM-${configCode}`, color: 'Custom', imageUrl: selections.designUrl || '', stock: 999 },
+      { sku: `CUSTOM-${configCode}`, color: 'Custom', imageUrl: selections.designUrl || uploadedLogo || '', stock: 999 },
       selections.quantity,
       { ...selections, configCode },
       calculatedPrice,
@@ -331,69 +350,119 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
           {/* Step 4: Personalization */}
           {step === 4 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-              <div>
-                <h3 className="text-2xl font-serif text-primary mb-2">Tu Diseño</h3>
-                <p className="text-muted text-sm">Sube tu logo o ilustración (.png, .ai, .pdf).</p>
-              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                {/* Area de Controles (Izquierda) */}
+                <div className="space-y-8">
+                  <div>
+                    <h3 className="text-2xl font-serif text-primary mb-2">Personaliza tu Tote</h3>
+                    <p className="text-muted text-sm">Sube tu logo y elige la técnica de marcado.</p>
+                  </div>
 
-              <div 
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full aspect-video border-2 border-dashed border-theme rounded-3xl flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-primary hover:bg-primary/5 transition-all group overflow-hidden relative"
-              >
-                <input type="file" ref={fileInputRef} className="hidden" accept=".png,.ai,.pdf" onChange={handleFileUpload} />
-                
-                {selections.designUrl ? (
-                  <>
-                    <Image src={selections.designUrl} alt="Design preview" fill className="object-contain p-8" />
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span className="text-white font-bold text-xs uppercase tracking-widest">Cambiar Archivo</span>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="w-16 h-16 bg-base rounded-full flex items-center justify-center text-muted group-hover:text-primary transition-colors">
-                      <Upload size={32} />
-                    </div>
-                    <div className="text-center">
-                      <p className="font-bold text-sm">Haz clic para subir</p>
-                      <p className="text-[10px] text-muted uppercase tracking-tighter">Máximo 5MB</p>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <div className="space-y-4">
-                <h4 className="text-xs font-black uppercase tracking-widest text-primary">Técnica de Marcado</h4>
-                <div className="flex flex-wrap gap-4">
-                  {(() => {
-                    const available = wizardOptions?.TECHNIQUE.filter(t => 
-                      !t.allowedMaterialValues || 
-                      t.allowedMaterialValues.length === 0 || 
-                      t.allowedMaterialValues.includes(selections.material)
-                    ) || [];
-
-                    if (available.length === 0) {
-                      return (
-                        <div className="w-full p-6 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3">
-                          <AlertCircle className="text-red-500 shrink-0" size={18} />
-                          <p className="text-xs font-medium text-red-700">
-                            No hay técnicas de personalización compatibles con el material seleccionado ({selections.material}). 
-                            Por favor regresa al paso anterior y elige otro material.
-                          </p>
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-black uppercase tracking-widest text-primary">1. Sube tu diseño</h4>
+                    <button 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full p-4 border-2 border-dashed border-theme rounded-2xl flex items-center justify-center gap-3 hover:border-primary hover:bg-primary/5 transition-all group"
+                    >
+                      <Upload size={20} className="text-muted group-hover:text-primary" />
+                      <span className="text-sm font-bold text-primary">Cargar Imagen (.png, .jpg)</span>
+                      <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        className="hidden" 
+                        accept="image/*" 
+                        onChange={handleLogoUpload} 
+                      />
+                    </button>
+                    {uploadedLogo && (
+                      <div className="mt-4 p-4 bg-base/50 rounded-2xl border border-theme animate-in slide-in-from-top-2">
+                        <div className="flex justify-between items-center mb-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-primary">Tamaño del Diseño</label>
+                          <span className="text-[10px] font-bold text-muted">{logoScale}%</span>
                         </div>
-                      );
-                    }
+                        <input 
+                          type="range" 
+                          min="10" 
+                          max="100" 
+                          value={logoScale} 
+                          onChange={(e) => setLogoScale(Number(e.target.value))} 
+                          className="w-full h-1.5 bg-theme rounded-lg appearance-none cursor-pointer accent-primary"
+                        />
+                      </div>
+                    )}
+                    <p className="text-[10px] text-muted uppercase text-center">Recomendado: Fondo transparente</p>
+                  </div>
 
-                    return available.map(t => (
-                      <button
-                        key={t.id}
-                        onClick={() => setSelections(prev => ({ ...prev, markingType: t.code }))}
-                        className={`flex-1 min-w-[140px] py-4 rounded-2xl border-2 font-bold transition-all ${selections.markingType === t.code ? 'border-primary bg-primary text-white shadow-lg shadow-primary/20' : 'border-theme text-muted'}`}
-                      >
-                        {t.name}
-                      </button>
-                    ));
-                  })()}
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-black uppercase tracking-widest text-primary">2. Técnica de Marcado</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      {(() => {
+                        const available = wizardOptions?.TECHNIQUE.filter(t => 
+                          !t.allowedMaterialValues || 
+                          t.allowedMaterialValues.length === 0 || 
+                          t.allowedMaterialValues.includes(selections.material)
+                        ) || [];
+
+                        if (available.length === 0) {
+                          return (
+                            <div className="col-span-2 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3">
+                              <AlertCircle className="text-red-500 shrink-0" size={16} />
+                              <p className="text-[10px] font-medium text-red-700">
+                                No compatible con {selections.material}.
+                              </p>
+                            </div>
+                          );
+                        }
+
+                        return available.map(t => (
+                          <button
+                            key={t.id}
+                            onClick={() => setSelections(prev => ({ ...prev, markingType: t.code }))}
+                            className={`py-3 rounded-xl border-2 font-bold text-[10px] transition-all uppercase tracking-tighter ${selections.markingType === t.code ? 'border-primary bg-primary text-white shadow-lg shadow-primary/20' : 'border-theme text-muted hover:border-primary/30'}`}
+                          >
+                            {t.name}
+                          </button>
+                        ));
+                      })()}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Area de Previsualización (Derecha) */}
+                <div className="flex flex-col items-center gap-4">
+                  <div className="relative w-full max-w-sm aspect-[4/6] bg-gray-100 rounded-3xl overflow-hidden shadow-inner flex items-center justify-center">
+                    {/* Mockup Base Dinámico */}
+                    {(() => {
+                      const selectedMaterial = wizardOptions?.MATERIAL.find(m => m.name === selections.material);
+                      const canvasImage = selectedMaterial?.imageUrl || '/placeholder.svg';
+                      
+                      return (
+                        <Image 
+                          src={canvasImage} 
+                          alt="Tote Mockup" 
+                          fill 
+                          className="object-cover transition-opacity duration-500"
+                        />
+                      );
+                    })()}
+                    
+                    {/* Print Area Overlay */}
+                    <div className="absolute top-[44%] left-[28%] w-[45%] h-[35%] border-2 border-dashed border-gray-400/50 rounded-lg flex items-center justify-center z-10 overflow-hidden">
+                      {uploadedLogo ? (
+                        <div className="relative w-full h-full flex items-center justify-center p-2">
+                          <img 
+                            src={uploadedLogo} 
+                            alt="Logo preview" 
+                            style={{ width: `${logoScale}%`, height: 'auto', objectFit: 'contain' }}
+                            className="animate-in zoom-in-50 duration-300 transition-all"
+                          />
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center px-4">Área de impresión</span>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-[9px] text-muted font-black uppercase tracking-widest">Vista Previa Interactiva</p>
                 </div>
               </div>
             </div>
