@@ -15,19 +15,60 @@ import {
   X,
   ShieldCheck,
   Settings,
+  DollarSign,
+  TrendingUp,
+  Truck,
+  Database,
+  Calculator,
+  Receipt,
+  BarChart3,
+  FileText,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
 
-const menuItems = [
-  { name: 'Resumen', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Pedidos', href: '/dashboard/orders', icon: ShoppingBag },
-  { name: 'Productos', href: '/dashboard/products', icon: Package },
-  { name: 'Clientes', href: '/dashboard/customers', icon: Users },
-  { name: 'Corporativo (B2B)', href: '/dashboard/b2b', icon: Briefcase },
-  { name: 'Auditoría', href: '/dashboard/audit', icon: ShieldCheck },
-  { name: 'Configuración', href: '/dashboard/settings', icon: Settings },
+const menuGroups = [
+  {
+    title: 'GENERAL',
+    items: [
+      { name: 'Resumen', href: '/dashboard', icon: LayoutDashboard },
+      { name: 'Pedidos', href: '/dashboard/orders', icon: ShoppingBag },
+      { name: 'Productos', href: '/dashboard/products', icon: Package },
+      { name: 'Clientes', href: '/dashboard/customers', icon: Users },
+      { name: 'Corporativo (B2B)', href: '/dashboard/b2b', icon: Briefcase },
+    ]
+  },
+  {
+    title: 'FINANZAS',
+    items: [
+      { name: 'Dashboard Financiero', href: '/dashboard/finanzas', icon: BarChart3 },
+      { name: 'Flujo de Caja', href: '/dashboard/finance/cash-flow', icon: DollarSign },
+      { name: 'Gastos Operativos', href: '/dashboard/finance/opex', icon: Receipt },
+    ]
+  },
+  {
+    title: 'COMPRAS Y LOGÍSTICA',
+    items: [
+      { name: 'Proveedores', href: '/dashboard/logistics/suppliers', icon: Truck },
+      { name: 'Recepción de Lotes', href: '/dashboard/compras/recepcion', icon: Database },
+      { name: 'Inventario FIFO', href: '/dashboard/logistics/inventory', icon: Package },
+    ]
+  },
+  {
+    title: 'ESTRATEGIA',
+    items: [
+      { name: 'Precios y Márgenes', href: '/dashboard/strategy/pricing', icon: Calculator },
+    ]
+  },
+  {
+    title: 'SISTEMA',
+    items: [
+      { name: 'Reportes Contables', href: '/dashboard/reportes', icon: FileText },
+      { name: 'Auditoría', href: '/dashboard/audit', icon: ShieldCheck },
+      { name: 'Configuración', href: '/dashboard/settings', icon: Settings },
+    ]
+  }
 ];
 
 interface SidebarProps {
@@ -75,29 +116,38 @@ export default function Sidebar({ user, handleLogout, isMobileMenuOpen, setIsMob
           </div>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-          {menuItems.map((item) => {
-            const isActive = pathname === item.href;
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`group flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200 ${
-                  isActive
-                    ? 'bg-primary text-base-color shadow-md shadow-primary/10'
-                    : 'text-muted hover:bg-primary/5 hover:text-primary'
-                }`}
-              >
-                <Icon 
-                  className={`w-5 h-5 transition-colors ${
-                    isActive ? 'text-base-color' : 'text-muted group-hover:text-primary'
-                  }`} 
-                />
-                {item.name}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 px-4 py-6 space-y-8 overflow-y-auto custom-scrollbar">
+          {menuGroups.map((group) => (
+            <div key={group.title} className="space-y-2">
+              <h3 className="px-4 text-[10px] font-bold text-muted/50 tracking-widest uppercase">
+                {group.title}
+              </h3>
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const isActive = pathname === item.href;
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`group flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
+                        isActive
+                          ? 'bg-primary text-base-color shadow-md shadow-primary/10'
+                          : 'text-muted hover:bg-primary/5 hover:text-primary'
+                      }`}
+                    >
+                      <Icon 
+                        className={`w-4 h-4 transition-colors ${
+                          isActive ? 'text-base-color' : 'text-muted group-hover:text-primary'
+                        }`} 
+                      />
+                      {item.name}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         <div className="p-4 border-t border-theme bg-base/30">
@@ -136,21 +186,30 @@ export default function Sidebar({ user, handleLogout, isMobileMenuOpen, setIsMob
               <X className="w-6 h-6" />
             </button>
           </div>
-          <nav className="space-y-3">
-            {menuItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`flex items-center gap-4 px-5 py-4 rounded-2xl text-lg font-bold transition-all ${
-                  pathname === item.href
-                    ? 'bg-primary text-base-color shadow-xl shadow-primary/10 scale-[1.02]'
-                    : 'bg-surface border border-theme text-muted hover:text-primary'
-                }`}
-              >
-                <item.icon className={pathname === item.href ? 'text-base-color' : 'text-muted'} />
-                {item.name}
-              </Link>
+          <nav className="space-y-6 overflow-y-auto max-h-[70vh] custom-scrollbar pr-2">
+            {menuGroups.map((group) => (
+              <div key={group.title} className="space-y-3">
+                <h3 className="px-2 text-[10px] font-bold text-muted/50 tracking-widest uppercase">
+                  {group.title}
+                </h3>
+                <div className="space-y-2">
+                  {group.items.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl text-base font-bold transition-all ${
+                        pathname === item.href
+                          ? 'bg-primary text-base-color shadow-xl shadow-primary/10 scale-[1.02]'
+                          : 'bg-surface border border-theme text-muted'
+                      }`}
+                    >
+                      <item.icon className={`w-5 h-5 ${pathname === item.href ? 'text-base-color' : 'text-muted'}`} />
+                      {item.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
             ))}
             <div className="pt-6 mt-6 border-t border-theme">
               <button
