@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
-import { createClient } from '@/utils/supabase/client';
 import { 
   ChevronRight, 
   ChevronLeft, 
