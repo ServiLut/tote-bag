@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Product } from '@/types/product';
-import { Loader2, Calculator, TrendingUp, DollarSign, Percent } from 'lucide-react';
+import { Loader2, Calculator, TrendingUp, DollarSign } from 'lucide-react';
 
 export default function ProfitCalculator() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -11,7 +11,7 @@ export default function ProfitCalculator() {
   const [loading, setLoading] = useState(true);
   const [avgCost, setAvgCost] = useState<number>(0);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4001';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -135,10 +135,10 @@ export default function ProfitCalculator() {
 
           <div className="pt-4 border-t border-primary/10">
             <div className={`text-xs font-bold px-3 py-2 rounded-lg text-center ${
-              marginPercentage > 40 ? 'bg-emerald-100 text-emerald-700' : 
+              marginPercentage > 40 ? 'bg-emerald-100 text-emerald-700' :
               marginPercentage > 20 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
             }`}>
-              {marginPercentage > 40 ? 'MARGEN EXCELENTE' : 
+              {marginPercentage > 40 ? 'MARGEN EXCELENTE' :
                marginPercentage > 20 ? 'MARGEN ACEPTABLE' : 'ALERTA: MARGEN BAJO'}
             </div>
           </div>

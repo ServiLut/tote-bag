@@ -1,32 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  Legend,
-  AreaChart,
-  Area
+import React, { useState, useEffect } from 'react';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
 } from 'recharts';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  DollarSign, 
-  PieChart, 
-  ArrowUpRight, 
-  ArrowDownRight, 
+import {
+  DollarSign,
+  PieChart,
+  ArrowUpRight,
+  ArrowDownRight,
   Calendar,
   Filter,
   Download,
   Receipt,
   ShoppingBag,
-  CreditCard,
-  Briefcase
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -59,15 +52,15 @@ export default function FinanceDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [filterCategory, setFilterCategory] = useState('ALL');
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4001';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
 
   useEffect(() => {
     const fetchSummary = async () => {
       try {
         const res = await fetch(`${API_URL}/inventory/finance/summary`);
         if (res.ok) {
-          const summary = await res.json();
-          setData(summary);
+          const result = await res.json();
+          setData(result.data || null);
         }
       } catch (err) {
         console.error('Error fetching financial summary:', err);
@@ -87,7 +80,7 @@ export default function FinanceDashboardPage() {
   };
 
   const netProfit = data ? data.kpis.totalIncome - data.kpis.totalCOGS - data.kpis.totalOpex : 0;
-  const filteredTransactions = data?.recentTransactions.filter(tx => 
+  const filteredTransactions = data?.recentTransactions.filter(tx =>
     filterCategory === 'ALL' || tx.category === filterCategory
   ) || [];
 
@@ -202,23 +195,23 @@ export default function FinanceDashboardPage() {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data?.cashFlowChart || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                <XAxis 
-                  dataKey="month" 
-                  axisLine={false} 
-                  tickLine={false} 
+                <XAxis
+                  dataKey="month"
+                  axisLine={false}
+                  tickLine={false}
                   tick={{ fontSize: 10, fontWeight: 700, fill: '#64748B' }}
                   dy={10}
                 />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
                   tick={{ fontSize: 10, fontWeight: 700, fill: '#64748B' }}
                   tickFormatter={(val) => `$${val/1000000}M`}
                 />
-                <Tooltip 
+                <Tooltip
                   cursor={{ fill: 'rgba(0,0,0,0.02)' }}
                   contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                  formatter={(val: number) => [formatCurrency(val), '']}
+                  formatter={(val: number | undefined) => [formatCurrency(val || 0), '']}
                 />
                 <Bar dataKey="income" name="Entradas" fill="#000000" radius={[6, 6, 0, 0]} barSize={24} />
                 <Bar dataKey="expense" name="Salidas" fill="#00000033" radius={[6, 6, 0, 0]} barSize={24} />
@@ -231,7 +224,7 @@ export default function FinanceDashboardPage() {
         <div className="bg-surface border border-theme rounded-3xl p-8 shadow-sm flex flex-col">
           <h2 className="text-xl font-bold text-primary mb-2">Resumen de Egresos</h2>
           <p className="text-xs text-muted font-medium mb-8">Distribución de gastos acumulados.</p>
-          
+
           <div className="flex-1 space-y-6">
             <div className="space-y-2">
               <div className="flex justify-between text-xs font-bold uppercase tracking-widest">
@@ -273,7 +266,7 @@ export default function FinanceDashboardPage() {
           </div>
           <div className="flex items-center gap-2">
              <Filter className="w-4 h-4 text-muted" />
-             <select 
+             <select
                value={filterCategory}
                onChange={(e) => setFilterCategory(e.target.value)}
                className="bg-base border border-theme rounded-xl px-4 py-2 text-xs font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 transition-all"
@@ -286,7 +279,7 @@ export default function FinanceDashboardPage() {
              </select>
           </div>
         </div>
-        
+
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -344,7 +337,7 @@ export default function FinanceDashboardPage() {
   );
 }
 
-function CheckCircleIcon(props: any) {
+function CheckCircleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}

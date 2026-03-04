@@ -30,7 +30,7 @@ export default function EditProductPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4003/api/v1';
 
   useEffect(() => {
     if (!id) return;
@@ -74,8 +74,8 @@ export default function EditProductPage() {
   return (
     <div className="min-h-screen flex flex-col p-8 md:p-12 max-w-5xl mx-auto bg-base">
       <div className="flex-none mb-8">
-        <Link 
-          href="/dashboard/products" 
+        <Link
+          href="/dashboard/products"
           className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted hover:text-primary transition-all mb-6"
         >
           <ArrowLeft className="w-4 h-4" />

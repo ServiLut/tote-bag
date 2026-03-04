@@ -76,7 +76,7 @@ export default function ProductsTable() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [role, setRole] = useState<string | null>(null);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4003/api/v1';
   const supabase = createClient();
 
   useEffect(() => {
@@ -163,7 +163,7 @@ export default function ProductsTable() {
       if (margin < 20) return { type: 'danger', label: 'Bajo Margen', value: margin }; // < 20%
       if (margin < 35) return { type: 'warning', label: 'Margen Medio', value: margin }; // 20-35%
     }
-    
+
     // 2. MAP Risk (Price too close to minimum)
     if (min && base < min * 1.05) {
       return { type: 'warning', label: 'Cerca del Min', value: null };
@@ -204,8 +204,8 @@ export default function ProductsTable() {
               const mainImage = (firstImage && firstImage.trim().length > 0) ? firstImage : '/placeholder.svg';
 
               return (
-                <tr 
-                  key={product.id} 
+                <tr
+                  key={product.id}
                   className={cn(
                     "hover:bg-base/30 transition-colors group",
                     status.type === 'danger' && "bg-red-50/30 dark:bg-red-900/10 hover:bg-red-50/50 dark:hover:bg-red-900/20"
@@ -214,12 +214,12 @@ export default function ProductsTable() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-4">
                       <div className="h-12 w-12 rounded-xl overflow-hidden bg-base border border-theme flex-shrink-0 relative shadow-sm">
-                        <Image 
-                          src={mainImage} 
-                          alt={product.name} 
+                        <Image
+                          src={mainImage}
+                          alt={product.name}
                           width={48}
                           height={48}
-                          className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-300" 
+                          className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-300"
                         />
                       </div>
                       <div>
@@ -322,9 +322,9 @@ export default function ProductsTable() {
       {selectedProduct && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-surface rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300 relative border border-theme">
-            
+
             {/* Close Button */}
-            <button 
+            <button
               onClick={() => setSelectedProduct(null)}
               className="absolute top-5 right-5 p-2 bg-base/80 hover:bg-base rounded-full text-muted hover:text-primary transition-all z-10 active:scale-90"
             >
@@ -335,8 +335,8 @@ export default function ProductsTable() {
               {/* Left: Image Gallery */}
               <div className="w-full md:w-2/5 bg-base/50 p-8 flex flex-col gap-4 border-r border-theme">
                 <div className="aspect-square rounded-2xl overflow-hidden bg-surface border border-theme shadow-inner relative">
-                  <Image 
-                    src={(selectedProduct.images?.[0]?.url && selectedProduct.images[0].url.trim().length > 0) ? selectedProduct.images[0].url : '/placeholder.svg'} 
+                  <Image
+                    src={(selectedProduct.images?.[0]?.url && selectedProduct.images[0].url.trim().length > 0) ? selectedProduct.images[0].url : '/placeholder.svg'}
                     alt={selectedProduct.name}
                     width={400}
                     height={400}

@@ -1,26 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { 
-  Truck, 
-  Plus, 
-  Search, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  DollarSign, 
-  Loader2, 
-  ChevronRight, 
-  MessageCircle, 
-  Calendar,
+import { useState, useEffect, useCallback } from 'react';
+import {
+  Truck,
+  Plus,
+  Search,
+  Phone,
+  DollarSign,
+  Loader2,
+  ChevronRight,
+  MessageCircle,
   History,
   CheckCircle2,
-  X,
   CreditCard,
-  AlertTriangle
 } from 'lucide-react';
-import { format, differenceInDays } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { format } from 'date-fns';
 
 interface Supplier {
   id: string;
@@ -66,26 +60,32 @@ export default function SuppliersPage() {
   });
   const [paymentData, setPaymentData] = useState({ amount: 0, description: '' });
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4001';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
 
-  const fetchSuppliers = async () => {
+  const fetchSuppliers = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/inventory/suppliers`);
-      if (res.ok) setSuppliers(await res.json());
+      if (res.ok) {
+        const result = await res.json();
+        setSuppliers(result.data || []);
+      }
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
-  };
+  }, [API_URL]);
 
   const fetchDetails = async (id: string) => {
     setDetailsLoading(true);
     try {
       const res = await fetch(`${API_URL}/inventory/suppliers/${id}`);
-      if (res.ok) setSupplierDetails(await res.json());
+      if (res.ok) {
+        const result = await res.json();
+        setSupplierDetails(result.data || null);
+      }
     } catch (err) { console.error(err); }
     finally { setDetailsLoading(false); }
   };
 
-  useEffect(() => { fetchSuppliers(); }, [API_URL]);
+  useEffect(() => { fetchSuppliers(); }, [fetchSuppliers]);
 
   const handleCreateSupplier = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,7 +105,7 @@ export default function SuppliersPage() {
     finally { setSubmitting(false); }
   };
 
-  const handleCreatePayment = async (e: React.FormEvent) => {
+  const handleCreateSupplierPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedSupplierId) return;
     setSubmitting(true);
@@ -160,13 +160,13 @@ export default function SuppliersPage() {
             <div className="p-6 border-b border-theme bg-base/30">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-                <input 
+                <input
                   type="text" placeholder="Buscar por nombre o NIT..."
                   className="w-full pl-10 pr-4 py-2.5 bg-base border border-theme rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                 />
               </div>
             </div>
-            
+
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -181,8 +181,8 @@ export default function SuppliersPage() {
                   {loading ? (
                     <tr><td colSpan={4} className="px-8 py-12 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" /></td></tr>
                   ) : suppliers.map((s) => (
-                    <tr 
-                      key={s.id} 
+                    <tr
+                      key={s.id}
                       onClick={() => { setSelectedSupplierId(s.id); fetchDetails(s.id); }}
                       className={`hover:bg-primary/5 transition-all cursor-pointer group ${selectedSupplierId === s.id ? 'bg-primary/5' : ''}`}
                     >
@@ -230,7 +230,7 @@ export default function SuppliersPage() {
                       <h2 className="text-2xl font-black">{details.name}</h2>
                       <p className="text-base-color/60 font-bold text-xs uppercase tracking-widest">{details.nit}</p>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-4">
                       <a href={`tel:${details.phone}`} className="flex items-center gap-3 p-3 bg-white/10 rounded-2xl hover:bg-white/20 transition-all">
                         <Phone className="w-4 h-4" />
@@ -257,7 +257,7 @@ export default function SuppliersPage() {
                       <History className="w-4 h-4" />
                       Historial Reciente
                     </h3>
-                    <button 
+                    <button
                       onClick={() => setIsPaymentModalOpen(true)}
                       className="text-[10px] font-black uppercase bg-rose-50 text-rose-600 px-3 py-1.5 rounded-lg hover:bg-rose-100 transition-all"
                     >

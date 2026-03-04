@@ -12,7 +12,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4003/api/v1';
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -41,19 +41,19 @@ export default function Home() {
         </div>
         
         <div className="relative z-10 text-center space-y-6 max-w-2xl px-4">
-          <span className="text-secondary font-bold tracking-widest uppercase text-sm">Colección 2026</span>
+          <span className="text-secondary font-bold tracking-widest uppercase text-sm">Colecci�n 2026</span>
           <h1 className="text-5xl md:text-7xl font-serif text-primary leading-tight">
-            Marca Dual: <br/> Stock y Producción.
+            Marca Dual: <br/> Stock y Producci�n.
           </h1>
           <p className="text-lg text-muted max-w-lg mx-auto">
-            Descubre nuestras piezas en stock para entrega inmediata o personaliza tu producción al por mayor. Calidad artesanal para cada necesidad.
+            Descubre nuestras piezas en stock para entrega inmediata o personaliza tu producci�n al por mayor. Calidad artesanal para cada necesidad.
           </p>
           <div className="pt-4 flex gap-4 justify-center">
             <Link href="/catalog" className="px-8 py-3 btn-primary font-medium rounded-sm uppercase tracking-wider text-xs">
               Compra en Stock
             </Link>
             <Link href="/corporativo" className="px-8 py-3 btn-outline font-medium rounded-sm uppercase tracking-wider text-xs">
-              Área Corporativa
+              �rea Corporativa
             </Link>
           </div>
         </div>
@@ -63,11 +63,11 @@ export default function Home() {
       <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
         <div className="flex justify-between items-end mb-12 border-b border-theme pb-6">
           <div>
-            <h2 className="text-3xl font-serif text-primary mb-2 uppercase tracking-tight">Selección Destacada</h2>
-            <p className="text-muted text-sm">Stock disponible para envío hoy o diseños listos para producción personalizada.</p>
+            <h2 className="text-3xl font-serif text-primary mb-2 uppercase tracking-tight">Selecci�n Destacada</h2>
+            <p className="text-muted text-sm">Stock disponible para env�o hoy o dise�os listos para producci�n personalizada.</p>
           </div>
           <Link href="/lineas" className="hidden sm:block text-primary font-bold uppercase text-xs tracking-widest hover:text-accent transition-colors">
-            Explorar Líneas &rarr;
+            Explorar L�neas &rarr;
           </Link>
         </div>
 
@@ -94,7 +94,7 @@ export default function Home() {
         {!loading && !error && products.length > 0 && (
           <div className="mt-16 text-center sm:hidden">
              <Link href="/catalog" className="text-primary font-bold uppercase text-xs tracking-widest border-b-2 border-primary pb-1">
-              Ver catálogo completo
+              Ver cat�logo completo
             </Link>
           </div>
         )}
@@ -106,11 +106,11 @@ export default function Home() {
           <span className="text-white/70 font-bold tracking-[0.2em] uppercase text-xs">Compromiso Real</span>
           <h2 className="text-4xl md:text-5xl font-serif leading-tight">Moda Consciente, Impacto Real.</h2>
           <p className="text-lg opacity-90 max-w-2xl mx-auto font-light leading-relaxed">
-            Cada tote bag ahorra un promedio de 500 bolsas plásticas al año. Trabajamos con artesanos locales y materiales certificados bajo estándares éticos.
+            Cada tote bag ahorra un promedio de 500 bolsas pl�sticas al a�o. Trabajamos con artesanos locales y materiales certificados bajo est�ndares �ticos.
           </p>
           <div className="pt-4">
             <button className="px-10 py-4 border border-white/30 hover:bg-white hover:text-secondary transition-all rounded-sm text-sm uppercase font-bold tracking-widest">
-              Saber más
+              Saber m�s
             </button>
           </div>
         </div>
@@ -118,4 +118,5 @@ export default function Home() {
     </>
   );
 }
+
 

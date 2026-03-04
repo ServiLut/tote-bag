@@ -36,7 +36,7 @@ export default function CollectionsManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4001';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
   const supabase = createClient();
 
   const fetchCollections = useCallback(async () => {
@@ -97,10 +97,10 @@ export default function CollectionsManager() {
     setIsSubmitting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const url = editingId 
-        ? `${API_URL}/collections/${editingId}` 
+      const url = editingId
+        ? `${API_URL}/collections/${editingId}`
         : `${API_URL}/collections`;
-      
+
       const method = editingId ? 'PATCH' : 'POST';
 
       const res = await fetch(url, {
@@ -132,7 +132,7 @@ export default function CollectionsManager() {
     setIsDeletingId(id);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       const res = await fetch(`${API_URL}/collections/${id}`, {
         method: 'DELETE',
         headers: {
@@ -208,8 +208,8 @@ export default function CollectionsManager() {
                   </td>
                   <td className="px-6 py-4 text-center">
                     <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                      coll._count.products > 0 
-                        ? 'bg-secondary/10 text-secondary border border-secondary/20' 
+                      coll._count.products > 0
+                        ? 'bg-secondary/10 text-secondary border border-secondary/20'
                         : 'bg-base text-muted border border-theme'
                     }`}>
                       {coll._count.products}
@@ -250,7 +250,7 @@ export default function CollectionsManager() {
                   <h3 className="text-2xl font-black text-primary tracking-tight">
                     {editingId ? 'Editar Colección' : 'Nueva Colección'}
                   </h3>
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setShowFormModal(false)}
                     className="p-2 text-muted hover:text-primary transition-colors"
@@ -321,19 +321,19 @@ export default function CollectionsManager() {
                 <div className="w-10 h-10 bg-red-100 dark:bg-red-950/30 rounded-full flex items-center justify-center text-red-600">
                   <AlertTriangle size={20} />
                 </div>
-                <button 
+                <button
                   onClick={() => setShowConfirmId(null)}
                   className="p-2 text-muted hover:text-primary transition-colors"
                 >
                   <X size={20} />
                 </button>
               </div>
-              
+
               <h3 className="text-xl font-black text-primary tracking-tight mb-2">¿Confirmas la eliminación?</h3>
               <p className="text-sm text-muted font-medium leading-relaxed">
                 Estás a punto de eliminar la colección <span className="text-primary font-bold">&quot;{collections.find(c => c.id === showConfirmId)?.name}&quot;</span>. Esta acción no se puede deshacer.
               </p>
-              
+
               {(collections.find(c => c.id === showConfirmId)?._count?.products ?? 0) > 0 && (
                 <div className="mt-4 p-3 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 rounded-xl">
                   <p className="text-[10px] font-black text-red-700 dark:text-red-400 uppercase tracking-widest">
@@ -342,7 +342,7 @@ export default function CollectionsManager() {
                 </div>
               )}
             </div>
-            
+
             <div className="p-6 bg-base/30 flex gap-3 border-t border-theme">
               <button
                 onClick={() => setShowConfirmId(null)}

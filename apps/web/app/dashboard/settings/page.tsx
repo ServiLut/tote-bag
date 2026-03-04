@@ -2,12 +2,12 @@
 
 import { useEffect, useState, ChangeEvent, FormEvent } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { 
-  Loader2, 
-  User as UserIcon, 
-  Mail, 
-  Phone, 
-  MapPin, 
+import {
+  Loader2,
+  User as UserIcon,
+  Mail,
+  Phone,
+  MapPin,
   Save,
   Building2,
   Navigation
@@ -53,7 +53,7 @@ export default function SettingsPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4003/api/v1';
   const supabase = createClient();
 
   useEffect(() => {
@@ -143,8 +143,8 @@ export default function SettingsPage() {
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ 
-      ...prev, 
+    setFormData(prev => ({
+      ...prev,
       [name]: value,
       // If department changes, clear municipality
       ...(name === 'department' ? { municipality: '' } : {})
@@ -197,7 +197,7 @@ export default function SettingsPage() {
 
       <div className="bg-surface rounded-3xl border border-theme shadow-sm overflow-hidden">
         <form onSubmit={handleSubmit} className="p-8 space-y-8">
-          
+
           {/* Email (Read Only) */}
           <div className="space-y-4">
             <h3 className="text-[10px] font-black text-muted uppercase tracking-[0.2em] flex items-center gap-2 px-1">

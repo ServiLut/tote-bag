@@ -27,6 +27,7 @@ export interface Product {
   slug: string;
   description: string;
   basePrice: number;
+  costPrice?: number;
   comparePrice?: number; // Precio tachado
   images: ProductImage[];
   variants: Variant[];

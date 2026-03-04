@@ -1,23 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { 
-  FileText, 
-  Download, 
-  Calendar, 
-  Loader2, 
-  ArrowUpRight, 
-  ArrowDownRight, 
-  PieChart, 
+import { useState, useEffect, useCallback } from 'react';
+import {
+  FileText,
+  Download,
+  Calendar,
+  Loader2,
+  ArrowUpRight,
+  ArrowDownRight,
+  PieChart,
   TrendingUp,
   FileSpreadsheet,
-  Signature
+  Signature,
+  CheckCircle2
 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths, startOfYear } from 'date-fns';
-import { es } from 'date-fns/locale';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
 
 interface ClosingReport {
   period: { startDate: string; endDate: string };
@@ -33,35 +30,56 @@ interface ClosingReport {
   inventoryValuation: number;
 }
 
+interface AccountingReport {
+  period: { startDate: string; endDate: string };
+  totalIncome: number;
+  totalOpex: number;
+  totalCOGS: number;
+  estimatedTaxes: number;
+  netProfit: number;
+  opexByCategory: Record<string, number>;
+}
+
 export default function ReportsPage() {
   const [report, setReport] = useState<ClosingReport | null>(null);
+  const [accounting, setAccounting] = useState<AccountingReport | null>(null);
   const [loading, setLoading] = useState(true);
+  const [exportLoading, setExportLoading] = useState<'excel' | 'pdf' | null>(null);
   const [range, setRange] = useState('CURRENT_MONTH');
-  
+
   const [dates, setDates] = useState({
     start: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
     end: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
   });
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4001';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
 
-  const fetchReport = async () => {
+  const fetchReports = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/inventory/reporting/closing?startDate=${dates.start}&endDate=${dates.end}`);
-      if (res.ok) {
-        setReport(await res.json());
+      const [closingRes, accountingRes] = await Promise.all([
+        fetch(`${API_URL}/inventory/reporting/closing?startDate=${dates.start}&endDate=${dates.end}`),
+        fetch(`${API_URL}/inventory/reporting/accounting?startDate=${dates.start}&endDate=${dates.end}`)
+      ]);
+
+      if (closingRes.ok) {
+        const result = await closingRes.json();
+        setReport(result.data || null);
+      }
+      if (accountingRes.ok) {
+        const result = await accountingRes.json();
+        setAccounting(result.data || null);
       }
     } catch (err) {
       console.error('Error fetching report:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [dates, API_URL]);
 
   useEffect(() => {
-    fetchReport();
-  }, [dates, API_URL]);
+    fetchReports();
+  }, [fetchReports]);
 
   const handleRangeChange = (newRange: string) => {
     setRange(newRange);
@@ -97,73 +115,38 @@ export default function ReportsPage() {
     }).format(amount);
   };
 
-  const exportPDF = () => {
-    if (!report) return;
-    const doc = jsPDF();
-    const pnl = report.pnl;
+  const handleExport = async (type: 'excel' | 'pdf') => {
+    setExportLoading(type);
+    try {
+      const url = `${API_URL}/inventory/reporting/accounting/export/${type}?startDate=${dates.start}&endDate=${dates.end}`;
+      console.log(`Exporting ${type} from: ${url}`);
 
-    // Header
-    doc.setFontSize(22);
-    doc.setTextColor(0, 0, 0);
-    doc.text('TOTE BAG CO.', 105, 20, { align: 'center' });
-    doc.setFontSize(10);
-    doc.text('Reporte Contable Oficial - Estado de Resultados', 105, 28, { align: 'center' });
-    doc.text(`Periodo: ${format(new Date(dates.start), 'dd/MM/yyyy')} al ${format(new Date(dates.end), 'dd/MM/yyyy')}`, 105, 34, { align: 'center' });
+      const res = await fetch(url);
 
-    // Table
-    autoTable(doc, {
-      startY: 45,
-      head: [['Concepto', 'Monto']],
-      body: [
-        ['Ventas Brutas', formatCurrency(pnl.grossSales)],
-        ['(-) Costo de Ventas (COGS)', formatCurrency(pnl.totalCOGS)],
-        ['UTILIDAD BRUTA', formatCurrency(pnl.grossProfit)],
-        ['(-) Gastos Operativos (OpEx)', formatCurrency(pnl.totalOpex)],
-        ...Object.entries(pnl.opexByCategory).map(([cat, val]) => [`   > ${cat}`, formatCurrency(val)]),
-        ['(-) Impuestos Estimados (19%)', formatCurrency(pnl.estimatedTaxes)],
-        ['UTILIDAD NETA', formatCurrency(pnl.netProfit)],
-      ],
-      theme: 'striped',
-      headStyles: { fillStyle: 'black' as any }, // Correct type hack
-      styles: { fontStyle: 'bold' as any },
-      columnStyles: { 1: { halign: 'right' as any } },
-    });
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error(`Export failed with status ${res.status}: ${errorText}`);
+        alert(`Error al exportar ${type.toUpperCase()}. Revise la consola.`);
+        return;
+      }
 
-    // Valuation
-    const finalY = (doc as any).lastAutoTable.finalY + 15;
-    doc.text(`Valorización de Inventario Actual: ${formatCurrency(report.inventoryValuation)}`, 14, finalY);
+      const blob = await res.blob();
+      console.log(`Received blob of size: ${blob.size} bytes`);
 
-    // Signature
-    doc.text('__________________________', 105, finalY + 40, { align: 'center' });
-    doc.text('Firma de Responsabilidad', 105, finalY + 45, { align: 'center' });
-    doc.text(`Fecha de generación: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 105, finalY + 50, { align: 'center' });
-
-    doc.save(`Reporte_Contable_${dates.start}_${dates.end}.pdf`);
-  };
-
-  const exportExcel = () => {
-    if (!report) return;
-    const pnl = report.pnl;
-    const data = [
-      ['TOTE BAG CO. - REPORTE CONTABLE'],
-      [`Periodo: ${dates.start} al ${dates.end}`],
-      [],
-      ['Concepto', 'Monto'],
-      ['Ventas Brutas', pnl.grossSales],
-      ['Costo de Ventas (COGS)', -pnl.totalCOGS],
-      ['UTILIDAD BRUTA', pnl.grossProfit],
-      ['Gastos Operativos', -pnl.totalOpex],
-      ...Object.entries(pnl.opexByCategory).map(([cat, val]) => [`OpEx: ${cat}`, -val]),
-      ['Impuestos Estimados', -pnl.estimatedTaxes],
-      ['UTILIDAD NETA', pnl.netProfit],
-      [],
-      ['Valorización de Inventario', report.inventoryValuation],
-    ];
-
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'P&L');
-    XLSX.writeFile(wb, `Reporte_Contable_${dates.start}_${dates.end}.xlsx`);
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = `Reporte_Contable_${dates.start}_${dates.end}.${type === 'excel' ? 'xlsx' : 'pdf'}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(downloadUrl);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error(`Error exporting ${type}:`, err);
+      alert(`Error de red al exportar ${type.toUpperCase()}.`);
+    } finally {
+      setExportLoading(null);
+    }
   };
 
   return (
@@ -180,18 +163,20 @@ export default function ReportsPage() {
           <p className="text-muted font-medium">Genera estados de resultados oficiales y valuación de activos.</p>
         </div>
         <div className="flex items-center gap-3">
-           <button 
-             onClick={exportExcel}
-             className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-all"
+           <button
+             onClick={() => handleExport('excel')}
+             disabled={exportLoading !== null}
+             className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-all disabled:opacity-50"
            >
-             <FileSpreadsheet className="w-4 h-4" />
+             {exportLoading === 'excel' ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
              Excel
            </button>
-           <button 
-             onClick={exportPDF}
-             className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-600 border border-rose-100 rounded-xl text-xs font-bold hover:bg-rose-100 transition-all"
+           <button
+             onClick={() => handleExport('pdf')}
+             disabled={exportLoading !== null}
+             className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-600 border border-rose-100 rounded-xl text-xs font-bold hover:bg-rose-100 transition-all disabled:opacity-50"
            >
-             <Download className="w-4 h-4" />
+             {exportLoading === 'pdf' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
              PDF
            </button>
         </div>
@@ -212,25 +197,25 @@ export default function ReportsPage() {
             </button>
           ))}
         </div>
-        
+
         <div className="flex items-center gap-4 text-muted">
            <div className="flex items-center gap-2">
              <Calendar className="w-4 h-4" />
-             <input 
-               type="date" 
+             <input
+               type="date"
                value={dates.start}
                onChange={(e) => setDates({ ...dates, start: e.target.value })}
-               className="bg-transparent border-none p-0 text-sm font-bold outline-none text-primary" 
+               className="bg-transparent border-none p-0 text-sm font-bold outline-none text-primary"
              />
            </div>
            <span className="text-xs font-black">HASTA</span>
            <div className="flex items-center gap-2">
              <Calendar className="w-4 h-4" />
-             <input 
-               type="date" 
+             <input
+               type="date"
                value={dates.end}
                onChange={(e) => setDates({ ...dates, end: e.target.value })}
-               className="bg-transparent border-none p-0 text-sm font-bold outline-none text-primary" 
+               className="bg-transparent border-none p-0 text-sm font-bold outline-none text-primary"
              />
            </div>
         </div>
@@ -241,83 +226,131 @@ export default function ReportsPage() {
            <Loader2 className="w-10 h-10 animate-spin text-primary" />
            <p className="text-sm font-bold text-muted animate-pulse">Consolidando transacciones y lotes FIFO...</p>
         </div>
-      ) : report && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* P&L View */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-surface border border-theme rounded-3xl overflow-hidden shadow-sm">
-              <div className="p-8 border-b border-theme bg-base/30">
-                 <h2 className="text-xl font-bold text-primary flex items-center gap-2">
-                   <TrendingUp className="w-5 h-5 text-emerald-500" />
-                   Estado de Resultados (P&L)
-                 </h2>
+      ) : (
+        <div className="space-y-12">
+          {/* Accounting Summary Cards */}
+          {accounting && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-surface border border-theme rounded-3xl p-8 shadow-sm">
+                <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-1">Ingresos Totales</p>
+                <h3 className="text-3xl font-black text-emerald-600">{formatCurrency(accounting.totalIncome)}</h3>
+                <div className="mt-4 flex items-center gap-2 text-xs font-bold text-emerald-500">
+                  <ArrowUpRight className="w-4 h-4" />
+                  Órdenes Pagadas/Entregadas
+                </div>
               </div>
-              <table className="w-full text-left border-collapse">
-                <tbody className="divide-y divide-theme">
-                  <tr className="bg-base/10">
-                    <td className="px-8 py-4 font-bold text-primary">Ingresos Operacionales (Ventas)</td>
-                    <td className="px-8 py-4 text-right font-black text-emerald-600">{formatCurrency(report.pnl.grossSales)}</td>
-                  </tr>
-                  <tr>
-                    <td className="px-8 py-4 text-muted font-medium flex items-center gap-2">
-                      <ArrowDownRight className="w-4 h-4 text-rose-400" />
-                      Costo de Ventas (COGS - FIFO)
-                    </td>
-                    <td className="px-8 py-4 text-right font-bold text-rose-500">-{formatCurrency(report.pnl.totalCOGS)}</td>
-                  </tr>
-                  <tr className="bg-primary/5">
-                    <td className="px-8 py-4 font-black text-primary text-lg uppercase tracking-tight">Utilidad Bruta</td>
-                    <td className="px-8 py-4 text-right font-black text-primary text-lg">{formatCurrency(report.pnl.grossProfit)}</td>
-                  </tr>
-                  <tr>
-                    <td className="px-8 py-4 text-muted font-bold pt-6 pb-2 uppercase text-[10px] tracking-widest">Gastos Operativos (OpEx)</td>
-                    <td className="px-8 py-4"></td>
-                  </tr>
-                  {Object.entries(report.pnl.opexByCategory).map(([cat, val]) => (
-                    <tr key={cat}>
-                      <td className="px-12 py-3 text-sm text-muted font-medium">{cat}</td>
-                      <td className="px-8 py-3 text-right font-bold text-rose-500">-{formatCurrency(val)}</td>
-                    </tr>
-                  ))}
-                  <tr className="bg-rose-50/50">
-                    <td className="px-8 py-4 font-bold text-rose-600">Total OpEx</td>
-                    <td className="px-8 py-4 text-right font-black text-rose-600">-{formatCurrency(report.pnl.totalOpex)}</td>
-                  </tr>
-                  <tr>
-                    <td className="px-8 py-4 text-muted font-medium italic">Impuestos Estimados (Ej. 19% IVA/Renta)</td>
-                    <td className="px-8 py-4 text-right font-bold text-muted">-{formatCurrency(report.pnl.estimatedTaxes)}</td>
-                  </tr>
-                  <tr className="bg-black text-white">
-                    <td className="px-8 py-6 font-black text-xl uppercase tracking-tighter">Utilidad Neta del Periodo</td>
-                    <td className="px-8 py-6 text-right font-black text-xl">{formatCurrency(report.pnl.netProfit)}</td>
-                  </tr>
-                </tbody>
-              </table>
+
+              <div className="bg-surface border border-theme rounded-3xl p-8 shadow-sm">
+                <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-1">Gastos Totales (OpEx + COGS)</p>
+                <h3 className="text-3xl font-black text-rose-600">{formatCurrency(accounting.totalOpex + accounting.totalCOGS)}</h3>
+                <div className="mt-4 flex items-center gap-2 text-xs font-bold text-rose-500">
+                  <ArrowDownRight className="w-4 h-4" />
+                  Salidas de Efectivo
+                </div>
+              </div>
+
+              <div className={`rounded-3xl p-8 shadow-xl shadow-primary/10 border border-theme ${accounting.netProfit >= 0 ? 'bg-primary text-base-color' : 'bg-rose-600 text-white'}`}>
+                <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${accounting.netProfit >= 0 ? 'text-base-color/60' : 'text-white/60'}`}>Utilidad Neta</p>
+                <h3 className="text-3xl font-black">{formatCurrency(accounting.netProfit)}</h3>
+                <div className={`mt-4 flex items-center gap-2 text-xs font-bold ${accounting.netProfit >= 0 ? 'text-base-color/80' : 'text-white/80'}`}>
+                  {accounting.netProfit >= 0 ? <TrendingUp className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+                  Resultado del Periodo
+                </div>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Side Info */}
-          <div className="space-y-8">
-             {/* Inventory Valuation */}
-             <div className="bg-surface border border-theme rounded-3xl p-8 shadow-sm group hover:border-primary/40 transition-all">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-amber-100 rounded-lg text-amber-600">
-                    <PieChart className="w-6 h-6" />
+          {/* Detailed Reports Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* P&L View */}
+            {report && (
+              <div className="lg:col-span-2 space-y-6">
+                <div className="bg-surface border border-theme rounded-3xl overflow-hidden shadow-sm">
+                  <div className="p-8 border-b border-theme bg-base/30">
+                    <h2 className="text-xl font-bold text-primary flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-emerald-500" />
+                      Estado de Resultados (P&L)
+                    </h2>
                   </div>
-                  <h3 className="text-lg font-bold text-primary">Valor del Inventario</h3>
+                  <table className="w-full text-left border-collapse">
+                    <tbody className="divide-y divide-theme">
+                      <tr className="bg-base/10">
+                        <td className="px-8 py-4 font-bold text-primary">Ingresos Operacionales (Ventas)</td>
+                        <td className="px-8 py-4 text-right font-black text-emerald-600">{formatCurrency(report.pnl.grossSales)}</td>
+                      </tr>
+                      <tr>
+                        <td className="px-8 py-4 text-muted font-medium flex items-center gap-2">
+                          <ArrowDownRight className="w-4 h-4 text-rose-400" />
+                          Costo de Ventas (COGS - FIFO)
+                        </td>
+                        <td className="px-8 py-4 text-right font-bold text-rose-500">-{formatCurrency(report.pnl.totalCOGS)}</td>
+                      </tr>
+                      <tr className="bg-primary/5">
+                        <td className="px-8 py-4 font-black text-primary text-lg uppercase tracking-tight">Utilidad Bruta</td>
+                        <td className="px-8 py-4 text-right font-black text-primary text-lg">{formatCurrency(report.pnl.grossProfit)}</td>
+                      </tr>
+                      {/* OpEx Breakdown Table as requested */}
+                      <tr>
+                        <td className="px-8 py-4 text-muted font-bold pt-6 pb-2 uppercase text-[10px] tracking-widest">Desglose de Gastos Operativos (OpEx)</td>
+                        <td className="px-8 py-4"></td>
+                      </tr>
+                      {accounting ? (
+                        Object.entries(accounting.opexByCategory).map(([cat, val]) => (
+                          <tr key={cat}>
+                            <td className="px-12 py-3 text-sm text-muted font-medium">{cat}</td>
+                            <td className="px-8 py-3 text-right font-bold text-rose-500">-{formatCurrency(val)}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        Object.entries(report.pnl.opexByCategory).map(([cat, val]) => (
+                          <tr key={cat}>
+                            <td className="px-12 py-3 text-sm text-muted font-medium">{cat}</td>
+                            <td className="px-8 py-3 text-right font-bold text-rose-500">-{formatCurrency(val)}</td>
+                          </tr>
+                        ))
+                      )}
+                      <tr className="bg-rose-50/50">
+                        <td className="px-8 py-4 font-bold text-rose-600">Total OpEx</td>
+                        <td className="px-8 py-4 text-right font-black text-rose-600">-{formatCurrency(accounting?.totalOpex || report.pnl.totalOpex)}</td>
+                      </tr>
+                      <tr>
+                        <td className="px-8 py-4 text-muted font-medium italic">Impuestos Estimados (19%)</td>
+                        <td className="px-8 py-4 text-right font-bold text-rose-500">-{formatCurrency(accounting?.estimatedTaxes || report.pnl.estimatedTaxes)}</td>
+                      </tr>
+                      <tr className="bg-black text-white">
+                        <td className="px-8 py-6 font-black text-xl uppercase tracking-tighter">Utilidad Neta del Periodo</td>
+                        <td className="px-8 py-6 text-right font-black text-xl">{formatCurrency(accounting?.netProfit || report.pnl.netProfit)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
-                <p className="text-sm text-muted font-medium mb-4">Capital invertido actualmente en bodega (FIFO).</p>
-                <div className="text-3xl font-black text-primary">
-                  {formatCurrency(report.inventoryValuation)}
-                </div>
-                <div className="mt-4 pt-4 border-t border-theme flex items-center gap-2 text-[10px] font-black text-amber-600 uppercase tracking-widest">
-                  <TrendingUp className="w-3 h-3" />
-                  Activo Corriente Disponible
-                </div>
-             </div>
+              </div>
+            )}
 
-             {/* Closing Checklist */}
-             <div className="bg-surface border border-theme rounded-3xl p-8 shadow-sm">
+            {/* Side Info */}
+            <div className="space-y-8">
+              {/* Inventory Valuation */}
+              {report && (
+                <div className="bg-surface border border-theme rounded-3xl p-8 shadow-sm group hover:border-primary/40 transition-all">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-amber-100 rounded-lg text-amber-600">
+                      <PieChart className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-lg font-bold text-primary">Valor del Inventario</h3>
+                  </div>
+                  <p className="text-sm text-muted font-medium mb-4">Capital invertido actualmente en bodega (FIFO).</p>
+                  <div className="text-3xl font-black text-primary">
+                    {formatCurrency(report.inventoryValuation)}
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-theme flex items-center gap-2 text-[10px] font-black text-amber-600 uppercase tracking-widest">
+                    <TrendingUp className="w-3 h-3" />
+                    Activo Corriente Disponible
+                  </div>
+                </div>
+              )}
+
+              {/* Closing Checklist */}
+              <div className="bg-surface border border-theme rounded-3xl p-8 shadow-sm">
                 <h3 className="text-lg font-bold text-primary mb-6 flex items-center gap-2">
                   <Signature className="w-5 h-5 text-primary" />
                   Cierre Oficial
@@ -342,7 +375,8 @@ export default function ReportsPage() {
                     Reporte generado electrónicamente. Los valores están sujetos a auditoría externa.
                   </p>
                 </div>
-             </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

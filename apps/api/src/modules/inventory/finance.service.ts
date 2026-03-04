@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { TransactionType, TransactionCategory } from '../../generated/client/enums';
+import { Prisma } from '../../generated/client/client';
+import {
+  TransactionType,
+  TransactionCategory,
+} from '../../generated/client/enums';
 
 @Injectable()
 export class FinanceService {
@@ -26,10 +30,10 @@ export class FinanceService {
     });
 
     const payments = await this.prisma.financialTransaction.aggregate({
-      where: { 
-        supplierId, 
+      where: {
+        supplierId,
         type: TransactionType.EXPENSE,
-        category: TransactionCategory.PURCHASE 
+        category: TransactionCategory.PURCHASE,
       },
       _sum: { amount: true },
     });
@@ -37,23 +41,31 @@ export class FinanceService {
     return (batches._sum.totalCost || 0) - (payments._sum.amount || 0);
   }
 
-  async createSupplier(data: any) {
+  async createSupplier(data: {
+    name: string;
+    nit: string;
+    contact?: string;
+    phone?: string;
+    email?: string;
+  }) {
     return this.prisma.supplier.create({ data });
   }
 
   async findAllSuppliers() {
     const suppliers = await this.prisma.supplier.findMany({
       include: {
-        _count: { select: { batches: true } }
+        _count: { select: { batches: true } },
       },
       orderBy: { name: 'asc' },
     });
 
     // Enhance with current balance
-    return Promise.all(suppliers.map(async (s) => ({
-      ...s,
-      currentBalance: await this.getSupplierBalance(s.id),
-    })));
+    return Promise.all(
+      suppliers.map(async (s) => ({
+        ...s,
+        currentBalance: await this.getSupplierBalance(s.id),
+      })),
+    );
   }
 
   async getSupplierDetails(id: string) {
@@ -62,12 +74,12 @@ export class FinanceService {
       include: {
         batches: {
           include: { product: true },
-          orderBy: { createdAt: 'desc' }
+          orderBy: { createdAt: 'desc' },
         },
         transactions: {
-          orderBy: { createdAt: 'desc' }
-        }
-      }
+          orderBy: { createdAt: 'desc' },
+        },
+      },
     });
 
     if (!supplier) return null;
@@ -103,9 +115,15 @@ export class FinanceService {
 
     if (categories.length === 0) {
       // Seed if empty
-      const defaultCategories = ['Nómina', 'Arriendo', 'Servicios', 'Marketing', 'Mantenimiento'];
+      const defaultCategories = [
+        'Nómina',
+        'Arriendo',
+        'Servicios',
+        'Marketing',
+        'Mantenimiento',
+      ];
       await this.prisma.opexCategory.createMany({
-        data: defaultCategories.map(name => ({ name })),
+        data: defaultCategories.map((name) => ({ name })),
         skipDuplicates: true,
       });
       return this.prisma.opexCategory.findMany({ orderBy: { name: 'asc' } });
@@ -127,8 +145,8 @@ export class FinanceService {
     return this.prisma.financialTransaction.create({
       data: {
         type: TransactionType.EXPENSE,
-        category: category?.name.toLowerCase().includes('nómina') 
-          ? TransactionCategory.PAYROLL 
+        category: category?.name.toLowerCase().includes('nómina')
+          ? TransactionCategory.PAYROLL
           : TransactionCategory.OPEX,
         amount: data.amount,
         description: data.description,
@@ -143,7 +161,9 @@ export class FinanceService {
   async getOpexTransactions() {
     return this.prisma.financialTransaction.findMany({
       where: {
-        category: { in: [TransactionCategory.OPEX, TransactionCategory.PAYROLL] },
+        category: {
+          in: [TransactionCategory.OPEX, TransactionCategory.PAYROLL],
+        },
       },
       include: { opexCategory: true, user: true },
       orderBy: { createdAt: 'desc' },
@@ -155,13 +175,16 @@ export class FinanceService {
       orderBy: { createdAt: 'asc' },
     });
 
-    const flowMap: Record<string, { income: number; expense: number; date: Date }> = {};
-    let cumulativeBalance = 0;
+    const flowMap: Record<
+      string,
+      { income: number; expense: number; date: Date }
+    > = {};
 
     transactions.forEach((tx) => {
-      const dateKey = period === 'daily' 
-        ? tx.createdAt.toISOString().split('T')[0] 
-        : tx.createdAt.toISOString().substring(0, 7); // YYYY-MM
+      const dateKey =
+        period === 'daily'
+          ? tx.createdAt.toISOString().split('T')[0]
+          : tx.createdAt.toISOString().substring(0, 7); // YYYY-MM
 
       if (!flowMap[dateKey]) {
         flowMap[dateKey] = { income: 0, expense: 0, date: tx.createdAt };
@@ -169,18 +192,14 @@ export class FinanceService {
 
       if (tx.type === TransactionType.INCOME) {
         flowMap[dateKey].income += tx.amount;
-        cumulativeBalance += tx.amount;
       } else {
         flowMap[dateKey].expense += tx.amount;
-        cumulativeBalance -= tx.amount;
       }
     });
 
     const chartData = Object.entries(flowMap).map(([key, data]) => {
       const pointIncome = data.income;
       const pointExpense = data.expense;
-      // Note: This cumulativeBalance here would be the balance AT THE END of the current list
-      // We need to recalculate it step-by-step for the chart to show progression.
       return {
         label: key,
         income: pointIncome,
@@ -191,11 +210,11 @@ export class FinanceService {
 
     // Recalculate cumulative step-by-step for the final array
     let runningBalance = 0;
-    const finalData = chartData.map(point => {
+    const finalData = chartData.map((point) => {
       runningBalance += point.net;
       return {
         ...point,
-        balance: runningBalance
+        balance: runningBalance,
       };
     });
 
@@ -203,62 +222,63 @@ export class FinanceService {
   }
 
   async getFinancialSummary(startDate?: Date, endDate?: Date) {
-    const whereClause: any = {};
+    const whereClause: Prisma.FinancialTransactionWhereInput = {};
     if (startDate || endDate) {
       whereClause.createdAt = {};
-      if (startDate) whereClause.createdAt.gte = startDate;
-      if (endDate) whereClause.createdAt.lte = endDate;
+      if (startDate)
+        (whereClause.createdAt as Prisma.DateTimeFilter).gte = startDate;
+      if (endDate)
+        (whereClause.createdAt as Prisma.DateTimeFilter).lte = endDate;
     }
 
     // 1. Total Income (Sales)
     const income = await this.prisma.financialTransaction.aggregate({
-      where: { 
+      where: {
         ...whereClause,
         type: TransactionType.INCOME,
-        category: TransactionCategory.SALE 
+        category: TransactionCategory.SALE,
       },
       _sum: { amount: true },
     });
 
     // 2. OpEx (Expense with category OPEX or PAYROLL)
     const opex = await this.prisma.financialTransaction.aggregate({
-      where: { 
+      where: {
         ...whereClause,
         type: TransactionType.EXPENSE,
-        category: { in: [TransactionCategory.OPEX, TransactionCategory.PAYROLL] }
+        category: {
+          in: [TransactionCategory.OPEX, TransactionCategory.PAYROLL],
+        },
       },
       _sum: { amount: true },
     });
 
     // 3. Purchase Expenses (Outflow for stock)
     const purchases = await this.prisma.financialTransaction.aggregate({
-      where: { 
+      where: {
         ...whereClause,
         type: TransactionType.EXPENSE,
-        category: TransactionCategory.PURCHASE
+        category: TransactionCategory.PURCHASE,
       },
       _sum: { amount: true },
     });
 
     // 4. Calculate COGS (Realized expense from stock consumption)
-    // For now, as we don't have a separate COGS table, 
-    // we can approximate it as the cost of batches that were created (PURCHASE).
-    // Better: In a real system, we'd sum the 'totalCOGS' from stock reduction logs.
     const auditLogs = await this.prisma.auditLog.findMany({
       where: {
         action: 'REDUCE_STOCK_FIFO',
-        createdAt: whereClause.createdAt
-      }
+        createdAt: whereClause.createdAt as Prisma.DateTimeFilter,
+      },
     });
 
     let totalCOGS = 0;
-    auditLogs.forEach(log => {
-      // payload: { quantityReduced, previousRemaining, newRemaining, totalCOGS }
-      // Assuming we update InventoryService to include totalCOGS in payload
-      if (log.payload && (log.payload as any).quantityReduced) {
-         // This is a placeholder logic. We'll need to ensure the service logs the COGS value.
-         // For the sake of this dashboard, we'll sum it if it exists or use a dummy for now.
-         totalCOGS += (log.payload as any).unitCost * (log.payload as any).quantityReduced || 0;
+    auditLogs.forEach((log) => {
+      const payload = log.payload as {
+        unitCost?: number;
+        quantityReduced?: number;
+      } | null;
+      if (payload && payload.quantityReduced) {
+        totalCOGS += (payload.unitCost || 0) * payload.quantityReduced;
       }
     });
 
@@ -269,10 +289,10 @@ export class FinanceService {
     });
 
     const monthlyData: Record<string, { income: number; expense: number }> = {};
-    transactions.forEach(tx => {
+    transactions.forEach((tx) => {
       const month = tx.createdAt.toISOString().substring(0, 7); // YYYY-MM
       if (!monthlyData[month]) monthlyData[month] = { income: 0, expense: 0 };
-      
+
       if (tx.type === TransactionType.INCOME) {
         monthlyData[month].income += tx.amount;
       } else {

@@ -2,11 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  ShoppingBag, 
-  Package, 
-  Briefcase, 
+import {
+  LayoutDashboard,
+  ShoppingBag,
+  Package,
+  Briefcase,
   LogOut,
   UserCircle,
   Users,
@@ -16,7 +16,6 @@ import {
   ShieldCheck,
   Settings,
   DollarSign,
-  TrendingUp,
   Truck,
   Database,
   Calculator,
@@ -136,10 +135,10 @@ export default function Sidebar({ user, handleLogout, isMobileMenuOpen, setIsMob
                           : 'text-muted hover:bg-primary/5 hover:text-primary'
                       }`}
                     >
-                      <Icon 
+                      <Icon
                         className={`w-4 h-4 transition-colors ${
                           isActive ? 'text-base-color' : 'text-muted group-hover:text-primary'
-                        }`} 
+                        }`}
                       />
                       {item.name}
                     </Link>
@@ -163,9 +162,9 @@ export default function Sidebar({ user, handleLogout, isMobileMenuOpen, setIsMob
                 <span className="text-[10px] text-muted truncate font-medium">{user?.email}</span>
               </div>
             </div>
-            <button 
+            <button
               onClick={handleLogout}
-              className="text-muted hover:text-red-600 dark:hover:text-red-400 transition-colors p-2 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg" 
+              className="text-muted hover:text-red-600 dark:hover:text-red-400 transition-colors p-2 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg"
               title="Cerrar Sesión"
             >
               <LogOut className="w-4 h-4" />

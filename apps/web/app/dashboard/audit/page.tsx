@@ -2,16 +2,16 @@
 
 import { useEffect, useState, ChangeEvent, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { 
-  Loader2, 
-  ShieldCheck, 
-  ChevronLeft, 
-  ChevronRight, 
-  Eye, 
-  X, 
-  Clock, 
-  User as UserIcon, 
-  Tag, 
+import {
+  Loader2,
+  ShieldCheck,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  X,
+  Clock,
+  User as UserIcon,
+  Tag,
   Activity,
   Globe,
   Monitor,
@@ -47,7 +47,7 @@ export default function AuditPage() {
   const [meta, setMeta] = useState<Meta | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
-  
+
   // Filters
   const [selectedEntity, setSelectedEntity] = useState('');
   const [selectedAction, setSelectedAction] = useState('');
@@ -56,7 +56,7 @@ export default function AuditPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 20;
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4003/api/v1';
   const supabase = createClient();
 
   const fetchLogs = useCallback(async () => {
@@ -111,7 +111,7 @@ export default function AuditPage() {
   const getActionColor = (action: string) => {
     switch (action) {
       case 'POST': return 'bg-green-500/10 text-green-600 border-green-500/20';
-      case 'PUT': 
+      case 'PUT':
       case 'PATCH': return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
       case 'DELETE': return 'bg-red-500/10 text-red-600 border-red-500/20';
       default: return 'bg-zinc-500/10 text-zinc-600 border-zinc-500/20';
@@ -174,7 +174,7 @@ export default function AuditPage() {
         </select>
 
         {(selectedEntity || selectedAction) && (
-          <button 
+          <button
             onClick={() => {
               setSelectedEntity('');
               setSelectedAction('');
@@ -243,8 +243,8 @@ export default function AuditPage() {
                           <UserIcon className="w-3 h-3 text-muted" />
                         </div>
                         <span className="text-primary font-medium text-xs truncate max-w-[120px]">
-                          {log.user 
-                            ? (log.user.firstName || log.user.lastName 
+                          {log.user
+                            ? (log.user.firstName || log.user.lastName
                                 ? `${log.user.firstName || ''} ${log.user.lastName || ''}`.trim()
                                 : log.user.email)
                             : (log.userId ? log.userId.substring(0, 8) + '...' : 'Sistema')}
@@ -271,7 +271,7 @@ export default function AuditPage() {
           <p className="text-[10px] font-bold uppercase tracking-widest text-muted">
             Total registros: <span className="text-primary">{meta?.total || 0}</span>
           </p>
-          
+
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
@@ -280,7 +280,7 @@ export default function AuditPage() {
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            
+
             <span className="text-[10px] font-black text-primary px-4">
               PÁGINA {currentPage} DE {totalPages || 1}
             </span>
@@ -310,14 +310,14 @@ export default function AuditPage() {
                   <p className="text-[10px] text-muted font-bold uppercase tracking-widest">ID: {selectedLog.id}</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setSelectedLog(null)}
                 className="p-2 text-muted hover:text-primary hover:bg-base rounded-xl transition-all active:scale-90"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="p-8 space-y-8 overflow-y-auto custom-scrollbar bg-surface">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Meta Info */}
@@ -352,8 +352,8 @@ export default function AuditPage() {
                     <div className="p-4 bg-base/40 rounded-2xl border border-theme flex justify-between items-center">
                       <span className="text-[10px] font-black uppercase text-muted tracking-widest">Usuario</span>
                       <span className="text-xs font-bold text-primary truncate ml-4">
-                        {selectedLog.user 
-                          ? (selectedLog.user.firstName || selectedLog.user.lastName 
+                        {selectedLog.user
+                          ? (selectedLog.user.firstName || selectedLog.user.lastName
                               ? `${selectedLog.user.firstName || ''} ${selectedLog.user.lastName || ''}`.trim()
                               : selectedLog.user.email)
                           : (selectedLog.userId || 'Sistema')}
@@ -435,7 +435,7 @@ export default function AuditPage() {
                                 color: 'Color',
                                 stock: 'Inventario',
                                 imageUrl: 'URL Imagen',
-                                orderNumber: 'Nº Pedido',
+                                orderNumber: 'NÂº Pedido',
                                 customerEmail: 'Email Cliente',
                                 customerPhone: 'Teléfono Cliente',
                                 shippingAddress: 'Dirección Envío',
@@ -469,10 +469,10 @@ export default function AuditPage() {
 
                             const renderValue = (val: unknown): React.ReactNode => {
                               if (val === null || val === undefined) return <span className="text-muted/40 italic">nulo</span>;
-                              
+
                               if (Array.isArray(val)) {
                                 if (val.length === 0) return <span className="text-muted/40 italic">vacío</span>;
-                                
+
                                 // Check if it's an array of primitives
                                 if (typeof val[0] !== 'object') {
                                   return <span className="font-medium text-primary bg-primary/5 px-2 py-0.5 rounded-md">{val.join(', ')}</span>;
@@ -509,7 +509,7 @@ export default function AuditPage() {
                               }
 
                               if (typeof val === 'boolean') return val ? <span className="text-green-600 font-black">SÍ</span> : <span className="text-red-600 font-black">NO</span>;
-                              
+
                               return <span className="font-medium">{String(val)}</span>;
                             };
 
@@ -544,7 +544,7 @@ export default function AuditPage() {
             </div>
 
             <div className="p-6 bg-base/50 border-t border-theme flex justify-end flex-shrink-0">
-              <button 
+              <button
                 onClick={() => setSelectedLog(null)}
                 className="px-8 py-3 bg-primary text-base-color text-xs font-black uppercase tracking-widest rounded-2xl hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-primary/10"
               >

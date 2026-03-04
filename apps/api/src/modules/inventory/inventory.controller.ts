@@ -1,12 +1,25 @@
-import { Controller, Get, Post, Body, UseGuards, Request, Query, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Request,
+  Query,
+  Param,
+} from '@nestjs/common';
 import { InventoryService } from './inventory.service';
 import { FinanceService } from './finance.service';
+import { CreatePurchaseBatchDto } from './dto/create-purchase-batch.dto';
+
+interface RequestWithUser {
+  user?: { id: string };
+}
 
 @Controller('inventory')
 export class InventoryController {
   constructor(
     private readonly inventoryService: InventoryService,
-    private readonly financeService: FinanceService
+    private readonly financeService: FinanceService,
   ) {}
 
   @Get('detailed')
@@ -20,11 +33,45 @@ export class InventoryController {
   }
 
   @Post('batch')
-  async createBatch(@Body() body: any, @Request() req: any) {
-    const userId = req.user?.id || 'system-admin'; // Fallback for manual testing
+  async createBatch(
+    @Body()
+    body: {
+      productId: string;
+      supplierId: string;
+      quantityReceived: number;
+      unitCost: number;
+      purchaseDate: string;
+    },
+    @Request() req: RequestWithUser,
+  ) {
+    const userId = req.user?.id || 'auth0|admin-test-id'; // Fallback for manual testing
     return this.inventoryService.createBatch({
       ...body,
       purchaseDate: new Date(body.purchaseDate),
+      userId,
+    });
+  }
+
+  @Post('receive-batch')
+  async receiveBatch(
+    @Body() data: CreatePurchaseBatchDto,
+    @Request() req: RequestWithUser,
+  ) {
+    const userId = req.user?.id || 'auth0|admin-test-id';
+    return this.inventoryService.receiveBatch({
+      ...data,
+      userId,
+    });
+  }
+
+  @Post('batches')
+  async createPurchaseBatch(
+    @Body() data: CreatePurchaseBatchDto,
+    @Request() req: RequestWithUser,
+  ) {
+    const userId = req.user?.id || 'auth0|admin-test-id';
+    return this.inventoryService.createPurchaseBatch({
+      ...data,
       userId,
     });
   }
@@ -40,7 +87,16 @@ export class InventoryController {
   }
 
   @Post('suppliers')
-  async createSupplier(@Body() body: any) {
+  async createSupplier(
+    @Body()
+    body: {
+      name: string;
+      nit: string;
+      contact?: string;
+      phone?: string;
+      email?: string;
+    },
+  ) {
     return this.financeService.createSupplier(body);
   }
 
@@ -50,8 +106,12 @@ export class InventoryController {
   }
 
   @Post('suppliers/:id/payments')
-  async createSupplierPayment(@Param('id') id: string, @Body() body: any, @Request() req: any) {
-    const userId = req.user?.id || 'system-admin';
+  async createSupplierPayment(
+    @Param('id') id: string,
+    @Body() body: { amount: number; description: string },
+    @Request() req: RequestWithUser,
+  ) {
+    const userId = req.user?.id || 'auth0|admin-test-id';
     return this.financeService.createSupplierPayment({
       ...body,
       supplierId: id,
@@ -62,11 +122,11 @@ export class InventoryController {
   @Get('finance/summary')
   async getFinancialSummary(
     @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string
+    @Query('endDate') endDate?: string,
   ) {
     return this.financeService.getFinancialSummary(
       startDate ? new Date(startDate) : undefined,
-      endDate ? new Date(endDate) : undefined
+      endDate ? new Date(endDate) : undefined,
     );
   }
 
@@ -86,8 +146,17 @@ export class InventoryController {
   }
 
   @Post('finance/opex')
-  async createOpex(@Body() body: any, @Request() req: any) {
-    const userId = req.user?.id || 'system-admin';
+  async createOpex(
+    @Body()
+    body: {
+      amount: number;
+      description: string;
+      opexCategoryId: string;
+      createdAt?: string;
+    },
+    @Request() req: RequestWithUser,
+  ) {
+    const userId = req.user?.id || 'auth0|admin-test-id';
     return this.financeService.createOpex({
       ...body,
       createdAt: body.createdAt ? new Date(body.createdAt) : undefined,

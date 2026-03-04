@@ -1,19 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { 
-  Package, 
-  ChevronDown, 
-  ChevronRight, 
-  Search, 
-  AlertCircle, 
-  History, 
-  Layers, 
-  TrendingUp, 
-  DollarSign, 
+import { useState, useEffect, useCallback, Fragment } from 'react';
+import Image from 'next/image';
+import {
+  Package,
+  ChevronDown,
+  ChevronRight,
+  Search,
+  AlertCircle,
+  History,
+  Layers,
+  TrendingUp,
   Truck,
   Loader2,
-  Calendar,
   ArrowRight
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
@@ -43,7 +42,9 @@ interface ProductInventory {
 interface Movement {
   id: string;
   createdAt: string;
-  payload: any;
+  action: string;
+  entityId?: string;
+  payload: unknown;
   user: { email: string };
 }
 
@@ -55,30 +56,36 @@ export default function InventoryFIFOPage() {
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
   const [search, setSearch] = useState('');
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4001';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [invRes, movRes] = await Promise.all([
         fetch(`${API_URL}/inventory/detailed`),
         fetch(`${API_URL}/inventory/movements`),
       ]);
-      if (invRes.ok) setInventory(await invRes.json());
-      if (movRes.ok) setMovements(await movRes.json());
+      if (invRes.ok) {
+        const result = await invRes.json();
+        setInventory(result.data || []);
+      }
+      if (movRes.ok) {
+        const result = await movRes.json();
+        setMovements(result.data || []);
+      }
     } catch (err) {
       console.error('Error fetching inventory data:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL]);
 
   useEffect(() => {
     fetchData();
-  }, [API_URL]);
+  }, [fetchData]);
 
   const toggleRow = (id: string) => {
-    setExpandedRows(prev => 
+    setExpandedRows(prev =>
       prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id]
     );
   };
@@ -89,8 +96,8 @@ export default function InventoryFIFOPage() {
     }).format(amount);
   };
 
-  const filteredInventory = inventory.filter(p => 
-    p.name.toLowerCase().includes(search.toLowerCase()) || 
+  const filteredInventory = inventory.filter(p =>
+    p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.slug.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -107,9 +114,9 @@ export default function InventoryFIFOPage() {
           </div>
           <p className="text-muted font-medium">Control de capas de costo, valoración de activos y rotación de lotes.</p>
         </div>
-        
+
         <div className="flex items-center gap-2 p-1 bg-base border border-theme rounded-xl">
-          <button 
+          <button
             onClick={() => setActiveTab('current')}
             className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
               activeTab === 'current' ? 'bg-primary text-base-color shadow-sm' : 'text-muted hover:bg-theme/5'
@@ -117,7 +124,7 @@ export default function InventoryFIFOPage() {
           >
             Inventario Actual
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('movements')}
             className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
               activeTab === 'movements' ? 'bg-primary text-base-color shadow-sm' : 'text-muted hover:bg-theme/5'
@@ -139,7 +146,7 @@ export default function InventoryFIFOPage() {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <div className="lg:col-span-2 relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" />
-              <input 
+              <input
                 type="text"
                 placeholder="Buscar por nombre de producto o SKU..."
                 value={search}
@@ -189,17 +196,17 @@ export default function InventoryFIFOPage() {
                   const isLowStock = product.totalStock < 10;
 
                   return (
-                    <>
-                      <tr 
-                        key={product.id} 
+                    <Fragment key={product.id}>
+                      <tr
+                        key={product.id}
                         className={`hover:bg-primary/5 transition-all cursor-pointer ${isExpanded ? 'bg-primary/5' : ''}`}
                         onClick={() => toggleRow(product.id)}
                       >
                         <td className="px-8 py-5">
                           <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-base border border-theme overflow-hidden flex-none">
+                            <div className="w-12 h-12 rounded-xl bg-base border border-theme overflow-hidden flex-none relative">
                               {product.image ? (
-                                <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                                <Image src={product.image} alt={product.name} fill className="object-cover" />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center text-muted"><Package className="w-5 h-5" /></div>
                               )}
@@ -286,7 +293,7 @@ export default function InventoryFIFOPage() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   );
                 })}
               </tbody>
@@ -312,7 +319,7 @@ export default function InventoryFIFOPage() {
               </thead>
               <tbody className="divide-y divide-theme">
                 {movements.map((mov) => {
-                  const payload = mov.payload as any;
+                  const payload = mov.payload as { quantityReduced?: number; unitCost?: number };
                   return (
                     <tr key={mov.id} className="hover:bg-primary/5 transition-colors text-sm">
                       <td className="px-8 py-5 text-muted font-medium">

@@ -14,14 +14,14 @@ export default function PricingStrategyPage() {
           <h1 className="text-3xl font-black tracking-tight text-primary">Precios y Márgenes</h1>
         </div>
         <p className="text-muted font-medium max-w-2xl">
-          Analiza la rentabilidad de tus productos basándote en los costos reales de adquisición (FIFO) 
+          Analiza la rentabilidad de tus productos basándote en los costos reales de adquisición (FIFO)
           y define precios de venta estratégicos.
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-8">
         <ProfitCalculator />
-        
+
         <div className="bg-surface border border-theme rounded-2xl p-8">
           <h3 className="text-lg font-bold text-primary mb-4">Guía de Estrategia de Precios</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

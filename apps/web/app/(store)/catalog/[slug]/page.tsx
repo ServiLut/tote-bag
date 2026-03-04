@@ -9,7 +9,7 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4003/api/v1';
 
 async function getProduct(slug: string): Promise<Product | null> {
   try {

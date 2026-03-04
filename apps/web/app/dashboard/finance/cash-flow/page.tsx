@@ -1,30 +1,26 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  Legend 
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend
 } from 'recharts';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  DollarSign, 
-  ArrowUpRight, 
-  ArrowDownRight, 
-  Calendar,
+import {
+  TrendingUp,
+  DollarSign,
+  ArrowUpRight,
+  ArrowDownRight,
   CheckCircle2,
   AlertCircle,
   Loader2,
-  ArrowRight
 } from 'lucide-react';
-import { format, parseISO, subDays, subMonths, isAfter } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { parseISO, subDays, subMonths, isAfter } from 'date-fns';
 
 interface CashFlowPoint {
   label: string;
@@ -40,7 +36,7 @@ export default function CashFlowPage() {
   const [timeRange, setRange] = useState('30_DAYS');
   const [period, setPeriod] = useState<'daily' | 'monthly'>('daily');
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4001';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
 
   useEffect(() => {
     const fetchFlow = async () => {
@@ -48,7 +44,8 @@ export default function CashFlowPage() {
       try {
         const res = await fetch(`${API_URL}/inventory/finance/cash-flow?period=${period}`);
         if (res.ok) {
-          setRawData(await res.json());
+          const result = await res.json();
+          setRawData(result.data || []);
         }
       } catch (err) {
         console.error('Error fetching cash flow:', err);
@@ -98,7 +95,7 @@ export default function CashFlowPage() {
           </h1>
           <p className="text-muted font-medium">Monitoreo de liquidez y balance operativo en tiempo real.</p>
         </div>
-        
+
         <div className="flex items-center gap-2 p-1 bg-base border border-theme rounded-xl">
           {[
             { id: '30_DAYS', label: '30 días', period: 'daily' },
@@ -107,7 +104,7 @@ export default function CashFlowPage() {
           ].map((r) => (
             <button
               key={r.id}
-              onClick={() => { setRange(r.id); setPeriod(r.period as any); }}
+              onClick={() => { setRange(r.id); setPeriod(r.period as 'daily' | 'monthly'); }}
               className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
                 timeRange === r.id ? 'bg-primary text-base-color shadow-sm' : 'text-muted hover:bg-theme/5'
               }`}
@@ -168,46 +165,46 @@ export default function CashFlowPage() {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-              <XAxis 
-                dataKey="label" 
-                axisLine={false} 
-                tickLine={false} 
+              <XAxis
+                dataKey="label"
+                axisLine={false}
+                tickLine={false}
                 tick={{ fontSize: 10, fontWeight: 700, fill: '#64748B' }}
                 dy={10}
               />
-              <YAxis 
-                axisLine={false} 
-                tickLine={false} 
+              <YAxis
+                axisLine={false}
+                tickLine={false}
                 tick={{ fontSize: 10, fontWeight: 700, fill: '#64748B' }}
                 tickFormatter={(val) => `$${val/1000000}M`}
               />
-              <Tooltip 
+              <Tooltip
                 contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                formatter={(val: number) => [formatCurrency(val), '']}
+                formatter={(val: number | undefined) => [formatCurrency(val || 0), '']}
               />
-              <Area 
-                type="monotone" 
-                dataKey="balance" 
-                stroke="#000000" 
+              <Area
+                type="monotone"
+                dataKey="balance"
+                stroke="#000000"
                 strokeWidth={3}
-                fillOpacity={1} 
-                fill="url(#colorBalance)" 
+                fillOpacity={1}
+                fill="url(#colorBalance)"
                 name="Saldo Acumulado"
               />
-              <Area 
-                type="monotone" 
-                dataKey="income" 
-                stroke="#10b981" 
-                fill="transparent" 
+              <Area
+                type="monotone"
+                dataKey="income"
+                stroke="#10b981"
+                fill="transparent"
                 strokeWidth={2}
                 strokeDasharray="5 5"
                 name="Entradas"
               />
-              <Area 
-                type="monotone" 
-                dataKey="expense" 
-                stroke="#f43f5e" 
-                fill="transparent" 
+              <Area
+                type="monotone"
+                dataKey="expense"
+                stroke="#f43f5e"
+                fill="transparent"
                 strokeWidth={2}
                 strokeDasharray="5 5"
                 name="Salidas"
@@ -226,7 +223,7 @@ export default function CashFlowPage() {
             Datos Consolidados
           </div>
         </div>
-        
+
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>

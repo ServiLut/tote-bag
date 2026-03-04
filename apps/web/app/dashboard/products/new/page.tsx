@@ -8,8 +8,8 @@ export default function NewProductPage() {
   return (
     <div className="min-h-screen flex flex-col p-8 md:p-12 max-w-5xl mx-auto bg-base">
       <div className="flex-none mb-8">
-        <Link 
-          href="/dashboard/products" 
+        <Link
+          href="/dashboard/products"
           className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted hover:text-primary transition-all mb-6"
         >
           <ArrowLeft className="w-4 h-4" />

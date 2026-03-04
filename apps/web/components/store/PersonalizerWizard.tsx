@@ -83,7 +83,7 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
   const [configCode, setConfigCode] = useState('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4001';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
 
   // 1. Fetch Dynamic Options
   useEffect(() => {
@@ -165,7 +165,7 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
     const previewUrl = URL.createObjectURL(file);
     setUploadedLogo(previewUrl);
     setSelections(prev => ({ ...prev, customFile: file }));
-    toast.success('Diseño cargado para previsualización');
+    toast.success('Dise�o cargado para previsualizaci�n');
   };
 
   const nextStep = () => setStep(prev => (prev < 5 ? (prev + 1) as Step : prev));
@@ -178,7 +178,7 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
         name: 'Tote Bag Personalizada', 
         basePrice: calculatedPrice,
         slug: 'custom-tote',
-        description: 'Tote bag configurada dinámicamente',
+        description: 'Tote bag configurada din�micamente',
         images: [],
         variants: [],
         tags: []
@@ -214,10 +214,10 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
           
           <nav className="space-y-6">
             {[
-              { s: 1, label: 'Línea de Producción' },
+              { s: 1, label: 'L�nea de Producci�n' },
               { s: 2, label: 'Dimensiones' },
               { s: 3, label: 'Material y Calidad' },
-              { s: 4, label: 'Personalización' },
+              { s: 4, label: 'Personalizaci�n' },
               { s: 5, label: 'Resumen Final' }
             ].map(item => (
               <div key={item.s} className={`flex items-center gap-4 transition-all ${step === item.s ? 'opacity-100 translate-x-2' : 'opacity-40'}`}>
@@ -248,8 +248,8 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
           {step === 1 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
               <div>
-                <h3 className="text-2xl font-serif text-primary mb-2">¿Cuál es tu línea ideal?</h3>
-                <p className="text-muted text-sm">Cada línea define el propósito y acabado de tu tote bag.</p>
+                <h3 className="text-2xl font-serif text-primary mb-2">�Cu�l es tu l�nea ideal?</h3>
+                <p className="text-muted text-sm">Cada l�nea define el prop�sito y acabado de tu tote bag.</p>
               </div>
               <div className="grid gap-4">
                 {wizardOptions?.LINE.map(line => {
@@ -279,7 +279,7 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
           {step === 2 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
               <div>
-                <h3 className="text-2xl font-serif text-primary mb-2">Elige el Tamaño</h3>
+                <h3 className="text-2xl font-serif text-primary mb-2">Elige el Tama�o</h3>
                 <p className="text-muted text-sm">Dimensiones adaptadas a cada necesidad.</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -329,11 +329,11 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
                 <div className="space-y-8">
                   <div>
                     <h3 className="text-2xl font-serif text-primary mb-2">Personaliza tu Tote</h3>
-                    <p className="text-muted text-sm">Sube tu logo y elige la técnica de marcado.</p>
+                    <p className="text-muted text-sm">Sube tu logo y elige la t�cnica de marcado.</p>
                   </div>
 
                   <div className="space-y-4">
-                    <h4 className="text-xs font-black uppercase tracking-widest text-primary">1. Sube tu diseño</h4>
+                    <h4 className="text-xs font-black uppercase tracking-widest text-primary">1. Sube tu dise�o</h4>
                     <button 
                       onClick={() => fileInputRef.current?.click()}
                       className="w-full p-4 border-2 border-dashed border-theme rounded-2xl flex items-center justify-center gap-3 hover:border-primary hover:bg-primary/5 transition-all group"
@@ -351,7 +351,7 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
                     {uploadedLogo && (
                       <div className="mt-4 p-4 bg-base/50 rounded-2xl border border-theme animate-in slide-in-from-top-2">
                         <div className="flex justify-between items-center mb-2">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-primary">Tamaño del Diseño</label>
+                          <label className="text-[10px] font-black uppercase tracking-widest text-primary">Tama�o del Dise�o</label>
                           <span className="text-[10px] font-bold text-muted">{logoScale}%</span>
                         </div>
                         <input 
@@ -368,7 +368,7 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
                   </div>
 
                   <div className="space-y-4">
-                    <h4 className="text-xs font-black uppercase tracking-widest text-primary">2. Técnica de Marcado</h4>
+                    <h4 className="text-xs font-black uppercase tracking-widest text-primary">2. T�cnica de Marcado</h4>
                     <div className="grid grid-cols-2 gap-3">
                       {(() => {
                         const available = wizardOptions?.TECHNIQUE.filter(t => 
@@ -402,10 +402,10 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
                   </div>
                 </div>
 
-                {/* Area de Previsualización (Derecha) */}
+                {/* Area de Previsualizaci�n (Derecha) */}
                 <div className="flex flex-col items-center gap-4">
                   <div className="relative w-full max-w-sm aspect-[4/6] bg-gray-100 rounded-3xl overflow-hidden shadow-inner flex items-center justify-center">
-                    {/* Mockup Base Dinámico */}
+                    {/* Mockup Base Din�mico */}
                     {(() => {
                       const selectedMaterial = wizardOptions?.MATERIAL.find(m => m.name === selections.material);
                       const canvasImage = selectedMaterial?.imageUrl || '/placeholder.svg';
@@ -434,7 +434,7 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
                           />
                         </div>
                       ) : (
-                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center px-4">Área de impresión</span>
+                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center px-4">�rea de impresi�n</span>
                       )}
                     </div>
                   </div>
@@ -448,17 +448,17 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
           {step === 5 && (
             <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
               <div>
-                <h3 className="text-3xl font-serif text-primary mb-2">¡Todo listo!</h3>
-                <p className="text-muted text-sm">Revisa tu configuración técnica antes de continuar.</p>
+                <h3 className="text-3xl font-serif text-primary mb-2">�Todo listo!</h3>
+                <p className="text-muted text-sm">Revisa tu configuraci�n t�cnica antes de continuar.</p>
               </div>
 
               <div className="bg-base/50 rounded-3xl p-8 border border-theme space-y-6">
                 <div className="grid grid-cols-2 gap-y-6 gap-x-4">
-                  <div><p className="text-[9px] font-black uppercase text-muted tracking-[0.2em] mb-1">Línea</p><p className="font-bold text-primary">{selections.line}</p></div>
-                  <div><p className="text-[9px] font-black uppercase text-muted tracking-[0.2em] mb-1">Tamaño</p><p className="font-bold text-primary">{selections.size}</p></div>
+                  <div><p className="text-[9px] font-black uppercase text-muted tracking-[0.2em] mb-1">L�nea</p><p className="font-bold text-primary">{selections.line}</p></div>
+                  <div><p className="text-[9px] font-black uppercase text-muted tracking-[0.2em] mb-1">Tama�o</p><p className="font-bold text-primary">{selections.size}</p></div>
                   <div><p className="text-[9px] font-black uppercase text-muted tracking-[0.2em] mb-1">Material</p><p className="font-bold text-primary">{selections.material}</p></div>
                   <div>
-                    <p className="text-[9px] font-black uppercase text-muted tracking-[0.2em] mb-1">Técnica</p>
+                    <p className="text-[9px] font-black uppercase text-muted tracking-[0.2em] mb-1">T�cnica</p>
                     <p className="font-bold text-primary">
                       {wizardOptions?.TECHNIQUE.find(t => t.code === selections.markingType)?.name || selections.markingType}
                     </p>
@@ -470,7 +470,7 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
                     <Truck className="text-secondary" size={20} />
                     <div className="text-[10px] font-bold text-muted">
                       ENTREGA ESTIMADA: <br/>
-                      <span className="text-primary uppercase">8-12 días hábiles</span>
+                      <span className="text-primary uppercase">8-12 d�as h�biles</span>
                     </div>
                   </div>
                   <div className="text-right">
@@ -494,7 +494,7 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
               onClick={prevStep}
               className="px-6 md:px-8 py-4 border-2 border-theme rounded-2xl text-primary font-black uppercase tracking-widest text-[10px] hover:bg-base transition-all flex items-center gap-2 bg-white"
             >
-              <ChevronLeft size={16} /> <span className="hidden md:inline">Atrás</span>
+              <ChevronLeft size={16} /> <span className="hidden md:inline">Atr�s</span>
             </button>
           )}
           {step < 5 ? (
@@ -518,3 +518,4 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
     </div>
   );
 }
+

@@ -30,7 +30,7 @@ export default function ProductsDashboardPage() {
           </p>
         </div>
         {!isReadOnly && (
-          <Link 
+          <Link
             href="/dashboard/products/new"
             className="inline-flex items-center justify-center gap-2 bg-primary text-base-color px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] hover:opacity-90 transition-all shadow-lg shadow-primary/10 active:scale-95"
           >

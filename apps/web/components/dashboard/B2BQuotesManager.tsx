@@ -3,15 +3,15 @@
 import { useState, useEffect, useMemo, Fragment, ChangeEvent } from 'react';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
-import { 
-  Loader2, 
-  Briefcase, 
-  MapPin, 
-  CheckCircle, 
-  Image as ImageIcon, 
-  QrCode, 
-  Search, 
-  ChevronRight, 
+import {
+  Loader2,
+  Briefcase,
+  MapPin,
+  CheckCircle,
+  Image as ImageIcon,
+  QrCode,
+  Search,
+  ChevronRight,
   ChevronLeft,
   Filter
 } from 'lucide-react';
@@ -39,15 +39,15 @@ export default function B2BQuotesManager() {
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
-  
+
   // Filters & Pagination State
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'APPROVED'>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
-  
+
   const ITEMS_PER_PAGE = 10;
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4003/api/v1';
   const supabase = createClient();
 
   useEffect(() => {
@@ -91,8 +91,8 @@ export default function B2BQuotesManager() {
         }
       });
       if (!res.ok) throw new Error('Failed to approve');
-      
-      setQuotes(prev => prev.map(q => 
+
+      setQuotes(prev => prev.map(q =>
         q.id === id ? { ...q, status: 'DISEÑO_APROBADO' } : q
       ));
     } catch {
@@ -114,12 +114,12 @@ export default function B2BQuotesManager() {
   const filteredQuotes = useMemo(() => {
     return quotes.filter(quote => {
       const matchesSearch = quote.businessName.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'ALL' 
-        ? true 
-        : statusFilter === 'APPROVED' 
+      const matchesStatus = statusFilter === 'ALL'
+        ? true
+        : statusFilter === 'APPROVED'
           ? quote.status === 'DISEÑO_APROBADO'
           : quote.status !== 'DISEÑO_APROBADO';
-      
+
       return matchesSearch && matchesStatus;
     });
   }, [quotes, searchTerm, statusFilter]);
@@ -142,18 +142,18 @@ export default function B2BQuotesManager() {
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-surface p-4 rounded-2xl border border-theme shadow-sm">
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted w-4 h-4" />
-          <input 
-            type="text" 
-            placeholder="Buscar por empresa..." 
+          <input
+            type="text"
+            placeholder="Buscar por empresa..."
             className="w-full pl-10 pr-4 py-2.5 text-sm border border-theme rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 bg-surface text-primary placeholder:text-muted/50 font-medium transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        
+
         <div className="flex gap-2 w-full sm:w-auto">
           <div className="relative flex-1 sm:flex-none">
-            <select 
+            <select
               className="w-full sm:w-48 pl-4 pr-10 py-2.5 text-sm font-bold border border-theme rounded-xl appearance-none bg-surface focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer text-primary"
               value={statusFilter}
               onChange={(e: ChangeEvent<HTMLSelectElement>) => setStatusFilter(e.target.value as 'ALL' | 'PENDING' | 'APPROVED')}
@@ -192,7 +192,7 @@ export default function B2BQuotesManager() {
               ) : (
                 paginatedQuotes.map((quote) => (
                   <Fragment key={quote.id}>
-                    <tr 
+                    <tr
                       className={cn(
                         "hover:bg-base/30 transition-colors cursor-pointer group",
                         expandedRowId === quote.id && "bg-base/30"
@@ -262,13 +262,13 @@ export default function B2BQuotesManager() {
                         )}
                       </td>
                     </tr>
-                    
+
                     {/* Expanded Detail Row */}
                     {expandedRowId === quote.id && (
                       <tr className="bg-base/10">
                         <td colSpan={7} className="px-6 py-0">
                           <div className="py-8 pl-10 grid grid-cols-1 md:grid-cols-3 gap-8 border-t border-theme animate-in slide-in-from-left-2 duration-300">
-                            
+
                             <div className="space-y-3">
                               <h4 className="text-[10px] font-black text-muted uppercase tracking-[0.2em] flex items-center gap-2">
                                 <MapPin className="w-3.5 h-3.5" /> Entrega
@@ -306,9 +306,9 @@ export default function B2BQuotesManager() {
                               <div className="flex items-center gap-4 p-4 bg-surface rounded-2xl border border-theme shadow-sm">
                                 <div className="w-16 h-16 bg-base rounded-xl border border-theme flex items-center justify-center overflow-hidden relative shadow-inner">
                                   {quote.logoUrl ? (
-                                    <Image 
-                                      src={quote.logoUrl} 
-                                      alt="Logo" 
+                                    <Image
+                                      src={quote.logoUrl}
+                                      alt="Logo"
                                       width={64}
                                       height={64}
                                       className="w-full h-full object-contain p-2"
@@ -324,9 +324,9 @@ export default function B2BQuotesManager() {
                                     {quote.logoUrl ? 'Listo para descarga' : 'Sin archivo'}
                                   </p>
                                   {quote.logoUrl && (
-                                    <a 
-                                      href={quote.logoUrl} 
-                                      target="_blank" 
+                                    <a
+                                      href={quote.logoUrl}
+                                      target="_blank"
                                       rel="noopener noreferrer"
                                       className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-secondary hover:underline underline-offset-4"
                                     >

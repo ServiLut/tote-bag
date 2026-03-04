@@ -21,7 +21,7 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4003/api/v1';
       console.log("DEBUG: Attempting login at:", API_URL);
       
       const res = await fetch(`${API_URL}/auth/login`, {
@@ -32,14 +32,14 @@ export default function LoginPage() {
 
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.message || 'Error al iniciar sesión');
+        throw new Error(errData.message || 'Error al iniciar sesi�n');
       }
 
       const response = await res.json();
       const { session, role } = response.data;
       
       if (!session) {
-        throw new Error('No se recibió sesión válida. Si te acabas de registrar, por favor verifica tu correo electrónico.');
+        throw new Error('No se recibi� sesi�n v�lida. Si te acabas de registrar, por favor verifica tu correo electr�nico.');
       }
 
       // Manually set the session in Supabase client to sync
@@ -59,7 +59,7 @@ export default function LoginPage() {
       
       router.refresh();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error al iniciar sesión';
+      const message = err instanceof Error ? err.message : 'Error al iniciar sesi�n';
       setError(message);
     } finally {
       setIsLoading(false);
@@ -80,7 +80,7 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-black/5 z-10" />
         <div className="absolute bottom-12 left-12 right-12 z-20 text-[#111111]">
           <h2 className="text-4xl font-serif font-bold mb-4">Lleva tu estilo a todas partes.</h2>
-          <p className="text-lg opacity-80 font-medium">Únete a nuestra comunidad y disfruta de beneficios exclusivos en tu próxima compra.</p>
+          <p className="text-lg opacity-80 font-medium">�nete a nuestra comunidad y disfruta de beneficios exclusivos en tu pr�xima compra.</p>
         </div>
       </div>
 
@@ -113,7 +113,7 @@ export default function LoginPage() {
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-5">
               <div className="space-y-2">
-                <label className="text-sm font-bold text-body">Correo electrónico</label>
+                <label className="text-sm font-bold text-body">Correo electr�nico</label>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted">
                     <Mail className="h-5 w-5" />
@@ -131,9 +131,9 @@ export default function LoginPage() {
 
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <label className="text-sm font-bold text-body">Contraseña</label>
+                  <label className="text-sm font-bold text-body">Contrase�a</label>
                   <Link href="/forgot-password" className="text-xs text-muted hover:text-primary hover:underline">
-                    ¿Olvidaste tu contraseña?
+                    �Olvidaste tu contrase�a?
                   </Link>
                 </div>
                 <div className="relative">
@@ -146,7 +146,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="block w-full rounded-xl border border-theme bg-base py-3.5 pl-11 pr-4 text-body placeholder:text-muted/70 focus:border-primary focus:bg-surface focus:outline-none focus:ring-1 focus:ring-primary transition-all"
-                    placeholder="••••••••"
+                    placeholder="��������"
                   />
                 </div>
               </div>
@@ -160,7 +160,7 @@ export default function LoginPage() {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Iniciando sesión...
+                  Iniciando sesi�n...
                 </>
               ) : (
                 'Ingresar'
@@ -170,12 +170,12 @@ export default function LoginPage() {
 
           <div className="text-center pt-4">
             <p className="text-muted">
-              ¿No tienes cuenta?{' '}
+              �No tienes cuenta?{' '}
               <Link
                 href="/register"
                 className="font-bold text-primary hover:underline"
               >
-                Regístrate ahora
+                Reg�strate ahora
               </Link>
             </p>
           </div>
@@ -184,3 +184,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

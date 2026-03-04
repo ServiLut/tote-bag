@@ -30,13 +30,21 @@ import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthMiddleware } from './common/middleware/auth.middleware';
 import { ThrottlerBehindProxyGuard } from './common/guards/throttler.guard';
+import { PermissionsGuard } from './common/guards/permissions.guard';
+import { RolesModule } from './modules/roles/roles.module';
 import envValidationSchema from './config/env.validation';
+import appConfig from './config/app.config';
+import authConfig from './config/auth.config';
+import databaseConfig from './config/database.config';
+import paymentConfig from './config/payment.config';
+import cacheConfig from './config/cache.config';
 
 @Module({
   imports: [
     SentryModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
+      load: [appConfig, authConfig, databaseConfig, paymentConfig, cacheConfig],
       validate: envValidationSchema,
     }),
     CacheModule.registerAsync({
@@ -76,6 +84,7 @@ import envValidationSchema from './config/env.validation';
       path: '/metrics',
     }),
     PrismaModule,
+    RolesModule,
     B2BModule,
     AuthModule,
     OrdersModule,
@@ -108,6 +117,10 @@ import envValidationSchema from './config/env.validation';
     {
       provide: APP_GUARD,
       useClass: ThrottlerBehindProxyGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: PermissionsGuard,
     },
   ],
 })

@@ -16,8 +16,8 @@ interface Product {
 }
 
 async function getDashboardStats() {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
-  
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4003/api/v1';
+
   try {
     const [ordersRes, productsRes, quotesRes] = await Promise.all([
       fetch(`${API_URL}/orders`, { cache: 'no-store' }),
@@ -35,7 +35,7 @@ async function getDashboardStats() {
     const quotes = quotesBody?.data || [];
 
     const today = new Date().toDateString();
-    const dailyProduction = orders.filter((o) => 
+    const dailyProduction = orders.filter((o) =>
       new Date(o.createdAt).toDateString() === today
     ).length;
 
@@ -81,7 +81,7 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
+
         {/* Card 1: Producción */}
         <div className="group bg-surface p-6 rounded-2xl shadow-sm border border-theme transition-all duration-300 hover:shadow-md">
           <div className="flex justify-between items-start mb-4">
@@ -150,4 +150,3 @@ export default async function DashboardPage() {
     </div>
   );
 }
-

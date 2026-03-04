@@ -9,6 +9,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [acceptDataPolicy, setAcceptDataPolicy] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -16,7 +17,11 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!acceptTerms) {
-      setError('Debes aceptar los términos y condiciones');
+      setError('Debes aceptar los t�rminos y condiciones');
+      return;
+    }
+    if (!acceptDataPolicy) {
+      setError('Debes aceptar la pol�tica de tratamiento de datos');
       return;
     }
 
@@ -25,7 +30,7 @@ export default function RegisterPage() {
     setSuccess(null);
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4003/api/v1';
       console.log("DEBUG: Connecting to API at:", API_URL);
 
       const response = await fetch(`${API_URL}/auth/register`, {
@@ -33,7 +38,7 @@ export default function RegisterPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password, acceptTerms }),
+        body: JSON.stringify({ email, password, acceptTerms, acceptDataPolicy }),
       });
 
       const responseBody = await response.json();
@@ -91,7 +96,7 @@ export default function RegisterPage() {
               Crear Cuenta
             </h1>
             <p className="mt-3 text-muted text-lg">
-              Regístrate en segundos y únete a nosotros.
+              Reg�strate en segundos y �nete a nosotros.
             </p>
           </div>
 
@@ -106,10 +111,10 @@ export default function RegisterPage() {
             <div className="flex items-center gap-3 rounded-lg bg-green-50 p-4 text-sm text-green-700 border border-green-100">
               <CheckCircle2 className="h-5 w-5 shrink-0" />
               <div className="flex-1">
-                <p className="font-bold">¡Registro Exitoso!</p>
+                <p className="font-bold">�Registro Exitoso!</p>
                 <p className="mt-1">{success}</p>
                 <Link href="/login" className="block mt-2 font-bold underline hover:text-green-900">
-                  Ir a Iniciar Sesión
+                  Ir a Iniciar Sesi�n
                 </Link>
               </div>
             </div>
@@ -119,7 +124,7 @@ export default function RegisterPage() {
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div className="space-y-5">
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-body">Correo electrónico</label>
+                  <label className="text-sm font-bold text-body">Correo electr�nico</label>
                   <div className="relative">
                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted">
                       <Mail className="h-5 w-5" />
@@ -136,7 +141,7 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-body">Contraseña</label>
+                  <label className="text-sm font-bold text-body">Contrase�a</label>
                   <div className="relative">
                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted">
                       <Lock className="h-5 w-5" />
@@ -147,7 +152,7 @@ export default function RegisterPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="block w-full rounded-xl border border-theme bg-base py-3.5 pl-11 pr-4 text-body placeholder:text-muted/70 focus:border-primary focus:bg-surface focus:outline-none focus:ring-1 focus:ring-primary transition-all"
-                      placeholder="Mínimo 6 caracteres"
+                      placeholder="M�nimo 6 caracteres"
                       minLength={6}
                     />
                   </div>
@@ -167,7 +172,26 @@ export default function RegisterPage() {
                   </div>
                   <div className="ml-3 text-sm">
                     <label htmlFor="terms" className="font-medium text-muted">
-                      Acepto la <Link href="/legal/privacy" className="text-primary hover:underline">Política de Privacidad</Link> y el <Link href="/legal/data-processing" className="text-primary hover:underline">Tratamiento de Datos Personales</Link>.
+                      Acepto los <Link href="/legal/terms" className="text-primary hover:underline">T�rminos y Condiciones</Link> y la <Link href="/legal/privacy" className="text-primary hover:underline">Pol�tica de Privacidad</Link>.
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex items-start">
+                  <div className="flex items-center h-5">
+                    <input
+                      id="dataPolicy"
+                      name="dataPolicy"
+                      type="checkbox"
+                      required
+                      checked={acceptDataPolicy}
+                      onChange={(e) => setAcceptDataPolicy(e.target.checked)}
+                      className="w-4 h-4 border border-theme rounded bg-base text-primary focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+                  <div className="ml-3 text-sm">
+                    <label htmlFor="dataPolicy" className="font-medium text-muted">
+                      Autorizo el <Link href="/legal/data-processing" className="text-primary hover:underline">Tratamiento de mis Datos Personales</Link> seg�n la Ley 1581 de 2012.
                     </label>
                   </div>
                 </div>
@@ -192,12 +216,12 @@ export default function RegisterPage() {
 
           <div className="text-center pt-4">
             <p className="text-muted">
-              ¿Ya tienes una cuenta?{' '}
+              �Ya tienes una cuenta?{' '}
               <Link
                 href="/login"
                 className="font-bold text-primary hover:underline"
               >
-                Inicia sesión aquí
+                Inicia sesi�n aqu�
               </Link>
             </p>
           </div>
@@ -206,3 +230,4 @@ export default function RegisterPage() {
     </div>
   );
 }
+

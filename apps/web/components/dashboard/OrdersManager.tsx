@@ -78,7 +78,7 @@ export default function OrdersManager() {
   const [newStatus, setNewStatus] = useState<OrderStatus>('PENDIENTE_PAGO');
   const [tracking, setTracking] = useState('');
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4003/api/v1';
   const supabase = createClient();
 
   useEffect(() => {
@@ -122,7 +122,7 @@ export default function OrdersManager() {
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`${API_URL}/orders/${orderId}`, {
         method: 'PATCH',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session?.access_token}`,
         },
@@ -135,10 +135,10 @@ export default function OrdersManager() {
       if (!res.ok) throw new Error('Failed to update');
 
       // Update local state
-      setOrders(prev => prev.map(o => 
+      setOrders(prev => prev.map(o =>
         o.id === orderId ? { ...o, status, trackingNumber: trackingNumber || o.trackingNumber } : o
       ));
-      
+
       return true;
     } catch (err) {
       console.error(err);
@@ -158,9 +158,9 @@ export default function OrdersManager() {
   };
 
   const toggleStatusFilter = (status: OrderStatus) => {
-    setSelectedStatuses(prev => 
-      prev.includes(status) 
-        ? prev.filter(s => s !== status) 
+    setSelectedStatuses(prev =>
+      prev.includes(status)
+        ? prev.filter(s => s !== status)
         : [...prev, status]
     );
   };
@@ -171,8 +171,8 @@ export default function OrdersManager() {
     // Search filter
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      result = result.filter(o => 
-        o.customerEmail.toLowerCase().includes(term) || 
+      result = result.filter(o =>
+        o.customerEmail.toLowerCase().includes(term) ||
         o.orderNumber.toString().includes(term) ||
         o.city.toLowerCase().includes(term)
       );
@@ -199,13 +199,13 @@ export default function OrdersManager() {
     if (filter === 'cutoff') {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
+
       result = result.filter(order => {
         const orderDate = new Date(order.createdAt);
         const isToday = orderDate.getFullYear() === today.getFullYear() &&
                         orderDate.getMonth() === today.getMonth() &&
                         orderDate.getDate() === today.getDate();
-        
+
         const isBeforeCutoff = orderDate.getHours() < 12;
         return isToday && isBeforeCutoff;
       });
@@ -277,21 +277,21 @@ export default function OrdersManager() {
             onClick={() => setFilter(filter === 'all' ? 'cutoff' : 'all')}
             className={cn(
               "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border text-[10px] font-bold uppercase transition-all active:scale-95",
-              filter === 'cutoff' 
-                ? "bg-accent/10 border-accent/30 text-accent shadow-sm" 
+              filter === 'cutoff'
+                ? "bg-accent/10 border-accent/30 text-accent shadow-sm"
                 : "bg-surface border-theme text-muted hover:text-primary hover:bg-base"
             )}
           >
             <CalendarClock className="w-4 h-4" />
             {filter === 'cutoff' ? 'Ver Todo' : 'Filtro 12:00'}
           </button>
-          
+
           <button
             onClick={() => setView(view === 'list' ? 'batch' : 'list')}
             className={cn(
               "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border text-[10px] font-bold uppercase transition-all active:scale-95",
-              view === 'batch' 
-                ? "bg-primary border-primary text-base-color shadow-lg shadow-primary/10" 
+              view === 'batch'
+                ? "bg-primary border-primary text-base-color shadow-lg shadow-primary/10"
                 : "bg-surface border-theme text-muted hover:text-primary hover:bg-base"
             )}
           >
@@ -307,7 +307,7 @@ export default function OrdersManager() {
           {/* Search */}
           <div className="md:col-span-4 relative group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted group-focus-within:text-primary transition-colors" />
-            <input 
+            <input
               type="text"
               placeholder="Buscar por # Orden, Email o Ciudad..."
               value={searchTerm}
@@ -320,7 +320,7 @@ export default function OrdersManager() {
           <div className="md:col-span-5 flex items-center gap-3">
             <div className="flex-1 relative">
               <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
-              <input 
+              <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
@@ -330,7 +330,7 @@ export default function OrdersManager() {
             <span className="text-muted font-black text-[10px] uppercase">a</span>
             <div className="flex-1 relative">
               <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
-              <input 
+              <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
@@ -341,7 +341,7 @@ export default function OrdersManager() {
 
           {/* Reset Filters */}
           <div className="md:col-span-3 flex items-end">
-            <button 
+            <button
               onClick={() => {
                 setSearchTerm('');
                 setStartDate('');
@@ -370,8 +370,8 @@ export default function OrdersManager() {
             >
               <div className="flex items-center gap-2">
                 <Filter className="w-3 h-3" />
-                {selectedStatuses.length === 0 
-                  ? "Todos los estados" 
+                {selectedStatuses.length === 0
+                  ? "Todos los estados"
                   : selectedStatuses.length === 1
                     ? selectedStatuses[0]?.replace('_', ' ')
                     : `${selectedStatuses.length} seleccionados`
@@ -382,8 +382,8 @@ export default function OrdersManager() {
 
             {isStatusFilterOpen && (
               <>
-                <div 
-                  className="fixed inset-0 z-10" 
+                <div
+                  className="fixed inset-0 z-10"
                   onClick={() => setIsStatusFilterOpen(false)}
                 />
                 <div className="absolute top-full left-0 mt-2 w-64 bg-surface border border-theme rounded-2xl shadow-xl z-20 py-2 animate-in fade-in zoom-in-95 duration-200">
@@ -403,8 +403,8 @@ export default function OrdersManager() {
                         </span>
                         <div className={cn(
                           "w-4 h-4 rounded border flex items-center justify-center transition-all",
-                          isSelected 
-                            ? "bg-primary border-primary text-base-color" 
+                          isSelected
+                            ? "bg-primary border-primary text-base-color"
                             : "border-theme group-hover:border-muted"
                         )}>
                           {isSelected && <Check className="w-3 h-3" />}
@@ -412,7 +412,7 @@ export default function OrdersManager() {
                       </button>
                     );
                   })}
-                  
+
                   {selectedStatuses.length > 0 && (
                     <div className="border-t border-theme mt-1 pt-1 px-2">
                       <button
@@ -509,8 +509,8 @@ export default function OrdersManager() {
             <div key={batch.sku} className="p-6 rounded-2xl border border-theme bg-surface shadow-sm flex flex-col justify-between hover:shadow-md transition-all group">
               <div className="flex gap-4">
                 <div className="h-16 w-16 rounded-xl overflow-hidden border border-theme bg-base flex-shrink-0 shadow-sm relative">
-                  <Image 
-                    src={(batch.image && batch.image.trim() !== '') ? batch.image : '/placeholder.svg'} 
+                  <Image
+                    src={(batch.image && batch.image.trim() !== '') ? batch.image : '/placeholder.svg'}
                     alt={batch.name}
                     fill
                     className="object-cover group-hover:scale-110 transition-transform duration-300"
@@ -548,7 +548,7 @@ export default function OrdersManager() {
                   {selectedOrder.status.replace('_', ' ')}
                 </span>
               </div>
-              <button 
+              <button
                 onClick={() => setSelectedOrder(null)}
                 className="p-2.5 hover:bg-base rounded-xl transition-all text-muted hover:text-primary active:scale-90"
               >
@@ -591,8 +591,8 @@ export default function OrdersManager() {
                   {selectedOrder.items.map(item => (
                     <div key={item.id} className="flex gap-4 items-center p-2 rounded-xl hover:bg-base/30 transition-colors">
                       <div className="h-12 w-12 rounded-lg border border-theme bg-base overflow-hidden flex-shrink-0 relative shadow-sm">
-                        <Image 
-                          src={(item.product.images && item.product.images[0]?.url && item.product.images[0].url.trim() !== '') ? item.product.images[0].url : '/placeholder.svg'} 
+                        <Image
+                          src={(item.product.images && item.product.images[0]?.url && item.product.images[0].url.trim() !== '') ? item.product.images[0].url : '/placeholder.svg'}
                           alt={item.product.name}
                           fill
                           className="object-cover"
@@ -619,11 +619,11 @@ export default function OrdersManager() {
               <h4 className="text-[10px] font-black text-muted uppercase tracking-[0.2em] flex items-center gap-2">
                 <Truck className="w-3.5 h-3.5" /> Gestión de Estado
               </h4>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-primary uppercase tracking-widest px-1">Estado del Pedido</label>
-                  <select 
+                  <select
                     value={newStatus}
                     onChange={(e) => setNewStatus(e.target.value as OrderStatus)}
                     disabled={isReadOnly}
@@ -640,7 +640,7 @@ export default function OrdersManager() {
 
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-primary uppercase tracking-widest px-1">Número de Guía</label>
-                  <input 
+                  <input
                     type="text"
                     value={tracking}
                     onChange={(e) => setTracking(e.target.value)}

@@ -39,7 +39,7 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(true);
   const [selectedCustomer, setSelectedCustomer] = useState<Profile | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Filtros Geográficos
   const [departments, setDepartments] = useState<Department[]>([]);
   const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
@@ -50,7 +50,7 @@ export default function CustomersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4003/api/v1';
   const supabase = createClient();
 
   useEffect(() => {
@@ -125,7 +125,7 @@ export default function CustomersPage() {
     const email = profile.email.toLowerCase();
 
     const matchesSearch = fullName.includes(query) || phone.includes(query) || email.includes(query);
-    
+
     // Filtrado por Dpto/Mpio (comparando nombres ya que los perfiles actuales tienen strings)
     const deptName = departments.find(d => d.id === selectedDept)?.name;
     const muniName = municipalities.find(m => m.id === selectedMuni)?.name;
@@ -206,7 +206,7 @@ export default function CustomersPage() {
         </select>
 
         {(selectedDept || searchQuery) && (
-          <button 
+          <button
             onClick={() => {
               setSelectedDept('');
               setSelectedMuni('');
@@ -249,7 +249,7 @@ export default function CustomersPage() {
                         </div>
                         <div>
                           <p className="font-bold text-primary tracking-tight">
-                            {profile.firstName || profile.lastName 
+                            {profile.firstName || profile.lastName
                               ? `${profile.firstName || ''} ${profile.lastName || ''}`
                               : 'Sin Nombre'}
                           </p>
@@ -303,7 +303,7 @@ export default function CustomersPage() {
           <p className="text-[10px] font-bold uppercase tracking-widest text-muted">
             Mostrando <span className="text-primary">{paginatedProfiles.length}</span> de <span className="text-primary">{filteredProfiles.length}</span>
           </p>
-          
+
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
@@ -312,17 +312,17 @@ export default function CustomersPage() {
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            
+
             <div className="flex items-center gap-1">
               {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                const pageNum = i + 1; 
+                const pageNum = i + 1;
                 return (
                   <button
                     key={pageNum}
                     onClick={() => setCurrentPage(pageNum)}
                     className={`w-9 h-9 rounded-xl text-[10px] font-black transition-all active:scale-90 ${
-                      currentPage === pageNum 
-                        ? 'bg-primary text-base-color shadow-md shadow-primary/10' 
+                      currentPage === pageNum
+                        ? 'bg-primary text-base-color shadow-md shadow-primary/10'
                         : 'bg-surface border border-theme text-muted hover:text-primary hover:bg-base'
                     }`}
                   >
@@ -349,14 +349,14 @@ export default function CustomersPage() {
           <div className="bg-surface rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col border border-theme">
             <div className="flex items-center justify-between p-6 border-b border-theme bg-base/50 flex-shrink-0">
               <h2 className="text-xl font-black text-primary tracking-tight">Detalles del Cliente</h2>
-              <button 
+              <button
                 onClick={() => setSelectedCustomer(null)}
                 className="p-2 text-muted hover:text-primary hover:bg-base rounded-xl transition-all active:scale-90"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="p-8 space-y-8 overflow-y-auto custom-scrollbar bg-surface">
               {/* Header Info */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 pb-8 border-b border-theme">
@@ -365,7 +365,7 @@ export default function CustomersPage() {
                 </div>
                 <div className="space-y-2">
                   <h3 className="text-3xl font-black text-primary tracking-tighter leading-none">
-                    {selectedCustomer.firstName || selectedCustomer.lastName 
+                    {selectedCustomer.firstName || selectedCustomer.lastName
                       ? `${selectedCustomer.firstName || ''} ${selectedCustomer.lastName || ''}`
                       : 'Sin Nombre'}
                   </h3>
@@ -508,11 +508,11 @@ export default function CustomersPage() {
 
                             const renderValue = (val: unknown) => {
                               if (typeof val === 'boolean') {
-                                return val 
-                                  ? <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-black bg-green-500/10 text-green-600 uppercase">Sí</span> 
+                                return val
+                                  ? <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-black bg-green-500/10 text-green-600 uppercase">Sí</span>
                                   : <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-black bg-red-500/10 text-red-600 uppercase">No</span>;
                               }
-                              
+
                               if (typeof val === 'string' && !isNaN(Date.parse(val)) && val.includes('T')) {
                                 return <span className="font-bold text-primary">{new Date(val).toLocaleString()}</span>;
                               }
@@ -540,7 +540,7 @@ export default function CustomersPage() {
             </div>
 
             <div className="p-6 bg-base/50 border-t border-theme flex justify-end flex-shrink-0">
-              <button 
+              <button
                 onClick={() => setSelectedCustomer(null)}
                 className="px-8 py-3 bg-primary text-base-color text-xs font-black uppercase tracking-widest rounded-2xl hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-primary/10"
               >

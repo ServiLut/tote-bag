@@ -100,7 +100,7 @@ export default function FilterSidebar({ collections, filters, onFilterChange }: 
   useEffect(() => {
     const fetchWizardOptions = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4001';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
         const res = await fetch(`${apiUrl}/wizard-options/grouped`);
         if (res.ok) {
           const response = await res.json();

@@ -18,4 +18,10 @@ export class RegisterDto {
   @IsBoolean()
   @Equals(true, { message: 'Debes aceptar los términos y condiciones' })
   acceptTerms: boolean;
+
+  @IsBoolean()
+  @Equals(true, {
+    message: 'Debes aceptar la política de tratamiento de datos',
+  })
+  acceptDataPolicy: boolean;
 }

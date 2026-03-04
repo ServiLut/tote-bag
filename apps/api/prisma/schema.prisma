@@ -138,17 +138,83 @@ model OrderItem {
 }
 
 model User {
-  id        String     @id @map("id")
-  email     String     @unique @map("email")
-  role      Role       @default(CUSTOMER) @map("role")
-  isActive  Boolean    @default(true) @map("is_active")
+  id                    String                 @id @map("id")
+  email                 String                 @unique @map("email")
+  role                  Role                   @default(CUSTOMER) @map("role")
+  isActive              Boolean                @default(true) @map("is_active")
   createdAt             DateTime               @default(now()) @map("created_at")
   updatedAt             DateTime               @updatedAt @map("updated_at")
   auditLogs             AuditLog[]
   financialTransactions FinancialTransaction[]
   profile               Profile?
+  roles                 UserRole[]
 
   @@map("users")
+  @@schema("tote-bag")
+}
+
+model RoleModel {
+  id          String           @id @default(uuid()) @map("id")
+  name        String           @unique @map("name")
+  description String?          @map("description")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  permissions RolePermission[]
+  users       UserRole[]
+
+  @@map("roles")
+  @@schema("tote-bag")
+}
+
+model Permission {
+  id          String           @id @default(uuid()) @map("id")
+  resource    String           @map("resource")
+  action      String           @map("action")
+  description String?          @map("description")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  roles       RolePermission[]
+
+  @@unique([resource, action])
+  @@map("permissions")
+  @@schema("tote-bag")
+}
+
+model RolePermission {
+  roleId       String     @map("role_id")
+  permissionId String     @map("permission_id")
+  role         RoleModel  @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+  @@schema("tote-bag")
+}
+
+model UserRole {
+  userId     String    @map("user_id")
+  roleId     String    @map("role_id")
+  assignedAt DateTime  @default(now()) @map("assigned_at")
+  assignedBy String?   @map("assigned_by")
+  role       RoleModel @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+  @@schema("tote-bag")
+}
+
+model WebhookEvent {
+  id          String    @id @default(uuid()) @map("id")
+  provider    String    @map("provider")
+  eventId     String    @unique @map("event_id")
+  eventType   String    @map("event_type")
+  payload     Json      @map("payload")
+  processed   Boolean   @default(false) @map("processed")
+  processedAt DateTime? @map("processed_at")
+  error       String?   @map("error")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@unique([provider, eventId])
+  @@map("webhook_events")
   @@schema("tote-bag")
 }
 
@@ -168,6 +234,9 @@ model Profile {
   metadata             Json?         @map("metadata")
   departmentId         String?       @map("department_id")
   municipalityId       String?       @map("municipality_id")
+  dataPolicyAccepted   Boolean       @default(false) @map("data_policy_accepted")
+  dataPolicyAcceptedAt DateTime?     @map("data_policy_accepted_at")
+  dataPolicyAcceptedIp String?       @map("data_policy_accepted_ip")
   addresses            Address[]
   orders               Order[]
   locationDepartment   Department?   @relation(fields: [departmentId], references: [id])
@@ -507,6 +576,7 @@ model OpexCategory {
 }
 
 enum BatchStatus {
+  PENDING
   IN_STOCK
   DEPLETED
   CANCELLED

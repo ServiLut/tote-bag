@@ -70,8 +70,8 @@ interface ProductFormData {
 }
 
 interface AdminProductFormProps {
-  initialData?: Omit<Partial<ProductFormData>, 'tags' | 'costPrice' | 'comparePrice' | 'images' | 'collection' | 'attributes' | 'pricingRules'> & { 
-    id?: string; 
+  initialData?: Omit<Partial<ProductFormData>, 'tags' | 'costPrice' | 'comparePrice' | 'images' | 'collection' | 'attributes' | 'pricingRules'> & {
+    id?: string;
     tags?: string | string[];
     costPrice?: number | null;
     comparePrice?: number | null;
@@ -124,32 +124,32 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
   const isEditMode = !!initialData;
   const [wizardOptions, setWizardOptions] = useState<Record<string, Array<{ id: string, name: string, code: string }>>>({});
   const [formData, setFormData] = useState<ProductFormData>(
-    initialData 
+    initialData
       ? {
           ...INITIAL_STATE,
           ...initialData,
-          collection: typeof initialData.collection === 'object' && initialData.collection !== null 
-            ? (initialData.collection as unknown as Collection).name 
+          collection: typeof initialData.collection === 'object' && initialData.collection !== null
+            ? (initialData.collection as unknown as Collection).name
             : (initialData.collection as string) || '',
-          collectionId: typeof initialData.collection === 'object' && initialData.collection !== null 
-            ? (initialData.collection as unknown as Collection).id 
+          collectionId: typeof initialData.collection === 'object' && initialData.collection !== null
+            ? (initialData.collection as unknown as Collection).id
             : '',
-          images: initialData.images 
+          images: initialData.images
             ? initialData.images.map((img: string | ProductImage) => typeof img === 'string' ? { url: img } : img)
             : [],
           tags: Array.isArray(initialData.tags) ? initialData.tags.join(', ') : initialData.tags || '',
           costPrice: initialData.costPrice ?? 0,
           comparePrice: initialData.comparePrice ?? 0,
-          attributes: initialData.attributes && initialData.attributes.length > 0 
-            ? initialData.attributes 
+          attributes: initialData.attributes && initialData.attributes.length > 0
+            ? initialData.attributes
             : [],
           pricingRules: initialData.pricingRules && initialData.pricingRules.length > 0
             ? initialData.pricingRules
             : [],
-        } 
+        }
       : INITIAL_STATE
   );
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [imageUrlInput, setImageUrlInput] = useState('');
@@ -160,8 +160,8 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
   const [isLoadingCollections, setIsLoadingCollections] = useState(false);
 
   useEffect(() => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4001';
-    
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
+
     const fetchCollections = async () => {
       setIsLoadingCollections(true);
       try {
@@ -197,11 +197,11 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
 
   const handleCreateCollection = async (name: string) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4001';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
       const slug = name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
-      
+
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       const res = await fetch(`${apiUrl}/collections`, {
         method: 'POST',
         headers: {
@@ -245,18 +245,18 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
       if (!name && !collection && !color) return '';
       return `TB-${clean(collection || 'COL')}-${clean(name || 'PROD')}-${clean(color || 'CLR')}`;
     };
-  
+
     const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
       const { name, value, type } = e.target;
-      
+
       setFormData((prev) => {
         const newData = { ...prev, [name]: type === 'number' ? parseFloat(value) || 0 : value };
-        
+
         // Auto-generate slug from name if slug is untouched AND not in edit mode (to preserve SEO URLs)
         if (name === 'name' && !prev.slug && !isEditMode) {
           newData.slug = value.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
         }
-  
+
         // Update SKUs of variants if they are empty
         if (name === 'name' || name === 'collection') {
           newData.variants = prev.variants.map(v => ({
@@ -264,11 +264,11 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
             sku: v.sku && !v.sku.startsWith('TB-') ? v.sku : generateSku(newData.name, newData.collection, v.color)
           }));
         }
-        
+
         return newData;
       });
     };
-  
+
     const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {    const files = e.target.files;
     if (!files || files.length === 0) return;
 
@@ -314,7 +314,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `variants/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      
+
       const { error: uploadError } = await supabase.storage
         .from('product-images')
         .upload(fileName, file);
@@ -365,11 +365,11 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
       ...prev,
       variants: [
         ...prev.variants,
-        { 
-          sku: generateSku(prev.name, prev.collection, ''), 
-          color: '', 
-          imageUrl: '', 
-          stock: 0 
+        {
+          sku: generateSku(prev.name, prev.collection, ''),
+          color: '',
+          imageUrl: '',
+          stock: 0
         },
       ],
     }));
@@ -379,12 +379,12 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
     setFormData((prev) => {
       const newVariants = [...prev.variants];
       const v = { ...newVariants[index], [field]: value } as VariantData;
-      
+
       // Auto-generate SKU when color changes if SKU is empty or auto-pattern
       if (field === 'color') {
         v.sku = generateSku(prev.name, prev.collection, v.color);
       }
-      
+
       newVariants[index] = v;
       return { ...prev, variants: newVariants };
     });
@@ -402,12 +402,12 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
     setFormData(prev => {
       const newAttrs = [...prev.attributes];
       const updatedAttr = { ...newAttrs[index], [field]: value } as AttributeData;
-      
+
       // Reset value if type changes to prevent data inconsistency
       if (field === 'type') {
         updatedAttr.value = '';
       }
-      
+
       newAttrs[index] = updatedAttr;
       return { ...prev, attributes: newAttrs };
     });
@@ -453,7 +453,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
     setIsSubmitting(true);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4001';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
 
       // 1. Clean Variants: Remove IDs and other metadata
       const cleanVariants = formData.variants.map(v => ({
@@ -492,19 +492,19 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
           discountPct: rule.discountPct,
           fixedUnitPrice: rule.fixedUnitPrice,
         })),
-        tags: typeof formData.tags === 'string' 
+        tags: typeof formData.tags === 'string'
           ? formData.tags.split(',').map(t => t.trim()).filter(Boolean)
           : formData.tags,
       };
 
-      const url = isEditMode  
-        ? `${apiUrl}/catalog/${initialData.id}` 
+      const url = isEditMode
+        ? `${apiUrl}/catalog/${initialData.id}`
         : `${apiUrl}/catalog`;
-      
+
       console.log('------------------------------------------------');
-      console.log('🚀 SUBMITTING FORM');
-      console.log('🎯 Target URL:', url);
-      console.log('📦 Payload:', payload);
+      console.log('ðŸš€ SUBMITTING FORM');
+      console.log('ðŸŽ¯ Target URL:', url);
+      console.log('ðŸ“¦ Payload:', payload);
       console.log('------------------------------------------------');
 
       const method = isEditMode ? 'PATCH' : 'POST';
@@ -532,7 +532,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
       const responseBody: ApiResponse<{ name: string }> = await response.json();
       const result = responseBody.data;
       toast.success(`Producto "${result.name}" ${isEditMode ? 'actualizado' : 'creado'} exitosamente.`);
-      
+
       if (!isEditMode) {
         setFormData(INITIAL_STATE); // Reset form only on create
       }
@@ -552,8 +552,8 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
           {isEditMode ? 'Editar Producto' : 'Nuevo Producto'}
         </h2>
         <p className="text-muted text-sm font-medium">
-          {isEditMode 
-            ? 'Modifica la información existente del producto.' 
+          {isEditMode
+            ? 'Modifica la información existente del producto.'
             : 'Ingresa la información básica y define las variantes para el catálogo.'}
         </p>
       </div>
@@ -929,9 +929,9 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
                     />
                     <label className="cursor-pointer p-2.5 bg-primary rounded-xl text-base-color hover:opacity-90 transition-all active:scale-90 flex items-center justify-center min-w-[44px] shadow-md shadow-primary/10" title="Subir imagen">
                       {isUploading ? <Loader2 size={18} className="animate-spin" /> : <UploadCloud size={18} />}
-                      <input 
-                        type="file" 
-                        className="hidden" 
+                      <input
+                        type="file"
+                        className="hidden"
                         accept="image/*"
                         onChange={(e) => handleVariantFileUpload(index, e)}
                         disabled={isUploading}
@@ -999,7 +999,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
             {formData.attributes.map((attr, index) => {
               // Lock type if it's one of the first 4 default attributes on a NEW product
               const isLocked = !isEditMode && index < 4;
-              
+
               return (
                 <div key={index} className="grid grid-cols-12 gap-4 items-end p-5 border border-theme rounded-2xl bg-base/20 shadow-sm transition-all hover:bg-base/30">
                   <div className="col-span-12 md:col-span-3 space-y-1">
@@ -1141,10 +1141,10 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
             disabled={isSubmitting}
             className="px-10 py-4 bg-primary text-base-color font-black uppercase tracking-[0.2em] text-xs rounded-2xl hover:opacity-90 active:scale-95 transition-all shadow-xl shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSubmitting 
-              ? 'Guardando...' 
-              : isEditMode 
-                ? 'Actualizar Producto' 
+            {isSubmitting
+              ? 'Guardando...'
+              : isEditMode
+                ? 'Actualizar Producto'
                 : 'Crear Producto'}
           </button>
         </div>

@@ -102,10 +102,10 @@ export const ProductionList = () => {
       .filter(o => o.status === 'PAGADO') // Only paid orders
       .forEach(order => {
         const isPriority = isPriorityOrder(order.createdAt);
-        
+
         order.items.forEach(item => {
           const key = `${item.productName}-${item.color}`;
-          
+
           if (!batches[key]) {
             batches[key] = {
               id: key,
@@ -155,21 +155,21 @@ export const ProductionList = () => {
   return (
     <div className="w-full bg-[#F5F5F0] dark:bg-zinc-950 min-h-screen p-8 text-[#171717] dark:text-zinc-100 font-sans transition-colors">
       <div className="max-w-6xl mx-auto">
-        
+
         {/* Header */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Producción Diaria</h1>
             <p className="text-gray-600 dark:text-zinc-400">Gestión de lotes y priorización de pedidos.</p>
           </div>
-          
+
           <div className="flex items-center gap-3">
             <div className="bg-white dark:bg-zinc-900 px-4 py-2 rounded-lg border border-gray-200 dark:border-zinc-800 flex items-center gap-2 text-sm shadow-sm">
               <Clock size={16} className="text-gray-500 dark:text-zinc-400" />
               <span>Cut-off: <strong>12:00 PM</strong></span>
             </div>
-            
-            <button 
+
+            <button
               onClick={handleExport}
               className="flex items-center gap-2 bg-black dark:bg-white text-white dark:text-black px-5 py-2.5 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-zinc-200 transition-all shadow-md active:transform active:scale-95"
             >

@@ -30,7 +30,7 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto, ip?: string) {
-    const { email, password, acceptTerms } = registerDto;
+    const { email, password, acceptTerms, acceptDataPolicy } = registerDto;
 
     // 1. Intentar registro en Supabase
     const { data, error } = await this.supabase.auth.signUp({
@@ -87,6 +87,9 @@ export class AuthService {
           data: {
             email: user.email!,
             userId: user.id,
+            dataPolicyAccepted: acceptDataPolicy,
+            dataPolicyAcceptedAt: new Date(),
+            dataPolicyAcceptedIp: ip,
             metadata: {
               termsAccepted: acceptTerms,
               termsAcceptedAt: new Date().toISOString(),

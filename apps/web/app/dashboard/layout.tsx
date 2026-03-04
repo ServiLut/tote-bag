@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { 
+import {
   Menu,
   Loader2,
   Sun,
@@ -35,7 +35,7 @@ export default function DashboardLayout({
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         router.push('/login');
         return;
@@ -45,7 +45,7 @@ export default function DashboardLayout({
       setUser(user);
 
       const userRole = localStorage.getItem('user_role');
-      
+
       if (userRole !== 'ADMIN' && userRole !== 'ADVISOR' && userRole !== 'VIEWER') {
         router.push('/catalog');
         return;
@@ -74,11 +74,11 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen bg-base text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300 dashboard-bg-custom">
-      <Sidebar 
-        user={user} 
-        handleLogout={handleLogout} 
-        isMobileMenuOpen={isMobileMenuOpen} 
-        setIsMobileMenuOpen={setIsMobileMenuOpen} 
+      <Sidebar
+        user={user}
+        handleLogout={handleLogout}
+        isMobileMenuOpen={isMobileMenuOpen}
+        setIsMobileMenuOpen={setIsMobileMenuOpen}
       />
 
       {/* Main Content */}
@@ -105,7 +105,7 @@ export default function DashboardLayout({
             </button>
           </div>
         </div>
-        
+
         <div className="flex-1 overflow-auto bg-base">
           {children}
         </div>

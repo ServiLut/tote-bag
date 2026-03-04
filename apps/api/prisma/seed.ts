@@ -165,6 +165,77 @@ async function main() {
     });
   }
 
+  // 7. Roles y Permisos
+  console.log('🔐 Creando Roles y Permisos...');
+  const permissions = [
+    { resource: 'products', action: 'create' },
+    { resource: 'products', action: 'read' },
+    { resource: 'products', action: 'update' },
+    { resource: 'products', action: 'delete' },
+    { resource: 'orders', action: 'create' },
+    { resource: 'orders', action: 'read' },
+    { resource: 'orders', action: 'update' },
+    { resource: 'orders', action: 'cancel' },
+    { resource: 'users', action: 'read' },
+    { resource: 'users', action: 'update' },
+    { resource: 'users', action: 'delete' },
+    { resource: 'analytics', action: 'view' },
+    { resource: 'audit', action: 'read' },
+    { resource: 'b2b', action: 'manage' },
+  ];
+
+  for (const p of permissions) {
+    await prisma.permission.upsert({
+      where: { resource_action: { resource: p.resource, action: p.action } },
+      update: {},
+      create: p,
+    });
+  }
+
+  const allPermissions = await prisma.permission.findMany();
+
+  const roles = [
+    { name: 'super_admin', description: 'Acceso total al sistema' },
+    { name: 'admin', description: 'Administrador de tienda' },
+    { name: 'manager', description: 'Gestor de inventario y órdenes' },
+    { name: 'customer', description: 'Cliente regular' },
+  ];
+
+  for (const r of roles) {
+    const role = await prisma.roleModel.upsert({
+      where: { name: r.name },
+      update: { description: r.description },
+      create: r,
+    });
+
+    // Assign permissions
+    let rolePermsToAssign: any[] = [];
+    if (r.name === 'super_admin') {
+      rolePermsToAssign = allPermissions;
+    } else if (r.name === 'admin') {
+      rolePermsToAssign = allPermissions.filter((p) => p.resource !== 'audit');
+    } else if (r.name === 'manager') {
+      rolePermsToAssign = allPermissions.filter((p) =>
+        ['products', 'orders', 'b2b'].includes(p.resource),
+      );
+    } else if (r.name === 'customer') {
+      rolePermsToAssign = allPermissions.filter(
+        (p) =>
+          (p.resource === 'products' && p.action === 'read') ||
+          (p.resource === 'orders' &&
+            (p.action === 'read' || p.action === 'create')),
+      );
+    }
+
+    for (const p of rolePermsToAssign) {
+      await prisma.rolePermission.upsert({
+        where: { roleId_permissionId: { roleId: role.id, permissionId: p.id } },
+        update: {},
+        create: { roleId: role.id, permissionId: p.id },
+      });
+    }
+  }
+
   console.log('✅ Seed completado exitosamente.');
 }
 

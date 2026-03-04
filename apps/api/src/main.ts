@@ -1,7 +1,7 @@
 import './instrument';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { ValidationPipe, Logger, VersioningType } from '@nestjs/common';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { Request, Response, NextFunction } from 'express';
 import { winstonConfig } from './common/logger/winston.config';
@@ -12,6 +12,13 @@ async function bootstrap() {
   });
 
   const logger = new Logger('HTTP');
+
+  // Global prefix and versioning
+  app.setGlobalPrefix('api');
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: '1',
+  });
 
   // Structured Logging middleware
   app.use((req: Request, res: Response, next: NextFunction) => {
@@ -44,6 +51,7 @@ async function bootstrap() {
     allowedHeaders: 'Content-Type, Accept, Authorization',
   });
   const port = process.env.PORT ?? 4000;
+  // Triggering reload for new routes
   await app.listen(port, '0.0.0.0');
   console.log(`🚀 Application is running on: http://localhost:${port}`);
 }

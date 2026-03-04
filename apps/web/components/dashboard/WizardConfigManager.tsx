@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { 
-  Loader2, Pencil, Check, X, Sparkles, DollarSign, Layers, 
-  Plus, Trash2, AlertTriangle, 
+import {
+  Loader2, Pencil, Check, X, Sparkles, DollarSign, Layers,
+  Plus, Trash2, AlertTriangle,
   ChevronDown, ChevronUp, Maximize, Box, MousePointer2
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -59,19 +59,19 @@ export default function WizardConfigManager() {
   const [options, setOptions] = useState<WizardOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedCategory, setExpandedCategory] = useState<WizardCategory | null>('LINE');
-  
+
   // Modal & Form state
   const [showModal, setShowFormModal] = useState(false);
   const [formData, setFormData] = useState<FormData>(INITIAL_FORM);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Delete state
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
   const [showConfirmDeleteId, setShowConfirmDeleteId] = useState<string | null>(null);
 
   const supabase = createClient();
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4001';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
 
   const fetchOptions = useCallback(async () => {
     try {
@@ -124,9 +124,9 @@ export default function WizardConfigManager() {
       const fileExt = file.name.split('.').pop();
       const fileName = `wizard/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       const { error: uploadError } = await supabase.storage.from('product-assets').upload(fileName, file);
-      
+
       if (uploadError) throw uploadError;
-      
+
       const { data: { publicUrl } } = supabase.storage.from('product-assets').getPublicUrl(fileName);
       setFormData(prev => ({ ...prev, imageUrl: publicUrl }));
       toast.success('Imagen de lienzo cargada');
@@ -156,7 +156,7 @@ export default function WizardConfigManager() {
       });
 
       if (!res.ok) throw new Error('Error al guardar');
-      
+
       toast.success(editingId ? 'Actualizado correctamente' : 'Creado correctamente');
       setShowFormModal(false);
       fetchOptions();
@@ -273,9 +273,9 @@ export default function WizardConfigManager() {
                               <button onClick={() => setShowConfirmDeleteId(opt.id)} className="p-2 text-muted hover:text-red-500 transition-colors"><Trash2 size={14}/></button>
                             </div>
                           </div>
-                          
+
                           <p className="text-[11px] text-muted line-clamp-2 mb-4 h-8">{opt.description || 'Sin descripción'}</p>
-                          
+
                           <div className="flex items-center justify-between pt-4 border-t border-theme/50">
                             <div className="flex items-center gap-1.5 text-primary font-black">
                               <DollarSign size={12} className="text-secondary" />
@@ -365,7 +365,7 @@ export default function WizardConfigManager() {
                         {formData.imageUrl && (
                           <div className="w-20 h-20 rounded-2xl bg-white border border-theme overflow-hidden relative group">
                             <Image src={formData.imageUrl} alt="Preview" fill className="object-cover" />
-                            <button 
+                            <button
                               type="button"
                               onClick={() => setFormData(prev => ({ ...prev, imageUrl: '' }))}
                               className="absolute inset-0 bg-red-500/80 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"

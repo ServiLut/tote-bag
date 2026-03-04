@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { 
-  Loader2, 
-  Check, 
-  Layers, 
+import {
+  Loader2,
+  Check,
+  Layers,
   MousePointer2,
   RefreshCw,
   AlertCircle
@@ -29,7 +29,7 @@ export default function FabricCompatibilityMatrix() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const supabase = createClient();
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4001';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
 
   const fetchData = useCallback(async () => {
     try {
@@ -41,7 +41,7 @@ export default function FabricCompatibilityMatrix() {
       if (!res.ok) throw new Error('Error al cargar datos');
       const resBody = await res.json();
       const allOptions: WizardOption[] = resBody.data || [];
-      
+
       setMaterials(allOptions.filter(o => o.category === 'MATERIAL' && o.isActive));
       setTechniques(allOptions.filter(o => o.category === 'TECHNIQUE' && o.isActive));
     } catch {
@@ -74,14 +74,14 @@ export default function FabricCompatibilityMatrix() {
       });
 
       if (!res.ok) throw new Error('Error al actualizar');
-      
+
       // Update local state
-      setTechniques(prev => prev.map(t => 
-        t.id === technique.id 
-          ? { ...t, allowedMaterialValues: newAllowedMaterials } 
+      setTechniques(prev => prev.map(t =>
+        t.id === technique.id
+          ? { ...t, allowedMaterialValues: newAllowedMaterials }
           : t
       ));
-      
+
       toast.success(`Regla actualizada: ${technique.name} ${isCompatible ? 'deshabilitado' : 'habilitado'} para ${materialName}`);
     } catch {
       toast.error('Error al guardar el cambio');
@@ -154,7 +154,7 @@ export default function FabricCompatibilityMatrix() {
                   {techniques.map(tech => {
                     const isCompatible = tech.allowedMaterialValues.includes(mat.name);
                     const isUpdating = updatingId === `${tech.id}-${mat.name}`;
-                    
+
                     return (
                       <td key={tech.id} className="p-6 text-center">
                         <button
@@ -195,7 +195,7 @@ export default function FabricCompatibilityMatrix() {
         <Check size={18} className="text-secondary shrink-0 mt-0.5" />
         <p className="text-xs text-muted leading-relaxed">
           <strong className="text-primary font-black uppercase tracking-widest text-[10px] block mb-1">Nota de Sincronización:</strong>
-          Los cambios realizados en esta matriz se reflejan en tiempo real en el configurador que ven los clientes. 
+          Los cambios realizados en esta matriz se reflejan en tiempo real en el configurador que ven los clientes.
           Si una técnica está bloqueada para un material, no aparecerá como opción cuando el cliente seleccione dicho material.
         </p>
       </div>

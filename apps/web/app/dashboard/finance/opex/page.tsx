@@ -1,15 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { 
-  Receipt, 
-  Plus, 
-  Search, 
-  Filter, 
-  Calendar, 
-  DollarSign, 
-  Loader2, 
-  CheckCircle2, 
+import { useState, useEffect, useCallback } from 'react';
+import {
+  Receipt,
+  Plus,
+  Search,
+  Filter,
+  Calendar,
+  DollarSign,
+  Loader2,
+  CheckCircle2,
   X,
   TrendingDown,
   User,
@@ -29,6 +29,7 @@ interface OpexTransaction {
   amount: number;
   createdAt: string;
   category: string;
+  opexCategoryId: string;
   opexCategory: { name: string };
   user: { email: string };
 }
@@ -49,27 +50,33 @@ export default function OpexPage() {
     createdAt: new Date().toISOString().split('T')[0],
   });
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4001';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [txRes, catRes] = await Promise.all([
         fetch(`${API_URL}/inventory/finance/opex-transactions`),
         fetch(`${API_URL}/inventory/finance/opex-categories`),
       ]);
 
-      if (txRes.ok) setTransactions(await txRes.json());
-      if (catRes.ok) setCategories(await catRes.json());
+      if (txRes.ok) {
+        const result = await txRes.json();
+        setTransactions(result.data || []);
+      }
+      if (catRes.ok) {
+        const result = await catRes.json();
+        setCategories(result.data || []);
+      }
     } catch (err) {
       console.error('Error fetching data:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL]);
 
   useEffect(() => {
     fetchData();
-  }, [API_URL]);
+  }, [fetchData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,7 +113,7 @@ export default function OpexPage() {
     })
     .reduce((sum, tx) => sum + tx.amount, 0);
 
-  const filteredTransactions = transactions.filter(tx => 
+  const filteredTransactions = transactions.filter(tx =>
     filterCategory === 'ALL' || tx.opexCategoryId === filterCategory
   );
 
@@ -167,7 +174,7 @@ export default function OpexPage() {
           </h2>
           <div className="flex items-center gap-3">
              <Filter className="w-4 h-4 text-muted" />
-             <select 
+             <select
                value={filterCategory}
                onChange={(e) => setFilterCategory(e.target.value)}
                className="bg-base border border-theme rounded-xl px-4 py-2 text-xs font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 transition-all"
@@ -179,7 +186,7 @@ export default function OpexPage() {
              </select>
           </div>
         </div>
-        
+
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -242,7 +249,7 @@ export default function OpexPage() {
       {isModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-primary/20 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsModalOpen(false)} />
-          
+
           <div className="relative bg-surface w-full max-w-lg rounded-3xl shadow-2xl border border-theme animate-in zoom-in-95 duration-300 overflow-hidden">
             <div className="p-8 border-b border-theme bg-rose-500 text-white">
               <div className="flex justify-between items-center">
@@ -316,10 +323,10 @@ export default function OpexPage() {
                 </div>
 
                 <div className="flex items-center gap-3 p-4 bg-base rounded-2xl border border-theme group">
-                  <input 
-                    type="checkbox" 
-                    id="recurring" 
-                    className="w-5 h-5 rounded-lg border-theme text-rose-500 focus:ring-rose-500/20 transition-all cursor-pointer" 
+                  <input
+                    type="checkbox"
+                    id="recurring"
+                    className="w-5 h-5 rounded-lg border-theme text-rose-500 focus:ring-rose-500/20 transition-all cursor-pointer"
                   />
                   <label htmlFor="recurring" className="text-sm font-bold text-muted group-hover:text-primary cursor-pointer transition-colors">
                     Marcar como gasto recurrente
