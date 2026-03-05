@@ -27,7 +27,7 @@ export default function ForgotPasswordPage() {
 
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.message || 'Error al enviar el correo de recuperaci�n');
+        throw new Error(errData.message || 'Error al enviar el correo de recuperación');
       }
 
       setIsSubmitted(true);
@@ -62,17 +62,17 @@ export default function ForgotPasswordPage() {
         <div className="absolute top-8 left-8">
           <Link href="/login" className="flex items-center gap-2 text-sm text-muted hover:text-primary transition-colors font-medium">
             <ArrowLeft className="w-4 h-4" />
-            Volver al inicio de sesi�n
+            Volver al inicio de sesión
           </Link>
         </div>
 
         <div className="w-full max-w-md space-y-10">
           <div className="text-center lg:text-left">
             <h1 className="text-4xl font-serif font-bold text-body tracking-tight">
-              �Olvidaste tu contrase�a?
+              ¿Olvidaste tu contraseña?
             </h1>
             <p className="mt-3 text-muted text-lg">
-              Ingresa tu correo electr�nico y te enviaremos un enlace para restablecerla.
+              Ingresa tu correo electrónico y te enviaremos un enlace para restablecerla.
             </p>
           </div>
 
@@ -81,9 +81,9 @@ export default function ForgotPasswordPage() {
               <div className="flex justify-center">
                 <CheckCircle2 className="h-12 w-12 text-secondary" />
               </div>
-              <h2 className="text-xl font-bold text-body">�Correo enviado!</h2>
+              <h2 className="text-xl font-bold text-body">￡Correo enviado!</h2>
               <p className="text-muted">
-                Hemos enviado un enlace de recuperaci�n a <strong>{email}</strong>. 
+                Hemos enviado un enlace de recuperación a <strong>{email}</strong>. 
                 Por favor revisa tu bandeja de entrada y sigue las instrucciones.
               </p>
               <div className="pt-4">
@@ -91,7 +91,7 @@ export default function ForgotPasswordPage() {
                   href="/login"
                   className="inline-block font-bold text-primary hover:underline"
                 >
-                  Regresar al inicio de sesi�n
+                  Regresar al inicio de sesión
                 </Link>
               </div>
             </div>
@@ -106,7 +106,7 @@ export default function ForgotPasswordPage() {
 
               <form className="space-y-6" onSubmit={handleSubmit}>
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-body">Correo electr�nico</label>
+                  <label className="text-sm font-bold text-body">Correo electrónico</label>
                   <div className="relative">
                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted">
                       <Mail className="h-5 w-5" />
@@ -142,12 +142,12 @@ export default function ForgotPasswordPage() {
 
           <div className="text-center pt-4">
             <p className="text-muted">
-              �Recordaste tu contrase�a?{' '}
+              ¿Recordaste tu contraseña?{' '}
               <Link
                 href="/login"
                 className="font-bold text-primary hover:underline"
               >
-                Inicia sesi�n
+                Inicia sesión
               </Link>
             </p>
           </div>
@@ -156,4 +156,6 @@ export default function ForgotPasswordPage() {
     </div>
   );
 }
+
+
 

@@ -117,7 +117,7 @@ export default function ProfilePage() {
   };
 
   const handleDeleteAddress = async (id: string) => {
-    if (!confirm('�Est�s seguro de eliminar esta direcci�n?')) return;
+    if (!confirm('¿Estás seguro de eliminar esta dirección?')) return;
 
     try {
       const res = await fetch(`${API_URL}/addresses/${id}`, {
@@ -128,11 +128,11 @@ export default function ProfilePage() {
       });
 
       if (res.ok) {
-        toast.success('Direcci�n eliminada');
+        toast.success('Dirección eliminada');
         fetchData();
       }
     } catch {
-      toast.error('Error al eliminar la direcci�n');
+      toast.error('Error al eliminar la dirección');
     }
   };
 
@@ -148,11 +148,11 @@ export default function ProfilePage() {
       });
 
       if (res.ok) {
-        toast.success('Direcci�n predeterminada actualizada');
+        toast.success('Dirección predeterminada actualizada');
         fetchData();
       }
     } catch {
-      toast.error('Error al actualizar la direcci�n');
+      toast.error('Error al actualizar la dirección');
     }
   };
 
@@ -177,7 +177,7 @@ export default function ProfilePage() {
             className="flex items-center gap-2 text-sm text-accent hover:opacity-80 font-bold px-4 py-2 bg-accent/10 rounded-lg transition-colors"
           >
             <LogOut className="w-4 h-4" />
-            Cerrar Sesi�n
+            Cerrar Sesión
           </button>
         </div>
 
@@ -199,7 +199,7 @@ export default function ProfilePage() {
               
               <div className="space-y-4">
                 {addresses.length === 0 ? (
-                  <p className="text-sm text-muted">A�n no tienes direcciones guardadas.</p>
+                  <p className="text-sm text-muted">Aún no tienes direcciones guardadas.</p>
                 ) : (
                   addresses.map((address) => (
                     <div 
@@ -242,7 +242,7 @@ export default function ProfilePage() {
                         {address.address}<br />
                         {address.neighborhood && `${address.neighborhood}, `}
                         {address.municipality.name}, {address.department.name}<br />
-                        T�l: {address.phone}
+                        Tél: {address.phone}
                       </p>
                       {address.isDefault && (
                         <span className="mt-2 inline-block px-2 py-0.5 bg-accent text-surface text-[10px] font-bold rounded uppercase tracking-tighter">
@@ -258,7 +258,7 @@ export default function ProfilePage() {
                 onClick={() => setShowAddressForm(true)}
                 className="mt-6 w-full py-2 text-sm font-bold border border-theme rounded-lg text-primary hover:bg-base transition-colors flex items-center justify-center gap-2"
               >
-                <Plus className="w-4 h-4" /> Agregar Direcci�n
+                <Plus className="w-4 h-4" /> Agregar Dirección
               </button>
             </div>
           </div>
@@ -271,7 +271,7 @@ export default function ProfilePage() {
 
             {orders.length === 0 ? (
               <div className="bg-surface p-12 rounded-xl border border-dashed border-theme text-center">
-                <p className="text-muted mb-4">A�n no has realizado ninguna compra.</p>
+                <p className="text-muted mb-4">Aún no has realizado ninguna compra.</p>
                 <button 
                   onClick={() => router.push('/catalog')}
                   className="px-6 py-3 btn-primary text-sm font-bold uppercase tracking-wide rounded-sm"
@@ -328,7 +328,7 @@ export default function ProfilePage() {
                           <div className="flex-1">
                             <h4 className="font-medium text-primary">{item.product.name}</h4>
                             <p className="text-sm text-muted">
-                              {item.variant?.color} � Cantidad: {item.quantity}
+                              {item.variant?.color} • Cantidad: {item.quantity}
                             </p>
                           </div>
                           <div className="text-right">
@@ -343,7 +343,7 @@ export default function ProfilePage() {
                     {order.trackingNumber && (
                       <div className="mt-6 pt-4 border-t border-theme flex items-center justify-between">
                          <div className="text-sm">
-                           <span className="text-muted mr-2">Gu�a de rastreo:</span>
+                           <span className="text-muted mr-2">Guía de rastreo:</span>
                            <span className="font-mono font-medium text-primary">{order.trackingNumber}</span>
                          </div>
                          <button className="text-sm font-bold underline decoration-1 text-primary hover:opacity-70 transition-opacity">
@@ -370,4 +370,6 @@ export default function ProfilePage() {
     </>
   );
 }
+
+
 

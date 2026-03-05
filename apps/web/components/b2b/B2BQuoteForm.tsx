@@ -224,7 +224,7 @@ export default function B2BQuoteForm() {
 
     const currentPkg = PACKAGES.find(p => p.id === formData.package);
     if (currentPkg && Number(formData.quantity) < currentPkg.min) {
-      toast.error(`La cantidad m�nima para el paquete ${currentPkg.label} es ${currentPkg.min} unidades.`);
+      toast.error(`La cantidad mínima para el paquete ${currentPkg.label} es ${currentPkg.min} unidades.`);
       return;
     }
 
@@ -253,7 +253,7 @@ export default function B2BQuoteForm() {
 
       if (!res.ok) {
          const errData = await res.json();
-         throw new Error(errData.message || 'Error al enviar cotizaci�n');
+         throw new Error(errData.message || 'Error al enviar cotización');
       }
 
       setSuccess(true);
@@ -272,9 +272,9 @@ export default function B2BQuoteForm() {
         <div className="flex justify-center mb-4">
           <CheckCircle2 className="w-16 h-16 text-green-600" />
         </div>
-        <h3 className="text-2xl font-serif font-bold text-green-900 mb-2">�Solicitud Recibida!</h3>
+        <h3 className="text-2xl font-serif font-bold text-green-900 mb-2">￡Solicitud Recibida!</h3>
         <p className="text-green-800 max-w-md mx-auto">
-          Hemos recibido tu solicitud B2B. Nuestro equipo comercial te contactar� al <strong>{formData.contactPhone}</strong> en menos de 24 horas para finalizar los detalles de tu pedido corporativo.
+          Hemos recibido tu solicitud B2B. Nuestro equipo comercial te contactará al <strong>{formData.contactPhone}</strong> en menos de 24 horas para finalizar los detalles de tu pedido corporativo.
         </p>
         <button
           onClick={() => {
@@ -351,7 +351,7 @@ export default function B2BQuoteForm() {
               onChange={handleChange}
               required
               className="w-full p-3 bg-base/50 border border-theme rounded-lg focus:ring-2 focus:ring-primary focus:bg-surface transition-all outline-none text-primary placeholder:text-muted/50"
-              placeholder={`M�nimo ${currentMin} unidades`}
+              placeholder={`Mínimo ${currentMin} unidades`}
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted pointer-events-none">
               Min: {currentMin}
@@ -360,7 +360,7 @@ export default function B2BQuoteForm() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-wide text-muted">Tel�fono de Contacto</label>
+          <label className="text-xs font-bold uppercase tracking-wide text-muted">Teléfono de Contacto</label>
           <input
             type="tel"
             name="contactPhone"
@@ -410,7 +410,7 @@ export default function B2BQuoteForm() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-wide text-muted">Direcci�n Exacta</label>
+          <label className="text-xs font-bold uppercase tracking-wide text-muted">Dirección Exacta</label>
           <input
             type="text"
             name="address"
@@ -425,14 +425,14 @@ export default function B2BQuoteForm() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-theme/50">
         <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-wide text-muted">Tama�o / Dimensi�n</label>
+          <label className="text-xs font-bold uppercase tracking-wide text-muted">Tamaño / Dimensión</label>
           <Combobox
             options={options.sizes.map(s => ({ value: s.name, label: s.name }))}
             value={formData.size}
             onChange={(val) => setFormData({ ...formData, size: val })}
-            placeholder={loadingOptions ? "Cargando tama�os..." : "Selecciona el tama�o"}
-            searchPlaceholder="Buscar tama�o..."
-            emptyMessage={loadingOptions ? "Cargando..." : "No se encontraron tama�os"}
+            placeholder={loadingOptions ? "Cargando tamaños..." : "Selecciona el tamaño"}
+            searchPlaceholder="Buscar tamaño..."
+            emptyMessage={loadingOptions ? "Cargando..." : "No se encontraron tamaños"}
           />
         </div>
 
@@ -451,7 +451,7 @@ export default function B2BQuoteForm() {
 
       <div className="pt-4 border-t border-theme">
         <h4 className="text-sm font-bold text-primary mb-4 flex items-center gap-2">
-          <QrCode className="w-4 h-4" /> Personalizaci�n Inteligente
+          <QrCode className="w-4 h-4" /> Personalización Inteligente
         </h4>
 
         <div className="grid grid-cols-1 gap-6">
@@ -471,7 +471,7 @@ export default function B2BQuoteForm() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wide text-muted">Link o N�mero del QR</label>
+              <label className="text-xs font-bold uppercase tracking-wide text-muted">Link o Número del QR</label>
               <input
                 type="text"
                 name="qrData"
@@ -521,13 +521,15 @@ export default function B2BQuoteForm() {
         disabled={loading}
         className="w-full py-4 bg-primary text-base-color font-bold uppercase tracking-widest rounded-lg hover:opacity-90 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4 shadow-lg hover:shadow-xl translate-y-0 hover:-translate-y-1 duration-300"
       >
-        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Solicitar Cotizaci�n Corporativa'}
+        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Solicitar Cotización Corporativa'}
       </button>
 
       <p className="text-center text-xs text-muted/60 mt-4">
-        Al enviar este formulario aceptas nuestra pol�tica de tratamiento de datos personales para fines comerciales.
+        Al enviar este formulario aceptas nuestra política de tratamiento de datos personales para fines comerciales.
       </p>
     </form>
   );
 }
+
+
 

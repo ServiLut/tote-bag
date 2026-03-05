@@ -435,7 +435,7 @@ export default function AuditPage() {
                                 color: 'Color',
                                 stock: 'Inventario',
                                 imageUrl: 'URL Imagen',
-                                orderNumber: 'NÂº Pedido',
+                                orderNumber: 'Nº Pedido',
                                 customerEmail: 'Email Cliente',
                                 customerPhone: 'Teléfono Cliente',
                                 shippingAddress: 'Dirección Envío',
@@ -557,3 +557,5 @@ export default function AuditPage() {
     </div>
   );
 }
+
+

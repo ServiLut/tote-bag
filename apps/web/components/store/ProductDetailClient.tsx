@@ -182,7 +182,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     });
   };
 
-  // Jerarqu�a: 1. Im�genes principales, 2. Im�genes de variantes (todas para galer�a)
+  // Jerarquía: 1. Imágenes principales, 2. Imágenes de variantes (todas para galería)
   const mainImages = (product.images || []).map(img => ({ url: img.url, id: img.id || Math.random().toString() }));
   const variantImages = (product.variants || [])
     .map(v => v.imageUrl ? { url: v.imageUrl, id: v.sku } : null)
@@ -221,7 +221,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
       <div className="flex flex-col h-full">
         <div className="mb-2">
            <span className="text-xs font-bold uppercase tracking-widest text-secondary mb-2 block">
-             {product.collection?.name || 'Colecci�n'}
+             {product.collection?.name || 'Colección'}
            </span>
            <h1 className="text-3xl md:text-4xl font-serif text-primary leading-tight">{product.name}</h1>
         </div>
@@ -234,7 +234,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
             {isPricingLoading && <div className="flex items-center gap-1 text-[10px] text-muted animate-pulse mt-1"><Loader2 size={10} className="animate-spin" /> Actualizando precio...</div>}
           </div>
           {configCode && (
-            <div className="px-2 py-1 bg-slate-100 text-[9px] font-mono text-slate-500 rounded border border-slate-200 uppercase tracking-tighter" title="Configuraci�n de Producci�n">
+            <div className="px-2 py-1 bg-slate-100 text-[9px] font-mono text-slate-500 rounded border border-slate-200 uppercase tracking-tighter" title="Configuración de Producción">
               CODE: {configCode}
             </div>
           )}
@@ -245,7 +245,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
           {['SIZE', 'QUALITY', 'MATERIAL'].map((type) => (
             <div key={type}>
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary block mb-4">
-                {type === 'SIZE' ? 'TAMA�O' : type === 'QUALITY' ? 'CALIDAD' : 'MATERIAL'}:
+                {type === 'SIZE' ? 'TAMAÑO' : type === 'QUALITY' ? 'CALIDAD' : 'MATERIAL'}:
                 <span className="ml-2 text-slate-900 font-bold uppercase">
                   {(selections[type.toLowerCase() as keyof typeof selections] as string) || '...'}
                 </span>
@@ -271,7 +271,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
           {/* Personalization Options */}
           {config?.personalizationOptions && config.personalizationOptions.length > 0 && (
             <div>
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary block mb-4">Personalizaci�n Extra:</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary block mb-4">Personalización Extra:</span>
               <div className="flex flex-wrap gap-3">
                 {config.personalizationOptions.map((opt) => {
                   const isCompatible = !opt.allowedMaterialValues?.length || opt.allowedMaterialValues.includes(selections.material);
@@ -335,7 +335,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
               className="flex-1 bg-primary text-white font-black uppercase tracking-[0.2em] py-4 px-8 rounded-lg hover:bg-primary/90 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
             >
               <ShoppingBag className="w-5 h-5" />
-              {selectedVariant.stock === 0 ? 'Agotado' : 'A�adir al Carrito'}
+              {selectedVariant.stock === 0 ? 'Agotado' : 'Añadir al Carrito'}
             </button>
           </div>
         </div>
@@ -344,18 +344,18 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
         {pricingSnapshot?.minPriceGuardApplied && (
           <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded flex gap-3 text-amber-800 text-[11px]">
             <AlertCircle size={16} className="shrink-0" />
-            <p>Se ha aplicado la tarifa base m�nima para esta configuraci�n.</p>
+            <p>Se ha aplicado la tarifa base mínima para esta configuración.</p>
           </div>
         )}
 
         <div className="grid grid-cols-1 gap-4 py-8 border-t border-theme text-xs text-muted">
            <div className="flex items-start gap-3">
              <Truck className="w-5 h-5 text-secondary shrink-0" />
-             <div><span className="font-bold text-primary block mb-0.5">Env�o Nacional</span><p>Entregas en 3-5 d�as h�biles.</p></div>
+             <div><span className="font-bold text-primary block mb-0.5">Envío Nacional</span><p>Entregas en 3-5 días hábiles.</p></div>
            </div>
            <div className="flex items-start gap-3">
              <ShieldCheck className="w-5 h-5 text-secondary shrink-0" />
-             <div><span className="font-bold text-primary block mb-0.5">Marca Dual</span><p>Garant�a de producci�n bajo pedido o stock inmediato.</p></div>
+             <div><span className="font-bold text-primary block mb-0.5">Marca Dual</span><p>Garantía de producción bajo pedido o stock inmediato.</p></div>
            </div>
         </div>
       </div>
@@ -370,4 +370,6 @@ function getVariantColorHex(colorName: string): string {
   };
   return map[colorName.toLowerCase()] || '#cccccc';
 }
+
+
 
