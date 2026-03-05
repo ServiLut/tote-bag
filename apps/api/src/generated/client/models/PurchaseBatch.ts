@@ -267,9 +267,9 @@ export type PurchaseBatchWhereInput = {
   status?: Prisma.EnumBatchStatusFilter<"PurchaseBatch"> | $Enums.BatchStatus
   createdAt?: Prisma.DateTimeFilter<"PurchaseBatch"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PurchaseBatch"> | Date | string
+  transactions?: Prisma.FinancialTransactionListRelationFilter
   product?: Prisma.XOR<Prisma.ProductScalarRelationFilter, Prisma.ProductWhereInput>
   supplier?: Prisma.XOR<Prisma.SupplierScalarRelationFilter, Prisma.SupplierWhereInput>
-  transactions?: Prisma.FinancialTransactionListRelationFilter
 }
 
 export type PurchaseBatchOrderByWithRelationInput = {
@@ -283,9 +283,9 @@ export type PurchaseBatchOrderByWithRelationInput = {
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  transactions?: Prisma.FinancialTransactionOrderByRelationAggregateInput
   product?: Prisma.ProductOrderByWithRelationInput
   supplier?: Prisma.SupplierOrderByWithRelationInput
-  transactions?: Prisma.FinancialTransactionOrderByRelationAggregateInput
 }
 
 export type PurchaseBatchWhereUniqueInput = Prisma.AtLeast<{
@@ -302,9 +302,9 @@ export type PurchaseBatchWhereUniqueInput = Prisma.AtLeast<{
   status?: Prisma.EnumBatchStatusFilter<"PurchaseBatch"> | $Enums.BatchStatus
   createdAt?: Prisma.DateTimeFilter<"PurchaseBatch"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PurchaseBatch"> | Date | string
+  transactions?: Prisma.FinancialTransactionListRelationFilter
   product?: Prisma.XOR<Prisma.ProductScalarRelationFilter, Prisma.ProductWhereInput>
   supplier?: Prisma.XOR<Prisma.SupplierScalarRelationFilter, Prisma.SupplierWhereInput>
-  transactions?: Prisma.FinancialTransactionListRelationFilter
 }, "id">
 
 export type PurchaseBatchOrderByWithAggregationInput = {
@@ -350,9 +350,9 @@ export type PurchaseBatchCreateInput = {
   status?: $Enums.BatchStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  transactions?: Prisma.FinancialTransactionCreateNestedManyWithoutPurchaseBatchInput
   product: Prisma.ProductCreateNestedOneWithoutPurchaseBatchesInput
   supplier: Prisma.SupplierCreateNestedOneWithoutBatchesInput
-  transactions?: Prisma.FinancialTransactionCreateNestedManyWithoutPurchaseBatchInput
 }
 
 export type PurchaseBatchUncheckedCreateInput = {
@@ -378,9 +378,9 @@ export type PurchaseBatchUpdateInput = {
   status?: Prisma.EnumBatchStatusFieldUpdateOperationsInput | $Enums.BatchStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  transactions?: Prisma.FinancialTransactionUpdateManyWithoutPurchaseBatchNestedInput
   product?: Prisma.ProductUpdateOneRequiredWithoutPurchaseBatchesNestedInput
   supplier?: Prisma.SupplierUpdateOneRequiredWithoutBatchesNestedInput
-  transactions?: Prisma.FinancialTransactionUpdateManyWithoutPurchaseBatchNestedInput
 }
 
 export type PurchaseBatchUncheckedUpdateInput = {
@@ -615,8 +615,8 @@ export type PurchaseBatchCreateWithoutProductInput = {
   status?: $Enums.BatchStatus
   createdAt?: Date | string
   updatedAt?: Date | string
-  supplier: Prisma.SupplierCreateNestedOneWithoutBatchesInput
   transactions?: Prisma.FinancialTransactionCreateNestedManyWithoutPurchaseBatchInput
+  supplier: Prisma.SupplierCreateNestedOneWithoutBatchesInput
 }
 
 export type PurchaseBatchUncheckedCreateWithoutProductInput = {
@@ -683,8 +683,8 @@ export type PurchaseBatchCreateWithoutSupplierInput = {
   status?: $Enums.BatchStatus
   createdAt?: Date | string
   updatedAt?: Date | string
-  product: Prisma.ProductCreateNestedOneWithoutPurchaseBatchesInput
   transactions?: Prisma.FinancialTransactionCreateNestedManyWithoutPurchaseBatchInput
+  product: Prisma.ProductCreateNestedOneWithoutPurchaseBatchesInput
 }
 
 export type PurchaseBatchUncheckedCreateWithoutSupplierInput = {
@@ -815,8 +815,8 @@ export type PurchaseBatchUpdateWithoutProductInput = {
   status?: Prisma.EnumBatchStatusFieldUpdateOperationsInput | $Enums.BatchStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  supplier?: Prisma.SupplierUpdateOneRequiredWithoutBatchesNestedInput
   transactions?: Prisma.FinancialTransactionUpdateManyWithoutPurchaseBatchNestedInput
+  supplier?: Prisma.SupplierUpdateOneRequiredWithoutBatchesNestedInput
 }
 
 export type PurchaseBatchUncheckedUpdateWithoutProductInput = {
@@ -865,8 +865,8 @@ export type PurchaseBatchUpdateWithoutSupplierInput = {
   status?: Prisma.EnumBatchStatusFieldUpdateOperationsInput | $Enums.BatchStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  product?: Prisma.ProductUpdateOneRequiredWithoutPurchaseBatchesNestedInput
   transactions?: Prisma.FinancialTransactionUpdateManyWithoutPurchaseBatchNestedInput
+  product?: Prisma.ProductUpdateOneRequiredWithoutPurchaseBatchesNestedInput
 }
 
 export type PurchaseBatchUncheckedUpdateWithoutSupplierInput = {
@@ -936,9 +936,9 @@ export type PurchaseBatchSelect<ExtArgs extends runtime.Types.Extensions.Interna
   status?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  transactions?: boolean | Prisma.PurchaseBatch$transactionsArgs<ExtArgs>
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
   supplier?: boolean | Prisma.SupplierDefaultArgs<ExtArgs>
-  transactions?: boolean | Prisma.PurchaseBatch$transactionsArgs<ExtArgs>
   _count?: boolean | Prisma.PurchaseBatchCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["purchaseBatch"]>
 
@@ -987,9 +987,9 @@ export type PurchaseBatchSelectScalar = {
 
 export type PurchaseBatchOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "productId" | "supplierId" | "quantityReceived" | "quantityRemaining" | "unitCost" | "totalCost" | "status" | "createdAt" | "updatedAt", ExtArgs["result"]["purchaseBatch"]>
 export type PurchaseBatchInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  transactions?: boolean | Prisma.PurchaseBatch$transactionsArgs<ExtArgs>
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
   supplier?: boolean | Prisma.SupplierDefaultArgs<ExtArgs>
-  transactions?: boolean | Prisma.PurchaseBatch$transactionsArgs<ExtArgs>
   _count?: boolean | Prisma.PurchaseBatchCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type PurchaseBatchIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1004,9 +1004,9 @@ export type PurchaseBatchIncludeUpdateManyAndReturn<ExtArgs extends runtime.Type
 export type $PurchaseBatchPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "PurchaseBatch"
   objects: {
+    transactions: Prisma.$FinancialTransactionPayload<ExtArgs>[]
     product: Prisma.$ProductPayload<ExtArgs>
     supplier: Prisma.$SupplierPayload<ExtArgs>
-    transactions: Prisma.$FinancialTransactionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1413,9 +1413,9 @@ readonly fields: PurchaseBatchFieldRefs;
  */
 export interface Prisma__PurchaseBatchClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  transactions<T extends Prisma.PurchaseBatch$transactionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PurchaseBatch$transactionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FinancialTransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   product<T extends Prisma.ProductDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProductDefaultArgs<ExtArgs>>): Prisma.Prisma__ProductClient<runtime.Types.Result.GetResult<Prisma.$ProductPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   supplier<T extends Prisma.SupplierDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SupplierDefaultArgs<ExtArgs>>): Prisma.Prisma__SupplierClient<runtime.Types.Result.GetResult<Prisma.$SupplierPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  transactions<T extends Prisma.PurchaseBatch$transactionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PurchaseBatch$transactionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FinancialTransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.

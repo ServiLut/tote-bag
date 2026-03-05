@@ -22,7 +22,7 @@ class EnvironmentVariables {
 
   @IsNumber()
   @IsOptional()
-  PORT: number = 4000;
+  PORT: number = 4003;
 
   @IsString()
   DATABASE_URL: string;
@@ -61,6 +61,14 @@ class EnvironmentVariables {
   @IsString()
   @IsOptional()
   REDIS_URL: string;
+
+  @IsString()
+  @IsOptional()
+  CORS_ORIGINS: string;
+
+  @IsUrl({ require_tld: false })
+  @IsOptional()
+  FRONTEND_URL: string;
 }
 
 export function envValidationSchema(config: Record<string, unknown>) {

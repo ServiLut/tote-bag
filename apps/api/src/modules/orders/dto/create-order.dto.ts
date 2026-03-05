@@ -8,7 +8,7 @@ import {
   IsOptional,
   IsBoolean,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { ProductConfigInputDto } from '../../../common/dto/product-config.dto';
 
 class AddressDto {
@@ -92,7 +92,9 @@ export class CreateOrderDto {
   @IsOptional()
   profileId?: string;
 
+  @IsOptional()
   @IsBoolean()
+  @Transform(({ value }) => value === 'true' || value === true)
   isB2B: boolean;
 
   @IsOptional()

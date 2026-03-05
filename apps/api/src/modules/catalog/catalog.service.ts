@@ -46,8 +46,6 @@ export class CatalogService {
       ...data
     } = updateProductDto;
 
-    console.log(`Updating product ${id}`);
-
     // Resolve Collection if needed
     let activeCollectionId: string | undefined = collectionId;
 
@@ -120,24 +118,14 @@ export class CatalogService {
     const updatedProduct = await this.prisma.$transaction(async (prisma) => {
       // 1. Update Variants if provided
       if (variants) {
-        console.log(`[CatalogService] Processing ${variants.length} variants`);
         const currentVariants = await prisma.variant.findMany({
           where: { productId: id },
           select: { id: true, sku: true },
         });
 
-        console.log(
-          `[CatalogService] Found ${currentVariants.length} existing variants`,
-        );
         const currentSkuSet = new Set(currentVariants.map((v) => v.sku.trim()));
-        console.log(
-          `[CatalogService] Existing SKUs: ${Array.from(currentSkuSet).join(', ')}`,
-        );
 
         const incomingSkuSet = new Set(variants.map((v) => v.sku.trim()));
-        console.log(
-          `[CatalogService] Incoming SKUs: ${Array.from(incomingSkuSet).join(', ')}`,
-        );
 
         // Delete removed variants
         const variantsToDelete = currentVariants.filter(
@@ -145,11 +133,6 @@ export class CatalogService {
         );
 
         if (variantsToDelete.length > 0) {
-          console.log(
-            '[CatalogService] Deleting variants:',
-            variantsToDelete.length,
-          );
-
           await prisma.variant.deleteMany({
             where: { id: { in: variantsToDelete.map((v) => v.id) } },
           });
@@ -159,10 +142,6 @@ export class CatalogService {
         for (const v of variants) {
           const sku = v.sku.trim();
           if (currentSkuSet.has(sku)) {
-            console.log(
-              `[CatalogService] Updating variant SKU: ${sku} Stock: ${v.stock}`,
-            );
-
             await prisma.variant.update({
               where: { sku: sku },
               data: {
@@ -172,8 +151,6 @@ export class CatalogService {
               },
             });
           } else {
-            console.log(`[CatalogService] Creating variant SKU: ${sku}`);
-
             await prisma.variant.create({
               data: {
                 sku: sku,

@@ -45,12 +45,41 @@ async function bootstrap() {
     }),
   );
   app.useGlobalInterceptors(new TransformInterceptor());
+
+  const defaultOrigins = ['http://localhost:3000'];
+  const envOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',')
+        .map((o) => o.trim())
+        .filter(Boolean)
+    : [];
+  const frontendOrigin = process.env.FRONTEND_URL?.trim();
+  const allowedOrigins = Array.from(
+    new Set([
+      ...defaultOrigins,
+      ...envOrigins,
+      ...(frontendOrigin ? [frontendOrigin] : []),
+    ]),
+  );
+
   app.enableCors({
-    origin: '*',
+    origin: (origin, callback) => {
+      // Allow server-to-server calls, Postman and curl (no Origin header)
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`CORS blocked for origin: ${origin}`), false);
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Accept, Authorization',
   });
-  const port = process.env.PORT ?? 4000;
+  const port = process.env.PORT ?? 4003;
   // Triggering reload for new routes
   await app.listen(port, '0.0.0.0');
   console.log(`🚀 Application is running on: http://localhost:${port}`);

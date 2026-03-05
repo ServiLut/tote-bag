@@ -38,8 +38,8 @@ model Product {
   attributes           ProductAttribute[]
   images               ProductImage[]
   collection           Collection            @relation(fields: [collectionId], references: [id])
-  variants             Variant[]
   purchaseBatches      PurchaseBatch[]
+  variants             Variant[]
 
   @@map("products")
   @@schema("tote-bag")
@@ -181,8 +181,8 @@ model Permission {
 model RolePermission {
   roleId       String     @map("role_id")
   permissionId String     @map("permission_id")
-  role         RoleModel  @relation(fields: [roleId], references: [id], onDelete: Cascade)
   permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         RoleModel  @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
   @@map("role_permissions")
@@ -287,9 +287,9 @@ model B2BQuote {
   logoUrl      String?        @map("logo_url")
   package      String         @map("package")
   status       String         @default("PENDIENTE") @map("status")
-  size         String?        @map("size")
-  material     String?        @map("material")
   createdAt    DateTime       @default(now()) @map("created_at")
+  material     String?        @map("material")
+  size         String?        @map("size")
   items        B2BQuoteItem[]
 
   @@map("b2b_quotes")
@@ -353,10 +353,10 @@ model ProductAttribute {
 
 model PersonalizationOption {
   id                    String                @id @default(uuid()) @map("id")
-  code                  String                @unique @map("code")
   name                  String                @map("name")
-  description           String?               @map("description")
+  code                  String                @unique @map("code")
   basePrice             Float                 @map("base_price")
+  description           String?               @map("description")
   isActive              Boolean               @default(true) @map("is_active")
   allowedMaterialValues String[]              @default([]) @map("allowed_material_values")
   rules                 PersonalizationRule[]
@@ -412,6 +412,96 @@ model B2BQuoteItem {
   quote             B2BQuote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
 
   @@map("b2b_quote_items")
+  @@schema("tote-bag")
+}
+
+model WizardOption {
+  id                    String         @id @default(uuid()) @map("id")
+  category              WizardCategory @map("category")
+  name                  String         @map("name")
+  code                  String         @unique @map("code")
+  description           String?        @map("description")
+  basePriceModifier     Float          @default(0) @map("base_price_modifier")
+  isActive              Boolean        @default(true) @map("is_active")
+  sortOrder             Int            @default(0) @map("sort_order")
+  metadata              Json?          @map("metadata")
+  createdAt             DateTime       @default(now()) @map("created_at")
+  updatedAt             DateTime       @updatedAt @map("updated_at")
+  allowedMaterialValues String[]       @default([]) @map("allowed_material_values")
+  imageUrl              String?        @map("image_url")
+
+  @@map("wizard_options")
+  @@schema("tote-bag")
+}
+
+model Supplier {
+  id           String                 @id @default(uuid()) @map("id")
+  name         String                 @map("name")
+  nit          String                 @unique @map("nit")
+  contact      String?                @map("contact")
+  email        String?                @map("email")
+  phone        String?                @map("phone")
+  address      String?                @map("address")
+  balance      Float                  @default(0) @map("balance")
+  createdAt    DateTime               @default(now()) @map("created_at")
+  updatedAt    DateTime               @updatedAt @map("updated_at")
+  transactions FinancialTransaction[]
+  batches      PurchaseBatch[]
+
+  @@map("suppliers")
+  @@schema("tote-bag")
+}
+
+model PurchaseBatch {
+  id                String                 @id @default(uuid()) @map("id")
+  productId         String                 @map("product_id")
+  supplierId        String                 @map("supplier_id")
+  quantityReceived  Int                    @map("quantity_received")
+  quantityRemaining Int                    @map("quantity_remaining")
+  unitCost          Float                  @map("unit_cost")
+  totalCost         Float                  @map("total_cost")
+  status            BatchStatus            @default(IN_STOCK) @map("status")
+  createdAt         DateTime               @default(now()) @map("created_at")
+  updatedAt         DateTime               @updatedAt @map("updated_at")
+  transactions      FinancialTransaction[]
+  product           Product                @relation(fields: [productId], references: [id])
+  supplier          Supplier               @relation(fields: [supplierId], references: [id])
+
+  @@map("purchase_batches")
+  @@schema("tote-bag")
+}
+
+model FinancialTransaction {
+  id              String              @id @default(uuid()) @map("id")
+  type            TransactionType     @map("type")
+  category        TransactionCategory @map("category")
+  amount          Float               @map("amount")
+  description     String              @map("description")
+  status          TransactionStatus   @default(COMPLETED) @map("status")
+  userId          String              @map("user_id")
+  purchaseBatchId String?             @map("purchase_batch_id")
+  opexCategoryId  String?             @map("opex_category_id")
+  supplierId      String?             @map("supplier_id")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+  opexCategory    OpexCategory?       @relation(fields: [opexCategoryId], references: [id])
+  purchaseBatch   PurchaseBatch?      @relation(fields: [purchaseBatchId], references: [id])
+  supplier        Supplier?           @relation(fields: [supplierId], references: [id])
+  user            User                @relation(fields: [userId], references: [id])
+
+  @@map("financial_transactions")
+  @@schema("tote-bag")
+}
+
+model OpexCategory {
+  id           String                 @id @default(uuid()) @map("id")
+  name         String                 @unique @map("name")
+  description  String?                @map("description")
+  createdAt    DateTime               @default(now()) @map("created_at")
+  updatedAt    DateTime               @updatedAt @map("updated_at")
+  transactions FinancialTransaction[]
+
+  @@map("opex_categories")
   @@schema("tote-bag")
 }
 
@@ -482,96 +572,6 @@ enum WizardCategory {
   QUALITY
   TECHNIQUE
 
-  @@schema("tote-bag")
-}
-
-model WizardOption {
-  id                 String         @id @default(uuid()) @map("id")
-  category           WizardCategory @map("category")
-  name               String         @map("name")
-  code               String         @unique @map("code")
-  description        String?        @map("description")
-  basePriceModifier  Float          @default(0) @map("base_price_modifier")
-  isActive           Boolean        @default(true) @map("is_active")
-  sortOrder          Int            @default(0) @map("sort_order")
-  allowedMaterialValues String[]    @default([]) @map("allowed_material_values")
-  metadata           Json?          @map("metadata")
-  imageUrl           String?        @map("image_url")
-  createdAt          DateTime       @default(now()) @map("created_at")
-  updatedAt          DateTime       @updatedAt @map("updated_at")
-
-  @@map("wizard_options")
-  @@schema("tote-bag")
-}
-
-model Supplier {
-  id           String                 @id @default(uuid()) @map("id")
-  name         String                 @map("name")
-  nit          String                 @unique @map("nit")
-  contact      String?                @map("contact")
-  email        String?                @map("email")
-  phone        String?                @map("phone")
-  address      String?                @map("address")
-  balance      Float                  @default(0) @map("balance")
-  batches      PurchaseBatch[]
-  transactions FinancialTransaction[]
-  createdAt    DateTime               @default(now()) @map("created_at")
-  updatedAt    DateTime               @updatedAt @map("updated_at")
-
-  @@map("suppliers")
-  @@schema("tote-bag")
-}
-
-model PurchaseBatch {
-  id                String                 @id @default(uuid()) @map("id")
-  productId         String                 @map("product_id")
-  supplierId        String                 @map("supplier_id")
-  quantityReceived  Int                    @map("quantity_received")
-  quantityRemaining Int                    @map("quantity_remaining")
-  unitCost          Float                  @map("unit_cost")
-  totalCost         Float                  @map("total_cost")
-  status            BatchStatus            @default(IN_STOCK) @map("status")
-  createdAt         DateTime               @default(now()) @map("created_at")
-  updatedAt         DateTime               @updatedAt @map("updated_at")
-  product           Product                @relation(fields: [productId], references: [id])
-  supplier          Supplier               @relation(fields: [supplierId], references: [id])
-  transactions      FinancialTransaction[]
-
-  @@map("purchase_batches")
-  @@schema("tote-bag")
-}
-
-model FinancialTransaction {
-  id              String              @id @default(uuid()) @map("id")
-  type            TransactionType     @map("type")
-  category        TransactionCategory @map("category")
-  amount          Float               @map("amount")
-  description     String              @map("description")
-  status          TransactionStatus   @default(COMPLETED) @map("status")
-  userId          String              @map("user_id")
-  purchaseBatchId String?             @map("purchase_batch_id")
-  opexCategoryId  String?             @map("opex_category_id")
-  supplierId      String?             @map("supplier_id")
-  createdAt       DateTime            @default(now()) @map("created_at")
-  updatedAt       DateTime            @updatedAt @map("updated_at")
-  user            User                @relation(fields: [userId], references: [id])
-  purchaseBatch   PurchaseBatch?      @relation(fields: [purchaseBatchId], references: [id])
-  opexCategory    OpexCategory?       @relation(fields: [opexCategoryId], references: [id])
-  supplier        Supplier?           @relation(fields: [supplierId], references: [id])
-
-  @@map("financial_transactions")
-  @@schema("tote-bag")
-}
-
-model OpexCategory {
-  id           String                 @id @default(uuid()) @map("id")
-  name         String                 @unique @map("name")
-  description  String?                @map("description")
-  transactions FinancialTransaction[]
-  createdAt    DateTime               @default(now()) @map("created_at")
-  updatedAt    DateTime               @updatedAt @map("updated_at")
-
-  @@map("opex_categories")
   @@schema("tote-bag")
 }
 

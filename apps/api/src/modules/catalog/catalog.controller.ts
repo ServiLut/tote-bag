@@ -14,12 +14,14 @@ import {
 import { CatalogService } from './catalog.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 
 @Controller('catalog')
 export class CatalogController {
   constructor(private readonly catalogService: CatalogService) {}
 
   @Post()
+  @RequirePermissions({ resource: 'products', action: 'create' })
   create(@Body() createProductDto: CreateProductDto) {
     return this.catalogService.create(createProductDto);
   }
@@ -65,30 +67,16 @@ export class CatalogController {
   }
 
   @Patch(':id')
+  @RequirePermissions({ resource: 'products', action: 'update' })
   update(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body() updateProductDto: UpdateProductDto,
   ) {
-    console.log(`[CatalogController] Update request for ID: ${id}`);
-    console.log(
-      `[CatalogController] Payload keys: ${Object.keys(updateProductDto).join(', ')}`,
-    );
-    if (updateProductDto.variants) {
-      console.log(
-        `[CatalogController] Variants count: ${updateProductDto.variants.length}`,
-      );
-      console.log(
-        `[CatalogController] First variant: ${JSON.stringify(updateProductDto.variants[0])}`,
-      );
-    } else {
-      console.warn(
-        '[CatalogController] WARNING: No variants received in payload!',
-      );
-    }
     return this.catalogService.update(id, updateProductDto);
   }
 
   @Delete(':id')
+  @RequirePermissions({ resource: 'products', action: 'delete' })
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
     return this.catalogService.remove(id);

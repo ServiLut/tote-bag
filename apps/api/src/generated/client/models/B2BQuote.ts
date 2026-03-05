@@ -47,9 +47,9 @@ export type B2BQuoteMinAggregateOutputType = {
   logoUrl: string | null
   package: string | null
   status: string | null
-  size: string | null
-  material: string | null
   createdAt: Date | null
+  material: string | null
+  size: string | null
 }
 
 export type B2BQuoteMaxAggregateOutputType = {
@@ -66,9 +66,9 @@ export type B2BQuoteMaxAggregateOutputType = {
   logoUrl: string | null
   package: string | null
   status: string | null
-  size: string | null
-  material: string | null
   createdAt: Date | null
+  material: string | null
+  size: string | null
 }
 
 export type B2BQuoteCountAggregateOutputType = {
@@ -85,9 +85,9 @@ export type B2BQuoteCountAggregateOutputType = {
   logoUrl: number
   package: number
   status: number
-  size: number
-  material: number
   createdAt: number
+  material: number
+  size: number
   _all: number
 }
 
@@ -114,9 +114,9 @@ export type B2BQuoteMinAggregateInputType = {
   logoUrl?: true
   package?: true
   status?: true
-  size?: true
-  material?: true
   createdAt?: true
+  material?: true
+  size?: true
 }
 
 export type B2BQuoteMaxAggregateInputType = {
@@ -133,9 +133,9 @@ export type B2BQuoteMaxAggregateInputType = {
   logoUrl?: true
   package?: true
   status?: true
-  size?: true
-  material?: true
   createdAt?: true
+  material?: true
+  size?: true
 }
 
 export type B2BQuoteCountAggregateInputType = {
@@ -152,9 +152,9 @@ export type B2BQuoteCountAggregateInputType = {
   logoUrl?: true
   package?: true
   status?: true
-  size?: true
-  material?: true
   createdAt?: true
+  material?: true
+  size?: true
   _all?: true
 }
 
@@ -258,9 +258,9 @@ export type B2BQuoteGroupByOutputType = {
   logoUrl: string | null
   package: string
   status: string
-  size: string | null
-  material: string | null
   createdAt: Date
+  material: string | null
+  size: string | null
   _count: B2BQuoteCountAggregateOutputType | null
   _avg: B2BQuoteAvgAggregateOutputType | null
   _sum: B2BQuoteSumAggregateOutputType | null
@@ -300,9 +300,9 @@ export type B2BQuoteWhereInput = {
   logoUrl?: Prisma.StringNullableFilter<"B2BQuote"> | string | null
   package?: Prisma.StringFilter<"B2BQuote"> | string
   status?: Prisma.StringFilter<"B2BQuote"> | string
-  size?: Prisma.StringNullableFilter<"B2BQuote"> | string | null
-  material?: Prisma.StringNullableFilter<"B2BQuote"> | string | null
   createdAt?: Prisma.DateTimeFilter<"B2BQuote"> | Date | string
+  material?: Prisma.StringNullableFilter<"B2BQuote"> | string | null
+  size?: Prisma.StringNullableFilter<"B2BQuote"> | string | null
   items?: Prisma.B2BQuoteItemListRelationFilter
 }
 
@@ -320,9 +320,9 @@ export type B2BQuoteOrderByWithRelationInput = {
   logoUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   package?: Prisma.SortOrder
   status?: Prisma.SortOrder
-  size?: Prisma.SortOrderInput | Prisma.SortOrder
-  material?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  material?: Prisma.SortOrderInput | Prisma.SortOrder
+  size?: Prisma.SortOrderInput | Prisma.SortOrder
   items?: Prisma.B2BQuoteItemOrderByRelationAggregateInput
 }
 
@@ -343,9 +343,9 @@ export type B2BQuoteWhereUniqueInput = Prisma.AtLeast<{
   logoUrl?: Prisma.StringNullableFilter<"B2BQuote"> | string | null
   package?: Prisma.StringFilter<"B2BQuote"> | string
   status?: Prisma.StringFilter<"B2BQuote"> | string
-  size?: Prisma.StringNullableFilter<"B2BQuote"> | string | null
-  material?: Prisma.StringNullableFilter<"B2BQuote"> | string | null
   createdAt?: Prisma.DateTimeFilter<"B2BQuote"> | Date | string
+  material?: Prisma.StringNullableFilter<"B2BQuote"> | string | null
+  size?: Prisma.StringNullableFilter<"B2BQuote"> | string | null
   items?: Prisma.B2BQuoteItemListRelationFilter
 }, "id">
 
@@ -363,9 +363,9 @@ export type B2BQuoteOrderByWithAggregationInput = {
   logoUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   package?: Prisma.SortOrder
   status?: Prisma.SortOrder
-  size?: Prisma.SortOrderInput | Prisma.SortOrder
-  material?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  material?: Prisma.SortOrderInput | Prisma.SortOrder
+  size?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.B2BQuoteCountOrderByAggregateInput
   _avg?: Prisma.B2BQuoteAvgOrderByAggregateInput
   _max?: Prisma.B2BQuoteMaxOrderByAggregateInput
@@ -390,9 +390,9 @@ export type B2BQuoteScalarWhereWithAggregatesInput = {
   logoUrl?: Prisma.StringNullableWithAggregatesFilter<"B2BQuote"> | string | null
   package?: Prisma.StringWithAggregatesFilter<"B2BQuote"> | string
   status?: Prisma.StringWithAggregatesFilter<"B2BQuote"> | string
-  size?: Prisma.StringNullableWithAggregatesFilter<"B2BQuote"> | string | null
-  material?: Prisma.StringNullableWithAggregatesFilter<"B2BQuote"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"B2BQuote"> | Date | string
+  material?: Prisma.StringNullableWithAggregatesFilter<"B2BQuote"> | string | null
+  size?: Prisma.StringNullableWithAggregatesFilter<"B2BQuote"> | string | null
 }
 
 export type B2BQuoteCreateInput = {
@@ -409,9 +409,9 @@ export type B2BQuoteCreateInput = {
   logoUrl?: string | null
   package: string
   status?: string
-  size?: string | null
-  material?: string | null
   createdAt?: Date | string
+  material?: string | null
+  size?: string | null
   items?: Prisma.B2BQuoteItemCreateNestedManyWithoutQuoteInput
 }
 
@@ -429,9 +429,9 @@ export type B2BQuoteUncheckedCreateInput = {
   logoUrl?: string | null
   package: string
   status?: string
-  size?: string | null
-  material?: string | null
   createdAt?: Date | string
+  material?: string | null
+  size?: string | null
   items?: Prisma.B2BQuoteItemUncheckedCreateNestedManyWithoutQuoteInput
 }
 
@@ -449,9 +449,9 @@ export type B2BQuoteUpdateInput = {
   logoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   package?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
-  size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  material?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  material?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   items?: Prisma.B2BQuoteItemUpdateManyWithoutQuoteNestedInput
 }
 
@@ -469,9 +469,9 @@ export type B2BQuoteUncheckedUpdateInput = {
   logoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   package?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
-  size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  material?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  material?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   items?: Prisma.B2BQuoteItemUncheckedUpdateManyWithoutQuoteNestedInput
 }
 
@@ -489,9 +489,9 @@ export type B2BQuoteCreateManyInput = {
   logoUrl?: string | null
   package: string
   status?: string
-  size?: string | null
-  material?: string | null
   createdAt?: Date | string
+  material?: string | null
+  size?: string | null
 }
 
 export type B2BQuoteUpdateManyMutationInput = {
@@ -508,9 +508,9 @@ export type B2BQuoteUpdateManyMutationInput = {
   logoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   package?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
-  size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  material?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  material?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type B2BQuoteUncheckedUpdateManyInput = {
@@ -527,9 +527,9 @@ export type B2BQuoteUncheckedUpdateManyInput = {
   logoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   package?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
-  size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  material?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  material?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type B2BQuoteCountOrderByAggregateInput = {
@@ -546,9 +546,9 @@ export type B2BQuoteCountOrderByAggregateInput = {
   logoUrl?: Prisma.SortOrder
   package?: Prisma.SortOrder
   status?: Prisma.SortOrder
-  size?: Prisma.SortOrder
-  material?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  material?: Prisma.SortOrder
+  size?: Prisma.SortOrder
 }
 
 export type B2BQuoteAvgOrderByAggregateInput = {
@@ -569,9 +569,9 @@ export type B2BQuoteMaxOrderByAggregateInput = {
   logoUrl?: Prisma.SortOrder
   package?: Prisma.SortOrder
   status?: Prisma.SortOrder
-  size?: Prisma.SortOrder
-  material?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  material?: Prisma.SortOrder
+  size?: Prisma.SortOrder
 }
 
 export type B2BQuoteMinOrderByAggregateInput = {
@@ -588,9 +588,9 @@ export type B2BQuoteMinOrderByAggregateInput = {
   logoUrl?: Prisma.SortOrder
   package?: Prisma.SortOrder
   status?: Prisma.SortOrder
-  size?: Prisma.SortOrder
-  material?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  material?: Prisma.SortOrder
+  size?: Prisma.SortOrder
 }
 
 export type B2BQuoteSumOrderByAggregateInput = {
@@ -630,9 +630,9 @@ export type B2BQuoteCreateWithoutItemsInput = {
   logoUrl?: string | null
   package: string
   status?: string
-  size?: string | null
-  material?: string | null
   createdAt?: Date | string
+  material?: string | null
+  size?: string | null
 }
 
 export type B2BQuoteUncheckedCreateWithoutItemsInput = {
@@ -649,9 +649,9 @@ export type B2BQuoteUncheckedCreateWithoutItemsInput = {
   logoUrl?: string | null
   package: string
   status?: string
-  size?: string | null
-  material?: string | null
   createdAt?: Date | string
+  material?: string | null
+  size?: string | null
 }
 
 export type B2BQuoteCreateOrConnectWithoutItemsInput = {
@@ -684,9 +684,9 @@ export type B2BQuoteUpdateWithoutItemsInput = {
   logoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   package?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
-  size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  material?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  material?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type B2BQuoteUncheckedUpdateWithoutItemsInput = {
@@ -703,9 +703,9 @@ export type B2BQuoteUncheckedUpdateWithoutItemsInput = {
   logoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   package?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
-  size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  material?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  material?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 
@@ -753,9 +753,9 @@ export type B2BQuoteSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   logoUrl?: boolean
   package?: boolean
   status?: boolean
-  size?: boolean
-  material?: boolean
   createdAt?: boolean
+  material?: boolean
+  size?: boolean
   items?: boolean | Prisma.B2BQuote$itemsArgs<ExtArgs>
   _count?: boolean | Prisma.B2BQuoteCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["b2BQuote"]>
@@ -774,9 +774,9 @@ export type B2BQuoteSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   logoUrl?: boolean
   package?: boolean
   status?: boolean
-  size?: boolean
-  material?: boolean
   createdAt?: boolean
+  material?: boolean
+  size?: boolean
 }, ExtArgs["result"]["b2BQuote"]>
 
 export type B2BQuoteSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -793,9 +793,9 @@ export type B2BQuoteSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   logoUrl?: boolean
   package?: boolean
   status?: boolean
-  size?: boolean
-  material?: boolean
   createdAt?: boolean
+  material?: boolean
+  size?: boolean
 }, ExtArgs["result"]["b2BQuote"]>
 
 export type B2BQuoteSelectScalar = {
@@ -812,12 +812,12 @@ export type B2BQuoteSelectScalar = {
   logoUrl?: boolean
   package?: boolean
   status?: boolean
-  size?: boolean
-  material?: boolean
   createdAt?: boolean
+  material?: boolean
+  size?: boolean
 }
 
-export type B2BQuoteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "businessName" | "quantity" | "department" | "municipality" | "neighborhood" | "address" | "contactPhone" | "qrType" | "qrData" | "logoUrl" | "package" | "status" | "size" | "material" | "createdAt", ExtArgs["result"]["b2BQuote"]>
+export type B2BQuoteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "businessName" | "quantity" | "department" | "municipality" | "neighborhood" | "address" | "contactPhone" | "qrType" | "qrData" | "logoUrl" | "package" | "status" | "createdAt" | "material" | "size", ExtArgs["result"]["b2BQuote"]>
 export type B2BQuoteInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   items?: boolean | Prisma.B2BQuote$itemsArgs<ExtArgs>
   _count?: boolean | Prisma.B2BQuoteCountOutputTypeDefaultArgs<ExtArgs>
@@ -844,9 +844,9 @@ export type $B2BQuotePayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     logoUrl: string | null
     package: string
     status: string
-    size: string | null
-    material: string | null
     createdAt: Date
+    material: string | null
+    size: string | null
   }, ExtArgs["result"]["b2BQuote"]>
   composites: {}
 }
@@ -1284,9 +1284,9 @@ export interface B2BQuoteFieldRefs {
   readonly logoUrl: Prisma.FieldRef<"B2BQuote", 'String'>
   readonly package: Prisma.FieldRef<"B2BQuote", 'String'>
   readonly status: Prisma.FieldRef<"B2BQuote", 'String'>
-  readonly size: Prisma.FieldRef<"B2BQuote", 'String'>
-  readonly material: Prisma.FieldRef<"B2BQuote", 'String'>
   readonly createdAt: Prisma.FieldRef<"B2BQuote", 'DateTime'>
+  readonly material: Prisma.FieldRef<"B2BQuote", 'String'>
+  readonly size: Prisma.FieldRef<"B2BQuote", 'String'>
 }
     
 

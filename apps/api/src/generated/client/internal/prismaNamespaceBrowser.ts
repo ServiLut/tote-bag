@@ -328,9 +328,9 @@ export const B2BQuoteScalarFieldEnum = {
   logoUrl: 'logoUrl',
   package: 'package',
   status: 'status',
-  size: 'size',
+  createdAt: 'createdAt',
   material: 'material',
-  createdAt: 'createdAt'
+  size: 'size'
 } as const
 
 export type B2BQuoteScalarFieldEnum = (typeof B2BQuoteScalarFieldEnum)[keyof typeof B2BQuoteScalarFieldEnum]
@@ -387,10 +387,10 @@ export type ProductAttributeScalarFieldEnum = (typeof ProductAttributeScalarFiel
 
 export const PersonalizationOptionScalarFieldEnum = {
   id: 'id',
-  code: 'code',
   name: 'name',
-  description: 'description',
+  code: 'code',
   basePrice: 'basePrice',
+  description: 'description',
   isActive: 'isActive',
   allowedMaterialValues: 'allowedMaterialValues'
 } as const
@@ -449,11 +449,11 @@ export const WizardOptionScalarFieldEnum = {
   basePriceModifier: 'basePriceModifier',
   isActive: 'isActive',
   sortOrder: 'sortOrder',
-  allowedMaterialValues: 'allowedMaterialValues',
   metadata: 'metadata',
-  imageUrl: 'imageUrl',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  allowedMaterialValues: 'allowedMaterialValues',
+  imageUrl: 'imageUrl'
 } as const
 
 export type WizardOptionScalarFieldEnum = (typeof WizardOptionScalarFieldEnum)[keyof typeof WizardOptionScalarFieldEnum]

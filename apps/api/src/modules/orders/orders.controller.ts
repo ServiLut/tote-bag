@@ -6,14 +6,30 @@ import {
   Param,
   Patch,
   Query,
+  Req,
+  ForbiddenException,
+  UnauthorizedException,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
+import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { RolesService } from '../roles/roles.service';
+
+interface RequestWithUser extends Request {
+  user?: {
+    id: string;
+    [key: string]: unknown;
+  };
+}
 
 @Controller('orders')
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) {}
+  constructor(
+    private readonly ordersService: OrdersService,
+    private readonly rolesService: RolesService,
+  ) {}
 
   @Post()
   create(@Body() createOrderDto: CreateOrderDto) {
@@ -21,6 +37,7 @@ export class OrdersController {
   }
 
   @Get()
+  @RequirePermissions({ resource: 'orders', action: 'read' })
   findAll(
     @Query('status') status?: string,
     @Query('startDate') startDate?: string,
@@ -36,16 +53,39 @@ export class OrdersController {
   }
 
   @Get('user/:userId')
-  findByUser(@Param('userId') userId: string) {
+  async findByUser(
+    @Param('userId') userId: string,
+    @Req() req: RequestWithUser,
+  ) {
+    const user = req.user;
+
+    if (!user?.id) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    if (user.id !== userId) {
+      const canReadAnyOrder = await this.rolesService.hasPermission(
+        user.id,
+        'orders',
+        'read',
+      );
+
+      if (!canReadAnyOrder) {
+        throw new ForbiddenException('Cannot access another user orders');
+      }
+    }
+
     return this.ordersService.findByUser(userId);
   }
 
   @Get(':id')
+  @RequirePermissions({ resource: 'orders', action: 'read' })
   findOne(@Param('id') id: string) {
     return this.ordersService.findOne(id);
   }
 
   @Patch(':id')
+  @RequirePermissions({ resource: 'orders', action: 'update' })
   update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
     return this.ordersService.update(id, updateOrderDto);
   }

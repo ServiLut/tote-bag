@@ -35,28 +35,28 @@ export type PersonalizationOptionSumAggregateOutputType = {
 
 export type PersonalizationOptionMinAggregateOutputType = {
   id: string | null
-  code: string | null
   name: string | null
-  description: string | null
+  code: string | null
   basePrice: number | null
+  description: string | null
   isActive: boolean | null
 }
 
 export type PersonalizationOptionMaxAggregateOutputType = {
   id: string | null
-  code: string | null
   name: string | null
-  description: string | null
+  code: string | null
   basePrice: number | null
+  description: string | null
   isActive: boolean | null
 }
 
 export type PersonalizationOptionCountAggregateOutputType = {
   id: number
-  code: number
   name: number
-  description: number
+  code: number
   basePrice: number
+  description: number
   isActive: number
   allowedMaterialValues: number
   _all: number
@@ -73,28 +73,28 @@ export type PersonalizationOptionSumAggregateInputType = {
 
 export type PersonalizationOptionMinAggregateInputType = {
   id?: true
-  code?: true
   name?: true
-  description?: true
+  code?: true
   basePrice?: true
+  description?: true
   isActive?: true
 }
 
 export type PersonalizationOptionMaxAggregateInputType = {
   id?: true
-  code?: true
   name?: true
-  description?: true
+  code?: true
   basePrice?: true
+  description?: true
   isActive?: true
 }
 
 export type PersonalizationOptionCountAggregateInputType = {
   id?: true
-  code?: true
   name?: true
-  description?: true
+  code?: true
   basePrice?: true
+  description?: true
   isActive?: true
   allowedMaterialValues?: true
   _all?: true
@@ -188,10 +188,10 @@ export type PersonalizationOptionGroupByArgs<ExtArgs extends runtime.Types.Exten
 
 export type PersonalizationOptionGroupByOutputType = {
   id: string
-  code: string
   name: string
-  description: string | null
+  code: string
   basePrice: number
+  description: string | null
   isActive: boolean
   allowedMaterialValues: string[]
   _count: PersonalizationOptionCountAggregateOutputType | null
@@ -221,10 +221,10 @@ export type PersonalizationOptionWhereInput = {
   OR?: Prisma.PersonalizationOptionWhereInput[]
   NOT?: Prisma.PersonalizationOptionWhereInput | Prisma.PersonalizationOptionWhereInput[]
   id?: Prisma.StringFilter<"PersonalizationOption"> | string
-  code?: Prisma.StringFilter<"PersonalizationOption"> | string
   name?: Prisma.StringFilter<"PersonalizationOption"> | string
-  description?: Prisma.StringNullableFilter<"PersonalizationOption"> | string | null
+  code?: Prisma.StringFilter<"PersonalizationOption"> | string
   basePrice?: Prisma.FloatFilter<"PersonalizationOption"> | number
+  description?: Prisma.StringNullableFilter<"PersonalizationOption"> | string | null
   isActive?: Prisma.BoolFilter<"PersonalizationOption"> | boolean
   allowedMaterialValues?: Prisma.StringNullableListFilter<"PersonalizationOption">
   rules?: Prisma.PersonalizationRuleListRelationFilter
@@ -232,10 +232,10 @@ export type PersonalizationOptionWhereInput = {
 
 export type PersonalizationOptionOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  code?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  description?: Prisma.SortOrderInput | Prisma.SortOrder
+  code?: Prisma.SortOrder
   basePrice?: Prisma.SortOrder
+  description?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
   allowedMaterialValues?: Prisma.SortOrder
   rules?: Prisma.PersonalizationRuleOrderByRelationAggregateInput
@@ -248,8 +248,8 @@ export type PersonalizationOptionWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.PersonalizationOptionWhereInput[]
   NOT?: Prisma.PersonalizationOptionWhereInput | Prisma.PersonalizationOptionWhereInput[]
   name?: Prisma.StringFilter<"PersonalizationOption"> | string
-  description?: Prisma.StringNullableFilter<"PersonalizationOption"> | string | null
   basePrice?: Prisma.FloatFilter<"PersonalizationOption"> | number
+  description?: Prisma.StringNullableFilter<"PersonalizationOption"> | string | null
   isActive?: Prisma.BoolFilter<"PersonalizationOption"> | boolean
   allowedMaterialValues?: Prisma.StringNullableListFilter<"PersonalizationOption">
   rules?: Prisma.PersonalizationRuleListRelationFilter
@@ -257,10 +257,10 @@ export type PersonalizationOptionWhereUniqueInput = Prisma.AtLeast<{
 
 export type PersonalizationOptionOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  code?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  description?: Prisma.SortOrderInput | Prisma.SortOrder
+  code?: Prisma.SortOrder
   basePrice?: Prisma.SortOrder
+  description?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
   allowedMaterialValues?: Prisma.SortOrder
   _count?: Prisma.PersonalizationOptionCountOrderByAggregateInput
@@ -275,20 +275,20 @@ export type PersonalizationOptionScalarWhereWithAggregatesInput = {
   OR?: Prisma.PersonalizationOptionScalarWhereWithAggregatesInput[]
   NOT?: Prisma.PersonalizationOptionScalarWhereWithAggregatesInput | Prisma.PersonalizationOptionScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"PersonalizationOption"> | string
-  code?: Prisma.StringWithAggregatesFilter<"PersonalizationOption"> | string
   name?: Prisma.StringWithAggregatesFilter<"PersonalizationOption"> | string
-  description?: Prisma.StringNullableWithAggregatesFilter<"PersonalizationOption"> | string | null
+  code?: Prisma.StringWithAggregatesFilter<"PersonalizationOption"> | string
   basePrice?: Prisma.FloatWithAggregatesFilter<"PersonalizationOption"> | number
+  description?: Prisma.StringNullableWithAggregatesFilter<"PersonalizationOption"> | string | null
   isActive?: Prisma.BoolWithAggregatesFilter<"PersonalizationOption"> | boolean
   allowedMaterialValues?: Prisma.StringNullableListFilter<"PersonalizationOption">
 }
 
 export type PersonalizationOptionCreateInput = {
   id?: string
-  code: string
   name: string
-  description?: string | null
+  code: string
   basePrice: number
+  description?: string | null
   isActive?: boolean
   allowedMaterialValues?: Prisma.PersonalizationOptionCreateallowedMaterialValuesInput | string[]
   rules?: Prisma.PersonalizationRuleCreateNestedManyWithoutPersonalizationInput
@@ -296,10 +296,10 @@ export type PersonalizationOptionCreateInput = {
 
 export type PersonalizationOptionUncheckedCreateInput = {
   id?: string
-  code: string
   name: string
-  description?: string | null
+  code: string
   basePrice: number
+  description?: string | null
   isActive?: boolean
   allowedMaterialValues?: Prisma.PersonalizationOptionCreateallowedMaterialValuesInput | string[]
   rules?: Prisma.PersonalizationRuleUncheckedCreateNestedManyWithoutPersonalizationInput
@@ -307,10 +307,10 @@ export type PersonalizationOptionUncheckedCreateInput = {
 
 export type PersonalizationOptionUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  code?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  code?: Prisma.StringFieldUpdateOperationsInput | string
   basePrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   allowedMaterialValues?: Prisma.PersonalizationOptionUpdateallowedMaterialValuesInput | string[]
   rules?: Prisma.PersonalizationRuleUpdateManyWithoutPersonalizationNestedInput
@@ -318,10 +318,10 @@ export type PersonalizationOptionUpdateInput = {
 
 export type PersonalizationOptionUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  code?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  code?: Prisma.StringFieldUpdateOperationsInput | string
   basePrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   allowedMaterialValues?: Prisma.PersonalizationOptionUpdateallowedMaterialValuesInput | string[]
   rules?: Prisma.PersonalizationRuleUncheckedUpdateManyWithoutPersonalizationNestedInput
@@ -329,40 +329,40 @@ export type PersonalizationOptionUncheckedUpdateInput = {
 
 export type PersonalizationOptionCreateManyInput = {
   id?: string
-  code: string
   name: string
-  description?: string | null
+  code: string
   basePrice: number
+  description?: string | null
   isActive?: boolean
   allowedMaterialValues?: Prisma.PersonalizationOptionCreateallowedMaterialValuesInput | string[]
 }
 
 export type PersonalizationOptionUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  code?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  code?: Prisma.StringFieldUpdateOperationsInput | string
   basePrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   allowedMaterialValues?: Prisma.PersonalizationOptionUpdateallowedMaterialValuesInput | string[]
 }
 
 export type PersonalizationOptionUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  code?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  code?: Prisma.StringFieldUpdateOperationsInput | string
   basePrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   allowedMaterialValues?: Prisma.PersonalizationOptionUpdateallowedMaterialValuesInput | string[]
 }
 
 export type PersonalizationOptionCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  code?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  description?: Prisma.SortOrder
+  code?: Prisma.SortOrder
   basePrice?: Prisma.SortOrder
+  description?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   allowedMaterialValues?: Prisma.SortOrder
 }
@@ -373,19 +373,19 @@ export type PersonalizationOptionAvgOrderByAggregateInput = {
 
 export type PersonalizationOptionMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  code?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  description?: Prisma.SortOrder
+  code?: Prisma.SortOrder
   basePrice?: Prisma.SortOrder
+  description?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
 }
 
 export type PersonalizationOptionMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  code?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  description?: Prisma.SortOrder
+  code?: Prisma.SortOrder
   basePrice?: Prisma.SortOrder
+  description?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
 }
 
@@ -423,20 +423,20 @@ export type PersonalizationOptionUpdateOneRequiredWithoutRulesNestedInput = {
 
 export type PersonalizationOptionCreateWithoutRulesInput = {
   id?: string
-  code: string
   name: string
-  description?: string | null
+  code: string
   basePrice: number
+  description?: string | null
   isActive?: boolean
   allowedMaterialValues?: Prisma.PersonalizationOptionCreateallowedMaterialValuesInput | string[]
 }
 
 export type PersonalizationOptionUncheckedCreateWithoutRulesInput = {
   id?: string
-  code: string
   name: string
-  description?: string | null
+  code: string
   basePrice: number
+  description?: string | null
   isActive?: boolean
   allowedMaterialValues?: Prisma.PersonalizationOptionCreateallowedMaterialValuesInput | string[]
 }
@@ -459,20 +459,20 @@ export type PersonalizationOptionUpdateToOneWithWhereWithoutRulesInput = {
 
 export type PersonalizationOptionUpdateWithoutRulesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  code?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  code?: Prisma.StringFieldUpdateOperationsInput | string
   basePrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   allowedMaterialValues?: Prisma.PersonalizationOptionUpdateallowedMaterialValuesInput | string[]
 }
 
 export type PersonalizationOptionUncheckedUpdateWithoutRulesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  code?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  code?: Prisma.StringFieldUpdateOperationsInput | string
   basePrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   allowedMaterialValues?: Prisma.PersonalizationOptionUpdateallowedMaterialValuesInput | string[]
 }
@@ -510,10 +510,10 @@ export type PersonalizationOptionCountOutputTypeCountRulesArgs<ExtArgs extends r
 
 export type PersonalizationOptionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  code?: boolean
   name?: boolean
-  description?: boolean
+  code?: boolean
   basePrice?: boolean
+  description?: boolean
   isActive?: boolean
   allowedMaterialValues?: boolean
   rules?: boolean | Prisma.PersonalizationOption$rulesArgs<ExtArgs>
@@ -522,35 +522,35 @@ export type PersonalizationOptionSelect<ExtArgs extends runtime.Types.Extensions
 
 export type PersonalizationOptionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  code?: boolean
   name?: boolean
-  description?: boolean
+  code?: boolean
   basePrice?: boolean
+  description?: boolean
   isActive?: boolean
   allowedMaterialValues?: boolean
 }, ExtArgs["result"]["personalizationOption"]>
 
 export type PersonalizationOptionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  code?: boolean
   name?: boolean
-  description?: boolean
+  code?: boolean
   basePrice?: boolean
+  description?: boolean
   isActive?: boolean
   allowedMaterialValues?: boolean
 }, ExtArgs["result"]["personalizationOption"]>
 
 export type PersonalizationOptionSelectScalar = {
   id?: boolean
-  code?: boolean
   name?: boolean
-  description?: boolean
+  code?: boolean
   basePrice?: boolean
+  description?: boolean
   isActive?: boolean
   allowedMaterialValues?: boolean
 }
 
-export type PersonalizationOptionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "code" | "name" | "description" | "basePrice" | "isActive" | "allowedMaterialValues", ExtArgs["result"]["personalizationOption"]>
+export type PersonalizationOptionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "code" | "basePrice" | "description" | "isActive" | "allowedMaterialValues", ExtArgs["result"]["personalizationOption"]>
 export type PersonalizationOptionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   rules?: boolean | Prisma.PersonalizationOption$rulesArgs<ExtArgs>
   _count?: boolean | Prisma.PersonalizationOptionCountOutputTypeDefaultArgs<ExtArgs>
@@ -565,10 +565,10 @@ export type $PersonalizationOptionPayload<ExtArgs extends runtime.Types.Extensio
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    code: string
     name: string
-    description: string | null
+    code: string
     basePrice: number
+    description: string | null
     isActive: boolean
     allowedMaterialValues: string[]
   }, ExtArgs["result"]["personalizationOption"]>
@@ -996,10 +996,10 @@ export interface Prisma__PersonalizationOptionClient<T, Null = never, ExtArgs ex
  */
 export interface PersonalizationOptionFieldRefs {
   readonly id: Prisma.FieldRef<"PersonalizationOption", 'String'>
-  readonly code: Prisma.FieldRef<"PersonalizationOption", 'String'>
   readonly name: Prisma.FieldRef<"PersonalizationOption", 'String'>
-  readonly description: Prisma.FieldRef<"PersonalizationOption", 'String'>
+  readonly code: Prisma.FieldRef<"PersonalizationOption", 'String'>
   readonly basePrice: Prisma.FieldRef<"PersonalizationOption", 'Float'>
+  readonly description: Prisma.FieldRef<"PersonalizationOption", 'String'>
   readonly isActive: Prisma.FieldRef<"PersonalizationOption", 'Boolean'>
   readonly allowedMaterialValues: Prisma.FieldRef<"PersonalizationOption", 'String[]'>
 }

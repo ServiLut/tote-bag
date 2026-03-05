@@ -44,9 +44,9 @@ export type WizardOptionMinAggregateOutputType = {
   basePriceModifier: number | null
   isActive: boolean | null
   sortOrder: number | null
-  imageUrl: string | null
   createdAt: Date | null
   updatedAt: Date | null
+  imageUrl: string | null
 }
 
 export type WizardOptionMaxAggregateOutputType = {
@@ -58,9 +58,9 @@ export type WizardOptionMaxAggregateOutputType = {
   basePriceModifier: number | null
   isActive: boolean | null
   sortOrder: number | null
-  imageUrl: string | null
   createdAt: Date | null
   updatedAt: Date | null
+  imageUrl: string | null
 }
 
 export type WizardOptionCountAggregateOutputType = {
@@ -72,11 +72,11 @@ export type WizardOptionCountAggregateOutputType = {
   basePriceModifier: number
   isActive: number
   sortOrder: number
-  allowedMaterialValues: number
   metadata: number
-  imageUrl: number
   createdAt: number
   updatedAt: number
+  allowedMaterialValues: number
+  imageUrl: number
   _all: number
 }
 
@@ -100,9 +100,9 @@ export type WizardOptionMinAggregateInputType = {
   basePriceModifier?: true
   isActive?: true
   sortOrder?: true
-  imageUrl?: true
   createdAt?: true
   updatedAt?: true
+  imageUrl?: true
 }
 
 export type WizardOptionMaxAggregateInputType = {
@@ -114,9 +114,9 @@ export type WizardOptionMaxAggregateInputType = {
   basePriceModifier?: true
   isActive?: true
   sortOrder?: true
-  imageUrl?: true
   createdAt?: true
   updatedAt?: true
+  imageUrl?: true
 }
 
 export type WizardOptionCountAggregateInputType = {
@@ -128,11 +128,11 @@ export type WizardOptionCountAggregateInputType = {
   basePriceModifier?: true
   isActive?: true
   sortOrder?: true
-  allowedMaterialValues?: true
   metadata?: true
-  imageUrl?: true
   createdAt?: true
   updatedAt?: true
+  allowedMaterialValues?: true
+  imageUrl?: true
   _all?: true
 }
 
@@ -231,11 +231,11 @@ export type WizardOptionGroupByOutputType = {
   basePriceModifier: number
   isActive: boolean
   sortOrder: number
-  allowedMaterialValues: string[]
   metadata: runtime.JsonValue | null
-  imageUrl: string | null
   createdAt: Date
   updatedAt: Date
+  allowedMaterialValues: string[]
+  imageUrl: string | null
   _count: WizardOptionCountAggregateOutputType | null
   _avg: WizardOptionAvgAggregateOutputType | null
   _sum: WizardOptionSumAggregateOutputType | null
@@ -270,11 +270,11 @@ export type WizardOptionWhereInput = {
   basePriceModifier?: Prisma.FloatFilter<"WizardOption"> | number
   isActive?: Prisma.BoolFilter<"WizardOption"> | boolean
   sortOrder?: Prisma.IntFilter<"WizardOption"> | number
-  allowedMaterialValues?: Prisma.StringNullableListFilter<"WizardOption">
   metadata?: Prisma.JsonNullableFilter<"WizardOption">
-  imageUrl?: Prisma.StringNullableFilter<"WizardOption"> | string | null
   createdAt?: Prisma.DateTimeFilter<"WizardOption"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"WizardOption"> | Date | string
+  allowedMaterialValues?: Prisma.StringNullableListFilter<"WizardOption">
+  imageUrl?: Prisma.StringNullableFilter<"WizardOption"> | string | null
 }
 
 export type WizardOptionOrderByWithRelationInput = {
@@ -286,11 +286,11 @@ export type WizardOptionOrderByWithRelationInput = {
   basePriceModifier?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
-  allowedMaterialValues?: Prisma.SortOrder
   metadata?: Prisma.SortOrderInput | Prisma.SortOrder
-  imageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  allowedMaterialValues?: Prisma.SortOrder
+  imageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
 }
 
 export type WizardOptionWhereUniqueInput = Prisma.AtLeast<{
@@ -305,11 +305,11 @@ export type WizardOptionWhereUniqueInput = Prisma.AtLeast<{
   basePriceModifier?: Prisma.FloatFilter<"WizardOption"> | number
   isActive?: Prisma.BoolFilter<"WizardOption"> | boolean
   sortOrder?: Prisma.IntFilter<"WizardOption"> | number
-  allowedMaterialValues?: Prisma.StringNullableListFilter<"WizardOption">
   metadata?: Prisma.JsonNullableFilter<"WizardOption">
-  imageUrl?: Prisma.StringNullableFilter<"WizardOption"> | string | null
   createdAt?: Prisma.DateTimeFilter<"WizardOption"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"WizardOption"> | Date | string
+  allowedMaterialValues?: Prisma.StringNullableListFilter<"WizardOption">
+  imageUrl?: Prisma.StringNullableFilter<"WizardOption"> | string | null
 }, "id" | "code">
 
 export type WizardOptionOrderByWithAggregationInput = {
@@ -321,11 +321,11 @@ export type WizardOptionOrderByWithAggregationInput = {
   basePriceModifier?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
-  allowedMaterialValues?: Prisma.SortOrder
   metadata?: Prisma.SortOrderInput | Prisma.SortOrder
-  imageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  allowedMaterialValues?: Prisma.SortOrder
+  imageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.WizardOptionCountOrderByAggregateInput
   _avg?: Prisma.WizardOptionAvgOrderByAggregateInput
   _max?: Prisma.WizardOptionMaxOrderByAggregateInput
@@ -345,11 +345,11 @@ export type WizardOptionScalarWhereWithAggregatesInput = {
   basePriceModifier?: Prisma.FloatWithAggregatesFilter<"WizardOption"> | number
   isActive?: Prisma.BoolWithAggregatesFilter<"WizardOption"> | boolean
   sortOrder?: Prisma.IntWithAggregatesFilter<"WizardOption"> | number
-  allowedMaterialValues?: Prisma.StringNullableListFilter<"WizardOption">
   metadata?: Prisma.JsonNullableWithAggregatesFilter<"WizardOption">
-  imageUrl?: Prisma.StringNullableWithAggregatesFilter<"WizardOption"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"WizardOption"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"WizardOption"> | Date | string
+  allowedMaterialValues?: Prisma.StringNullableListFilter<"WizardOption">
+  imageUrl?: Prisma.StringNullableWithAggregatesFilter<"WizardOption"> | string | null
 }
 
 export type WizardOptionCreateInput = {
@@ -361,11 +361,11 @@ export type WizardOptionCreateInput = {
   basePriceModifier?: number
   isActive?: boolean
   sortOrder?: number
-  allowedMaterialValues?: Prisma.WizardOptionCreateallowedMaterialValuesInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  imageUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  allowedMaterialValues?: Prisma.WizardOptionCreateallowedMaterialValuesInput | string[]
+  imageUrl?: string | null
 }
 
 export type WizardOptionUncheckedCreateInput = {
@@ -377,11 +377,11 @@ export type WizardOptionUncheckedCreateInput = {
   basePriceModifier?: number
   isActive?: boolean
   sortOrder?: number
-  allowedMaterialValues?: Prisma.WizardOptionCreateallowedMaterialValuesInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  imageUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  allowedMaterialValues?: Prisma.WizardOptionCreateallowedMaterialValuesInput | string[]
+  imageUrl?: string | null
 }
 
 export type WizardOptionUpdateInput = {
@@ -393,11 +393,11 @@ export type WizardOptionUpdateInput = {
   basePriceModifier?: Prisma.FloatFieldUpdateOperationsInput | number
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
-  allowedMaterialValues?: Prisma.WizardOptionUpdateallowedMaterialValuesInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allowedMaterialValues?: Prisma.WizardOptionUpdateallowedMaterialValuesInput | string[]
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type WizardOptionUncheckedUpdateInput = {
@@ -409,11 +409,11 @@ export type WizardOptionUncheckedUpdateInput = {
   basePriceModifier?: Prisma.FloatFieldUpdateOperationsInput | number
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
-  allowedMaterialValues?: Prisma.WizardOptionUpdateallowedMaterialValuesInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allowedMaterialValues?: Prisma.WizardOptionUpdateallowedMaterialValuesInput | string[]
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type WizardOptionCreateManyInput = {
@@ -425,11 +425,11 @@ export type WizardOptionCreateManyInput = {
   basePriceModifier?: number
   isActive?: boolean
   sortOrder?: number
-  allowedMaterialValues?: Prisma.WizardOptionCreateallowedMaterialValuesInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  imageUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  allowedMaterialValues?: Prisma.WizardOptionCreateallowedMaterialValuesInput | string[]
+  imageUrl?: string | null
 }
 
 export type WizardOptionUpdateManyMutationInput = {
@@ -441,11 +441,11 @@ export type WizardOptionUpdateManyMutationInput = {
   basePriceModifier?: Prisma.FloatFieldUpdateOperationsInput | number
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
-  allowedMaterialValues?: Prisma.WizardOptionUpdateallowedMaterialValuesInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allowedMaterialValues?: Prisma.WizardOptionUpdateallowedMaterialValuesInput | string[]
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type WizardOptionUncheckedUpdateManyInput = {
@@ -457,11 +457,11 @@ export type WizardOptionUncheckedUpdateManyInput = {
   basePriceModifier?: Prisma.FloatFieldUpdateOperationsInput | number
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
-  allowedMaterialValues?: Prisma.WizardOptionUpdateallowedMaterialValuesInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allowedMaterialValues?: Prisma.WizardOptionUpdateallowedMaterialValuesInput | string[]
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type WizardOptionCountOrderByAggregateInput = {
@@ -473,11 +473,11 @@ export type WizardOptionCountOrderByAggregateInput = {
   basePriceModifier?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
-  allowedMaterialValues?: Prisma.SortOrder
   metadata?: Prisma.SortOrder
-  imageUrl?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  allowedMaterialValues?: Prisma.SortOrder
+  imageUrl?: Prisma.SortOrder
 }
 
 export type WizardOptionAvgOrderByAggregateInput = {
@@ -494,9 +494,9 @@ export type WizardOptionMaxOrderByAggregateInput = {
   basePriceModifier?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
-  imageUrl?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  imageUrl?: Prisma.SortOrder
 }
 
 export type WizardOptionMinOrderByAggregateInput = {
@@ -508,9 +508,9 @@ export type WizardOptionMinOrderByAggregateInput = {
   basePriceModifier?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
-  imageUrl?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  imageUrl?: Prisma.SortOrder
 }
 
 export type WizardOptionSumOrderByAggregateInput = {
@@ -542,11 +542,11 @@ export type WizardOptionSelect<ExtArgs extends runtime.Types.Extensions.Internal
   basePriceModifier?: boolean
   isActive?: boolean
   sortOrder?: boolean
-  allowedMaterialValues?: boolean
   metadata?: boolean
-  imageUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  allowedMaterialValues?: boolean
+  imageUrl?: boolean
 }, ExtArgs["result"]["wizardOption"]>
 
 export type WizardOptionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -558,11 +558,11 @@ export type WizardOptionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   basePriceModifier?: boolean
   isActive?: boolean
   sortOrder?: boolean
-  allowedMaterialValues?: boolean
   metadata?: boolean
-  imageUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  allowedMaterialValues?: boolean
+  imageUrl?: boolean
 }, ExtArgs["result"]["wizardOption"]>
 
 export type WizardOptionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -574,11 +574,11 @@ export type WizardOptionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   basePriceModifier?: boolean
   isActive?: boolean
   sortOrder?: boolean
-  allowedMaterialValues?: boolean
   metadata?: boolean
-  imageUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  allowedMaterialValues?: boolean
+  imageUrl?: boolean
 }, ExtArgs["result"]["wizardOption"]>
 
 export type WizardOptionSelectScalar = {
@@ -590,14 +590,14 @@ export type WizardOptionSelectScalar = {
   basePriceModifier?: boolean
   isActive?: boolean
   sortOrder?: boolean
-  allowedMaterialValues?: boolean
   metadata?: boolean
-  imageUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  allowedMaterialValues?: boolean
+  imageUrl?: boolean
 }
 
-export type WizardOptionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "category" | "name" | "code" | "description" | "basePriceModifier" | "isActive" | "sortOrder" | "allowedMaterialValues" | "metadata" | "imageUrl" | "createdAt" | "updatedAt", ExtArgs["result"]["wizardOption"]>
+export type WizardOptionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "category" | "name" | "code" | "description" | "basePriceModifier" | "isActive" | "sortOrder" | "metadata" | "createdAt" | "updatedAt" | "allowedMaterialValues" | "imageUrl", ExtArgs["result"]["wizardOption"]>
 
 export type $WizardOptionPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "WizardOption"
@@ -611,11 +611,11 @@ export type $WizardOptionPayload<ExtArgs extends runtime.Types.Extensions.Intern
     basePriceModifier: number
     isActive: boolean
     sortOrder: number
-    allowedMaterialValues: string[]
     metadata: runtime.JsonValue | null
-    imageUrl: string | null
     createdAt: Date
     updatedAt: Date
+    allowedMaterialValues: string[]
+    imageUrl: string | null
   }, ExtArgs["result"]["wizardOption"]>
   composites: {}
 }
@@ -1047,11 +1047,11 @@ export interface WizardOptionFieldRefs {
   readonly basePriceModifier: Prisma.FieldRef<"WizardOption", 'Float'>
   readonly isActive: Prisma.FieldRef<"WizardOption", 'Boolean'>
   readonly sortOrder: Prisma.FieldRef<"WizardOption", 'Int'>
-  readonly allowedMaterialValues: Prisma.FieldRef<"WizardOption", 'String[]'>
   readonly metadata: Prisma.FieldRef<"WizardOption", 'Json'>
-  readonly imageUrl: Prisma.FieldRef<"WizardOption", 'String'>
   readonly createdAt: Prisma.FieldRef<"WizardOption", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"WizardOption", 'DateTime'>
+  readonly allowedMaterialValues: Prisma.FieldRef<"WizardOption", 'String[]'>
+  readonly imageUrl: Prisma.FieldRef<"WizardOption", 'String'>
 }
     
 

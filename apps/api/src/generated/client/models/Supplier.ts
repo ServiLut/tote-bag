@@ -255,8 +255,8 @@ export type SupplierWhereInput = {
   balance?: Prisma.FloatFilter<"Supplier"> | number
   createdAt?: Prisma.DateTimeFilter<"Supplier"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Supplier"> | Date | string
-  batches?: Prisma.PurchaseBatchListRelationFilter
   transactions?: Prisma.FinancialTransactionListRelationFilter
+  batches?: Prisma.PurchaseBatchListRelationFilter
 }
 
 export type SupplierOrderByWithRelationInput = {
@@ -270,8 +270,8 @@ export type SupplierOrderByWithRelationInput = {
   balance?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  batches?: Prisma.PurchaseBatchOrderByRelationAggregateInput
   transactions?: Prisma.FinancialTransactionOrderByRelationAggregateInput
+  batches?: Prisma.PurchaseBatchOrderByRelationAggregateInput
 }
 
 export type SupplierWhereUniqueInput = Prisma.AtLeast<{
@@ -288,8 +288,8 @@ export type SupplierWhereUniqueInput = Prisma.AtLeast<{
   balance?: Prisma.FloatFilter<"Supplier"> | number
   createdAt?: Prisma.DateTimeFilter<"Supplier"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Supplier"> | Date | string
-  batches?: Prisma.PurchaseBatchListRelationFilter
   transactions?: Prisma.FinancialTransactionListRelationFilter
+  batches?: Prisma.PurchaseBatchListRelationFilter
 }, "id" | "nit">
 
 export type SupplierOrderByWithAggregationInput = {
@@ -337,8 +337,8 @@ export type SupplierCreateInput = {
   balance?: number
   createdAt?: Date | string
   updatedAt?: Date | string
-  batches?: Prisma.PurchaseBatchCreateNestedManyWithoutSupplierInput
   transactions?: Prisma.FinancialTransactionCreateNestedManyWithoutSupplierInput
+  batches?: Prisma.PurchaseBatchCreateNestedManyWithoutSupplierInput
 }
 
 export type SupplierUncheckedCreateInput = {
@@ -352,8 +352,8 @@ export type SupplierUncheckedCreateInput = {
   balance?: number
   createdAt?: Date | string
   updatedAt?: Date | string
-  batches?: Prisma.PurchaseBatchUncheckedCreateNestedManyWithoutSupplierInput
   transactions?: Prisma.FinancialTransactionUncheckedCreateNestedManyWithoutSupplierInput
+  batches?: Prisma.PurchaseBatchUncheckedCreateNestedManyWithoutSupplierInput
 }
 
 export type SupplierUpdateInput = {
@@ -367,8 +367,8 @@ export type SupplierUpdateInput = {
   balance?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  batches?: Prisma.PurchaseBatchUpdateManyWithoutSupplierNestedInput
   transactions?: Prisma.FinancialTransactionUpdateManyWithoutSupplierNestedInput
+  batches?: Prisma.PurchaseBatchUpdateManyWithoutSupplierNestedInput
 }
 
 export type SupplierUncheckedUpdateInput = {
@@ -382,8 +382,8 @@ export type SupplierUncheckedUpdateInput = {
   balance?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  batches?: Prisma.PurchaseBatchUncheckedUpdateManyWithoutSupplierNestedInput
   transactions?: Prisma.FinancialTransactionUncheckedUpdateManyWithoutSupplierNestedInput
+  batches?: Prisma.PurchaseBatchUncheckedUpdateManyWithoutSupplierNestedInput
 }
 
 export type SupplierCreateManyInput = {
@@ -662,13 +662,13 @@ export type SupplierUncheckedUpdateWithoutTransactionsInput = {
  */
 
 export type SupplierCountOutputType = {
-  batches: number
   transactions: number
+  batches: number
 }
 
 export type SupplierCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  batches?: boolean | SupplierCountOutputTypeCountBatchesArgs
   transactions?: boolean | SupplierCountOutputTypeCountTransactionsArgs
+  batches?: boolean | SupplierCountOutputTypeCountBatchesArgs
 }
 
 /**
@@ -684,15 +684,15 @@ export type SupplierCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Ext
 /**
  * SupplierCountOutputType without action
  */
-export type SupplierCountOutputTypeCountBatchesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.PurchaseBatchWhereInput
+export type SupplierCountOutputTypeCountTransactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.FinancialTransactionWhereInput
 }
 
 /**
  * SupplierCountOutputType without action
  */
-export type SupplierCountOutputTypeCountTransactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.FinancialTransactionWhereInput
+export type SupplierCountOutputTypeCountBatchesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PurchaseBatchWhereInput
 }
 
 
@@ -707,8 +707,8 @@ export type SupplierSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   balance?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  batches?: boolean | Prisma.Supplier$batchesArgs<ExtArgs>
   transactions?: boolean | Prisma.Supplier$transactionsArgs<ExtArgs>
+  batches?: boolean | Prisma.Supplier$batchesArgs<ExtArgs>
   _count?: boolean | Prisma.SupplierCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["supplier"]>
 
@@ -753,8 +753,8 @@ export type SupplierSelectScalar = {
 
 export type SupplierOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "nit" | "contact" | "email" | "phone" | "address" | "balance" | "createdAt" | "updatedAt", ExtArgs["result"]["supplier"]>
 export type SupplierInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  batches?: boolean | Prisma.Supplier$batchesArgs<ExtArgs>
   transactions?: boolean | Prisma.Supplier$transactionsArgs<ExtArgs>
+  batches?: boolean | Prisma.Supplier$batchesArgs<ExtArgs>
   _count?: boolean | Prisma.SupplierCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type SupplierIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -763,8 +763,8 @@ export type SupplierIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
 export type $SupplierPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Supplier"
   objects: {
-    batches: Prisma.$PurchaseBatchPayload<ExtArgs>[]
     transactions: Prisma.$FinancialTransactionPayload<ExtArgs>[]
+    batches: Prisma.$PurchaseBatchPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1171,8 +1171,8 @@ readonly fields: SupplierFieldRefs;
  */
 export interface Prisma__SupplierClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  batches<T extends Prisma.Supplier$batchesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Supplier$batchesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PurchaseBatchPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   transactions<T extends Prisma.Supplier$transactionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Supplier$transactionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FinancialTransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  batches<T extends Prisma.Supplier$batchesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Supplier$batchesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PurchaseBatchPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1600,30 +1600,6 @@ export type SupplierDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inte
 }
 
 /**
- * Supplier.batches
- */
-export type Supplier$batchesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the PurchaseBatch
-   */
-  select?: Prisma.PurchaseBatchSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the PurchaseBatch
-   */
-  omit?: Prisma.PurchaseBatchOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.PurchaseBatchInclude<ExtArgs> | null
-  where?: Prisma.PurchaseBatchWhereInput
-  orderBy?: Prisma.PurchaseBatchOrderByWithRelationInput | Prisma.PurchaseBatchOrderByWithRelationInput[]
-  cursor?: Prisma.PurchaseBatchWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.PurchaseBatchScalarFieldEnum | Prisma.PurchaseBatchScalarFieldEnum[]
-}
-
-/**
  * Supplier.transactions
  */
 export type Supplier$transactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1645,6 +1621,30 @@ export type Supplier$transactionsArgs<ExtArgs extends runtime.Types.Extensions.I
   take?: number
   skip?: number
   distinct?: Prisma.FinancialTransactionScalarFieldEnum | Prisma.FinancialTransactionScalarFieldEnum[]
+}
+
+/**
+ * Supplier.batches
+ */
+export type Supplier$batchesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PurchaseBatch
+   */
+  select?: Prisma.PurchaseBatchSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PurchaseBatch
+   */
+  omit?: Prisma.PurchaseBatchOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PurchaseBatchInclude<ExtArgs> | null
+  where?: Prisma.PurchaseBatchWhereInput
+  orderBy?: Prisma.PurchaseBatchOrderByWithRelationInput | Prisma.PurchaseBatchOrderByWithRelationInput[]
+  cursor?: Prisma.PurchaseBatchWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PurchaseBatchScalarFieldEnum | Prisma.PurchaseBatchScalarFieldEnum[]
 }
 
 /**

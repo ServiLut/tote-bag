@@ -11,6 +11,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { B2bService } from './b2b.service';
 import { CreateQuoteDto } from './dto/create-quote.dto';
+import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 
 @Controller('b2b')
 export class B2bController {
@@ -27,11 +28,13 @@ export class B2bController {
   }
 
   @Get('quotes')
+  @RequirePermissions({ resource: 'b2b', action: 'manage' })
   findAll() {
     return this.b2bService.findAll();
   }
 
   @Patch('quotes/:id/approve')
+  @RequirePermissions({ resource: 'b2b', action: 'manage' })
   approveDesign(@Param('id') id: string) {
     return this.b2bService.approveDesign(id);
   }
