@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { ApiResponse } from '@/types/api';
 import { cn } from '@/utils/cn';
+import { useDashboardAuth } from '@/components/dashboard/DashboardAuthContext';
 
 interface B2BQuote {
   id: string;
@@ -38,7 +39,7 @@ export default function B2BQuotesManager() {
   const [quotes, setQuotes] = useState<B2BQuote[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const [role, setRole] = useState<string | null>(null);
+  const { role } = useDashboardAuth();
 
   // Filters & Pagination State
   const [searchTerm, setSearchTerm] = useState('');
@@ -50,27 +51,35 @@ export default function B2BQuotesManager() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4003/api/v1';
   const supabase = createClient();
 
-  useEffect(() => {
-    const userRole = localStorage.getItem('user_role');
-    setRole(userRole);
-  }, []);
-
   const isReadOnly = role === 'ADVISOR';
 
   useEffect(() => {
     const fetchQuotes = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (!token) {
+          setQuotes([]);
+          return;
+        }
+
         const res = await fetch(`${API_URL}/b2b/quotes`, {
           headers: {
-            'Authorization': `Bearer ${session?.access_token}`,
+            Authorization: `Bearer ${token}`,
           }
         });
-        if (!res.ok) throw new Error('Failed to fetch quotes');
+
+        if (res.status === 401 || res.status === 403) {
+          setQuotes([]);
+          return;
+        }
+
+        if (!res.ok) throw new Error(`Failed to fetch quotes (${res.status})`);
+
         const responseBody: ApiResponse<B2BQuote[]> = await res.json();
         setQuotes(responseBody.data);
       } catch (err) {
-        console.error(err);
+        console.error('Error fetching quotes:', err);
       } finally {
         setLoading(false);
       }
@@ -84,18 +93,30 @@ export default function B2BQuotesManager() {
     setProcessingId(id);
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        alert('Tu sesión expiró. Inicia sesión de nuevo.');
+        return;
+      }
+
       const res = await fetch(`${API_URL}/b2b/quotes/${id}/approve`, {
         method: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
+          Authorization: `Bearer ${token}`,
         }
       });
-      if (!res.ok) throw new Error('Failed to approve');
+      if (res.status === 401 || res.status === 403) {
+        alert('No tienes permisos para aprobar esta cotización.');
+        return;
+      }
+
+      if (!res.ok) throw new Error(`Failed to approve (${res.status})`);
 
       setQuotes(prev => prev.map(q =>
         q.id === id ? { ...q, status: 'DISEÑO_APROBADO' } : q
       ));
-    } catch {
+    } catch (err) {
+      console.error('Error approving quote:', err);
       alert('Error aprobando diseño');
     } finally {
       setProcessingId(null);
@@ -374,3 +395,4 @@ export default function B2BQuotesManager() {
     </div>
   );
 }
+

@@ -28,6 +28,8 @@ export const metadata: Metadata = {
   }
 };
 
+import { I18nProvider } from "@/components/I18nProvider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -44,11 +46,13 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <CartProvider>
-            <Toaster position="top-right" richColors closeButton />
-            <CookieConsent />
-            {children}
-          </CartProvider>
+          <I18nProvider>
+            <CartProvider>
+              <Toaster position="top-right" richColors closeButton />
+              <CookieConsent />
+              {children}
+            </CartProvider>
+          </I18nProvider>
         </ThemeProvider>
       </body>
     </html>

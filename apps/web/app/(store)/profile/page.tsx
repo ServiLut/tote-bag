@@ -73,7 +73,11 @@ export default function ProfilePage() {
 
     try {
       const [ordersRes, addressesRes] = await Promise.all([
-        fetch(`${API_URL}/orders/user/${session.user.id}`),
+        fetch(`${API_URL}/orders/user/${session.user.id}`, {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
+          }
+        }),
         fetch(`${API_URL}/addresses`, {
           headers: {
             'Authorization': `Bearer ${session.access_token}`

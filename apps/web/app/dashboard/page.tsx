@@ -1,60 +1,65 @@
 import Link from 'next/link';
 import { ArrowRight, TrendingUp, AlertTriangle, Briefcase, ShoppingBag, Package } from 'lucide-react';
 import { ApiResponse } from '@/types/api';
+import { createClient } from '@/utils/supabase/server';
 
-interface Order {
-  id: string;
-  createdAt: string;
+interface DashboardStats {
+  dailyProduction: number;
+  lowStockCount: number;
+  pendingQuotes: number;
 }
 
-interface Variant {
-  stock: number;
-}
+function isDashboardStats(value: unknown): value is DashboardStats {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
 
-interface Product {
-  variants: Variant[];
+  const candidate = value as Record<string, unknown>;
+  return (
+    typeof candidate.dailyProduction === 'number' &&
+    typeof candidate.lowStockCount === 'number' &&
+    typeof candidate.pendingQuotes === 'number'
+  );
 }
 
 async function getDashboardStats() {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4003/api/v1';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
+  const supabase = await createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
   try {
-    const [ordersRes, productsRes, quotesRes] = await Promise.all([
-      fetch(`${API_URL}/orders`, { cache: 'no-store' }),
-      fetch(`${API_URL}/catalog/products`, { cache: 'no-store' }),
-      fetch(`${API_URL}/b2b/quotes`, { cache: 'no-store' }),
-    ]);
+    const headers = session?.access_token
+      ? { Authorization: `Bearer ${session.access_token}` }
+      : undefined;
 
-    const ordersBody: ApiResponse<Order[]> | null = ordersRes.ok ? await ordersRes.json() : null;
-    const orders = ordersBody?.data || [];
-
-    const productsBody: ApiResponse<Product[]> | null = productsRes.ok ? await productsRes.json() : null;
-    const products = productsBody?.data || [];
-
-    const quotesBody: ApiResponse<unknown[]> | null = quotesRes.ok ? await quotesRes.json() : null;
-    const quotes = quotesBody?.data || [];
-
-    const today = new Date().toDateString();
-    const dailyProduction = orders.filter((o) =>
-      new Date(o.createdAt).toDateString() === today
-    ).length;
-
-    let lowStockCount = 0;
-    products.forEach((p) => {
-      if (p.variants) {
-        p.variants.forEach((v) => {
-          if (v.stock < 10) lowStockCount++;
-        });
-      }
+    const statsRes = await fetch(`${API_URL}/dashboard/stats`, {
+      cache: 'no-store',
+      headers,
     });
 
-    const pendingQuotes = quotes.length;
+    if (statsRes.status === 401 || statsRes.status === 403) {
+      return {
+        dailyProduction: 0,
+        lowStockCount: 0,
+        pendingQuotes: 0,
+      };
+    }
 
-    return {
-      dailyProduction,
-      lowStockCount,
-      pendingQuotes
-    };
+    if (!statsRes.ok) {
+      throw new Error(`Dashboard stats request failed with status ${statsRes.status}`);
+    }
+
+    const statsBody = (await statsRes.json()) as ApiResponse<DashboardStats> | DashboardStats;
+    const payload =
+      'data' in statsBody ? (statsBody as ApiResponse<DashboardStats>).data : statsBody;
+
+    if (!isDashboardStats(payload)) {
+      throw new Error('Invalid dashboard stats response');
+    }
+
+    return payload;
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
     return {
@@ -76,7 +81,7 @@ export default async function DashboardPage() {
           <p className="text-muted mt-1 text-sm font-medium">Vista general de operaciones y alertas.</p>
         </div>
         <div className="text-right hidden md:block">
-          <p className="text-sm font-bold text-primary">{new Date().toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          <p className="text-sm font-bold text-primary">{new Date().toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Bogota' })}</p>
         </div>
       </div>
 

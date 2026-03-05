@@ -7,6 +7,7 @@ import { Loader2, CalendarClock, Box, Phone, MapPin, Truck, Eye, X, Save, Search
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { ApiResponse } from '@/types/api';
+import { useDashboardAuth } from '@/components/dashboard/DashboardAuthContext';
 
 function cn(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
@@ -20,7 +21,7 @@ interface OrderItem {
   id: string;
   sku: string;
   quantity: number;
-  price: number;
+  price?: number;
   product: {
     name: string;
     collection?: string;
@@ -28,12 +29,20 @@ interface OrderItem {
   };
 }
 
-interface Order {
+interface OrderSummary {
   id: string;
   orderNumber: number;
   customerEmail: string;
-  customerPhone: string;
   city: string;
+  totalAmount: number;
+  status: OrderStatus;
+  trackingNumber?: string;
+  createdAt: string;
+  items: OrderItem[];
+}
+
+interface OrderDetail extends OrderSummary {
+  customerPhone: string;
   shippingAddress: {
     address: string;
     firstName?: string;
@@ -43,12 +52,7 @@ interface Order {
     municipality?: string;
     neighborhood?: string;
   } | string;
-  totalAmount: number;
-  status: OrderStatus;
-  trackingNumber?: string;
   carrier?: string;
-  createdAt: string;
-  items: OrderItem[];
 }
 
 interface BatchItem {
@@ -59,13 +63,14 @@ interface BatchItem {
 }
 
 export default function OrdersManager() {
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'list' | 'batch'>('list');
   const [filter, setFilter] = useState<'all' | 'cutoff'>('all');
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
+  const [loadingOrderDetail, setLoadingOrderDetail] = useState(false);
   const [updating, setUpdating] = useState(false);
-  const [role, setRole] = useState<string | null>(null);
+  const { role } = useDashboardAuth();
 
   // Advanced Filters State
   const [searchTerm, setSearchTerm] = useState('');
@@ -81,27 +86,35 @@ export default function OrdersManager() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4003/api/v1';
   const supabase = createClient();
 
-  useEffect(() => {
-    const userRole = localStorage.getItem('user_role');
-    setRole(userRole);
-  }, []);
-
   const isReadOnly = role === 'ADVISOR';
 
   useEffect(() => {
     const fetchOrders = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (!token) {
+          setOrders([]);
+          return;
+        }
+
         const res = await fetch(`${API_URL}/orders`, {
           headers: {
-            'Authorization': `Bearer ${session?.access_token}`,
+            Authorization: `Bearer ${token}`,
           }
         });
-        if (!res.ok) throw new Error('Failed to fetch orders');
-        const responseBody: ApiResponse<Order[]> = await res.json();
+
+        if (res.status === 401 || res.status === 403) {
+          setOrders([]);
+          return;
+        }
+
+        if (!res.ok) throw new Error(`Failed to fetch orders (${res.status})`);
+
+        const responseBody: ApiResponse<OrderSummary[]> = await res.json();
         setOrders(responseBody.data);
       } catch (err) {
-        console.error(err);
+        console.error('Error fetching orders:', err);
       } finally {
         setLoading(false);
       }
@@ -110,21 +123,58 @@ export default function OrdersManager() {
     fetchOrders();
   }, [API_URL, supabase.auth]);
 
-  const openOrderModal = (order: Order) => {
-    setSelectedOrder(order);
+  const openOrderModal = async (order: OrderSummary) => {
+    setLoadingOrderDetail(true);
+    setSelectedOrder(null);
     setNewStatus(order.status);
     setTracking(order.trackingNumber || '');
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        alert('Tu sesión expiró. Inicia sesión de nuevo.');
+        return;
+      }
+
+      const res = await fetch(`${API_URL}/orders/${order.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
+
+      if (res.status === 401 || res.status === 403) {
+        alert('No tienes permisos para ver el detalle de este pedido.');
+        return;
+      }
+
+      if (!res.ok) throw new Error(`Failed to fetch order detail (${res.status})`);
+
+      const responseBody: ApiResponse<OrderDetail> = await res.json();
+      setSelectedOrder(responseBody.data);
+    } catch (err) {
+      console.error('Error fetching order detail:', err);
+      alert('Error cargando detalle del pedido');
+    } finally {
+      setLoadingOrderDetail(false);
+    }
   };
 
   const updateOrderStatus = async (orderId: string, status: OrderStatus, trackingNumber?: string | null) => {
     setUpdating(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        alert('Tu sesión expiró. Inicia sesión de nuevo.');
+        return false;
+      }
+
       const res = await fetch(`${API_URL}/orders/${orderId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           status,
@@ -132,7 +182,12 @@ export default function OrdersManager() {
         }),
       });
 
-      if (!res.ok) throw new Error('Failed to update');
+      if (res.status === 401 || res.status === 403) {
+        alert('No tienes permisos para actualizar esta orden.');
+        return false;
+      }
+
+      if (!res.ok) throw new Error(`Failed to update (${res.status})`);
 
       // Update local state
       setOrders(prev => prev.map(o =>
@@ -141,7 +196,7 @@ export default function OrdersManager() {
 
       return true;
     } catch (err) {
-      console.error(err);
+      console.error('Error updating order:', err);
       alert('Error al actualizar la orden');
       return false;
     } finally {
@@ -214,7 +269,7 @@ export default function OrdersManager() {
     return result;
   };
 
-  const getBatchGrouping = (filteredOrders: Order[]): BatchItem[] => {
+  const getBatchGrouping = (filteredOrders: OrderSummary[]): BatchItem[] => {
     const map = new Map<string, BatchItem>();
 
     filteredOrders.forEach(order => {
@@ -537,9 +592,15 @@ export default function OrdersManager() {
       )}
 
       {/* Order Detail Modal */}
-      {selectedOrder && (
+      {(loadingOrderDetail || selectedOrder) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-surface rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-300 relative border border-theme">
+            {loadingOrderDetail ? (
+              <div className="p-16 flex justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-muted" />
+              </div>
+            ) : selectedOrder ? (
+              <>
             {/* Header */}
             <div className="px-6 py-5 border-b border-theme flex justify-between items-center bg-base/50">
               <div className="flex items-center gap-3">
@@ -670,6 +731,8 @@ export default function OrdersManager() {
                 )}
               </div>
             </div>
+              </>
+            ) : null}
           </div>
         </div>
       )}

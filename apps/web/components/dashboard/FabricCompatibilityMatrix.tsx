@@ -35,10 +35,25 @@ export default function FabricCompatibilityMatrix() {
     try {
       setLoading(true);
       const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        setMaterials([]);
+        setTechniques([]);
+        return;
+      }
+
       const res = await fetch(`${API_URL}/wizard-options`, {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
-      if (!res.ok) throw new Error('Error al cargar datos');
+
+      if (res.status === 401 || res.status === 403) {
+        setMaterials([]);
+        setTechniques([]);
+        return;
+      }
+
+      if (!res.ok) throw new Error(`Error al cargar datos (${res.status})`);
+
       const resBody = await res.json();
       const allOptions: WizardOption[] = resBody.data || [];
 
@@ -64,16 +79,27 @@ export default function FabricCompatibilityMatrix() {
     setUpdatingId(`${technique.id}-${materialName}`);
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        toast.error('Tu sesión expiró. Inicia sesión de nuevo.');
+        return;
+      }
+
       const res = await fetch(`${API_URL}/wizard-options/${technique.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ allowedMaterialValues: newAllowedMaterials }),
       });
 
-      if (!res.ok) throw new Error('Error al actualizar');
+      if (res.status === 401 || res.status === 403) {
+        toast.error('No tienes permisos para actualizar la matriz');
+        return;
+      }
+
+      if (!res.ok) throw new Error(`Error al actualizar (${res.status})`);
 
       // Update local state
       setTechniques(prev => prev.map(t =>

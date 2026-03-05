@@ -6,13 +6,20 @@ import { Product } from '@/types/product';
 import { ApiResponse } from '@/types/api';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 
 export default function Home() {
+  const { t, i18n } = useTranslation();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4003/api/v1';
+
+  const toggleLanguage = () => {
+    const newLang = i18n.language === 'es' ? 'en' : 'es';
+    i18n.changeLanguage(newLang);
+  };
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -41,19 +48,26 @@ export default function Home() {
         </div>
         
         <div className="relative z-10 text-center space-y-6 max-w-2xl px-4">
-          <span className="text-secondary font-bold tracking-widest uppercase text-sm">Colecci�n 2026</span>
+          <button 
+            onClick={toggleLanguage}
+            className="mb-4 px-3 py-1 text-xs border border-primary/30 rounded-full hover:bg-primary/10 transition-colors"
+          >
+            {i18n.language === 'es' ? 'English' : 'Español'}
+          </button>
+          <br />
+          <span className="text-secondary font-bold tracking-widest uppercase text-sm">{t('welcome')} - 2026</span>
           <h1 className="text-5xl md:text-7xl font-serif text-primary leading-tight">
-            Marca Dual: <br/> Stock y Producci�n.
+            Marca Dual: <br/> Stock y Producción.
           </h1>
           <p className="text-lg text-muted max-w-lg mx-auto">
-            Descubre nuestras piezas en stock para entrega inmediata o personaliza tu producci�n al por mayor. Calidad artesanal para cada necesidad.
+            {t('description')}
           </p>
           <div className="pt-4 flex gap-4 justify-center">
             <Link href="/catalog" className="px-8 py-3 btn-primary font-medium rounded-sm uppercase tracking-wider text-xs">
-              Compra en Stock
+              {t('shop_stock')}
             </Link>
             <Link href="/corporativo" className="px-8 py-3 btn-outline font-medium rounded-sm uppercase tracking-wider text-xs">
-              �rea Corporativa
+              {t('corporate_area')}
             </Link>
           </div>
         </div>
@@ -63,11 +77,11 @@ export default function Home() {
       <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
         <div className="flex justify-between items-end mb-12 border-b border-theme pb-6">
           <div>
-            <h2 className="text-3xl font-serif text-primary mb-2 uppercase tracking-tight">Selecci�n Destacada</h2>
-            <p className="text-muted text-sm">Stock disponible para env�o hoy o dise�os listos para producci�n personalizada.</p>
+            <h2 className="text-3xl font-serif text-primary mb-2 uppercase tracking-tight">{t('featured_selection')}</h2>
+            <p className="text-muted text-sm">{t('featured_description')}</p>
           </div>
           <Link href="/lineas" className="hidden sm:block text-primary font-bold uppercase text-xs tracking-widest hover:text-accent transition-colors">
-            Explorar L�neas &rarr;
+            {t('explore_lines')} &rarr;
           </Link>
         </div>
 
@@ -81,7 +95,7 @@ export default function Home() {
           </div>
         ) : products.length === 0 ? (
           <div className="py-20 text-center text-muted">
-            No hay productos disponibles en este momento.
+            {t('no_products')}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-12 gap-x-8">
@@ -94,7 +108,7 @@ export default function Home() {
         {!loading && !error && products.length > 0 && (
           <div className="mt-16 text-center sm:hidden">
              <Link href="/catalog" className="text-primary font-bold uppercase text-xs tracking-widest border-b-2 border-primary pb-1">
-              Ver cat�logo completo
+              {t('view_all_catalog')}
             </Link>
           </div>
         )}
@@ -103,20 +117,18 @@ export default function Home() {
       {/* Banner Sostenibilidad */}
       <section className="bg-secondary text-white py-24 px-4 transition-colors duration-300">
         <div className="max-w-4xl mx-auto text-center space-y-8">
-          <span className="text-white/70 font-bold tracking-[0.2em] uppercase text-xs">Compromiso Real</span>
-          <h2 className="text-4xl md:text-5xl font-serif leading-tight">Moda Consciente, Impacto Real.</h2>
+          <span className="text-white/70 font-bold tracking-[0.2em] uppercase text-xs">{t('sustainability_commitment')}</span>
+          <h2 className="text-4xl md:text-5xl font-serif leading-tight">{t('conscious_fashion')}</h2>
           <p className="text-lg opacity-90 max-w-2xl mx-auto font-light leading-relaxed">
-            Cada tote bag ahorra un promedio de 500 bolsas pl�sticas al a�o. Trabajamos con artesanos locales y materiales certificados bajo est�ndares �ticos.
+            {t('sustainability_description')}
           </p>
           <div className="pt-4">
-            <button className="px-10 py-4 border border-white/30 hover:bg-white hover:text-secondary transition-all rounded-sm text-sm uppercase font-bold tracking-widest">
-              Saber m�s
-            </button>
+            <Link href="/beneficios" className="inline-block px-10 py-4 border border-white/30 hover:bg-white hover:text-secondary transition-all rounded-sm text-sm uppercase font-bold tracking-widest">
+              {t('learn_more')}
+            </Link>
           </div>
         </div>
       </section>
     </>
   );
 }
-
-

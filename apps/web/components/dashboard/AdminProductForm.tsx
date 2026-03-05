@@ -165,7 +165,24 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
     const fetchCollections = async () => {
       setIsLoadingCollections(true);
       try {
-        const res = await fetch(`${apiUrl}/collections`);
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (!token) {
+          setCollections([]);
+          return;
+        }
+
+        const res = await fetch(`${apiUrl}/collections`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (res.status === 401 || res.status === 403) {
+          setCollections([]);
+          return;
+        }
+
         if (res.ok) {
           const body = await res.json();
           setCollections(body.data || []);
@@ -179,7 +196,24 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
 
     const fetchWizardOptions = async () => {
       try {
-        const res = await fetch(`${apiUrl}/wizard-options/grouped`);
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (!token) {
+          setWizardOptions({});
+          return;
+        }
+
+        const res = await fetch(`${apiUrl}/wizard-options/grouped`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (res.status === 401 || res.status === 403) {
+          setWizardOptions({});
+          return;
+        }
+
         if (res.ok) {
           const response = await res.json();
           const data = response.data || response;
@@ -193,7 +227,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
 
     fetchCollections();
     fetchWizardOptions();
-  }, []);
+  }, [supabase.auth]);
 
   const handleCreateCollection = async (name: string) => {
     try {
@@ -201,15 +235,25 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
       const slug = name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
 
       const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        toast.error('Tu sesión expiró. Inicia sesión de nuevo.');
+        return;
+      }
 
       const res = await fetch(`${apiUrl}/collections`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ name, slug }),
       });
+
+      if (res.status === 401 || res.status === 403) {
+        toast.error('No tienes permisos para crear colecciones');
+        return;
+      }
 
       if (res.ok) {
         const resBody = await res.json();
@@ -509,15 +553,23 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
 
       const method = isEditMode ? 'PATCH' : 'POST';
       const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        throw new Error('Tu sesión expiró. Inicia sesión de nuevo.');
+      }
 
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
       });
+
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('No tienes permisos para guardar productos');
+      }
 
       if (!response.ok) {
         const errorData = await response.json();

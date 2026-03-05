@@ -8,6 +8,7 @@ import { twMerge } from 'tailwind-merge';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ApiResponse } from '@/types/api';
+import { useDashboardAuth } from '@/components/dashboard/DashboardAuthContext';
 
 function cn(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
@@ -74,31 +75,39 @@ export default function ProductsTable() {
   const [error, setError] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [role, setRole] = useState<string | null>(null);
+  const { role } = useDashboardAuth();
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4003/api/v1';
   const supabase = createClient();
-
-  useEffect(() => {
-    const userRole = localStorage.getItem('user_role');
-    setRole(userRole);
-  }, []);
 
   const isReadOnly = role === 'ADVISOR';
 
   const fetchProducts = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        setProducts([]);
+        return;
+      }
+
       const res = await fetch(`${API_URL}/catalog/products`, {
         headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
+          Authorization: `Bearer ${token}`,
         }
       });
-      if (!res.ok) throw new Error('Failed to fetch products');
+
+      if (res.status === 401 || res.status === 403) {
+        setProducts([]);
+        return;
+      }
+
+      if (!res.ok) throw new Error(`Failed to fetch products (${res.status})`);
+
       const responseBody: ApiResponse<Product[]> = await res.json();
       setProducts(responseBody.data);
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching products:', err);
       setError('Error cargando productos');
     } finally {
       setLoading(false);
@@ -113,22 +122,33 @@ export default function ProductsTable() {
     setUpdatingId(id);
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        alert('Tu sesión expiró. Inicia sesión de nuevo.');
+        return;
+      }
+
       const res = await fetch(`${API_URL}/catalog/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ status: newStatus }),
       });
 
-      if (!res.ok) throw new Error('Failed to update status');
+      if (res.status === 401 || res.status === 403) {
+        alert('No tienes permisos para actualizar este producto.');
+        return;
+      }
+
+      if (!res.ok) throw new Error(`Failed to update status (${res.status})`);
 
       setProducts(prev =>
         prev.map(p => (p.id === id ? { ...p, status: newStatus as Product['status'] } : p))
       );
     } catch (err) {
-      console.error(err);
+      console.error('Error updating product status:', err);
       alert('Error actualizando estado');
     } finally {
       setUpdatingId(null);
@@ -140,18 +160,29 @@ export default function ProductsTable() {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        alert('Tu sesión expiró. Inicia sesión de nuevo.');
+        return;
+      }
+
       const res = await fetch(`${API_URL}/catalog/${id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
+          Authorization: `Bearer ${token}`,
         }
       });
 
-      if (!res.ok) throw new Error('Failed to delete product');
+      if (res.status === 401 || res.status === 403) {
+        alert('No tienes permisos para eliminar este producto.');
+        return;
+      }
+
+      if (!res.ok) throw new Error(`Failed to delete product (${res.status})`);
 
       setProducts(prev => prev.filter(p => p.id !== id));
     } catch (err) {
-      console.error(err);
+      console.error('Error deleting product:', err);
       alert('Error eliminando producto');
     }
   };

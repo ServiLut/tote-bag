@@ -42,7 +42,24 @@ export default function CollectionsManager() {
   const fetchCollections = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/collections`);
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        setCollections([]);
+        return;
+      }
+
+      const res = await fetch(`${API_URL}/collections`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.status === 401 || res.status === 403) {
+        setCollections([]);
+        return;
+      }
+
       if (res.ok) {
         const resBody = await res.json();
         setCollections(resBody.data || []);
@@ -53,7 +70,7 @@ export default function CollectionsManager() {
     } finally {
       setIsLoading(false);
     }
-  }, [API_URL]);
+  }, [API_URL, supabase.auth]);
 
   useEffect(() => {
     fetchCollections();
@@ -97,6 +114,12 @@ export default function CollectionsManager() {
     setIsSubmitting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        toast.error('Tu sesión expiró. Inicia sesión de nuevo.');
+        return;
+      }
+
       const url = editingId
         ? `${API_URL}/collections/${editingId}`
         : `${API_URL}/collections`;
@@ -107,10 +130,15 @@ export default function CollectionsManager() {
         method,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(formData),
       });
+
+      if (res.status === 401 || res.status === 403) {
+        toast.error('No tienes permisos para gestionar colecciones');
+        return;
+      }
 
       if (res.ok) {
         toast.success(editingId ? 'Colección actualizada' : 'Colección creada');
@@ -132,13 +160,23 @@ export default function CollectionsManager() {
     setIsDeletingId(id);
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        toast.error('Tu sesión expiró. Inicia sesión de nuevo.');
+        return;
+      }
 
       const res = await fetch(`${API_URL}/collections/${id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
+
+      if (res.status === 401 || res.status === 403) {
+        toast.error('No tienes permisos para eliminar colecciones');
+        return;
+      }
 
       if (res.ok) {
         toast.success('Colección eliminada exitosamente');

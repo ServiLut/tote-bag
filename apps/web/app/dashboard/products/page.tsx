@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import ProductsTable from '@/components/dashboard/ProductsTable';
 import CollectionsManager from '@/components/dashboard/CollectionsManager';
 import WizardConfigManager from '@/components/dashboard/WizardConfigManager';
@@ -8,15 +7,10 @@ import FabricCompatibilityMatrix from '@/components/dashboard/FabricCompatibilit
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
+import { useDashboardAuth } from '@/components/dashboard/DashboardAuthContext';
 
 export default function ProductsDashboardPage() {
-  const [role, setRole] = useState<string | null>(null);
-
-  useEffect(() => {
-    const userRole = localStorage.getItem('user_role');
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setRole(userRole);
-  }, []);
+  const { role } = useDashboardAuth();
 
   const isReadOnly = role === 'ADVISOR';
 

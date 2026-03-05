@@ -13,6 +13,7 @@ import {
   Navigation
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useDashboardAuth } from '@/components/dashboard/DashboardAuthContext';
 
 interface ProfileData {
   firstName: string;
@@ -48,18 +49,13 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<string | null>(null);
+  const { role } = useDashboardAuth();
 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4003/api/v1';
   const supabase = createClient();
-
-  useEffect(() => {
-    const userRole = localStorage.getItem('user_role');
-    setRole(userRole);
-  }, []);
 
   const isReadOnly = role === 'ADVISOR';
 

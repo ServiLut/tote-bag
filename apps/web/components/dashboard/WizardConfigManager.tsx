@@ -77,10 +77,23 @@ export default function WizardConfigManager() {
     try {
       setLoading(true);
       const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        setOptions([]);
+        return;
+      }
+
       const res = await fetch(`${API_URL}/wizard-options`, {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
-      if (!res.ok) throw new Error('Error al cargar opciones');
+
+      if (res.status === 401 || res.status === 403) {
+        setOptions([]);
+        return;
+      }
+
+      if (!res.ok) throw new Error(`Error al cargar opciones (${res.status})`);
+
       const resBody = await res.json();
       setOptions(resBody.data || []);
     } catch (err) {
@@ -143,6 +156,12 @@ export default function WizardConfigManager() {
     setIsSubmitting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        toast.error('Tu sesión expiró. Inicia sesión de nuevo.');
+        return;
+      }
+
       const url = editingId ? `${API_URL}/wizard-options/${editingId}` : `${API_URL}/wizard-options`;
       const method = editingId ? 'PATCH' : 'POST';
 
@@ -150,12 +169,17 @@ export default function WizardConfigManager() {
         method,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(formData),
       });
 
-      if (!res.ok) throw new Error('Error al guardar');
+      if (res.status === 401 || res.status === 403) {
+        toast.error('No tienes permisos para guardar opciones');
+        return;
+      }
+
+      if (!res.ok) throw new Error(`Error al guardar (${res.status})`);
 
       toast.success(editingId ? 'Actualizado correctamente' : 'Creado correctamente');
       setShowFormModal(false);
@@ -172,11 +196,23 @@ export default function WizardConfigManager() {
     setIsDeletingId(id);
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        toast.error('Tu sesión expiró. Inicia sesión de nuevo.');
+        return;
+      }
+
       const res = await fetch(`${API_URL}/wizard-options/${id}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${session?.access_token}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error('Error al eliminar');
+
+      if (res.status === 401 || res.status === 403) {
+        toast.error('No tienes permisos para eliminar opciones');
+        return;
+      }
+
+      if (!res.ok) throw new Error(`Error al eliminar (${res.status})`);
       toast.success('Eliminado correctamente');
       setOptions(prev => prev.filter(o => o.id !== id));
     } catch (err) {

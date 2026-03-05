@@ -25,7 +25,6 @@ import {
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
-import { User } from '@supabase/supabase-js';
 
 const menuGroups = [
   {
@@ -71,7 +70,7 @@ const menuGroups = [
 ];
 
 interface SidebarProps {
-  user: User | null;
+  user: { email?: string | null } | null;
   handleLogout: () => Promise<void>;
   isMobileMenuOpen: boolean;
   setIsMobileMenuOpen: (open: boolean) => void;
@@ -81,6 +80,11 @@ export default function Sidebar({ user, handleLogout, isMobileMenuOpen, setIsMob
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+
+  const isItemActive = (href: string) => {
+    if (href === '/dashboard') return pathname === href;
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -123,7 +127,7 @@ export default function Sidebar({ user, handleLogout, isMobileMenuOpen, setIsMob
               </h3>
               <div className="space-y-1">
                 {group.items.map((item) => {
-                  const isActive = pathname === item.href;
+                  const isActive = isItemActive(item.href);
                   const Icon = item.icon;
                   return (
                     <Link
@@ -198,12 +202,12 @@ export default function Sidebar({ user, handleLogout, isMobileMenuOpen, setIsMob
                       href={item.href}
                       onClick={() => setIsMobileMenuOpen(false)}
                       className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl text-base font-bold transition-all ${
-                        pathname === item.href
+                        isItemActive(item.href)
                           ? 'bg-primary text-base-color shadow-xl shadow-primary/10 scale-[1.02]'
                           : 'bg-surface border border-theme text-muted'
                       }`}
                     >
-                      <item.icon className={`w-5 h-5 ${pathname === item.href ? 'text-base-color' : 'text-muted'}`} />
+                      <item.icon className={`w-5 h-5 ${isItemActive(item.href) ? 'text-base-color' : 'text-muted'}`} />
                       {item.name}
                     </Link>
                   ))}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useCart } from '@/context/CartContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { User, UserCircle2, Loader2, Plus, CheckCircle2 } from 'lucide-react';
 import Script from 'next/script';
@@ -75,6 +75,7 @@ interface OrderPayload {
   customerPhone: string;
   department: string;
   city: string;
+  isB2B: boolean;
   shippingAddress: {
     city: string;
     address: string;
@@ -92,6 +93,10 @@ interface OrderPayload {
 export default function CheckoutPage() {
   const { items, subtotal } = useCart();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isB2BParam = searchParams.get('isB2B');
+  const isB2B = isB2BParam === 'true' || isB2BParam === '1';
+
   const supabase = createClient();
   const [authStep, setAuthStep] = useState<'CHOICE' | 'GUEST_FORM' | 'AUTHENTICATED'>('CHOICE');
   const [isLoading, setIsLoading] = useState(false);
@@ -229,13 +234,14 @@ export default function CheckoutPage() {
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
+        console.error('Server Error Data:', errorData); // Improved logging
         throw new Error(errorData.message || 'Error creando la orden');
       }
       
       const orderResult = await res.json();
       const orderId = orderResult.data?.id || orderResult.id; 
 
-      if (!orderId) throw new Error('No se recibi� el ID de la orden');
+      if (!orderId) throw new Error('No se recibió el ID de la orden');
 
       // 2. Get Payment Signature
       const signRes = await fetch(`${apiUrl}/payments/wompi/signature/${orderId}`);
@@ -281,13 +287,14 @@ export default function CheckoutPage() {
       return;
     }
 
-    const payload = {
+    const payload: OrderPayload = {
       firstName: formData.firstName,
       lastName: formData.lastName,
       customerEmail: formData.email,
       customerPhone: formData.phone,
       department: formData.department,
       city: formData.city,
+      isB2B: Boolean(isB2B),
       shippingAddress: {
         city: formData.city,
         address: `${formData.address} - ${formData.neighborhood}`,
@@ -308,17 +315,18 @@ export default function CheckoutPage() {
   const handleAuthenticatedCheckout = async () => {
     const selectedAddress = addresses.find(a => a.id === selectedAddressId);
     if (!selectedAddress) {
-      toast.error('Por favor selecciona una direcci�n de env�o');
+      toast.error('Por favor selecciona una dirección de envío');
       return;
     }
 
-    const payload = {
+    const payload: OrderPayload = {
       firstName: selectedAddress.firstName,
       lastName: selectedAddress.lastName,
       customerEmail: formData.email,
       customerPhone: selectedAddress.phone,
       department: selectedAddress.department.name,
       city: selectedAddress.municipality.name,
+      isB2B: Boolean(isB2B),
       shippingAddress: {
         city: selectedAddress.municipality.name,
         address: `${selectedAddress.address}${selectedAddress.neighborhood ? ` - ${selectedAddress.neighborhood}` : ''}`,
@@ -357,7 +365,7 @@ export default function CheckoutPage() {
             
             {authStep === 'CHOICE' && (
               <div className="bg-surface p-8 rounded-lg shadow-sm border border-theme animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h2 className="text-xl font-bold mb-6 text-primary">�C�mo quieres continuar?</h2>
+                <h2 className="text-xl font-bold mb-6 text-primary">¿Cómo quieres continuar?</h2>
                 <div className="grid gap-6">
                   <div className="border border-theme rounded-lg p-6 hover:border-primary transition-colors cursor-pointer group" onClick={() => router.push('/login?redirect=/checkout')}>
                     <div className="flex items-center gap-4">
@@ -366,7 +374,7 @@ export default function CheckoutPage() {
                       </div>
                       <div>
                         <h3 className="font-bold text-lg text-primary">Ya soy cliente</h3>
-                        <p className="text-sm text-muted">Inicia sesi�n para usar tus direcciones guardadas.</p>
+                        <p className="text-sm text-muted">Inicia sesión para usar tus direcciones guardadas.</p>
                       </div>
                     </div>
                   </div>
@@ -388,7 +396,7 @@ export default function CheckoutPage() {
             {authStep === 'AUTHENTICATED' && (
               <div className="bg-surface p-8 rounded-lg shadow-sm border border-theme animate-in fade-in duration-500">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold text-primary">Direcci�n de Env�o</h2>
+                  <h2 className="text-xl font-bold text-primary">Dirección de Envío</h2>
                   <button 
                     onClick={() => router.push('/profile')}
                     className="text-sm text-accent hover:opacity-80 font-bold flex items-center gap-1"
@@ -436,7 +444,7 @@ export default function CheckoutPage() {
                             {address.neighborhood && `${address.neighborhood}, `}
                             {address.municipality.name}, {address.department.name}
                           </p>
-                          <p className="text-xs text-muted mt-2 font-medium">T�l: {address.phone}</p>
+                          <p className="text-xs text-muted mt-2 font-medium">Tél: {address.phone}</p>
                         </div>
                       </div>
                     ))}
@@ -455,16 +463,16 @@ export default function CheckoutPage() {
             {authStep === 'GUEST_FORM' && (
               <div className="bg-surface p-8 rounded-lg shadow-sm border border-theme animate-in fade-in duration-500">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold text-primary">Datos de Env�o</h2>
+                  <h2 className="text-xl font-bold text-primary">Datos de Envío</h2>
                   <button onClick={() => setAuthStep('CHOICE')} className="text-sm text-muted hover:text-primary underline" type="button">Volver</button>
                 </div>
                 <form onSubmit={handleGuestCheckout} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase text-muted">Correo Electr�nico</label>
+                    <label className="text-xs font-bold uppercase text-muted">Correo Electrónico</label>
                     <input type="email" name="email" value={formData.email} onChange={handleInputChange} required className="w-full p-3 bg-base border border-theme rounded outline-none focus:border-primary text-primary" placeholder="tu@email.com" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase text-muted">Tel�fono</label>
+                    <label className="text-xs font-bold uppercase text-muted">Teléfono</label>
                     <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} required className="w-full p-3 bg-base border border-theme rounded outline-none focus:border-primary text-primary" placeholder="+57 300..." />
                   </div>
                   <div className="space-y-2">
@@ -488,14 +496,14 @@ export default function CheckoutPage() {
                     <input type="text" name="neighborhood" required value={formData.neighborhood} onChange={handleInputChange} className="w-full p-3 bg-base border border-theme rounded outline-none focus:border-primary text-primary" />
                   </div>
                   <div className="col-span-full space-y-2">
-                    <label className="text-xs font-bold uppercase text-muted">Direcci�n Exacta</label>
+                    <label className="text-xs font-bold uppercase text-muted">Dirección Exacta</label>
                     <input type="text" name="address" required value={formData.address} onChange={handleInputChange} className="w-full p-3 bg-base border border-theme rounded outline-none focus:border-primary text-primary" placeholder="Calle 123 # 45-67, Apto 101" />
                   </div>
                   <div className="col-span-full pt-4">
                     <button type="submit" disabled={isLoading} className="w-full py-4 btn-primary font-bold uppercase tracking-widest rounded-sm disabled:opacity-50">
                       {isLoading ? 'Procesando...' : 'Continuar a Pago con Wompi'}
                     </button>
-                    <p className="text-center text-xs text-muted mt-4">Ser�s redirigido a la pasarela de pagos segura de Wompi Bancolombia.</p>
+                    <p className="text-center text-xs text-muted mt-4">Serás redirigido a la pasarela de pagos segura de Wompi Bancolombia.</p>
                   </div>
                 </form>
               </div>
@@ -522,7 +530,7 @@ export default function CheckoutPage() {
               </div>
               <div className="border-t border-theme pt-4 space-y-2">
                 <div className="flex justify-between text-sm"><span className="text-muted">Subtotal</span><span className="text-primary">${subtotal.toLocaleString('es-CO')}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-muted">Env�o</span><span className="text-muted/60 text-xs italic">Por calcular</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted">Envío</span><span className="text-muted/60 text-xs italic">Por calcular</span></div>
                 <div className="flex justify-between text-lg font-bold pt-2 border-t border-theme mt-2 text-primary"><span>Total</span><span>${subtotal.toLocaleString('es-CO')}</span></div>
               </div>
             </div>
@@ -532,4 +540,3 @@ export default function CheckoutPage() {
     </>
   );
 }
-
