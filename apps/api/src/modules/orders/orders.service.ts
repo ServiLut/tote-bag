@@ -97,12 +97,14 @@ export class OrdersService {
               finalUserId,
               tx,
             );
-          } catch (error) {
+          } catch (error: unknown) {
             // If stock reduction fails (e.g. insufficient stock), we catch it
             // and decide whether to fail the whole order or just log it.
             // Requirement says: "maneja el error de forma controlada"
+            const errorMessage =
+              error instanceof Error ? error.message : 'Unknown error';
             console.warn(
-              `Stock reduction failed for product ${item.productId}: ${error.message}`,
+              `Stock reduction failed for product ${item.productId}: ${errorMessage}`,
             );
             // If it's "Stock insuficiente", we probably WANT to fail the order to avoid overselling
             if (error instanceof BadRequestException) {

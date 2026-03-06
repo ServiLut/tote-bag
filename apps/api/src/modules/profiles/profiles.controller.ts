@@ -6,11 +6,13 @@ import {
   Patch,
   Body,
   Req,
+  ForbiddenException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ProfilesService } from './profiles.service';
 import { Request } from 'express';
 import { Prisma } from '../../generated/client/client';
+import { RolesService } from '../roles/roles.service';
 
 interface RequestWithUser extends Request {
   user?: {
@@ -21,7 +23,10 @@ interface RequestWithUser extends Request {
 
 @Controller('profiles')
 export class ProfilesController {
-  constructor(private readonly profilesService: ProfilesService) {}
+  constructor(
+    private readonly profilesService: ProfilesService,
+    private readonly rolesService: RolesService,
+  ) {}
 
   @Get('me')
   async getMe(@Req() req: RequestWithUser) {
@@ -41,16 +46,43 @@ export class ProfilesController {
   }
 
   @Get()
-  findAll(
+  async findAll(
+    @Req() req: RequestWithUser,
     @Query('role') role?: 'ADMIN' | 'CUSTOMER',
     @Query('department') department?: string,
     @Query('municipality') municipality?: string,
   ) {
+    const user = req.user;
+    if (!user?.id) throw new UnauthorizedException();
+
+    const canReadUsers = await this.rolesService.hasPermission(
+      user.id,
+      'users',
+      'read',
+    );
+
+    if (!canReadUsers) {
+      throw new ForbiddenException('Insufficient permissions');
+    }
+
     return this.profilesService.findAll({ role, department, municipality });
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  async findOne(@Req() req: RequestWithUser, @Param('id') id: string) {
+    const user = req.user;
+    if (!user?.id) throw new UnauthorizedException();
+
+    const canReadUsers = await this.rolesService.hasPermission(
+      user.id,
+      'users',
+      'read',
+    );
+
+    if (!canReadUsers) {
+      throw new ForbiddenException('Insufficient permissions');
+    }
+
     return this.profilesService.findOne(id);
   }
 }

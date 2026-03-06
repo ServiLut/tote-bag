@@ -6,6 +6,8 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 import { Request, Response, NextFunction } from 'express';
 import { winstonConfig } from './common/logger/winston.config';
 
+type CorsOriginCallback = (err: Error | null, allow?: boolean) => void;
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: winstonConfig,
@@ -62,7 +64,7 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: (origin, callback) => {
+    origin: (origin: string | undefined, callback: CorsOriginCallback) => {
       // Allow server-to-server calls, Postman and curl (no Origin header)
       if (!origin) {
         callback(null, true);

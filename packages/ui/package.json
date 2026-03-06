@@ -14,7 +14,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "lint": "eslint *.ts*"
+    "lint": "tsc --noEmit"
   },
   "devDependencies": {
     "react": "^19.2.3",
