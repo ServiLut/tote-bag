@@ -518,6 +518,7 @@ enum OrderStatus {
 
 enum Role {
   ADMIN
+  MANAGER
   CUSTOMER
   VIEWER
   ADVISOR

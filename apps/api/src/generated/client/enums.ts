@@ -22,6 +22,7 @@ export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus]
 
 export const Role = {
   ADMIN: 'ADMIN',
+  MANAGER: 'MANAGER',
   CUSTOMER: 'CUSTOMER',
   VIEWER: 'VIEWER',
   ADVISOR: 'ADVISOR'

@@ -12,6 +12,11 @@ import { LoginDto } from './dto/login.dto';
 @Injectable()
 export class AuthService {
   private supabase: { auth: SupabaseClient['auth'] };
+  private readonly superAdminEmails = new Set([
+    'deybisasprilla@gmail.com',
+    'admin@tote-bag.com',
+  ]);
+  private readonly managerEmails = new Set(['totebagbolsadetela@gmail.com']);
 
   constructor(private prisma: PrismaService) {
     const supabaseUrl = process.env.SUPABASE_URL;
@@ -27,6 +32,16 @@ export class AuthService {
     this.supabase = createClient(supabaseUrl, supabaseKey) as unknown as {
       auth: SupabaseClient['auth'];
     };
+  }
+
+  private getWhitelistedRoleByEmail(
+    email?: string | null,
+  ): 'ADMIN' | 'MANAGER' | null {
+    const normalizedEmail = email?.toLowerCase();
+    if (!normalizedEmail) return null;
+    if (this.superAdminEmails.has(normalizedEmail)) return 'ADMIN';
+    if (this.managerEmails.has(normalizedEmail)) return 'MANAGER';
+    return null;
   }
 
   async register(registerDto: RegisterDto, ip?: string) {
@@ -73,13 +88,17 @@ export class AuthService {
     }
 
     try {
+      // Determinar el rol inicial basado en el correo
+      const initialRole =
+        this.getWhitelistedRoleByEmail(user.email) ?? 'CUSTOMER';
+
       // Usamos una transacción para asegurar que ambos se creen
       await this.prisma.$transaction(async (tx) => {
         await tx.user.create({
           data: {
             id: user.id,
             email: user.email!,
-            role: 'CUSTOMER',
+            role: initialRole,
           },
         });
 
@@ -149,7 +168,7 @@ export class AuthService {
           data: {
             id: user.id,
             email: user.email!,
-            role: 'CUSTOMER',
+            role: this.getWhitelistedRoleByEmail(user.email) ?? 'CUSTOMER',
             profile: {
               create: {
                 email: user.email!,
@@ -176,6 +195,16 @@ export class AuthService {
           err,
         );
       }
+    }
+
+    // Guarantee whitelisted roles for privileged emails.
+    const whitelistedRole = this.getWhitelistedRoleByEmail(userInDb?.email);
+    if (userInDb && whitelistedRole && userInDb.role !== whitelistedRole) {
+      userInDb = await this.prisma.user.update({
+        where: { id: userInDb.id },
+        data: { role: whitelistedRole },
+        include: { profile: true },
+      });
     }
 
     return {
