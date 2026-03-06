@@ -6,21 +6,13 @@ export default function AboutPage() {
   return (
     <>
       {/* Hero Section */}
-      <section className="relative h-[60vh] w-full flex items-center justify-center overflow-hidden">
-        <Image
-          src="/tote_bag_lifestyle.png" // Reusing existing image or placeholder
-          alt="Artesanos trabajando"
-          fill
-          className="object-cover opacity-90"
-          priority
-        />
-        <div className="absolute inset-0 bg-black/40" />
-        <div className="relative z-10 text-center text-white px-4 max-w-4xl mx-auto">
-          <span className="uppercase tracking-[0.2em] text-sm font-medium mb-4 block">Nuestra Historia</span>
-          <h1 className="text-5xl md:text-7xl font-serif font-bold mb-6">
+      <section className="h-[60vh] w-full flex items-center justify-center bg-secondary/10 px-4">
+        <div className="text-center px-4 max-w-4xl mx-auto space-y-6">
+          <span className="uppercase tracking-[0.2em] text-sm font-medium text-secondary mb-4 block">Nuestra Historia</span>
+          <h1 className="text-5xl md:text-7xl font-serif font-bold text-primary mb-6">
             Tejiendo un futuro sostenible.
           </h1>
-          <p className="text-xl md:text-2xl font-light opacity-90 max-w-2xl mx-auto">
+          <p className="text-xl md:text-2xl font-light text-muted max-w-2xl mx-auto">
             Creemos que la moda puede ser bella, funcional y ética al mismo tiempo.
           </p>
         </div>
@@ -41,8 +33,16 @@ export default function AboutPage() {
           </div>
           <div className="relative h-[500px] w-full bg-surface rounded-lg overflow-hidden shadow-xl">
              {/* Placeholder for mission image */}
+             <Image
+                src="/tote_bag_lifestyle.png" // Reusing existing image or placeholder
+                alt="Artesanos trabajando"
+                fill
+                className="object-cover opacity-90"
+                priority
+              />
+             
              <div className="absolute inset-0 bg-secondary/10 flex items-center justify-center">
-                <span className="text-muted font-serif italic text-2xl">Imagen del Taller</span>
+                {/* <span className="text-muted font-serif italic text-2xl">Imagen del Taller</span> */}
              </div>
           </div>
         </div>

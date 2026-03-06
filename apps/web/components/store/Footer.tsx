@@ -22,7 +22,7 @@ export default function Footer() {
           <ul className="space-y-4 text-sm opacity-90">
             <li><Link href="/catalog" className="hover:opacity-100 transition-opacity font-medium">Tienda</Link></li>
             <li><Link href="/about" className="hover:opacity-100 transition-opacity font-medium">Nosotros</Link></li>
-            <li><Link href="#" className="hover:opacity-100 transition-opacity font-medium">Sostenibilidad</Link></li>
+            <li><Link href="/beneficios" className="hover:opacity-100 transition-opacity font-medium">Sostenibilidad</Link></li>
           </ul>
         </div>
         <div>

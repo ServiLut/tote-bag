@@ -56,7 +56,19 @@ export class OrdersService {
             throw new BadRequestException('Cada item debe tener un productId');
           }
 
-          let unitPrice = item.price || 0;
+          const baseProduct = await tx.product.findUnique({
+            where: { id: item.productId },
+            select: { id: true, basePrice: true, minPrice: true },
+          });
+
+          if (!baseProduct) {
+            throw new BadRequestException(
+              `Producto no encontrado: ${item.productId}`,
+            );
+          }
+
+          // Never trust client-side price; start from server-side product price.
+          let unitPrice = Math.max(baseProduct.basePrice, baseProduct.minPrice);
           let totalPrice = unitPrice * item.quantity;
           let configurationJson: Prisma.InputJsonValue | undefined = undefined;
           let pricingJson: Prisma.InputJsonValue | undefined = undefined;
@@ -64,7 +76,11 @@ export class OrdersService {
           if (item.configuration) {
             const scope = isB2B ? PriceRuleScope.B2B : PriceRuleScope.B2C;
             const quote = await this.pricingService.calculateQuote(
-              item.configuration,
+              {
+                ...item.configuration,
+                productId: item.productId,
+                quantity: item.quantity,
+              },
               scope,
             );
             unitPrice = quote.unitPrice;

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import ProductGrid from '@/components/store/ProductGrid';
 import FilterSidebar, { type FilterState } from '@/components/store/FilterSidebar';
 import { Product } from '@/types/product';
@@ -8,6 +9,7 @@ import { ApiResponse } from '@/types/api';
 import { Loader2, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function CatalogPage() {
+  const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [collections, setCollections] = useState<{ id: string, name: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,6 +31,7 @@ export default function CatalogPage() {
   });
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
+  const searchTerm = searchParams.get('search')?.trim() || '';
 
   useEffect(() => {
     const fetchCollections = async () => {
@@ -60,6 +63,7 @@ export default function CatalogPage() {
         if (filters.status.length > 0) params.append('status', filters.status[0]);
         if (filters.minPrice > 0) params.append('minPrice', filters.minPrice.toString());
         if (filters.maxPrice < 1000000) params.append('maxPrice', filters.maxPrice.toString());
+        if (searchTerm) params.append('search', searchTerm);
 
         const res = await fetch(`${API_URL}/catalog/products?${params.toString()}`);
         if (!res.ok) throw new Error('Error al cargar catálogo');
@@ -74,7 +78,7 @@ export default function CatalogPage() {
     };
 
     fetchProducts();
-  }, [API_URL, filters]);
+  }, [API_URL, filters, searchTerm]);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -83,7 +87,7 @@ export default function CatalogPage() {
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filters]);
+  }, [filters, searchTerm]);
 
   const totalPages = Math.ceil(products.length / ITEMS_PER_PAGE);
   
@@ -98,10 +102,16 @@ export default function CatalogPage() {
       <div className="bg-base border-b border-theme py-12 px-4">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-serif font-bold text-primary">Catálogo</h1>
-          <p className="text-muted mt-2 max-w-xl">
-            Explora nuestra colección completa de tote bags sostenibles. 
-            Diseñadas para reducir el uso de plástico sin sacrificar tu estilo.
-          </p>
+          {searchTerm ? (
+            <p className="text-muted mt-2 max-w-xl">
+              Resultados para <span className="text-primary font-semibold">&quot;{searchTerm}&quot;</span>.
+            </p>
+          ) : (
+            <p className="text-muted mt-2 max-w-xl">
+              Explora nuestra colección completa de tote bags sostenibles.
+              Diseñadas para reducir el uso de plástico sin sacrificar tu estilo.
+            </p>
+          )}
         </div>
       </div>
 

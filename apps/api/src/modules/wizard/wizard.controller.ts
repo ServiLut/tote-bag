@@ -11,6 +11,7 @@ import {
 import { WizardService } from './wizard.service';
 import { CreateWizardOptionDto } from './dto/create-wizard-option.dto';
 import { UpdateWizardOptionDto } from './dto/update-wizard-option.dto';
+import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 
 @Controller('wizard-options')
 export class WizardController {
@@ -32,11 +33,13 @@ export class WizardController {
   }
 
   @Post()
+  @RequirePermissions({ resource: 'products', action: 'create' })
   create(@Body() createWizardOptionDto: CreateWizardOptionDto) {
     return this.wizardService.create(createWizardOptionDto);
   }
 
   @Patch(':id')
+  @RequirePermissions({ resource: 'products', action: 'update' })
   update(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() updateWizardOptionDto: UpdateWizardOptionDto,
@@ -45,6 +48,7 @@ export class WizardController {
   }
 
   @Delete(':id')
+  @RequirePermissions({ resource: 'products', action: 'delete' })
   remove(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.wizardService.remove(id);
   }

@@ -23,6 +23,20 @@ export type ProductWithRelations = Prisma.ProductGetPayload<{
   };
 }>;
 
+export interface CatalogSearchSuggestion {
+  id: string;
+  slug: string;
+  name: string;
+  basePrice: number;
+  collection: {
+    name: string;
+  } | null;
+  images: {
+    url: string;
+    alt: string | null;
+  }[];
+}
+
 @Injectable()
 export class CatalogService {
   private readonly CACHE_KEY = 'products_list';
@@ -374,6 +388,7 @@ export class CatalogService {
     isCustomizable?: boolean;
     minPrice?: number;
     maxPrice?: number;
+    search?: string;
   }): Promise<ProductWithRelations[]> {
     const {
       collectionId,
@@ -385,6 +400,7 @@ export class CatalogService {
       isCustomizable,
       minPrice,
       maxPrice,
+      search,
     } = filters;
 
     const where: Prisma.ProductWhereInput = {
@@ -404,6 +420,20 @@ export class CatalogService {
         ...(minPrice !== undefined && { gte: minPrice }),
         ...(maxPrice !== undefined && { lte: maxPrice }),
       };
+    }
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { slug: { contains: search, mode: 'insensitive' } },
+        { tags: { hasSome: [search.toLowerCase(), search] } },
+        {
+          collection: {
+            name: { contains: search, mode: 'insensitive' },
+          },
+        },
+      ];
     }
 
     // Additive Filters (AND): Product must match all provided attribute criteria
@@ -465,6 +495,58 @@ export class CatalogService {
         pricingRules: true,
       },
       orderBy: { createdAt: 'desc' },
+    });
+
+    return products;
+  }
+
+  async searchSuggestions(
+    query: string,
+    limit = 6,
+  ): Promise<CatalogSearchSuggestion[]> {
+    const trimmed = query.trim();
+    if (!trimmed) return [];
+
+    const take = Number.isFinite(limit)
+      ? Math.min(Math.max(Math.trunc(limit), 1), 12)
+      : 6;
+
+    const products = await this.prisma.product.findMany({
+      where: {
+        isActive: true,
+        OR: [
+          { name: { contains: trimmed, mode: 'insensitive' } },
+          { description: { contains: trimmed, mode: 'insensitive' } },
+          { slug: { contains: trimmed, mode: 'insensitive' } },
+          { tags: { hasSome: [trimmed.toLowerCase(), trimmed] } },
+          {
+            collection: {
+              name: { contains: trimmed, mode: 'insensitive' },
+            },
+          },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      take,
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        basePrice: true,
+        collection: {
+          select: {
+            name: true,
+          },
+        },
+        images: {
+          select: {
+            url: true,
+            alt: true,
+          },
+          orderBy: { position: 'asc' },
+          take: 1,
+        },
+      },
     });
 
     return products;

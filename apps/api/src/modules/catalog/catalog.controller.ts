@@ -37,6 +37,7 @@ export class CatalogController {
     @Query('isCustomizable') isCustomizable?: string,
     @Query('minPrice') minPrice?: string,
     @Query('maxPrice') maxPrice?: string,
+    @Query('search') search?: string,
   ) {
     return this.catalogService.findAll({
       collectionId: collection,
@@ -48,7 +49,16 @@ export class CatalogController {
       isCustomizable: isCustomizable === 'true',
       minPrice: minPrice ? Number(minPrice) : undefined,
       maxPrice: maxPrice ? Number(maxPrice) : undefined,
+      search,
     });
+  }
+
+  @Get('search')
+  searchSuggestions(@Query('q') q?: string, @Query('limit') limit?: string) {
+    return this.catalogService.searchSuggestions(
+      q?.trim() || '',
+      limit ? Number(limit) : undefined,
+    );
   }
 
   @Get('slug/:slug')

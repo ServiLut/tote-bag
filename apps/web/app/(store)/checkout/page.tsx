@@ -87,6 +87,18 @@ interface OrderPayload {
     sku: string;
     quantity: number;
     price: number;
+    configuration?: {
+      productId: string;
+      line: string;
+      size: string;
+      material: string;
+      quality?: string;
+      quantity: number;
+      personalizations: {
+        code: string;
+        options: string[];
+      }[];
+    };
   }[];
 }
 
@@ -280,6 +292,55 @@ export default function CheckoutPage() {
     }
   };
 
+  const buildItemConfiguration = (item: (typeof items)[number]) => {
+    const raw = item.configuration as Record<string, unknown> | undefined;
+    if (!raw) return undefined;
+
+    const line = typeof raw.line === 'string' ? raw.line : '';
+    const size = typeof raw.size === 'string' ? raw.size : '';
+    const material = typeof raw.material === 'string' ? raw.material : '';
+    const quality = typeof raw.quality === 'string' ? raw.quality : undefined;
+
+    if (!line || !size || !material) return undefined;
+
+    let personalizations: { code: string; options: string[] }[] = [];
+    if (Array.isArray(raw.personalizations)) {
+      personalizations = raw.personalizations
+        .map((entry) => {
+          const code =
+            entry &&
+            typeof entry === 'object' &&
+            typeof (entry as { code?: unknown }).code === 'string'
+              ? ((entry as { code: string }).code as string)
+              : '';
+          const options =
+            entry &&
+            typeof entry === 'object' &&
+            Array.isArray((entry as { options?: unknown }).options)
+              ? (entry as { options: unknown[] }).options.filter(
+                  (opt): opt is string => typeof opt === 'string',
+                )
+              : [];
+          return code ? { code, options } : null;
+        })
+        .filter((entry): entry is { code: string; options: string[] } => !!entry);
+    } else if (typeof raw.markingType === 'string' && raw.markingType) {
+      personalizations = [
+        { code: raw.markingType, options: [raw.markingType] },
+      ];
+    }
+
+    return {
+      productId: item.product.id,
+      line,
+      size,
+      material,
+      ...(quality ? { quality } : {}),
+      quantity: item.quantity,
+      personalizations,
+    };
+  };
+
   const handleGuestCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.department || !formData.city) {
@@ -305,7 +366,8 @@ export default function CheckoutPage() {
         variantId: item.variant.id,
         sku: item.variant.sku,
         quantity: item.quantity,
-        price: item.product.basePrice,
+        price: item.unitPrice,
+        configuration: buildItemConfiguration(item),
       })),
     };
 
@@ -337,7 +399,8 @@ export default function CheckoutPage() {
         variantId: item.variant.id,
         sku: item.variant.sku,
         quantity: item.quantity,
-        price: item.product.basePrice,
+        price: item.unitPrice,
+        configuration: buildItemConfiguration(item),
       })),
     };
 

@@ -63,6 +63,7 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
   
   const [step, setStep] = useState<Step>(1);
   const [loadingOptions, setLoadingOptions] = useState(true);
+  const [optionsError, setOptionsError] = useState<string | null>(null);
   const [isPricingLoading, setIsPricingLoading] = useState(false);
   
   // Dynamic Options State
@@ -87,13 +88,16 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
   const fileInputRef = useRef<HTMLInputElement>(null);
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
 
-  // 1. Fetch Dynamic Options
   useEffect(() => {
     const fetchOptions = async () => {
       try {
         setLoadingOptions(true);
+        setOptionsError(null);
         const res = await fetch(`${API_URL}/wizard-options/grouped`);
-        if (!res.ok) throw new Error('Error al cargar opciones del configurador');
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.message || `HTTP error! status: ${res.status}`);
+        }
         const resBody = await res.json();
         const data = resBody.data as GroupedOptions;
         setWizardOptions(data);
@@ -107,8 +111,19 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
           markingType: data.TECHNIQUE?.[0]?.code || '',
         }));
       } catch (err) {
-        console.error(err);
-        toast.error('No se pudo inicializar el configurador');
+        console.error('Fetch options error:', err);
+        const isNetworkError = err instanceof TypeError && err.message === 'Failed to fetch';
+        const message = isNetworkError 
+          ? 'Error de conexión: El servidor no está disponible' 
+          : 'No se pudo inicializar el configurador';
+        
+        setOptionsError(message);
+        toast.error(message, {
+          action: {
+            label: 'Reintentar',
+            onClick: () => window.location.reload(),
+          },
+        });
       } finally {
         setLoadingOptions(false);
       }
@@ -116,13 +131,32 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
     fetchOptions();
   }, [API_URL]);
 
+  useEffect(() => {
+    return () => {
+      if (uploadedLogo?.startsWith('blob:')) {
+        URL.revokeObjectURL(uploadedLogo);
+      }
+    };
+  }, [uploadedLogo]);
+
   // 2. Real-time Pricing Logic
   const fetchPricing = useCallback(async () => {
-    if (!selections.size || !selections.material || !wizardOptions) return;
+    if (!selections.size || !selections.material || !wizardOptions || loadingOptions) return;
     
+    // Validate required fields before fetching
+    if (!productId || !selections.line || !selections.size || !selections.material) return;
+
     setIsPricingLoading(true);
     try {
       // We use the quote endpoint which is already designed for this
+      const personalizationOptions = [];
+      if ((selections.designUrl || uploadedLogo) && selections.markingType) {
+        personalizationOptions.push({ 
+          code: selections.markingType, 
+          options: [selections.markingType] 
+        });
+      }
+
       const res = await fetch(`${API_URL}/pricing/quote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -132,24 +166,55 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
           size: selections.size,
           material: selections.material,
           quantity: Number(selections.quantity),
-          personalizations: (selections.designUrl || uploadedLogo) ? [{ code: 'LOGO', options: [selections.markingType] }] : []
+          personalizations: personalizationOptions
         })
       });
       
       if (!res.ok) {
-        const errBody = await res.json();
-        console.error('[Pricing Error Details]:', errBody);
-        throw new Error(errBody.message || 'Pricing error');
+        let errMessage = `Pricing error (${res.status})`;
+        try {
+          const text = await res.text();
+          if (text) {
+            try {
+              const parsed = JSON.parse(text) as {
+                message?: string | string[];
+                error?: string;
+              };
+              if (Array.isArray(parsed.message)) {
+                errMessage = parsed.message.join(', ');
+              } else if (typeof parsed.message === 'string') {
+                errMessage = parsed.message;
+              } else if (typeof parsed.error === 'string') {
+                errMessage = parsed.error;
+              }
+            } catch {
+              errMessage = text;
+            }
+          } else {
+            errMessage = `Error ${res.status}: ${res.statusText}`;
+          }
+        } catch {
+          errMessage = `Error ${res.status}: ${res.statusText}`;
+        }
+        // In Next.js dev, console.error shows an overlay; warn keeps signal without noisy runtime error.
+        console.warn('[Pricing Request Failed]', { status: res.status, message: errMessage });
+        throw new Error(errMessage);
       }
       const body = await res.json();
-      setCalculatedPrice(body.data.unitPrice);
-      setConfigCode(body.data.snapshot.configCode);
+      if (body.data) {
+        setCalculatedPrice(body.data.unitPrice);
+        if (body.data.snapshot) {
+          setConfigCode(body.data.snapshot.configCode);
+        }
+      }
     } catch (err) {
-      console.error(err);
+      const message =
+        err instanceof Error ? err.message : 'No fue posible calcular el precio';
+      console.warn('Pricing fetch failed:', message);
     } finally {
       setIsPricingLoading(false);
     }
-  }, [API_URL, selections, productId, wizardOptions, uploadedLogo]);
+  }, [API_URL, selections, productId, wizardOptions, uploadedLogo, loadingOptions]);
 
   useEffect(() => {
     if (step > 1 && wizardOptions) fetchPricing();
@@ -164,6 +229,10 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
       return;
     }
 
+    if (uploadedLogo?.startsWith('blob:')) {
+      URL.revokeObjectURL(uploadedLogo);
+    }
+
     const previewUrl = URL.createObjectURL(file);
     setUploadedLogo(previewUrl);
     setSelections(prev => ({ ...prev, customFile: file }));
@@ -174,6 +243,21 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
   const prevStep = () => setStep(prev => (prev > 1 ? (prev - 1) as Step : prev));
 
   const handleFinish = () => {
+    if (!wizardOptions) {
+      toast.error('El configurador no esta disponible en este momento');
+      return;
+    }
+
+    if (!configCode || calculatedPrice <= 0) {
+      toast.error('No se pudo confirmar la configuracion. Intenta recalcular.');
+      return;
+    }
+
+    if (!selections.line || !selections.size || !selections.material) {
+      toast.error('Completa la configuracion antes de continuar');
+      return;
+    }
+
     addToCart(
       { 
         id: productId, 
@@ -199,6 +283,26 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
       <div className="w-full max-w-4xl mx-auto bg-surface border border-theme rounded-[2.5rem] flex flex-col items-center justify-center py-40 gap-4 shadow-xl">
         <Loader2 className="w-12 h-12 animate-spin text-primary" />
         <p className="text-sm font-black uppercase tracking-[0.2em] text-muted">Construyendo tu experiencia...</p>
+      </div>
+    );
+  }
+
+  if (optionsError || !wizardOptions) {
+    return (
+      <div className="w-full max-w-4xl mx-auto bg-surface border border-theme rounded-[2.5rem] flex flex-col items-center justify-center py-24 px-8 gap-5 shadow-xl text-center">
+        <AlertCircle className="w-10 h-10 text-accent" />
+        <p className="text-sm font-black uppercase tracking-[0.2em] text-primary">
+          Configurador no disponible
+        </p>
+        <p className="text-sm text-muted max-w-md">
+          {optionsError || 'No fue posible cargar las opciones del configurador.'}
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-6 py-3 bg-primary text-base-color rounded-xl text-[10px] font-black uppercase tracking-widest"
+        >
+          Reintentar
+        </button>
       </div>
     );
   }
@@ -502,7 +606,14 @@ export default function PersonalizerWizard({ productId }: PersonalizerWizardProp
           {step < 5 ? (
             <button
               onClick={nextStep}
-              disabled={isPricingLoading || (step === 2 && !selections.size) || (step === 3 && !selections.material)}
+              disabled={
+                isPricingLoading ||
+                !wizardOptions ||
+                (step === 1 && !selections.line) ||
+                (step === 2 && !selections.size) ||
+                (step === 3 && !selections.material) ||
+                (step === 4 && !configCode)
+              }
               className="flex-1 px-8 py-4 bg-primary text-base-color rounded-2xl font-black uppercase tracking-widest text-[10px] hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-xl shadow-primary/20 disabled:opacity-50"
             >
               {t('continue')} <ChevronRight size={16} />

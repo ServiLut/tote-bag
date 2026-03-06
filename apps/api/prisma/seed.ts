@@ -121,7 +121,6 @@ async function main() {
     { productId: product.id, type: AttributeType.LINE, value: 'ECO', sortOrder: 1, priceModifier: -2000 },
     { productId: product.id, type: AttributeType.LINE, value: 'COMERCIAL', sortOrder: 2, priceModifier: 0 },
     { productId: product.id, type: AttributeType.LINE, value: 'PREMIUM', sortOrder: 3, priceModifier: 12000 },
-    { productId: product.id, type: AttributeType.LINE, value: 'CORPORATIVA', sortOrder: 4, priceModifier: 5000 },
 
     // Materiales
     { productId: product.id, type: AttributeType.MATERIAL, value: 'Lona', sortOrder: 1, priceModifier: 3000 },
