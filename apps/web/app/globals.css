@@ -72,6 +72,18 @@ body {
   --color-base: #1a1a1a; /* Mantiene el fondo oscuro actual */
 }
 
+/* Forzar esquema de color claro en componentes específicos (como el Footer) */
+.force-light {
+  --color-base: #F5F1EB !important;
+  --color-primary: #111111 !important;
+  --color-secondary: #6B7A4A !important;
+  --color-accent: #C46A4A !important;
+  --color-text-main: #111111 !important;
+  --color-text-secondary: #444444 !important;
+  --color-border: #D1D5DB !important;
+  --color-white: #FFFFFF !important;
+}
+
 .text-primary { color: var(--color-primary); }
 .text-secondary { color: var(--color-secondary); }
 .text-accent { color: var(--color-accent); }

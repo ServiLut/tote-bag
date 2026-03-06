@@ -6,14 +6,40 @@ export const metadata: Metadata = {
   description: 'Elige cada detalle de tu producción técnica.',
 };
 
-export default function ConfiguradorPage() {
-  // We use a fixed ID or fetch one. For this implementation, 
-  // we'll assume the primary customizable product has a known ID or handle it via slug in the wizard.
-  const BASE_PRODUCT_ID = "32811cb6-7ca0-41eb-a0ce-20d35c526ec1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4003/api/v1';
+
+async function getBaseProduct() {
+  const slug = 'tote-bag-clasica';
+  try {
+    const res = await fetch(`${API_URL}/catalog/slug/${slug}`, {
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return null;
+    const { data } = await res.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching base product:', error);
+    return null;
+  }
+}
+
+export default async function ConfiguradorPage() {
+  const product = await getBaseProduct();
+
+  if (!product) {
+    return (
+      <div className="bg-base min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-primary mb-2">Configurador no disponible</h1>
+          <p className="text-muted">No se pudo encontrar el producto base.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-base min-h-screen py-12 md:py-20 px-4">
-      <PersonalizerWizard productId={BASE_PRODUCT_ID} />
+      <PersonalizerWizard productId={product.id} />
     </div>
   );
 }

@@ -1,14 +1,44 @@
 import { Metadata } from 'next';
 import PersonalizerWizard from '@/components/store/PersonalizerWizard';
+import { notFound } from 'next/navigation';
 
 export const metadata: Metadata = {
   title: 'Personaliza tu Tote Bag | Configurador Técnico',
   description: 'Diseña tu producción a medida: elige línea, materiales, dimensiones y personaliza con tu logo.',
 };
 
-export default function PersonalizaPage() {
-  // Base product for technical configuration
-  const BASE_PRODUCT_ID = "32811cb6-7ca0-41eb-a0ce-20d35c526ec1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4003/api/v1';
+
+async function getBaseProduct() {
+  const slug = 'tote-bag-clasica';
+  try {
+    const res = await fetch(`${API_URL}/catalog/slug/${slug}`, {
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return null;
+    const { data } = await res.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching base product:', error);
+    return null;
+  }
+}
+
+export default async function PersonalizaPage() {
+  const product = await getBaseProduct();
+
+  if (!product) {
+    // If not found, try using the hardcoded one as fallback or show error
+    // For now, if it's missing, the wizard won't work anyway
+    return (
+      <div className="bg-base min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-primary mb-2">Configurador no disponible</h1>
+          <p className="text-muted">No se pudo encontrar el producto base.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-base min-h-screen">
@@ -19,7 +49,7 @@ export default function PersonalizaPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-0 md:px-4 pb-20">
-        <PersonalizerWizard productId={BASE_PRODUCT_ID} />
+        <PersonalizerWizard productId={product.id} />
       </div>
     </div>
   );

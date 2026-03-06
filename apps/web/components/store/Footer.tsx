@@ -5,10 +5,10 @@ import { COMPANY_INFO } from '@/utils/company-info';
 
 export default function Footer() {
   return (
-    <footer className="bg-primary text-base-color py-16 px-4 border-t border-theme transition-colors duration-300 mt-auto">
+    <footer className="force-light bg-primary text-base-color py-16 px-4 border-t border-theme transition-colors duration-300 mt-auto">
       {/* 
-          Usamos text-base-color (que definiremos en globals.css) 
-          para que siempre sea el color opuesto al fondo principal.
+          Usamos force-light para asegurar que el footer siempre use los colores base
+          (negro para fondo y beige para texto) sin importar si el sitio está en modo oscuro.
       */}
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
         <div className="col-span-1 md:col-span-2 space-y-6">
