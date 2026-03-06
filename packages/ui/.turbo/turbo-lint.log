@@ -1,7 +1,4 @@
 
 > @tote-bag/ui@0.0.0 lint C:\Users\user\Desktop\deybis\tote-bag\packages\ui
-> eslint *.ts*
+> tsc --noEmit
 
-"eslint" no se reconoce como un comando interno o externo,
-programa o archivo por lotes ejecutable.
- ELIFECYCLE  Command failed with exit code 1.

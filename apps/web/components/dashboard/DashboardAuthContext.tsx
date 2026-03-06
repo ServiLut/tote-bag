@@ -2,7 +2,7 @@
 
 import { createContext, useContext } from 'react';
 
-export type DashboardRole = 'ADMIN' | 'ADVISOR' | 'VIEWER' | 'CUSTOMER';
+export type DashboardRole = 'ADMIN' | 'MANAGER' | 'ADVISOR' | 'VIEWER' | 'CUSTOMER';
 
 interface DashboardAuthContextValue {
   role: DashboardRole;

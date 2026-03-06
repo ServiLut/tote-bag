@@ -41,6 +41,7 @@ export default function DashboardLayoutClient({
       <div className="flex h-screen bg-base text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300 dashboard-bg-custom">
         <Sidebar
           user={{ email: userEmail }}
+          role={role}
           handleLogout={handleLogout}
           isMobileMenuOpen={isMobileMenuOpen}
           setIsMobileMenuOpen={setIsMobileMenuOpen}

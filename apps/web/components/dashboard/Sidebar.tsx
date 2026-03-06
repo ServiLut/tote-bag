@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
+import { DashboardRole } from './DashboardAuthContext';
 
 const menuGroups = [
   {
@@ -71,12 +72,13 @@ const menuGroups = [
 
 interface SidebarProps {
   user: { email?: string | null } | null;
+  role: DashboardRole;
   handleLogout: () => Promise<void>;
   isMobileMenuOpen: boolean;
   setIsMobileMenuOpen: (open: boolean) => void;
 }
 
-export default function Sidebar({ user, handleLogout, isMobileMenuOpen, setIsMobileMenuOpen }: SidebarProps) {
+export default function Sidebar({ user, role, handleLogout, isMobileMenuOpen, setIsMobileMenuOpen }: SidebarProps) {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -90,6 +92,13 @@ export default function Sidebar({ user, handleLogout, isMobileMenuOpen, setIsMob
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
+
+  const filteredMenuGroups = menuGroups.filter(group => {
+    if (role === 'MANAGER') {
+      return group.title !== 'FINANZAS' && group.title !== 'SISTEMA';
+    }
+    return true;
+  });
 
   return (
     <>
@@ -120,7 +129,7 @@ export default function Sidebar({ user, handleLogout, isMobileMenuOpen, setIsMob
         </div>
 
         <nav className="flex-1 px-4 py-6 space-y-8 overflow-y-auto custom-scrollbar">
-          {menuGroups.map((group) => (
+          {filteredMenuGroups.map((group) => (
             <div key={group.title} className="space-y-2">
               <h3 className="px-4 text-[10px] font-bold text-muted/50 tracking-widest uppercase">
                 {group.title}
@@ -190,7 +199,7 @@ export default function Sidebar({ user, handleLogout, isMobileMenuOpen, setIsMob
             </button>
           </div>
           <nav className="space-y-6 overflow-y-auto max-h-[70vh] custom-scrollbar pr-2">
-            {menuGroups.map((group) => (
+            {filteredMenuGroups.map((group) => (
               <div key={group.title} className="space-y-3">
                 <h3 className="px-2 text-[10px] font-bold text-muted/50 tracking-widest uppercase">
                   {group.title}

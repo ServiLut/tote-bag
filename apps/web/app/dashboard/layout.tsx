@@ -47,7 +47,7 @@ export default async function DashboardLayout({
     session.access_token,
   );
 
-  if (!role || !['ADMIN', 'ADVISOR', 'VIEWER'].includes(role)) {
+  if (!role || !['ADMIN', 'MANAGER', 'ADVISOR', 'VIEWER'].includes(role)) {
     redirect('/catalog');
   }
 
