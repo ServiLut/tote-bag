@@ -37,6 +37,7 @@ export class InventoryController {
     @Body()
     body: {
       productId: string;
+      variantId: string;
       supplierId: string;
       quantityReceived: number;
       unitCost: number;

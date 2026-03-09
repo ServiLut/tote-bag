@@ -49,7 +49,9 @@ const menuGroups = [
   {
     title: 'COMPRAS Y LOGÍSTICA',
     items: [
-      { name: 'Proveedores', href: '/dashboard/logistics/suppliers', icon: Truck },
+      { name: 'Proveedores de Envío', href: '/dashboard/logistica/proveedores', icon: Truck },
+      { name: 'Gestión de Envíos', href: '/dashboard/logistica/envios', icon: Package },
+      { name: 'Proveedores Insumos', href: '/dashboard/logistics/suppliers', icon: Truck },
       { name: 'Recepción de Lotes', href: '/dashboard/compras/recepcion', icon: Database },
       { name: 'Inventario FIFO', href: '/dashboard/logistics/inventory', icon: Package },
     ]

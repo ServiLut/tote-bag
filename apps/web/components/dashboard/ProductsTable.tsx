@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { Loader2, AlertTriangle, Check, Eye, Pencil, Trash2, X, Package, DollarSign } from 'lucide-react';
+import { Loader2, AlertTriangle, Check, Eye, Pencil, Trash2, X, Package, DollarSign, Database } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import Link from 'next/link';
@@ -436,10 +436,23 @@ export default function ProductsTable() {
                         </thead>
                         <tbody className="divide-y divide-theme/50">
                           {selectedProduct.variants.map((v) => (
-                            <tr key={v.id}>
+                            <tr key={v.id} className="group/row hover:bg-base/30 transition-colors">
                               <td className="px-4 py-2.5 font-mono text-muted text-[10px]">{v.sku}</td>
                               <td className="px-4 py-2.5 font-bold text-primary">{v.color}</td>
-                              <td className="px-4 py-2.5 text-right font-black text-primary">{v.stock}</td>
+                              <td className="px-4 py-2.5 text-right">
+                                <div className="flex items-center justify-end gap-3">
+                                  <span className="font-black text-primary bg-base/50 px-2 py-0.5 rounded-md border border-theme/30" title="Stock actual (solo lectura)">
+                                    {v.stock}
+                                  </span>
+                                  <Link
+                                    href={`/dashboard/compras/recepcion?search=${v.sku}`}
+                                    className="p-1.5 text-muted hover:text-primary hover:bg-primary/10 rounded-lg transition-all opacity-0 group-hover/row:opacity-100"
+                                    title="Ver historial de lotes"
+                                  >
+                                    <Database className="w-3.5 h-3.5" />
+                                  </Link>
+                                </div>
+                              </td>
                             </tr>
                           ))}
                         </tbody>

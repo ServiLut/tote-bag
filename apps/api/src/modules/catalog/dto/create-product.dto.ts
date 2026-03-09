@@ -43,10 +43,6 @@ export class CreateVariantDto {
   @IsString()
   @IsNotEmpty()
   imageUrl: string;
-
-  @IsNumber()
-  @Min(0)
-  stock: number;
 }
 
 export class CreateProductAttributeDto {

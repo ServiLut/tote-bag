@@ -71,14 +71,15 @@ model Collection {
 }
 
 model Variant {
-  id         String      @id @default(uuid()) @map("id")
-  sku        String      @unique @map("sku")
-  color      String      @map("color")
-  imageUrl   String      @map("image_url")
-  stock      Int         @default(0) @map("stock")
-  productId  String      @map("product_id")
-  orderItems OrderItem[]
-  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id              String          @id @default(uuid()) @map("id")
+  sku             String          @unique @map("sku")
+  color           String          @map("color")
+  imageUrl        String          @map("image_url")
+  stock           Int             @default(0) @map("stock")
+  productId       String          @map("product_id")
+  orderItems      OrderItem[]
+  product         Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  purchaseBatches PurchaseBatch[]
 
   @@map("variants")
   @@schema("tote-bag")
@@ -102,8 +103,41 @@ model Order {
   items           OrderItem[]
   statusHistory   OrderStatusHistory[]
   profile         Profile?             @relation(fields: [profileId], references: [id])
+  shipment        Shipment?
 
   @@map("orders")
+  @@schema("tote-bag")
+}
+
+model ShippingProvider {
+  id        String     @id @default(uuid()) @map("id")
+  name      String     @map("name")
+  contact   String?    @map("contact")
+  apiKey    String?    @map("api_key")
+  isActive  Boolean    @default(true) @map("is_active")
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+  shipments Shipment[]
+
+  @@map("shipping_providers")
+  @@schema("tote-bag")
+}
+
+model Shipment {
+  id                String         @id @default(uuid()) @map("id")
+  orderId           String         @unique @map("order_id")
+  providerId        String?        @map("provider_id")
+  trackingNumber    String?        @map("tracking_number")
+  status            ShipmentStatus @default(PENDING) @map("status")
+  estimatedDelivery DateTime?      @map("estimated_delivery")
+  shippedAt         DateTime?      @map("shipped_at")
+  deliveredAt       DateTime?      @map("delivered_at")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+  order             Order          @relation(fields: [orderId], references: [id])
+  provider          ShippingProvider? @relation(fields: [providerId], references: [id])
+
+  @@map("shipments")
   @@schema("tote-bag")
 }
 
@@ -455,6 +489,7 @@ model Supplier {
 model PurchaseBatch {
   id                String                 @id @default(uuid()) @map("id")
   productId         String                 @map("product_id")
+  variantId         String?                @map("variant_id")
   supplierId        String                 @map("supplier_id")
   quantityReceived  Int                    @map("quantity_received")
   quantityRemaining Int                    @map("quantity_remaining")
@@ -466,6 +501,7 @@ model PurchaseBatch {
   transactions      FinancialTransaction[]
   product           Product                @relation(fields: [productId], references: [id])
   supplier          Supplier               @relation(fields: [supplierId], references: [id])
+  variant           Variant?               @relation(fields: [variantId], references: [id])
 
   @@map("purchase_batches")
   @@schema("tote-bag")
@@ -502,6 +538,17 @@ model OpexCategory {
   transactions FinancialTransaction[]
 
   @@map("opex_categories")
+  @@schema("tote-bag")
+}
+
+enum ShipmentStatus {
+  PENDING
+  SHIPPED
+  IN_TRANSIT
+  DELIVERED
+  RETURNED
+  CANCELLED
+
   @@schema("tote-bag")
 }
 

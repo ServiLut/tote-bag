@@ -161,7 +161,6 @@ export class CatalogService {
               data: {
                 color: v.color,
                 imageUrl: v.imageUrl,
-                stock: v.stock,
               },
             });
           } else {
@@ -170,7 +169,6 @@ export class CatalogService {
                 sku: sku,
                 color: v.color,
                 imageUrl: v.imageUrl,
-                stock: v.stock,
                 productId: id,
               },
             });
@@ -328,7 +326,6 @@ export class CatalogService {
                 sku: v.sku,
                 color: v.color,
                 imageUrl: v.imageUrl,
-                stock: v.stock,
               })),
             },
             attributes: {

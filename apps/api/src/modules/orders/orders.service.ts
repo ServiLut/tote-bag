@@ -107,8 +107,26 @@ export class OrdersService {
 
           // 1. Reduce stock for each item
           try {
+            // Priority: variantId from DTO
+            let targetVariantId = item.variantId;
+
+            // Fallback: If no variantId provided, try to find it by SKU
+            if (!targetVariantId && item.sku) {
+              const variant = await tx.variant.findUnique({
+                where: { sku: item.sku },
+                select: { id: true },
+              });
+              targetVariantId = variant?.id;
+            }
+
+            if (!targetVariantId) {
+              throw new BadRequestException(
+                `No se pudo identificar la variante para el producto ${item.sku || item.productId}`,
+              );
+            }
+
             await this.inventoryService.reduceStockFIFO(
-              item.productId,
+              targetVariantId,
               item.quantity,
               finalUserId,
               tx,
@@ -120,7 +138,7 @@ export class OrdersService {
             const errorMessage =
               error instanceof Error ? error.message : 'Unknown error';
             console.warn(
-              `Stock reduction failed for product ${item.productId}: ${errorMessage}`,
+              `Stock reduction failed for item ${item.sku || item.productId}: ${errorMessage}`,
             );
             // If it's "Stock insuficiente", we probably WANT to fail the order to avoid overselling
             if (error instanceof BadRequestException) {

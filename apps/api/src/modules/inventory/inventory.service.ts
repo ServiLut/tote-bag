@@ -17,9 +17,20 @@ export class InventoryService {
       const quantity = data.quantityReceived || 0;
       const productId = data.productId || '';
 
-      if (!quantity || !productId) {
+      if (!quantity || !productId || !data.variantId) {
         throw new BadRequestException(
-          'Faltan datos obligatorios (producto o cantidad)',
+          'Faltan datos obligatorios (producto, variante o cantidad)',
+        );
+      }
+
+      const variant = await tx.variant.findUnique({
+        where: { id: data.variantId },
+        select: { id: true, productId: true },
+      });
+
+      if (!variant || variant.productId !== productId) {
+        throw new BadRequestException(
+          'La variante no existe o no pertenece al producto seleccionado',
         );
       }
 
@@ -47,6 +58,7 @@ export class InventoryService {
       const batch = await tx.purchaseBatch.create({
         data: {
           productId: productId,
+          variantId: data.variantId,
           supplierId: data.supplierId,
           quantityReceived: quantity,
           quantityRemaining: data.status === 'RECIBIDO' ? quantity : 0,
@@ -63,6 +75,16 @@ export class InventoryService {
         },
       });
 
+      // 2.5 Actualizar stock de la variante si es recibido
+      if (data.status === 'RECIBIDO') {
+        await tx.variant.update({
+          where: { id: data.variantId },
+          data: {
+            stock: { increment: quantity },
+          },
+        });
+      }
+
       // 3. Si el estado es 'RECIBIDO', crear automáticamente una FinancialTransaction vinculada
       if (data.status === 'RECIBIDO') {
         await tx.financialTransaction.create({
@@ -70,7 +92,7 @@ export class InventoryService {
             type: TransactionType.EXPENSE,
             category: TransactionCategory.PURCHASE,
             amount: data.totalCost,
-            description: `Compra de lote (Materia Prima): ${batch.product.name} - Prov: ${batch.supplier.name}`,
+            description: `Compra de lote (Materia Prima): Producto ${productId} - Prov: ${data.supplierId}`,
             userId: data.userId,
             purchaseBatchId: batch.id,
             supplierId: data.supplierId,
@@ -150,9 +172,27 @@ export class InventoryService {
           );
         }
 
+        if (!item.variantId) {
+          throw new BadRequestException(
+            `El item ${item.nombre} debe incluir una variante`,
+          );
+        }
+
+        const variant = await tx.variant.findUnique({
+          where: { id: item.variantId },
+          select: { id: true, productId: true },
+        });
+
+        if (!variant || variant.productId !== product.id) {
+          throw new BadRequestException(
+            `La variante seleccionada no pertenece al producto ${product.name}`,
+          );
+        }
+
         const batch = await tx.purchaseBatch.create({
           data: {
             productId: product.id,
+            variantId: item.variantId,
             supplierId: data.supplierId,
             quantityReceived: item.cantidad,
             quantityRemaining: data.status === 'RECIBIDO' ? item.cantidad : 0,
@@ -168,6 +208,16 @@ export class InventoryService {
             supplier: true,
           },
         });
+
+        // Actualizar stock de la variante si es recibido
+        if (data.status === 'RECIBIDO') {
+          await tx.variant.update({
+            where: { id: item.variantId },
+            data: {
+              stock: { increment: item.cantidad },
+            },
+          });
+        }
         batches.push(batch);
       }
 
@@ -224,6 +274,7 @@ export class InventoryService {
           where: {
             status: BatchStatus.IN_STOCK,
             quantityRemaining: { gt: 0 },
+            variantId: { not: null },
           },
           include: { supplier: true },
           orderBy: { createdAt: 'asc' },
@@ -269,6 +320,7 @@ export class InventoryService {
 
   async createBatch(data: {
     productId: string;
+    variantId: string;
     supplierId: string;
     quantityReceived: number;
     unitCost: number;
@@ -276,12 +328,24 @@ export class InventoryService {
     userId: string;
   }) {
     return this.prisma.$transaction(async (tx) => {
+      const variant = await tx.variant.findUnique({
+        where: { id: data.variantId },
+        select: { id: true, productId: true },
+      });
+
+      if (!variant || variant.productId !== data.productId) {
+        throw new BadRequestException(
+          'La variante no existe o no pertenece al producto seleccionado',
+        );
+      }
+
       const totalCost = data.quantityReceived * data.unitCost;
 
       // 1. Create the Purchase Batch
       const batch = await tx.purchaseBatch.create({
         data: {
           productId: data.productId,
+          variantId: data.variantId,
           supplierId: data.supplierId,
           quantityReceived: data.quantityReceived,
           quantityRemaining: data.quantityReceived,
@@ -296,19 +360,27 @@ export class InventoryService {
         },
       });
 
-      // 2. Create the Financial Transaction (EXPENSE)
+      // 2. Keep variant stock in sync with the new FIFO batch
+      await tx.variant.update({
+        where: { id: data.variantId },
+        data: {
+          stock: { increment: data.quantityReceived },
+        },
+      });
+
+      // 3. Create the Financial Transaction (EXPENSE)
       await tx.financialTransaction.create({
         data: {
           type: TransactionType.EXPENSE,
           category: TransactionCategory.PURCHASE,
           amount: totalCost,
-          description: `Compra de lote: ${batch.product.name} (${data.quantityReceived} und) - Prov: ${batch.supplier.name}`,
+          description: `Compra de lote: Producto ${data.productId} (${data.quantityReceived} und) - Prov: ${data.supplierId}`,
           userId: data.userId,
           purchaseBatchId: batch.id,
         },
       });
 
-      // 3. Update Supplier balance (optional but good practice)
+      // 4. Update Supplier balance (optional but good practice)
       await tx.supplier.update({
         where: { id: data.supplierId },
         data: {
@@ -316,7 +388,7 @@ export class InventoryService {
         },
       });
 
-      // 4. Log the action
+      // 5. Log the action
       await tx.auditLog.create({
         data: {
           action: 'CREATE_PURCHASE_BATCH',
@@ -325,6 +397,7 @@ export class InventoryService {
           userId: data.userId,
           payload: {
             productId: data.productId,
+            variantId: data.variantId,
             quantity: data.quantityReceived,
             unitCost: data.unitCost,
           },
@@ -352,16 +425,16 @@ export class InventoryService {
   }
 
   async reduceStockFIFO(
-    productId: string,
+    variantId: string,
     quantityToSell: number,
     userId: string,
     txClient?: Prisma.TransactionClient,
   ) {
     const execute = async (tx: Prisma.TransactionClient) => {
-      // Find active batches for the product, sorted by creation date ASC
+      // Find active batches for the specific variant, sorted by creation date ASC
       const batches = await tx.purchaseBatch.findMany({
         where: {
-          productId,
+          variantId,
           quantityRemaining: { gt: 0 },
           status: BatchStatus.IN_STOCK,
         },
@@ -397,6 +470,14 @@ export class InventoryService {
           },
         });
 
+        // 1.5 Actualizar stock de la variante (decremento)
+        await tx.variant.update({
+          where: { id: variantId },
+          data: {
+            stock: { decrement: amountFromThisBatch },
+          },
+        });
+
         // Log the change
         await tx.auditLog.create({
           data: {
@@ -405,6 +486,7 @@ export class InventoryService {
             entityId: batch.id,
             userId,
             payload: {
+              variantId,
               quantityReduced: amountFromThisBatch,
               previousRemaining: batch.quantityRemaining,
               newRemaining,
@@ -422,7 +504,7 @@ export class InventoryService {
 
       if (remainingToReduce > 0) {
         throw new BadRequestException(
-          `Stock insuficiente para el producto ${productId}. Faltan ${remainingToReduce} unidades.`,
+          `Stock insuficiente para la variante ${variantId}. Faltan ${remainingToReduce} unidades.`,
         );
       }
 
@@ -442,6 +524,7 @@ export class InventoryService {
     const activeBatches = await this.prisma.purchaseBatch.findMany({
       where: {
         productId,
+        variantId: { not: null },
         quantityRemaining: { gt: 0 },
         status: BatchStatus.IN_STOCK,
       },

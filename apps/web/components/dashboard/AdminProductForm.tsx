@@ -26,7 +26,6 @@ export interface VariantData {
   sku: string;
   color: string;
   imageUrl: string;
-  stock: number;
 }
 
 export interface AttributeData {
@@ -109,7 +108,7 @@ const INITIAL_STATE: ProductFormData = {
   status: 'BAJO_PEDIDO',
   images: [],
   variants: [
-    { sku: '', color: '', imageUrl: '', stock: 0 }
+    { sku: '', color: '', imageUrl: '' }
   ],
   attributes: DEFAULT_PRODUCT_ATTRIBUTES,
   pricingRules: DEFAULT_PRICING_RULES,
@@ -402,22 +401,20 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
       variants: prev.variants.filter((_, i) => i !== index),
     }));
   };
-
-  // Variant Logic
-  const addVariant = () => {
-    setFormData((prev) => ({
-      ...prev,
-      variants: [
-        ...prev.variants,
-        {
-          sku: generateSku(prev.name, prev.collection, ''),
-          color: '',
-          imageUrl: '',
-          stock: 0
-        },
-      ],
-    }));
-  };
+// Variant Logic
+const addVariant = () => {
+  setFormData((prev) => ({
+    ...prev,
+    variants: [
+      ...prev.variants,
+      {
+        sku: generateSku(prev.name, prev.collection, ''),
+        color: '',
+        imageUrl: '',
+      },
+    ],
+  }));
+};
 
   const updateVariant = (index: number, field: keyof VariantData, value: string | number) => {
     setFormData((prev) => {
@@ -504,7 +501,6 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
         sku: v.sku,
         color: v.color,
         imageUrl: v.imageUrl,
-        stock: v.stock,
       }));
 
       // 2. Construct Clean Payload (Explicit Destructuring)
@@ -937,7 +933,12 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
         {/* Sección Variantes */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-black text-primary tracking-tight">Inventario y Opciones</h3>
+            <div className="space-y-1">
+              <h3 className="text-lg font-black text-primary tracking-tight">Inventario y Opciones</h3>
+              <p className="text-[10px] font-bold text-muted uppercase tracking-widest">
+                El stock se actualizará automáticamente al registrar ingresos en el módulo de Compras/Recepción.
+              </p>
+            </div>
             <button
               type="button"
               onClick={addVariant}
@@ -992,20 +993,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
                   </div>
                 </div>
 
-                <div className="col-span-6 md:col-span-2 space-y-1">
-                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Stock</label>
-                  <input
-                    type="number"
-                    min="0"
-                    onKeyDown={(e) => { if (['-', 'e', '+'].includes(e.key)) e.preventDefault(); }}
-                    placeholder="0"
-                    value={variant.stock}
-                    onChange={(e) => updateVariant(index, 'stock', parseInt(e.target.value) || 0)}
-                    className="w-full p-2.5 border border-theme rounded-xl bg-surface text-primary text-sm font-black focus:ring-2 focus:ring-primary/20 outline-none"
-                  />
-                </div>
-
-                <div className="col-span-6 md:col-span-2 space-y-1">
+                <div className="col-span-12 md:col-span-4 space-y-1">
                   <label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">SKU</label>
                   <input
                     type="text"

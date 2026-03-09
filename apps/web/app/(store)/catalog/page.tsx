@@ -120,24 +120,24 @@ export default function CatalogPage() {
         {/* Mobile Filter Toggle */}
         <div className="lg:hidden mb-4">
           <button 
-            onClick={() => setShowMobileFilters(!showMobileFilters)}
-            className="flex items-center gap-2 px-4 py-2 border border-theme rounded-sm w-full justify-center text-sm font-bold uppercase tracking-wide bg-base text-primary shadow-sm"
+            onClick={() => setShowMobileFilters(true)}
+            className="flex items-center gap-2 px-4 py-2 border border-theme rounded-sm w-full justify-center text-sm font-bold uppercase tracking-wide bg-base text-primary shadow-sm active:bg-theme/5"
           >
             <SlidersHorizontal className="w-4 h-4" />
-            {showMobileFilters ? 'Ocultar Filtros' : 'Filtrar Productos'}
+            Filtrar Productos
           </button>
         </div>
 
         {/* Filters Sidebar (Desktop + Mobile logic) */}
-        <div className={`${showMobileFilters ? 'block' : 'hidden'} lg:block`}>
-          <Suspense fallback={<div className="w-64 animate-pulse bg-slate-100 h-96 rounded-lg" />}>
-            <FilterSidebar 
-              collections={collections} 
-              filters={filters} 
-              onFilterChange={setFilters} 
-            />
-          </Suspense>
-        </div>
+        <Suspense fallback={<div className="w-64 animate-pulse bg-slate-100 h-96 rounded-lg" />}>
+          <FilterSidebar 
+            collections={collections} 
+            filters={filters} 
+            onFilterChange={setFilters} 
+            isOpen={showMobileFilters}
+            onClose={() => setShowMobileFilters(false)}
+          />
+        </Suspense>
 
         {/* Product Grid */}
         <div className="flex-1">

@@ -20,6 +20,10 @@ export class PurchaseBatchItemDto {
   @IsOptional()
   productId?: string;
 
+  @IsString()
+  @IsOptional()
+  variantId?: string;
+
   @IsNumber()
   cantidad: number;
 
@@ -50,6 +54,10 @@ export class CreatePurchaseBatchDto {
   @IsString()
   @IsOptional()
   productId?: string;
+
+  @IsString()
+  @IsOptional()
+  variantId?: string;
 
   @IsNumber()
   @IsOptional()

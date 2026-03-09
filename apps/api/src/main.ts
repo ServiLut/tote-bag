@@ -7,6 +7,7 @@ import { Request, Response, NextFunction } from 'express';
 import { winstonConfig } from './common/logger/winston.config';
 
 type CorsOriginCallback = (err: Error | null, allow?: boolean) => void;
+const localDevOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -55,11 +56,12 @@ async function bootstrap() {
         .filter(Boolean)
     : [];
   const frontendOrigin = process.env.FRONTEND_URL?.trim();
+  const normalizeOrigin = (origin: string) => origin.replace(/\/+$/, '');
   const allowedOrigins = Array.from(
     new Set([
-      ...defaultOrigins,
-      ...envOrigins,
-      ...(frontendOrigin ? [frontendOrigin] : []),
+      ...defaultOrigins.map(normalizeOrigin),
+      ...envOrigins.map(normalizeOrigin),
+      ...(frontendOrigin ? [normalizeOrigin(frontendOrigin)] : []),
     ]),
   );
 
@@ -71,7 +73,12 @@ async function bootstrap() {
         return;
       }
 
-      if (allowedOrigins.includes(origin)) {
+      const normalizedOrigin = normalizeOrigin(origin);
+
+      if (
+        allowedOrigins.includes(normalizedOrigin) ||
+        localDevOriginPattern.test(normalizedOrigin)
+      ) {
         callback(null, true);
         return;
       }
