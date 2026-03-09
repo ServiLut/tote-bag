@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDashboardAuth } from '@/components/dashboard/DashboardAuthContext';
+import { SettingsTabs } from '@/components/dashboard/SettingsTabs';
 
 interface ProfileData {
   firstName: string;
@@ -190,6 +191,8 @@ export default function SettingsPage() {
           Administra tu información personal y datos de contacto.
         </p>
       </div>
+
+      <SettingsTabs />
 
       <div className="bg-surface rounded-3xl border border-theme shadow-sm overflow-hidden">
         <form onSubmit={handleSubmit} className="p-8 space-y-8">

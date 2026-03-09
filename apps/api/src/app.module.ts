@@ -27,6 +27,7 @@ import { CollectionsModule } from './modules/collections/collections.module';
 import { WizardModule } from './modules/wizard/wizard.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { UsersModule } from './modules/users/users.module';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthMiddleware } from './common/middleware/auth.middleware';
@@ -104,6 +105,7 @@ import cacheConfig from './config/cache.config';
     CollectionsModule,
     WizardModule,
     InventoryModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [
