@@ -66,7 +66,7 @@ export default function BatchReceptionPage() {
   });
 
   // El puerto por defecto en el backend es 4000 segÃƒÆ’Ã‚Âºn apps/api/src/main.ts
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4003/api/v1';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
 
   const fetchData = useCallback(async () => {
     try {

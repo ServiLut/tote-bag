@@ -7,15 +7,18 @@ import {
   Patch,
   Query,
   Req,
+  Res,
   ForbiddenException,
   UnauthorizedException,
+  NotFoundException,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { RolesService } from '../roles/roles.service';
+import { ReceiptPdfService, ExtendedOrder } from './orders.pdf.service';
 
 interface RequestWithUser extends Request {
   user?: {
@@ -29,6 +32,7 @@ export class OrdersController {
   constructor(
     private readonly ordersService: OrdersService,
     private readonly rolesService: RolesService,
+    private readonly receiptPdfService: ReceiptPdfService,
   ) {}
 
   @Post()
@@ -88,5 +92,23 @@ export class OrdersController {
   @RequirePermissions({ resource: 'orders', action: 'update' })
   update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
     return this.ordersService.update(id, updateOrderDto);
+  }
+
+  @Get(':id/receipt')
+  @RequirePermissions({ resource: 'orders', action: 'read' })
+  async generateReceipt(@Param('id') id: string, @Res() res: Response) {
+    const order = await this.ordersService.findOneWithDetails(id);
+    if (!order) throw new NotFoundException('Orden no encontrada');
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=Recibo_Orden_#${order.orderNumber}_ToteBag.pdf`,
+    );
+
+    return this.receiptPdfService.generateSaleReceipt(
+      res,
+      order as unknown as ExtendedOrder,
+    );
   }
 }

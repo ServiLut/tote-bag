@@ -7,6 +7,8 @@ import {
   IsArray,
   IsOptional,
   IsBoolean,
+  Min,
+  IsIn,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ProductConfigInputDto } from '../../../common/dto/product-config.dto';
@@ -93,9 +95,40 @@ export class CreateOrderDto {
   profileId?: string;
 
   @IsOptional()
+  @IsString()
+  shippingProviderId?: string;
+
+  @IsOptional()
+  @IsString()
+  carrier?: string;
+
+  @IsOptional()
   @IsBoolean()
   @Transform(({ value }) => value === 'true' || value === true)
   isB2B: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true' || value === true)
+  isManual: boolean;
+
+  @IsOptional()
+  @IsString()
+  initialStatus?: string;
+
+  @IsOptional()
+  @IsIn(['amount', 'percent'])
+  manualDiscountType?: 'amount' | 'percent';
+
+  @IsOptional()
+  @Transform(({ value }) =>
+    value === '' || value === null || value === undefined
+      ? undefined
+      : Number(value),
+  )
+  @IsNumber()
+  @Min(0)
+  manualDiscountValue?: number;
 
   @IsOptional()
   configurationJson?: any;

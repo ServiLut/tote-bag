@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Body, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Patch, Param, Body } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { Role } from '../../generated/client/enums';
@@ -15,10 +15,7 @@ export class UsersController {
 
   @Patch(':id/role')
   @RequirePermissions({ resource: 'users', action: 'update' })
-  async updateRole(
-    @Param('id') id: string,
-    @Body('role') role: Role,
-  ) {
+  async updateRole(@Param('id') id: string, @Body('role') role: Role) {
     return this.usersService.updateUserRole(id, role);
   }
 }

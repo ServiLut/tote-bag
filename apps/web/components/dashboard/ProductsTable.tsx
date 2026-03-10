@@ -77,7 +77,7 @@ export default function ProductsTable() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const { role } = useDashboardAuth();
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4003/api/v1';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
   const supabase = createClient();
 
   const isReadOnly = role === 'ADVISOR';

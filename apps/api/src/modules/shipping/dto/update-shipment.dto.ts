@@ -22,4 +22,13 @@ export class UpdateShipmentDto {
   @IsString()
   @IsOptional()
   providerId?: string;
+
+  @ApiProperty({ example: 1.5, required: false })
+  @IsOptional()
+  weight?: number;
+
+  @ApiProperty({ example: '30x20x10 cm', required: false })
+  @IsString()
+  @IsOptional()
+  dimensions?: string;
 }

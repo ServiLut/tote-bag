@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: 'Elige cada detalle de tu producción técnica.',
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4003/api/v1';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
 
 async function getBaseProduct() {
   const slug = 'tote-bag-clasica';

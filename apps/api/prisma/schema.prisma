@@ -98,6 +98,7 @@ model Order {
   trackingNumber  String?              @map("tracking_number")
   carrier         String?              @map("carrier")
   isB2B           Boolean              @default(false) @map("is_b2b")
+  isManual        Boolean              @default(false) @map("is_manual")
   createdAt       DateTime             @default(now()) @map("created_at")
   profileId       String?              @map("profile_id")
   items           OrderItem[]
@@ -129,6 +130,8 @@ model Shipment {
   providerId        String?        @map("provider_id")
   trackingNumber    String?        @map("tracking_number")
   status            ShipmentStatus @default(PENDING) @map("status")
+  weight            Float?         @map("weight")
+  dimensions        String?        @map("dimensions")
   estimatedDelivery DateTime?      @map("estimated_delivery")
   shippedAt         DateTime?      @map("shipped_at")
   deliveredAt       DateTime?      @map("delivered_at")
@@ -543,6 +546,7 @@ model OpexCategory {
 
 enum ShipmentStatus {
   PENDING
+  READY_TO_SHIP
   SHIPPED
   IN_TRANSIT
   DELIVERED

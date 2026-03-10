@@ -66,7 +66,11 @@ export class RolesService {
 
     // Map legacy enum role to seeded RBAC role names.
     const mappedRoleName =
-      role === 'ADVISOR' ? 'manager' : role === 'CUSTOMER' ? 'customer' : null;
+      role === 'MANAGER' || role === 'ADVISOR'
+        ? 'manager'
+        : role === 'CUSTOMER'
+          ? 'customer'
+          : null;
 
     if (mappedRoleName) {
       const mappedRole = await this.prisma.roleModel.findUnique({

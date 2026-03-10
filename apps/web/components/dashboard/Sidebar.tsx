@@ -36,7 +36,7 @@ const menuGroups = [
       { name: 'Productos', href: '/dashboard/products', icon: Package },
       { name: 'Clientes', href: '/dashboard/customers', icon: Users },
       { name: 'Corporativo (B2B)', href: '/dashboard/b2b', icon: Briefcase },
-    ]
+    ],
   },
   {
     title: 'FINANZAS',
@@ -44,32 +44,32 @@ const menuGroups = [
       { name: 'Dashboard Financiero', href: '/dashboard/finanzas', icon: BarChart3 },
       { name: 'Flujo de Caja', href: '/dashboard/finance/cash-flow', icon: DollarSign },
       { name: 'Gastos Operativos', href: '/dashboard/finance/opex', icon: Receipt },
-    ]
+    ],
   },
   {
-    title: 'COMPRAS Y LOGÍSTICA',
+    title: 'COMPRAS Y LOGISTICA',
     items: [
-      { name: 'Proveedores de Envío', href: '/dashboard/logistica/proveedores', icon: Truck },
-      { name: 'Gestión de Envíos', href: '/dashboard/logistica/envios', icon: Package },
+      { name: 'Proveedores de Envio', href: '/dashboard/logistica/proveedores', icon: Truck },
+      { name: 'Gestion de Envios', href: '/dashboard/logistica/envios', icon: Package },
       { name: 'Proveedores Insumos', href: '/dashboard/logistics/suppliers', icon: Truck },
-      { name: 'Recepción de Lotes', href: '/dashboard/compras/recepcion', icon: Database },
+      { name: 'Recepcion de Lotes', href: '/dashboard/compras/recepcion', icon: Database },
       { name: 'Inventario FIFO', href: '/dashboard/logistics/inventory', icon: Package },
-    ]
+    ],
   },
   {
     title: 'ESTRATEGIA',
     items: [
-      { name: 'Precios y Márgenes', href: '/dashboard/strategy/pricing', icon: Calculator },
-    ]
+      { name: 'Precios y Margenes', href: '/dashboard/strategy/pricing', icon: Calculator },
+    ],
   },
   {
     title: 'SISTEMA',
     items: [
       { name: 'Reportes Contables', href: '/dashboard/reportes', icon: FileText },
-      { name: 'Auditoría', href: '/dashboard/audit', icon: ShieldCheck },
-      { name: 'Configuración', href: '/dashboard/settings', icon: Settings },
-    ]
-  }
+      { name: 'Auditoria', href: '/dashboard/audit', icon: ShieldCheck },
+      { name: 'Configuracion', href: '/dashboard/settings', icon: Settings },
+    ],
+  },
 ];
 
 interface SidebarProps {
@@ -80,7 +80,13 @@ interface SidebarProps {
   setIsMobileMenuOpen: (open: boolean) => void;
 }
 
-export default function Sidebar({ user, role, handleLogout, isMobileMenuOpen, setIsMobileMenuOpen }: SidebarProps) {
+export default function Sidebar({
+  user,
+  role,
+  handleLogout,
+  isMobileMenuOpen,
+  setIsMobileMenuOpen,
+}: SidebarProps) {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -95,21 +101,21 @@ export default function Sidebar({ user, role, handleLogout, isMobileMenuOpen, se
     setMounted(true);
   }, []);
 
-  const filteredMenuGroups = menuGroups.filter(group => {
+  const filteredMenuGroups = menuGroups.filter((group) => {
     if (role === 'MANAGER') {
       return group.title !== 'FINANZAS' && group.title !== 'SISTEMA';
     }
+
     return true;
   });
 
   return (
     <>
-      {/* Sidebar Desktop */}
-      <aside className="hidden w-72 border-r border-theme bg-surface md:flex flex-col fixed inset-y-0 z-20 transition-colors duration-300">
-        <div className="p-8 border-b border-theme">
+      <aside className="fixed inset-y-0 z-20 hidden w-72 flex-col border-r border-theme bg-surface transition-colors duration-300 md:flex">
+        <div className="border-b border-theme p-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-9 w-9 bg-primary rounded-xl flex items-center justify-center text-base-color font-black text-xl shadow-sm transition-transform hover:rotate-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-xl font-black text-base-color shadow-sm transition-transform hover:rotate-3">
                 T
               </div>
               <h1 className="text-xl font-black tracking-tight text-primary">Tote Bag Co.</h1>
@@ -117,41 +123,42 @@ export default function Sidebar({ user, role, handleLogout, isMobileMenuOpen, se
             {mounted && (
               <button
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="p-2.5 rounded-xl bg-base border border-theme text-muted hover:text-primary hover:border-primary/30 transition-all active:scale-95 shadow-sm"
-                title="Cambiar Modo"
+                className="rounded-xl border border-theme bg-base p-2.5 text-muted shadow-sm transition-all hover:border-primary/30 hover:text-primary active:scale-95"
+                title="Cambiar modo"
               >
-                {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
             )}
           </div>
           <div className="mt-4 flex items-center gap-2">
             <span className="h-px w-4 bg-accent/40"></span>
-            <p className="text-[10px] text-muted font-bold tracking-[0.2em] uppercase">Panel Admin</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted">Panel Admin</p>
           </div>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-8 overflow-y-auto custom-scrollbar">
+        <nav className="custom-scrollbar flex-1 space-y-8 overflow-y-auto px-4 py-6">
           {filteredMenuGroups.map((group) => (
             <div key={group.title} className="space-y-2">
-              <h3 className="px-4 text-[10px] font-bold text-muted/50 tracking-widest uppercase">
+              <h3 className="px-4 text-[10px] font-bold uppercase tracking-widest text-muted/50">
                 {group.title}
               </h3>
               <div className="space-y-1">
                 {group.items.map((item) => {
                   const isActive = isItemActive(item.href);
                   const Icon = item.icon;
+
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`group flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
+                      className={`group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-bold transition-all duration-200 ${
                         isActive
                           ? 'bg-primary text-base-color shadow-md shadow-primary/10'
                           : 'text-muted hover:bg-primary/5 hover:text-primary'
                       }`}
                     >
                       <Icon
-                        className={`w-4 h-4 transition-colors ${
+                        className={`h-4 w-4 transition-colors ${
                           isActive ? 'text-base-color' : 'text-muted group-hover:text-primary'
                         }`}
                       />
@@ -164,46 +171,50 @@ export default function Sidebar({ user, role, handleLogout, isMobileMenuOpen, se
           ))}
         </nav>
 
-        <div className="p-4 border-t border-theme bg-base/30">
-          <div className="flex items-center justify-between p-3 rounded-xl border border-theme bg-surface group shadow-sm">
+        <div className="border-t border-theme bg-base/30 p-4">
+          <div className="group flex items-center justify-between rounded-xl border border-theme bg-surface p-3 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-base-color">
-                <UserCircle className="w-6 h-6" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-base-color">
+                <UserCircle className="h-6 w-6" />
               </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-sm font-bold text-primary truncate">
+              <div className="flex min-w-0 flex-col">
+                <span className="truncate text-sm font-bold text-primary">
                   {user?.email?.split('@')[0] || 'Admin'}
                 </span>
-                <span className="text-[10px] text-muted truncate font-medium">{user?.email}</span>
+                <span className="truncate text-[10px] font-medium text-muted">{user?.email}</span>
               </div>
             </div>
             <button
               onClick={handleLogout}
-              className="text-muted hover:text-red-600 dark:hover:text-red-400 transition-colors p-2 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg"
-              title="Cerrar Sesión"
+              className="rounded-lg p-2 text-muted transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+              title="Cerrar sesion"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="h-4 w-4" />
             </button>
           </div>
         </div>
       </aside>
 
-      {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-50 bg-base p-6 animate-in slide-in-from-top-10 fade-in duration-200">
-          <div className="flex justify-between items-center mb-10">
+        <div className="fixed inset-0 z-50 bg-base p-6 animate-in slide-in-from-top-10 fade-in duration-200 md:hidden">
+          <div className="mb-10 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center text-base-color font-black">T</div>
-              <span className="font-black text-xl tracking-tight text-primary">Menú</span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary font-black text-base-color">
+                T
+              </div>
+              <span className="text-xl font-black tracking-tight text-primary">Menu</span>
             </div>
-            <button onClick={() => setIsMobileMenuOpen(false)} className="p-2.5 bg-surface border border-theme rounded-xl text-muted active:scale-90 transition-transform">
-              <X className="w-6 h-6" />
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="rounded-xl border border-theme bg-surface p-2.5 text-muted transition-transform active:scale-90"
+            >
+              <X className="h-6 w-6" />
             </button>
           </div>
-          <nav className="space-y-6 overflow-y-auto max-h-[70vh] custom-scrollbar pr-2">
+          <nav className="custom-scrollbar max-h-[70vh] space-y-6 overflow-y-auto pr-2">
             {filteredMenuGroups.map((group) => (
               <div key={group.title} className="space-y-3">
-                <h3 className="px-2 text-[10px] font-bold text-muted/50 tracking-widest uppercase">
+                <h3 className="px-2 text-[10px] font-bold uppercase tracking-widest text-muted/50">
                   {group.title}
                 </h3>
                 <div className="space-y-2">
@@ -212,26 +223,30 @@ export default function Sidebar({ user, role, handleLogout, isMobileMenuOpen, se
                       key={item.href}
                       href={item.href}
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl text-base font-bold transition-all ${
+                      className={`flex items-center gap-4 rounded-2xl px-5 py-3.5 text-base font-bold transition-all ${
                         isItemActive(item.href)
-                          ? 'bg-primary text-base-color shadow-xl shadow-primary/10 scale-[1.02]'
-                          : 'bg-surface border border-theme text-muted'
+                          ? 'scale-[1.02] bg-primary text-base-color shadow-xl shadow-primary/10'
+                          : 'border border-theme bg-surface text-muted'
                       }`}
                     >
-                      <item.icon className={`w-5 h-5 ${isItemActive(item.href) ? 'text-base-color' : 'text-muted'}`} />
+                      <item.icon
+                        className={`h-5 w-5 ${isItemActive(item.href) ? 'text-base-color' : 'text-muted'}`}
+                      />
                       {item.name}
                     </Link>
                   ))}
                 </div>
               </div>
             ))}
-            <div className="pt-6 mt-6 border-t border-theme">
+            <div className="mt-6 border-t border-theme pt-6">
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-lg font-bold text-red-600 bg-red-50 dark:bg-red-950/20 active:scale-95 transition-all"
+                className="w-full rounded-2xl bg-red-50 px-5 py-4 text-lg font-bold text-red-600 transition-all active:scale-95 dark:bg-red-950/20"
               >
-                <LogOut className="w-6 h-6" />
-                Cerrar Sesión
+                <span className="flex items-center gap-4">
+                  <LogOut className="h-6 w-6" />
+                  Cerrar sesion
+                </span>
               </button>
             </div>
           </nav>

@@ -60,8 +60,13 @@ export class ProfilesController {
       'users',
       'read',
     );
+    const canCreateOrders = await this.rolesService.hasPermission(
+      user.id,
+      'orders',
+      'create',
+    );
 
-    if (!canReadUsers) {
+    if (!canReadUsers && !canCreateOrders) {
       throw new ForbiddenException('Insufficient permissions');
     }
 

@@ -43,7 +43,7 @@ export default async function DashboardLayout({
   }
 
   const role = await getCurrentRole(
-    process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4003/api/v1',
+    process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1',
     session.access_token,
   );
 

@@ -3,7 +3,11 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateShippingProviderDto } from './dto/create-provider.dto';
 import { UpdateShippingProviderDto } from './dto/update-provider.dto';
 import { UpdateShipmentDto } from './dto/update-shipment.dto';
-import { ShipmentStatus, OrderStatus } from '../../../generated/client/client';
+import {
+  ShipmentStatus,
+  OrderStatus,
+  Prisma,
+} from '../../generated/client/client';
 
 @Injectable()
 export class ShippingService {
@@ -49,23 +53,46 @@ export class ShippingService {
   // --- Shipments Management ---
 
   async getPendingShipments() {
-    // Órdenes pagadas que no tienen envío o envío está PENDING
+    // Órdenes pagadas que no tienen envío o envío está PENDING o READY_TO_SHIP
     return this.prisma.order.findMany({
       where: {
         status: OrderStatus.PAGADA,
         OR: [
           { shipment: null },
-          { shipment: { status: ShipmentStatus.PENDING } }
-        ]
+          {
+            shipment: {
+              status: {
+                in: [ShipmentStatus.PENDING, ShipmentStatus.READY_TO_SHIP],
+              },
+            },
+          },
+        ],
       },
       include: {
         shipment: {
-          include: { provider: true }
+          include: { provider: true },
         },
-        profile: true
+        profile: true,
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
+  }
+
+  async getOrderAndShipment(orderId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { profile: true },
+    });
+
+    if (!order) throw new NotFoundException('Orden no encontrada');
+
+    const shipment = await this.prisma.shipment.findUnique({
+      where: { orderId },
+    });
+
+    if (!shipment) throw new NotFoundException('Envío no encontrado');
+
+    return { order, shipment };
   }
 
   async getShipments() {
@@ -74,7 +101,7 @@ export class ShippingService {
         order: true,
         provider: true,
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
   }
 
@@ -96,11 +123,17 @@ export class ShippingService {
       });
     } else {
       // Actualizar envío
-      const data: any = { ...dto };
-      if (dto.status === ShipmentStatus.SHIPPED && shipment.status !== ShipmentStatus.SHIPPED) {
+      const data: Prisma.ShipmentUpdateInput = { ...dto };
+      if (
+        dto.status === ShipmentStatus.SHIPPED &&
+        shipment.status !== ShipmentStatus.SHIPPED
+      ) {
         data.shippedAt = new Date();
       }
-      if (dto.status === ShipmentStatus.DELIVERED && shipment.status !== ShipmentStatus.DELIVERED) {
+      if (
+        dto.status === ShipmentStatus.DELIVERED &&
+        shipment.status !== ShipmentStatus.DELIVERED
+      ) {
         data.deliveredAt = new Date();
       }
 
@@ -112,7 +145,10 @@ export class ShippingService {
 
     // Si el estado cambia a SHIPPED, enviar notificación (placeholder)
     if (dto.status === ShipmentStatus.SHIPPED) {
-      await this.sendShippingNotification(orderId, shipment.trackingNumber);
+      await this.sendShippingNotification(
+        orderId,
+        shipment.trackingNumber ?? undefined,
+      );
     }
 
     // Actualizar también el estado de la orden si corresponde
@@ -131,7 +167,10 @@ export class ShippingService {
     return shipment;
   }
 
-  private async sendShippingNotification(orderId: string, trackingNumber?: string) {
+  private async sendShippingNotification(
+    orderId: string,
+    trackingNumber?: string,
+  ) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
       include: { profile: true },
@@ -142,8 +181,10 @@ export class ShippingService {
     const email = order.customerEmail || order.profile?.email;
     if (!email) return;
 
-    this.logger.log(`[NOTIFICACIÓN] Enviando correo a ${email} para orden #${order.orderNumber}. Guía: ${trackingNumber || 'N/A'}`);
-    
+    this.logger.log(
+      `[NOTIFICACIÓN] Enviando correo a ${email} para orden #${order.orderNumber}. Guía: ${trackingNumber || 'N/A'}`,
+    );
+
     // TODO: Integrar con servicio de correo real (SendGrid, AWS SES, etc.)
     // console.log(`Hola, tu pedido #${order.orderNumber} ha sido enviado. Tracking: ${trackingNumber}`);
   }

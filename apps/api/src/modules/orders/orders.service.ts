@@ -23,9 +23,19 @@ export class OrdersService {
       firstName,
       lastName,
       department,
+      shippingProviderId,
+      carrier,
+      manualDiscountType,
+      manualDiscountValue,
       isB2B,
+      isManual,
+      initialStatus,
       ...orderData
     } = createOrderDto;
+
+    // Determine initial status
+    const statusToSet =
+      (initialStatus as OrderStatus) || OrderStatus.PENDIENTE_PAGO;
 
     // Ensure we have a valid user for audit/transactions
     let finalUserId = userId;
@@ -158,29 +168,67 @@ export class OrdersService {
         }),
       );
 
-      // Calculate total amount
-      const totalAmount = processedItems.reduce(
+      const subtotalAmount = processedItems.reduce(
         (sum, item) => sum + item.totalPrice,
         0,
       );
 
+      const normalizedDiscountValue = Math.max(0, manualDiscountValue ?? 0);
+      const discountAmount =
+        manualDiscountType === 'percent'
+          ? (subtotalAmount * normalizedDiscountValue) / 100
+          : normalizedDiscountValue;
+      const totalAmount = Math.max(0, subtotalAmount - discountAmount);
+
+      let provider: {
+        id: string;
+        name: string;
+      } | null = null;
+
+      if (shippingProviderId) {
+        provider = await tx.shippingProvider.findUnique({
+          where: { id: shippingProviderId },
+          select: { id: true, name: true },
+        });
+
+        if (!provider) {
+          throw new BadRequestException('Transportadora no encontrada');
+        }
+      }
+
       // Prepare shipping address as JSON-compatible object
+      const resolvedCarrier = provider?.name ?? carrier ?? null;
+
       const shippingAddressJson = {
         ...(shippingAddress as object),
         firstName,
         lastName,
         department,
+        shippingProviderId: provider?.id ?? null,
+        shippingProviderName: resolvedCarrier,
+        manualDiscount:
+          normalizedDiscountValue > 0
+            ? {
+                type: manualDiscountType ?? 'amount',
+                value: normalizedDiscountValue,
+                amount: discountAmount,
+                subtotal: subtotalAmount,
+              }
+            : null,
       } as Prisma.InputJsonValue;
 
       return tx.order.create({
         data: {
           ...orderData,
+          carrier: resolvedCarrier,
           isB2B: !!isB2B,
+          isManual: !!isManual,
+          status: statusToSet,
           shippingAddress: shippingAddressJson,
           totalAmount,
           statusHistory: {
             create: {
-              status: 'PENDIENTE_PAGO',
+              status: statusToSet,
             },
           },
           items: {
@@ -195,8 +243,15 @@ export class OrdersService {
               pricingJson: item.pricingJson,
             })),
           },
+          ...(provider && {
+            shipment: {
+              create: {
+                providerId: provider.id,
+              },
+            },
+          }),
         },
-        include: { items: true, statusHistory: true },
+        include: { items: true, statusHistory: true, shipment: true },
       });
     });
   }
@@ -293,6 +348,20 @@ export class OrdersService {
         },
         statusHistory: {
           orderBy: { createdAt: 'desc' },
+        },
+        profile: true,
+      },
+    });
+  }
+
+  async findOneWithDetails(id: string) {
+    return this.prisma.order.findUnique({
+      where: { id },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
         },
         profile: true,
       },

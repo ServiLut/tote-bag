@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: 'Diseña tu producción a medida: elige línea, materiales, dimensiones y personaliza con tu logo.',
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4003/api/v1';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
 
 async function getBaseProduct() {
   const slug = 'tote-bag-clasica';

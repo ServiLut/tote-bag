@@ -57,11 +57,11 @@ export class UsersService {
 
       // Buscar el RoleModel correspondiente
       const roleModel = await tx.roleModel.findFirst({
-        where: { 
+        where: {
           name: {
             equals: roleName,
-            mode: 'insensitive'
-          }
+            mode: 'insensitive',
+          },
         },
       });
 

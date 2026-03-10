@@ -6,6 +6,7 @@ import {
   Request,
   Query,
   Param,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { InventoryService } from './inventory.service';
 import { FinanceService } from './finance.service';
@@ -30,6 +31,18 @@ export class InventoryController {
   @Get('movements')
   async getInventoryMovements() {
     return this.inventoryService.getInventoryMovements();
+  }
+
+  @Get('products/:productId/average-cost')
+  async getAverageCost(
+    @Param('productId', new ParseUUIDPipe({ version: '4' })) productId: string,
+  ) {
+    const averageCost = await this.inventoryService.getAverageCost(productId);
+
+    return {
+      productId,
+      averageCost,
+    };
   }
 
   @Post('batch')

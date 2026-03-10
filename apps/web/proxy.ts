@@ -74,7 +74,7 @@ export async function proxy(request: NextRequest) {
 
     if (session?.access_token) {
       const roleFromApi = await getRoleFromApi(
-        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4003/api/v1',
+        process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1',
         session.access_token,
       );
       role = roleFromApi ?? 'CUSTOMER';
