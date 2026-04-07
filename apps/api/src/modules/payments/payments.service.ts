@@ -10,6 +10,7 @@ import {
   OrderStatus,
   TransactionCategory,
   TransactionType,
+  WebhookProcessingStatus,
 } from '../../generated/client/enums';
 import { StorageService } from '../../common/storage/storage.service';
 import {
@@ -84,6 +85,18 @@ export class PaymentsService {
     const raw = `${base}${event.timestamp}${secret}`;
 
     return createHash('sha256').update(raw).digest('hex').toUpperCase();
+  }
+
+  private buildWebhookEventKey(event: WompiEvent) {
+    const transaction = event.data.transaction;
+
+    return [
+      'wompi',
+      event.event,
+      transaction.id,
+      transaction.reference,
+      transaction.status,
+    ].join(':');
   }
 
   validateWompiEventSignature(event: WompiEvent, checksumHeader?: string) {
@@ -186,6 +199,7 @@ export class PaymentsService {
     const checksum = this.validateWompiEventSignature(event, checksumHeader);
     const { event: eventType, data } = event;
     const { id: transactionId, reference, status, currency } = data.transaction;
+    const webhookEventKey = this.buildWebhookEventKey(event);
 
     if (currency !== 'COP') {
       throw new BadRequestException(
@@ -194,11 +208,14 @@ export class PaymentsService {
     }
 
     const existingWebhook = await this.prisma.webhookEvent.findUnique({
-      where: { eventId: checksum },
-      select: { id: true, processed: true },
+      where: { eventId: webhookEventKey },
+      select: { id: true, processed: true, status: true },
     });
 
-    if (existingWebhook?.processed) {
+    if (
+      existingWebhook?.processed ||
+      existingWebhook?.status === WebhookProcessingStatus.APPLIED
+    ) {
       return { success: true, duplicate: true };
     }
 
@@ -223,25 +240,49 @@ export class PaymentsService {
           data: {
             eventType,
             payload: event as unknown as Prisma.InputJsonValue,
+            signatureChecksum: checksum,
+            transactionId,
+            referenceId: reference,
+            status: WebhookProcessingStatus.RECEIVED,
+            receivedAt: new Date(),
+            attempts: {
+              increment: 1,
+            },
             error: null,
           },
         })
       : await this.prisma.webhookEvent.create({
           data: {
             provider: 'wompi',
-            eventId: checksum,
+            eventId: webhookEventKey,
             eventType,
             payload: event as unknown as Prisma.InputJsonValue,
+            signatureChecksum: checksum,
+            transactionId,
+            referenceId: reference,
+            status: WebhookProcessingStatus.RECEIVED,
+            attempts: 1,
           },
         });
 
     try {
+      await this.prisma.webhookEvent.update({
+        where: { id: webhookRecord.id },
+        data: {
+          status: WebhookProcessingStatus.VALIDATED,
+          validatedAt: new Date(),
+          error: null,
+        },
+      });
+
       if (!newStatus) {
         await this.prisma.webhookEvent.update({
           where: { id: webhookRecord.id },
           data: {
+            status: WebhookProcessingStatus.APPLIED,
             processed: true,
             processedAt: new Date(),
+            appliedAt: new Date(),
           },
         });
 
@@ -263,8 +304,10 @@ export class PaymentsService {
           await tx.webhookEvent.update({
             where: { id: webhookRecord.id },
             data: {
-              processed: true,
-              processedAt: new Date(),
+              status: WebhookProcessingStatus.FAILED,
+              processed: false,
+              processedAt: null,
+              failedAt: new Date(),
               error: `Order not found for transaction ${transactionId}`,
             },
           });
@@ -287,6 +330,9 @@ export class PaymentsService {
                     statusHistory: {
                       create: {
                         status: newStatus,
+                        oldStatus: existingOrder.status,
+                        newStatus,
+                        userId: null,
                       },
                     },
                   },
@@ -328,8 +374,10 @@ export class PaymentsService {
         await tx.webhookEvent.update({
           where: { id: webhookRecord.id },
           data: {
+            status: WebhookProcessingStatus.APPLIED,
             processed: true,
             processedAt: new Date(),
+            appliedAt: new Date(),
             error: null,
           },
         });
@@ -340,10 +388,66 @@ export class PaymentsService {
       await this.prisma.webhookEvent.update({
         where: { id: webhookRecord.id },
         data: {
+          processed: false,
+          processedAt: null,
+          status: WebhookProcessingStatus.FAILED,
+          failedAt: new Date(),
           error: error instanceof Error ? error.message : 'Unknown error',
         },
       });
       throw error;
     }
+  }
+
+  async retryFailedWebhookEvents(limit = 10) {
+    const maxAttempts = Math.max(
+      1,
+      this.configService.get<number>('WEBHOOK_RETRY_MAX_ATTEMPTS') ?? 5,
+    );
+
+    const failedEvents = await this.prisma.webhookEvent.findMany({
+      where: {
+        provider: 'wompi',
+        status: WebhookProcessingStatus.FAILED,
+        attempts: {
+          lt: maxAttempts,
+        },
+      },
+      orderBy: [
+        { failedAt: 'asc' },
+        { createdAt: 'asc' },
+      ],
+      take: limit,
+      select: {
+        id: true,
+        payload: true,
+        signatureChecksum: true,
+      },
+    });
+
+    if (failedEvents.length === 0) {
+      return { retriedCount: 0, recoveredCount: 0 };
+    }
+
+    let recoveredCount = 0;
+
+    for (const failedEvent of failedEvents) {
+      const payload = failedEvent.payload as unknown as WompiEvent;
+
+      try {
+        await this.handleWompiEvent(
+          payload,
+          failedEvent.signatureChecksum ?? undefined,
+        );
+        recoveredCount += 1;
+      } catch {
+        // The retry lifecycle is already persisted inside handleWompiEvent.
+      }
+    }
+
+    return {
+      retriedCount: failedEvents.length,
+      recoveredCount,
+    };
   }
 }

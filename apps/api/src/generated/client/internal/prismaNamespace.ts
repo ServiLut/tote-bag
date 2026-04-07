@@ -392,6 +392,7 @@ export const ModelName = {
   ShippingProvider: 'ShippingProvider',
   Shipment: 'Shipment',
   OrderStatusHistory: 'OrderStatusHistory',
+  OrderIdempotencyKey: 'OrderIdempotencyKey',
   OrderItem: 'OrderItem',
   User: 'User',
   RoleModel: 'RoleModel',
@@ -435,7 +436,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "product" | "productImage" | "collection" | "variant" | "order" | "shippingProvider" | "shipment" | "orderStatusHistory" | "orderItem" | "user" | "roleModel" | "permission" | "rolePermission" | "userRole" | "webhookEvent" | "pqrsTicket" | "profile" | "department" | "municipality" | "b2BQuote" | "auditLog" | "address" | "productAttribute" | "personalizationOption" | "personalizationRule" | "personalizationRequest" | "pricingRule" | "b2BQuoteItem" | "wizardOption" | "supplier" | "purchaseBatch" | "financialTransaction" | "payrollWorker" | "payrollShift" | "payrollBillingStatement" | "opexCategory"
+    modelProps: "product" | "productImage" | "collection" | "variant" | "order" | "shippingProvider" | "shipment" | "orderStatusHistory" | "orderIdempotencyKey" | "orderItem" | "user" | "roleModel" | "permission" | "rolePermission" | "userRole" | "webhookEvent" | "pqrsTicket" | "profile" | "department" | "municipality" | "b2BQuote" | "auditLog" | "address" | "productAttribute" | "personalizationOption" | "personalizationRule" | "personalizationRequest" | "pricingRule" | "b2BQuoteItem" | "wizardOption" | "supplier" | "purchaseBatch" | "financialTransaction" | "payrollWorker" | "payrollShift" | "payrollBillingStatement" | "opexCategory"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1028,6 +1029,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.OrderStatusHistoryCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.OrderStatusHistoryCountAggregateOutputType> | number
+        }
+      }
+    }
+    OrderIdempotencyKey: {
+      payload: Prisma.$OrderIdempotencyKeyPayload<ExtArgs>
+      fields: Prisma.OrderIdempotencyKeyFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.OrderIdempotencyKeyFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrderIdempotencyKeyPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.OrderIdempotencyKeyFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrderIdempotencyKeyPayload>
+        }
+        findFirst: {
+          args: Prisma.OrderIdempotencyKeyFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrderIdempotencyKeyPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.OrderIdempotencyKeyFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrderIdempotencyKeyPayload>
+        }
+        findMany: {
+          args: Prisma.OrderIdempotencyKeyFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrderIdempotencyKeyPayload>[]
+        }
+        create: {
+          args: Prisma.OrderIdempotencyKeyCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrderIdempotencyKeyPayload>
+        }
+        createMany: {
+          args: Prisma.OrderIdempotencyKeyCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.OrderIdempotencyKeyCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrderIdempotencyKeyPayload>[]
+        }
+        delete: {
+          args: Prisma.OrderIdempotencyKeyDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrderIdempotencyKeyPayload>
+        }
+        update: {
+          args: Prisma.OrderIdempotencyKeyUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrderIdempotencyKeyPayload>
+        }
+        deleteMany: {
+          args: Prisma.OrderIdempotencyKeyDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.OrderIdempotencyKeyUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.OrderIdempotencyKeyUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrderIdempotencyKeyPayload>[]
+        }
+        upsert: {
+          args: Prisma.OrderIdempotencyKeyUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrderIdempotencyKeyPayload>
+        }
+        aggregate: {
+          args: Prisma.OrderIdempotencyKeyAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateOrderIdempotencyKey>
+        }
+        groupBy: {
+          args: Prisma.OrderIdempotencyKeyGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.OrderIdempotencyKeyGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.OrderIdempotencyKeyCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.OrderIdempotencyKeyCountAggregateOutputType> | number
         }
       }
     }
@@ -3262,10 +3337,25 @@ export const OrderStatusHistoryScalarFieldEnum = {
   id: 'id',
   orderId: 'orderId',
   status: 'status',
+  oldStatus: 'oldStatus',
+  newStatus: 'newStatus',
+  userId: 'userId',
   createdAt: 'createdAt'
 } as const
 
 export type OrderStatusHistoryScalarFieldEnum = (typeof OrderStatusHistoryScalarFieldEnum)[keyof typeof OrderStatusHistoryScalarFieldEnum]
+
+
+export const OrderIdempotencyKeyScalarFieldEnum = {
+  id: 'id',
+  idempotencyKey: 'idempotencyKey',
+  requestHash: 'requestHash',
+  orderId: 'orderId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type OrderIdempotencyKeyScalarFieldEnum = (typeof OrderIdempotencyKeyScalarFieldEnum)[keyof typeof OrderIdempotencyKeyScalarFieldEnum]
 
 
 export const OrderItemScalarFieldEnum = {
@@ -3345,6 +3435,15 @@ export const WebhookEventScalarFieldEnum = {
   processed: 'processed',
   processedAt: 'processedAt',
   error: 'error',
+  status: 'status',
+  attempts: 'attempts',
+  signatureChecksum: 'signatureChecksum',
+  transactionId: 'transactionId',
+  referenceId: 'referenceId',
+  receivedAt: 'receivedAt',
+  validatedAt: 'validatedAt',
+  appliedAt: 'appliedAt',
+  failedAt: 'failedAt',
   createdAt: 'createdAt'
 } as const
 
@@ -3939,6 +4038,20 @@ export type ListEnumRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaM
 
 
 /**
+ * Reference to a field of type 'WebhookProcessingStatus'
+ */
+export type EnumWebhookProcessingStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'WebhookProcessingStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'WebhookProcessingStatus[]'
+ */
+export type ListEnumWebhookProcessingStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'WebhookProcessingStatus[]'>
+    
+
+
+/**
  * Reference to a field of type 'PqrsType'
  */
 export type EnumPqrsTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PqrsType'>
@@ -4222,6 +4335,7 @@ export type GlobalOmitConfig = {
   shippingProvider?: Prisma.ShippingProviderOmit
   shipment?: Prisma.ShipmentOmit
   orderStatusHistory?: Prisma.OrderStatusHistoryOmit
+  orderIdempotencyKey?: Prisma.OrderIdempotencyKeyOmit
   orderItem?: Prisma.OrderItemOmit
   user?: Prisma.UserOmit
   roleModel?: Prisma.RoleModelOmit

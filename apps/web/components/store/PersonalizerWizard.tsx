@@ -21,6 +21,8 @@ import { toast } from 'sonner';
 import Image from 'next/image';
 import { apiFetch } from '@/utils/api';
 import { createClient } from '@/utils/supabase/client';
+import { ApiResponse } from '@/types/api';
+import { Product } from '@/types/product';
 
 interface WizardOption {
   id: string;
@@ -46,6 +48,23 @@ interface PersonalizerWizardProps {
 }
 
 type Step = 1 | 2 | 3 | 4 | 5;
+type ProductResolution = {
+  id: string;
+  variant: {
+    id: string;
+    sku: string;
+    color: string;
+    imageUrl: string;
+    stock: number;
+  };
+};
+
+class ProductResolutionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ProductResolutionError';
+  }
+}
 
 const getLineIcon = (code: string) => {
   if (code.includes('ECO')) return Leaf;
@@ -63,6 +82,25 @@ const isOtherTechniqueOption = (option: WizardOption) => {
 const getDimensionVisualLabel = (option: WizardOption) => {
   const candidate = option.description?.trim();
   return candidate ? candidate : option.name;
+};
+
+const resolveProductSelection = (product?: Partial<Product> | null): ProductResolution | null => {
+  const variant = product?.variants?.[0];
+
+  if (!product?.id || !variant?.id || !variant?.sku) {
+    return null;
+  }
+
+  return {
+    id: product.id,
+    variant: {
+      id: variant.id,
+      sku: variant.sku,
+      color: variant.color || 'Base',
+      imageUrl: variant.imageUrl || '',
+      stock: variant.stock || 0,
+    },
+  };
 };
 
 export default function PersonalizerWizard({
@@ -118,39 +156,49 @@ export default function PersonalizerWizard({
 
     const fetchBaseProduct = async () => {
       try {
-        const res = await apiFetch(`/catalog/slug/${productSlug}`);
-        if (!res.ok) {
+        const res = await apiFetch(`/catalog/slug/${encodeURIComponent(productSlug)}`);
+
+        if (res.ok) {
+          const body = (await res.json()) as ApiResponse<Product>;
+          const resolvedProduct = resolveProductSelection(body.data);
+
+          if (!resolvedProduct) {
+            throw new ProductResolutionError('Missing product id');
+          }
+
+          setResolvedProductId(resolvedProduct.id);
+          setResolvedVariant(resolvedProduct.variant);
+          return;
+        }
+
+        if (res.status !== 404) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
 
-        const body = (await res.json()) as {
-          data?: {
-            id?: string;
-            variants?: Array<{
-              id?: string;
-              sku?: string;
-              color?: string;
-              imageUrl?: string;
-              stock?: number;
-            }>;
-          };
-        };
-        const nextProductId = body.data?.id;
-        const nextVariant = body.data?.variants?.[0];
-
-        if (!nextProductId || !nextVariant?.id || !nextVariant?.sku) {
-          throw new Error('Missing product id');
+        const fallbackRes = await apiFetch('/catalog/products');
+        if (!fallbackRes.ok) {
+          throw new Error(`HTTP error! status: ${fallbackRes.status}`);
         }
 
-        setResolvedProductId(nextProductId);
-        setResolvedVariant({
-          id: nextVariant.id,
-          sku: nextVariant.sku,
-          color: nextVariant.color || 'Base',
-          imageUrl: nextVariant.imageUrl || '',
-          stock: nextVariant.stock || 0,
-        });
+        const fallbackBody = (await fallbackRes.json()) as ApiResponse<Product[]>;
+        const fallbackProduct = fallbackBody.data.find((product) =>
+          product.slug === productSlug || Boolean(resolveProductSelection(product)),
+        );
+        const resolvedFallback = resolveProductSelection(fallbackProduct);
+
+        if (!resolvedFallback) {
+          setOptionsError(t('wizard_unavailable'));
+          return;
+        }
+
+        setResolvedProductId(resolvedFallback.id);
+        setResolvedVariant(resolvedFallback.variant);
       } catch (error) {
+        if (error instanceof ProductResolutionError) {
+          setOptionsError(t('wizard_unavailable'));
+          return;
+        }
+
         console.error('Fetch base product error:', error);
         setOptionsError(t('wizard_unavailable'));
       }
@@ -974,4 +1022,3 @@ export default function PersonalizerWizard({
     </div>
   );
 }
-

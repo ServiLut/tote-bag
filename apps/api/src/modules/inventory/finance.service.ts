@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import PDFDocument from 'pdfkit';
@@ -732,6 +733,69 @@ export class FinanceService {
 
     try {
       return await this.prisma.supplier.create({ data: payload });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const metaTarget = error.meta?.target;
+        const target = Array.isArray(metaTarget)
+          ? metaTarget.join(', ')
+          : typeof metaTarget === 'string'
+            ? metaTarget
+            : '';
+
+        if (target.includes('nit')) {
+          throw new ConflictException('Ya existe un proveedor con ese NIT');
+        }
+      }
+
+      throw error;
+    }
+  }
+
+  async updateSupplier(
+    id: string,
+    data: {
+      name?: string;
+      nit?: string;
+      contact?: string;
+      phone?: string;
+      email?: string;
+    },
+  ) {
+    const existingSupplier = await this.prisma.supplier.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!existingSupplier) {
+      throw new NotFoundException('Proveedor no encontrado');
+    }
+
+    const payload = {
+      ...(data.name !== undefined ? { name: data.name.trim() } : {}),
+      ...(data.nit !== undefined ? { nit: data.nit.trim() } : {}),
+      ...(data.contact !== undefined
+        ? { contact: data.contact.trim() || null }
+        : {}),
+      ...(data.phone !== undefined ? { phone: data.phone.trim() || null } : {}),
+      ...(data.email !== undefined ? { email: data.email.trim() || null } : {}),
+    };
+
+    if ('name' in payload && !payload.name) {
+      throw new BadRequestException('El nombre es obligatorio');
+    }
+
+    if ('nit' in payload && !payload.nit) {
+      throw new BadRequestException('El NIT es obligatorio');
+    }
+
+    try {
+      return await this.prisma.supplier.update({
+        where: { id },
+        data: payload,
+      });
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&

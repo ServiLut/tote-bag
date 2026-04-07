@@ -4,6 +4,7 @@ import {
   Get,
   Header,
   Post,
+  Patch,
   Body,
   Request,
   Query,
@@ -19,6 +20,7 @@ import {
   CreateOpexDto,
   CreateOpexCategoryDto,
   CreateSupplierPaymentDto,
+  UpdateSupplierDto,
 } from './dto/finance-inputs.dto';
 import { RolesService } from '../roles/roles.service';
 
@@ -163,6 +165,16 @@ export class InventoryController {
   ) {
     await this.ensureAdmin(req.user?.id);
     return this.financeService.createSupplier(body);
+  }
+
+  @Patch('suppliers/:id')
+  async updateSupplier(
+    @Param('id') id: string,
+    @Body() body: UpdateSupplierDto,
+    @Request() req: RequestWithUser,
+  ) {
+    await this.ensureAdmin(req.user?.id);
+    return this.financeService.updateSupplier(id, body);
   }
 
   @Get('suppliers/:id')

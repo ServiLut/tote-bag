@@ -5,6 +5,7 @@ import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import {
   ChevronRight,
+  Edit,
   Factory,
   Loader2,
   Phone,
@@ -55,6 +56,7 @@ export default function SuppliersPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null);
+  const [editingSupplierId, setEditingSupplierId] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [createForm, setCreateForm] = useState({
@@ -212,8 +214,9 @@ export default function SuppliersPage() {
     setError(null);
     try {
       const headers = await getAuthHeaders();
-      const res = await apiFetch('/inventory/suppliers', {
-        method: 'POST',
+      const isEditing = Boolean(editingSupplierId);
+      const res = await apiFetch(isEditing ? `/inventory/suppliers/${editingSupplierId}` : '/inventory/suppliers', {
+        method: isEditing ? 'PATCH' : 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...headers,
@@ -229,22 +232,54 @@ export default function SuppliersPage() {
 
       if (!res.ok) {
         setError(
-          await resolveApiErrorMessage(res, 'No fue posible crear el proveedor.', {
+          await resolveApiErrorMessage(
+            res,
+            `No fue posible ${isEditing ? 'actualizar' : 'crear'} el proveedor.`,
+            {
             redirectOnUnauthorized: true,
-          }),
+            },
+          ),
         );
         return;
       }
 
       setIsCreateModalOpen(false);
+      setEditingSupplierId(null);
       setCreateForm({ name: '', nit: '', contact: '', phone: '', email: '' });
       await fetchSuppliers();
     } catch (error) {
       console.error(error);
-      setError('No fue posible crear el proveedor.');
+      setError(`No fue posible ${editingSupplierId ? 'actualizar' : 'crear'} el proveedor.`);
     } finally {
       setSubmittingSupplier(false);
     }
+  };
+
+  const handleCreateSupplier = () => {
+    setEditingSupplierId(null);
+    setCreateForm({ name: '', nit: '', contact: '', phone: '', email: '' });
+    setError(null);
+    setIsCreateModalOpen(true);
+  };
+
+  const handleEditSupplier = (supplier: Supplier) => {
+    setEditingSupplierId(supplier.id);
+    setSelectedSupplierId(supplier.id);
+    setCreateForm({
+      name: supplier.name,
+      nit: supplier.nit,
+      contact: supplier.contact || '',
+      phone: supplier.phone || '',
+      email: supplier.email || '',
+    });
+    setError(null);
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCloseSupplierModal = () => {
+    setIsCreateModalOpen(false);
+    setEditingSupplierId(null);
+    setCreateForm({ name: '', nit: '', contact: '', phone: '', email: '' });
   };
 
   const openPaymentModal = () => {
@@ -338,7 +373,7 @@ export default function SuppliersPage() {
         </div>
         <button
           type="button"
-          onClick={() => setIsCreateModalOpen(true)}
+          onClick={handleCreateSupplier}
           className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-black text-base-color shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95"
         >
           <Plus className="h-4 w-4" />
@@ -434,7 +469,18 @@ export default function SuppliersPage() {
                             {formatCurrency(supplier.currentBalance || 0)}
                           </td>
                           <td className="px-8 py-5 text-right">
-                            <div className="flex justify-end">
+                            <div className="flex justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleEditSupplier(supplier);
+                                }}
+                                className="rounded-lg border border-theme bg-base p-2 transition-all hover:bg-primary hover:text-base-color"
+                                aria-label={`Editar proveedor ${supplier.name}`}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
                               <div className="rounded-lg border border-theme bg-base p-2 transition-all hover:bg-primary hover:text-base-color">
                                 <ChevronRight className="h-4 w-4" />
                               </div>
@@ -543,16 +589,22 @@ export default function SuppliersPage() {
       </div>
 
       {isCreateModalOpen ? (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-primary/20 p-4 backdrop-blur-sm" onClick={() => setIsCreateModalOpen(false)}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-primary/20 p-4 backdrop-blur-sm" onClick={handleCloseSupplierModal}>
           <form onSubmit={handleSubmit} className="w-full max-w-lg space-y-4 rounded-3xl border border-theme bg-surface p-8 shadow-2xl" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-start justify-between gap-4">
               <div>
-              <h2 className="text-2xl font-black text-primary">Nuevo proveedor de insumos</h2>
-              <p className="mt-1 text-sm text-muted">Registro basico para compras y recepcion de lotes.</p>
+              <h2 className="text-2xl font-black text-primary">
+                {editingSupplierId ? 'Editar proveedor de insumos' : 'Nuevo proveedor de insumos'}
+              </h2>
+              <p className="mt-1 text-sm text-muted">
+                {editingSupplierId
+                  ? 'Actualiza la informacion del proveedor registrado.'
+                  : 'Registro basico para compras y recepcion de lotes.'}
+              </p>
               </div>
               <button
                 type="button"
-                onClick={() => setIsCreateModalOpen(false)}
+                onClick={handleCloseSupplierModal}
                 className="rounded-xl p-2 text-muted transition-colors hover:bg-base hover:text-primary"
                 aria-label="Cerrar modal"
               >
@@ -597,7 +649,7 @@ export default function SuppliersPage() {
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => setIsCreateModalOpen(false)}
+                onClick={handleCloseSupplierModal}
                 className="flex-1 rounded-2xl border border-theme bg-base py-3 font-bold text-muted"
               >
                 Cancelar
@@ -607,7 +659,13 @@ export default function SuppliersPage() {
                 disabled={submittingSupplier}
                 className="flex-1 rounded-2xl bg-primary py-3 font-black text-base-color"
               >
-                {submittingSupplier ? <Loader2 className="mx-auto h-4 w-4 animate-spin" /> : 'Guardar proveedor'}
+                {submittingSupplier ? (
+                  <Loader2 className="mx-auto h-4 w-4 animate-spin" />
+                ) : editingSupplierId ? (
+                  'Guardar cambios'
+                ) : (
+                  'Guardar proveedor'
+                )}
               </button>
             </div>
           </form>

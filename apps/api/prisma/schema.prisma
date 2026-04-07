@@ -106,6 +106,7 @@ model Order {
   createdAt         DateTime             @default(now()) @map("created_at")
   profileId         String?              @map("profile_id")
   items             OrderItem[]
+  idempotencyRecord OrderIdempotencyKey?
   statusHistory     OrderStatusHistory[]
   profile           Profile?             @relation(fields: [profileId], references: [id])
   shipment          Shipment?
@@ -152,10 +153,26 @@ model OrderStatusHistory {
   id        String      @id @default(uuid()) @map("id")
   orderId   String      @map("order_id")
   status    OrderStatus @map("status")
+  oldStatus OrderStatus? @map("old_status")
+  newStatus OrderStatus? @map("new_status")
+  userId    String?      @map("user_id")
   createdAt DateTime    @default(now()) @map("created_at")
   order     Order       @relation(fields: [orderId], references: [id])
 
   @@map("order_status_history")
+  @@schema("tote-bag")
+}
+
+model OrderIdempotencyKey {
+  id             String   @id @default(uuid()) @map("id")
+  idempotencyKey String   @unique @map("idempotency_key")
+  requestHash    String?  @map("request_hash")
+  orderId        String?  @unique @map("order_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  order          Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@map("order_idempotency_keys")
   @@schema("tote-bag")
 }
 
@@ -247,15 +264,24 @@ model UserRole {
 }
 
 model WebhookEvent {
-  id          String    @id @default(uuid()) @map("id")
-  provider    String    @map("provider")
-  eventId     String    @unique @map("event_id")
-  eventType   String    @map("event_type")
-  payload     Json      @map("payload")
-  processed   Boolean   @default(false) @map("processed")
-  processedAt DateTime? @map("processed_at")
-  error       String?   @map("error")
-  createdAt   DateTime  @default(now()) @map("created_at")
+  id                 String                  @id @default(uuid()) @map("id")
+  provider           String                  @map("provider")
+  eventId            String                  @unique @map("event_id")
+  eventType          String                  @map("event_type")
+  payload            Json                    @map("payload")
+  processed          Boolean                 @default(false) @map("processed")
+  processedAt        DateTime?               @map("processed_at")
+  error              String?                 @map("error")
+  status             WebhookProcessingStatus @default(RECEIVED) @map("status")
+  attempts           Int                     @default(0) @map("attempts")
+  signatureChecksum  String?                 @map("signature_checksum")
+  transactionId      String?                 @map("transaction_id")
+  referenceId        String?                 @map("reference_id")
+  receivedAt         DateTime                @default(now()) @map("received_at")
+  validatedAt        DateTime?               @map("validated_at")
+  appliedAt          DateTime?               @map("applied_at")
+  failedAt           DateTime?               @map("failed_at")
+  createdAt          DateTime                @default(now()) @map("created_at")
 
   @@unique([provider, eventId])
   @@map("webhook_events")
@@ -867,6 +893,15 @@ enum PayrollWorkerType {
   CONTRACTOR
   TEMPORARY
   OTHER
+
+  @@schema("tote-bag")
+}
+
+enum WebhookProcessingStatus {
+  RECEIVED
+  VALIDATED
+  APPLIED
+  FAILED
 
   @@schema("tote-bag")
 }

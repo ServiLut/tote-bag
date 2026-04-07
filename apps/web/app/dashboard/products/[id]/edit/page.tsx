@@ -6,7 +6,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ApiResponse } from '@/types/api';
-import { getApiBaseUrl } from '@/lib/api-config';
+import { apiFetch } from '@/utils/api';
 
 interface Product {
   id: string;
@@ -31,14 +31,12 @@ export default function EditProductPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const API_URL = getApiBaseUrl();
-
   useEffect(() => {
     if (!id) return;
 
     const fetchProduct = async () => {
       try {
-        const res = await fetch(`${API_URL}/catalog/${id}`);
+        const res = await apiFetch(`/catalog/${id}`);
         if (!res.ok) throw new Error('No se pudo cargar el producto');
         const responseBody: ApiResponse<Product> = await res.json();
         setProductData(responseBody.data);
@@ -51,7 +49,7 @@ export default function EditProductPage() {
     };
 
     fetchProduct();
-  }, [id, API_URL]);
+  }, [id]);
 
   if (loading) {
     return (

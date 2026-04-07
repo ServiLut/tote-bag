@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
@@ -15,6 +19,7 @@ import {
   ConfigurationSnapshot,
   normalizeSnapshotPersonalizations,
 } from '../../common/interfaces/snapshots.interface';
+import { generateDeterministicHash } from '../../common/utils/hash.util';
 
 type InventoryConsumptionReduction = {
   batchId: string;
@@ -97,7 +102,74 @@ export class OrdersService {
     };
   }
 
-  async create(createOrderDto: CreateOrderDto, userId?: string) {
+  private buildOrderRequestHash(createOrderDto: CreateOrderDto, userId?: string) {
+    return generateDeterministicHash({
+      createOrderDto,
+      userId: userId ?? null,
+    });
+  }
+
+  private async findOrderByIdempotencyKey(idempotencyKey: string) {
+    const record = await this.prisma.orderIdempotencyKey.findUnique({
+      where: { idempotencyKey },
+      select: { orderId: true, requestHash: true },
+    });
+
+    if (!record) {
+      return null;
+    }
+
+    const order = record.orderId
+      ? await this.prisma.order.findUnique({
+          where: { id: record.orderId },
+          include: {
+            items: true,
+            statusHistory: { orderBy: { createdAt: 'desc' } },
+            shipment: true,
+          },
+        })
+      : null;
+
+    return {
+      ...record,
+      order,
+    };
+  }
+
+  async create(
+    createOrderDto: CreateOrderDto,
+    userId?: string,
+    options?: { idempotencyKey?: string },
+  ) {
+    const idempotencyKey = options?.idempotencyKey?.trim();
+    const requestHash = idempotencyKey
+      ? this.buildOrderRequestHash(createOrderDto, userId)
+      : null;
+
+    if (idempotencyKey && requestHash) {
+      const existingOrderRequest =
+        await this.findOrderByIdempotencyKey(idempotencyKey);
+
+      if (existingOrderRequest) {
+        if (
+          existingOrderRequest.requestHash &&
+          existingOrderRequest.requestHash !== requestHash
+        ) {
+          throw new ConflictException(
+            'La llave de idempotencia ya fue usada con un payload diferente.',
+          );
+        }
+
+        if (existingOrderRequest.order) {
+          return existingOrderRequest.order;
+        }
+
+        throw new ConflictException(
+          'Ya existe una solicitud en proceso con esta llave de idempotencia.',
+        );
+      }
+    }
+
     const {
       items,
       shippingAddress,
@@ -127,7 +199,17 @@ export class OrdersService {
       sourceToSet === OrderSource.MANUAL ||
       statusToSet !== OrderStatus.PENDIENTE_PAGO;
 
-    return this.prisma.$transaction(async (tx) => {
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        if (idempotencyKey && requestHash) {
+          await tx.orderIdempotencyKey.create({
+            data: {
+              idempotencyKey,
+              requestHash,
+            },
+          });
+        }
+
       let resolvedProfileId = orderData.profileId;
 
       // Ecommerce orders created by an authenticated customer should stay linked
@@ -314,55 +396,93 @@ export class OrdersService {
             : null,
       } as Prisma.InputJsonValue;
 
-      const createdOrder = await tx.order.create({
-        data: {
-          ...orderData,
-          profileId: resolvedProfileId,
-          carrier: resolvedCarrier,
-          isB2B: !!isB2B,
-          isManual: !!isManual,
-          source: sourceToSet,
-          status: statusToSet,
-          shippingAddress: shippingAddressJson,
-          totalAmount,
-          statusHistory: {
-            create: {
-              status: statusToSet,
-            },
-          },
-          items: {
-            create: processedItems.map((item) => ({
-              productId: item.productId,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              totalPrice: item.totalPrice,
-              sku: item.sku,
-              imageUrl: item.imageUrl,
-              variantId: item.variantId,
-              configurationJson: item.configurationJson,
-              pricingJson: item.pricingJson,
-            })),
-          },
-          ...((provider || resolvedCarrier) && {
-            shipment: {
+        const createdOrder = await tx.order.create({
+          data: {
+            ...orderData,
+            profileId: resolvedProfileId,
+            carrier: resolvedCarrier,
+            isB2B: !!isB2B,
+            isManual: !!isManual,
+            source: sourceToSet,
+            status: statusToSet,
+            shippingAddress: shippingAddressJson,
+            totalAmount,
+            statusHistory: {
               create: {
-                ...(provider ? { providerId: provider.id } : {}),
+                status: statusToSet,
+                oldStatus: null,
+                newStatus: statusToSet,
+                userId: userId ?? null,
               },
             },
-          }),
-        },
-        include: { items: true, statusHistory: true, shipment: true },
-      });
+            items: {
+              create: processedItems.map((item) => ({
+                productId: item.productId,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+                totalPrice: item.totalPrice,
+                sku: item.sku,
+                imageUrl: item.imageUrl,
+                variantId: item.variantId,
+                configurationJson: item.configurationJson,
+                pricingJson: item.pricingJson,
+              })),
+            },
+            ...((provider || resolvedCarrier) && {
+              shipment: {
+                create: {
+                  ...(provider ? { providerId: provider.id } : {}),
+                },
+              },
+            }),
+          },
+          include: { items: true, statusHistory: true, shipment: true },
+        });
 
-      if (statusToSet !== OrderStatus.PENDIENTE_PAGO) {
-        await this.shippingSyncService.ensureShipmentForOrder(
-          createdOrder.id,
-          tx,
+        if (idempotencyKey) {
+          await tx.orderIdempotencyKey.update({
+            where: { idempotencyKey },
+            data: {
+              orderId: createdOrder.id,
+            },
+          });
+        }
+
+        if (statusToSet !== OrderStatus.PENDIENTE_PAGO) {
+          await this.shippingSyncService.ensureShipmentForOrder(
+            createdOrder.id,
+            tx,
+          );
+        }
+
+        return createdOrder;
+      });
+    } catch (error) {
+      if (
+        idempotencyKey &&
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const existingOrderRequest =
+          await this.findOrderByIdempotencyKey(idempotencyKey);
+
+        if (existingOrderRequest?.requestHash !== requestHash) {
+          throw new ConflictException(
+            'La llave de idempotencia ya fue usada con un payload diferente.',
+          );
+        }
+
+        if (existingOrderRequest?.order) {
+          return existingOrderRequest.order;
+        }
+
+        throw new ConflictException(
+          'Ya existe una solicitud en proceso con esta llave de idempotencia.',
         );
       }
 
-      return createdOrder;
-    });
+      throw error;
+    }
   }
 
   async confirmPendingOrderPayment(
@@ -435,6 +555,9 @@ export class OrdersService {
           statusHistory: {
             create: {
               status: OrderStatus.PAGADA,
+              oldStatus: order.status,
+              newStatus: OrderStatus.PAGADA,
+              userId: userId ?? null,
             },
           },
         },
@@ -450,6 +573,51 @@ export class OrdersService {
     }
 
     return this.prisma.$transaction(async (tx) => execute(tx));
+  }
+
+  async expirePendingPaymentOrders(
+    expirationHours = 24,
+    actorUserId?: string,
+  ) {
+    const cutoff = new Date(Date.now() - expirationHours * 60 * 60 * 1000);
+
+    return this.prisma.$transaction(async (tx) => {
+      const expiredCandidates = await tx.order.findMany({
+        where: {
+          status: OrderStatus.PENDIENTE_PAGO,
+          createdAt: {
+            lte: cutoff,
+          },
+        },
+        select: {
+          id: true,
+          status: true,
+        },
+      });
+
+      if (expiredCandidates.length === 0) {
+        return { expiredCount: 0 };
+      }
+
+      for (const order of expiredCandidates) {
+        await tx.order.update({
+          where: { id: order.id },
+          data: {
+            status: OrderStatus.CANCELADA,
+            statusHistory: {
+              create: {
+                status: OrderStatus.CANCELADA,
+                oldStatus: order.status,
+                newStatus: OrderStatus.CANCELADA,
+                userId: actorUserId ?? null,
+              },
+            },
+          },
+        });
+      }
+
+      return { expiredCount: expiredCandidates.length };
+    });
   }
 
   async findAll(
@@ -622,17 +790,31 @@ export class OrdersService {
     const { status, ...data } = updateOrderDto;
 
     if (status) {
-      // If status changes, add to history
+      const currentOrder = await this.prisma.order.findUnique({
+        where: { id },
+        select: { status: true },
+      });
+
+      if (!currentOrder) {
+        throw new BadRequestException('Orden no encontrada');
+      }
+
       const updatedOrder = await this.prisma.order.update({
         where: { id },
         data: {
           status,
           ...data,
-          statusHistory: {
-            create: {
-              status,
-            },
-          },
+          statusHistory:
+            currentOrder.status === status
+              ? undefined
+              : {
+                  create: {
+                    status,
+                    oldStatus: currentOrder.status,
+                    newStatus: status,
+                    userId: null,
+                  },
+                },
         },
       });
 

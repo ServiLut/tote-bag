@@ -3,11 +3,56 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe, Logger, VersioningType } from '@nestjs/common';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
-import { Request, Response, NextFunction } from 'express';
+import {
+  Request,
+  Response,
+  NextFunction,
+  json,
+  urlencoded,
+} from 'express';
+import { randomUUID } from 'crypto';
 import { winstonConfig } from './common/logger/winston.config';
 
 type CorsOriginCallback = (err: Error | null, allow?: boolean) => void;
 const localDevOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
+
+type RequestWithCorrelation = Request & {
+  requestId?: string;
+  correlationId?: string;
+};
+
+function resolveHelmetMiddleware():
+  | ((req: Request, res: Response, next: NextFunction) => void)
+  | null {
+  try {
+    const helmetModule = require('helmet') as
+      | ((options?: Record<string, unknown>) => (
+          req: Request,
+          res: Response,
+          next: NextFunction,
+        ) => void)
+      | { default?: (options?: Record<string, unknown>) => (
+          req: Request,
+          res: Response,
+          next: NextFunction,
+        ) => void };
+    const helmetFactory =
+      typeof helmetModule === 'function'
+        ? helmetModule
+        : helmetModule.default;
+
+    if (!helmetFactory) {
+      return null;
+    }
+
+    return helmetFactory({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+    });
+  } catch {
+    return null;
+  }
+}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -15,6 +60,8 @@ async function bootstrap() {
   });
 
   const logger = new Logger('HTTP');
+  const helmetMiddleware = resolveHelmetMiddleware();
+  const bodyLimit = process.env.JSON_BODY_LIMIT?.trim() || '256kb';
 
   // Global prefix and versioning
   app.setGlobalPrefix('api');
@@ -22,9 +69,50 @@ async function bootstrap() {
     type: VersioningType.URI,
     defaultVersion: '1',
   });
+  app.getHttpAdapter().getInstance().set('trust proxy', 1);
+
+  app.use(json({ limit: bodyLimit }));
+  app.use(
+    urlencoded({
+      extended: true,
+      limit: bodyLimit,
+    }),
+  );
+
+  if (helmetMiddleware) {
+    app.use(helmetMiddleware);
+  } else {
+    logger.warn(
+      'helmet package not installed; applying fallback security headers.',
+    );
+    app.use((_req: Request, res: Response, next: NextFunction) => {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('X-Frame-Options', 'DENY');
+      res.setHeader('Referrer-Policy', 'no-referrer');
+      res.setHeader('X-DNS-Prefetch-Control', 'off');
+      res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
+      res.setHeader('X-Download-Options', 'noopen');
+      next();
+    });
+  }
+
+  app.use(
+    (req: RequestWithCorrelation, res: Response, next: NextFunction) => {
+      const forwardedRequestId =
+        req.get('x-request-id')?.trim() ||
+        req.get('x-correlation-id')?.trim() ||
+        randomUUID();
+
+      req.requestId = forwardedRequestId;
+      req.correlationId = forwardedRequestId;
+      res.setHeader('x-request-id', forwardedRequestId);
+      res.setHeader('x-correlation-id', forwardedRequestId);
+      next();
+    },
+  );
 
   // Structured Logging middleware
-  app.use((req: Request, res: Response, next: NextFunction) => {
+  app.use((req: RequestWithCorrelation, res: Response, next: NextFunction) => {
     const { method, url, ip } = req;
     const userAgent = req.get('user-agent') || '';
     const startTime = Date.now();
@@ -33,9 +121,17 @@ async function bootstrap() {
       const { statusCode } = res;
       const duration = Date.now() - startTime;
 
-      logger.log(
-        `${method} ${url} ${statusCode} - ${userAgent} ${ip} +${duration}ms`,
-      );
+      logger.log({
+        event: 'http_request',
+        method,
+        url,
+        statusCode,
+        durationMs: duration,
+        ip,
+        userAgent,
+        requestId: req.requestId,
+        correlationId: req.correlationId,
+      });
     });
     next();
   });
@@ -86,7 +182,8 @@ async function bootstrap() {
       callback(new Error(`CORS blocked for origin: ${origin}`), false);
     },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Content-Type, Accept, Authorization',
+    allowedHeaders:
+      'Content-Type, Accept, Authorization, X-Request-Id, X-Correlation-Id, X-Idempotency-Key, Idempotency-Key',
     credentials: true,
   });
   const port = process.env.PORT ?? 4003;

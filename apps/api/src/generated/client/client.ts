@@ -78,6 +78,11 @@ export type Shipment = Prisma.ShipmentModel
  */
 export type OrderStatusHistory = Prisma.OrderStatusHistoryModel
 /**
+ * Model OrderIdempotencyKey
+ * 
+ */
+export type OrderIdempotencyKey = Prisma.OrderIdempotencyKeyModel
+/**
  * Model OrderItem
  * 
  */

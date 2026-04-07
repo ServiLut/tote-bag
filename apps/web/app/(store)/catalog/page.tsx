@@ -10,6 +10,37 @@ import { apiFetch } from '@/utils/api';
 import { Loader2, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+async function resolveApiErrorMessage(
+  response: Response,
+  fallbackMessage: string,
+) {
+  try {
+    const body = (await response.json()) as
+      | Partial<ApiResponse<unknown>>
+      | { message?: string };
+
+    if (
+      'message' in body &&
+      typeof body.message === 'string' &&
+      body.message.trim().length > 0
+    ) {
+      return body.message;
+    }
+
+    if (
+      'error' in body &&
+      typeof body.error === 'string' &&
+      body.error.trim().length > 0
+    ) {
+      return body.error;
+    }
+  } catch {
+    // Ignore body parsing errors and return the fallback below.
+  }
+
+  return fallbackMessage;
+}
+
 function CatalogPageContent() {
   const { t } = useTranslation();
   const searchParams = useSearchParams();
@@ -40,8 +71,8 @@ function CatalogPageContent() {
           const body = await res.json();
           setCollections(body.data || []);
         }
-      } catch (err) {
-        console.error('Error fetching collections:', err);
+      } catch {
+        // Collections are supplementary for filters; fail silently here.
       }
     };
     fetchCollections();
@@ -62,12 +93,21 @@ function CatalogPageContent() {
         if (searchTerm) params.append('search', searchTerm);
 
         const res = await apiFetch(`/catalog/products?${params.toString()}`);
-        if (!res.ok) throw new Error(t('catalog_load_error'));
+        if (!res.ok) {
+          const message = await resolveApiErrorMessage(
+            res,
+            t('catalog_unavailable'),
+          );
+          setProducts([]);
+          setError(message);
+          return;
+        }
+
         const responseBody: ApiResponse<Product[]> = await res.json();
         setProducts(responseBody.data);
         setError(null);
-      } catch (err) {
-        console.error(err);
+      } catch {
+        setProducts([]);
         setError(t('catalog_unavailable'));
       } finally {
         setLoading(false);

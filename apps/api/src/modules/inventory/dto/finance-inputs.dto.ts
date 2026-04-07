@@ -20,6 +20,30 @@ export class CreateSupplierPaymentDto {
   description: string;
 }
 
+export class UpdateSupplierDto {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  nit?: string;
+
+  @IsOptional()
+  @IsString()
+  contact?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  email?: string;
+}
+
 export class CreateOpexDto {
   @Transform(({ value }) => parseLocalizedNumber(value))
   @IsNumber()

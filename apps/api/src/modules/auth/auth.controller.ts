@@ -10,6 +10,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -23,18 +24,21 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
+  @Throttle({ default: { limit: 5, ttl: 15 * 60 * 1000 } })
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() registerDto: RegisterDto, @Ip() ip: string) {
     return this.authService.register(registerDto, ip);
   }
 
   @Post('login')
+  @Throttle({ default: { limit: 5, ttl: 60 * 1000 } })
   @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
 
   @Post('forgot-password')
+  @Throttle({ default: { limit: 3, ttl: 15 * 60 * 1000 } })
   @HttpCode(HttpStatus.OK)
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
     return this.authService.forgotPassword(forgotPasswordDto.email);

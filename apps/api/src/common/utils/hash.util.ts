@@ -17,6 +17,13 @@ export function generateConfigCode(config: Record<string, unknown>): string {
     .toUpperCase();
 }
 
+export function generateDeterministicHash(payload: Record<string, unknown>) {
+  const sortedPayload = sortObjectKeys(payload as JsonValue);
+  const jsonString = JSON.stringify(sortedPayload);
+
+  return crypto.createHash('sha256').update(jsonString).digest('hex');
+}
+
 type JsonValue =
   | string
   | number

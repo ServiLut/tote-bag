@@ -59,6 +59,7 @@ export const ModelName = {
   ShippingProvider: 'ShippingProvider',
   Shipment: 'Shipment',
   OrderStatusHistory: 'OrderStatusHistory',
+  OrderIdempotencyKey: 'OrderIdempotencyKey',
   OrderItem: 'OrderItem',
   User: 'User',
   RoleModel: 'RoleModel',
@@ -225,10 +226,25 @@ export const OrderStatusHistoryScalarFieldEnum = {
   id: 'id',
   orderId: 'orderId',
   status: 'status',
+  oldStatus: 'oldStatus',
+  newStatus: 'newStatus',
+  userId: 'userId',
   createdAt: 'createdAt'
 } as const
 
 export type OrderStatusHistoryScalarFieldEnum = (typeof OrderStatusHistoryScalarFieldEnum)[keyof typeof OrderStatusHistoryScalarFieldEnum]
+
+
+export const OrderIdempotencyKeyScalarFieldEnum = {
+  id: 'id',
+  idempotencyKey: 'idempotencyKey',
+  requestHash: 'requestHash',
+  orderId: 'orderId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type OrderIdempotencyKeyScalarFieldEnum = (typeof OrderIdempotencyKeyScalarFieldEnum)[keyof typeof OrderIdempotencyKeyScalarFieldEnum]
 
 
 export const OrderItemScalarFieldEnum = {
@@ -308,6 +324,15 @@ export const WebhookEventScalarFieldEnum = {
   processed: 'processed',
   processedAt: 'processedAt',
   error: 'error',
+  status: 'status',
+  attempts: 'attempts',
+  signatureChecksum: 'signatureChecksum',
+  transactionId: 'transactionId',
+  referenceId: 'referenceId',
+  receivedAt: 'receivedAt',
+  validatedAt: 'validatedAt',
+  appliedAt: 'appliedAt',
+  failedAt: 'failedAt',
   createdAt: 'createdAt'
 } as const
 

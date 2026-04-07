@@ -26,7 +26,6 @@ import {
 import { Product } from '@/types/product';
 import { apiFetch } from '@/utils/api';
 import { createClient } from '@/utils/supabase/client';
-import { getApiBaseUrl } from '@/lib/api-config';
 import { notifyFinanceDataChanged } from '@/lib/finance-events';
 
 interface Supplier {
@@ -62,8 +61,6 @@ interface BatchItem {
   costoUnitarioInput: string;
   costoUnitario: number;
 }
-
-const API_URL = getApiBaseUrl();
 
 export default function BatchReceptionPage() {
   const createEmptyItem = (): BatchItem => ({
@@ -126,7 +123,7 @@ export default function BatchReceptionPage() {
       const authHeaders = await getAuthHeaders();
       const [batchesRes, productsRes, suppliersRes] = await Promise.all([
         apiFetch('/inventory/batches', { headers: authHeaders }),
-        fetch(`${API_URL}/catalog/products`),
+        apiFetch('/catalog/products'),
         apiFetch('/inventory/suppliers', { headers: authHeaders }),
       ]);
 
@@ -329,7 +326,7 @@ export default function BatchReceptionPage() {
       setError(
         submitError instanceof Error
           ? submitError.message
-          : `Error de conexion con el servidor. Verifica que el backend este corriendo en ${API_URL}`,
+          : 'Error de conexion con el servidor. No fue posible registrar el lote.',
       );
     } finally {
       setSubmitting(false);
@@ -900,4 +897,3 @@ export default function BatchReceptionPage() {
     </div>
   );
 }
-

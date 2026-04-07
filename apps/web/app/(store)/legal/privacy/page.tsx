@@ -67,7 +67,7 @@ export default function PrivacyPolicyPage() {
         <h2 className="text-2xl font-bold text-primary">7. Contacto</h2>
         <p>
           Si tiene preguntas sobre esta Política de Privacidad, contáctenos en: <br />
-          <strong>Email:</strong> {COMPANY_INFO.email.privacy} <br />
+          <strong>Email:</strong> totebagbolsadetela@gmail.com <br />
           <strong>Dirección:</strong> {COMPANY_INFO.address}
         </p>
       </section>

@@ -5,10 +5,11 @@ import { PrismaModule } from '../../prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
 import { ShippingModule } from '../shipping/shipping.module';
 import { OrdersModule } from '../orders/orders.module';
+import { PaymentsMaintenanceService } from './payments-maintenance.service';
 
 @Module({
   imports: [PrismaModule, ConfigModule, ShippingModule, OrdersModule],
   controllers: [PaymentsController],
-  providers: [PaymentsService],
+  providers: [PaymentsService, PaymentsMaintenanceService],
 })
 export class PaymentsModule {}

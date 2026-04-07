@@ -58,7 +58,7 @@ export default function DataProcessingPage() {
       <section className="space-y-4">
         <h2 className="text-2xl font-bold text-primary">5. Atención de Peticiones y Reclamos</h2>
         <p>
-          Para ejercer sus derechos, el titular puede contactar al área responsable del tratamiento de datos a través del correo electrónico <strong>{COMPANY_INFO.email.dataProtection}</strong>.
+          Para ejercer sus derechos, el titular puede contactar al área responsable del tratamiento de datos a través del correo electrónico totebagbolsadetela@gmail.com.
         </p>
         <p>
           La solicitud será atendida en un término máximo de quince (15) días hábiles contados a partir de la fecha de su recibo.

@@ -202,3 +202,13 @@ export const PayrollWorkerType = {
 } as const
 
 export type PayrollWorkerType = (typeof PayrollWorkerType)[keyof typeof PayrollWorkerType]
+
+
+export const WebhookProcessingStatus = {
+  RECEIVED: 'RECEIVED',
+  VALIDATED: 'VALIDATED',
+  APPLIED: 'APPLIED',
+  FAILED: 'FAILED'
+} as const
+
+export type WebhookProcessingStatus = (typeof WebhookProcessingStatus)[keyof typeof WebhookProcessingStatus]

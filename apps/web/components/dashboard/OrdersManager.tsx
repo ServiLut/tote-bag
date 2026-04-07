@@ -28,8 +28,8 @@ import { ApiResponse } from '@/types/api';
 import { useDashboardAuth } from '@/components/dashboard/DashboardAuthContext';
 import { ReceiptUpload } from '@/components/dashboard/ReceiptUpload';
 import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
-import { getApiBaseUrl } from '@/lib/api-config';
 import { isDashboardReadOnlyRole } from '@/lib/frontend-routing';
+import { apiFetch } from '@/utils/api';
 
 function cn(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
@@ -129,8 +129,6 @@ export default function OrdersManager() {
   const [newStatus, setNewStatus] = useState<OrderStatus>('PENDIENTE_PAGO');
   const [tracking, setTracking] = useState('');
 
-  const API_URL =
-    getApiBaseUrl();
   const supabase = createClient();
 
   const isReadOnly = isDashboardReadOnlyRole(role);
@@ -147,7 +145,7 @@ export default function OrdersManager() {
           return;
         }
 
-        const res = await fetch(`${API_URL}/orders`, {
+        const res = await apiFetch('/orders', {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -170,7 +168,7 @@ export default function OrdersManager() {
     };
 
     fetchOrders();
-  }, [API_URL, supabase.auth]);
+  }, [supabase.auth]);
 
   const openOrderModal = async (order: OrderSummary) => {
     setLoadingOrderDetail(true);
@@ -188,7 +186,7 @@ export default function OrdersManager() {
         return;
       }
 
-      const res = await fetch(`${API_URL}/orders/${order.id}`, {
+      const res = await apiFetch(`/orders/${order.id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -228,7 +226,7 @@ export default function OrdersManager() {
         return false;
       }
 
-      const res = await fetch(`${API_URL}/orders/${orderId}`, {
+      const res = await apiFetch(`/orders/${orderId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -438,7 +436,7 @@ export default function OrdersManager() {
         throw new Error('Sesion expirada');
       }
 
-      const response = await fetch(`${API_URL}/orders/${orderId}/receipt`, {
+      const response = await apiFetch(`/orders/${orderId}/receipt`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -1176,4 +1174,3 @@ export default function OrdersManager() {
     </div>
   );
 }
-

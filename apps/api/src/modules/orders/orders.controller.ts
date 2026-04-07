@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Query,
+  Headers,
   Req,
   Res,
   ForbiddenException,
@@ -62,8 +63,11 @@ export class OrdersController {
   async create(
     @Body() createOrderDto: CreateOrderDto,
     @Req() req: RequestWithUser,
+    @Headers('x-idempotency-key') xIdempotencyKey?: string,
+    @Headers('idempotency-key') idempotencyKeyHeader?: string,
   ) {
     const actorUserId = req.user?.id;
+    const idempotencyKey = xIdempotencyKey ?? idempotencyKeyHeader;
     const requiresOperationalPrivileges =
       this.isPrivilegedOrderCreation(createOrderDto);
 
@@ -82,12 +86,17 @@ export class OrdersController {
         throw new ForbiddenException('Insufficient permissions');
       }
 
-      return this.ordersService.create(createOrderDto, actorUserId);
+      return this.ordersService.create(createOrderDto, actorUserId, {
+        idempotencyKey,
+      });
     }
 
     return this.ordersService.create(
       this.sanitizePublicOrderPayload(createOrderDto),
       actorUserId,
+      {
+        idempotencyKey,
+      },
     );
   }
 

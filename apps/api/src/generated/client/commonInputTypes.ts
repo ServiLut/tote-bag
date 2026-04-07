@@ -365,6 +365,23 @@ export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedDateTimeNullableFilter<$PrismaModel>
 }
 
+export type EnumOrderStatusNullableFilter<$PrismaModel = never> = {
+  equals?: $Enums.OrderStatus | Prisma.EnumOrderStatusFieldRefInput<$PrismaModel> | null
+  in?: $Enums.OrderStatus[] | Prisma.ListEnumOrderStatusFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.OrderStatus[] | Prisma.ListEnumOrderStatusFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumOrderStatusNullableFilter<$PrismaModel> | $Enums.OrderStatus | null
+}
+
+export type EnumOrderStatusNullableWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.OrderStatus | Prisma.EnumOrderStatusFieldRefInput<$PrismaModel> | null
+  in?: $Enums.OrderStatus[] | Prisma.ListEnumOrderStatusFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.OrderStatus[] | Prisma.ListEnumOrderStatusFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumOrderStatusNullableWithAggregatesFilter<$PrismaModel> | $Enums.OrderStatus | null
+  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumOrderStatusNullableFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumOrderStatusNullableFilter<$PrismaModel>
+}
+
 export type JsonNullableFilter<$PrismaModel = never> =
 | Prisma.PatchUndefined<
     Prisma.Either<Required<JsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>,
@@ -431,6 +448,23 @@ export type EnumRoleWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumRoleFilter<$PrismaModel>
   _max?: Prisma.NestedEnumRoleFilter<$PrismaModel>
+}
+
+export type EnumWebhookProcessingStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.WebhookProcessingStatus | Prisma.EnumWebhookProcessingStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.WebhookProcessingStatus[] | Prisma.ListEnumWebhookProcessingStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.WebhookProcessingStatus[] | Prisma.ListEnumWebhookProcessingStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumWebhookProcessingStatusFilter<$PrismaModel> | $Enums.WebhookProcessingStatus
+}
+
+export type EnumWebhookProcessingStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.WebhookProcessingStatus | Prisma.EnumWebhookProcessingStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.WebhookProcessingStatus[] | Prisma.ListEnumWebhookProcessingStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.WebhookProcessingStatus[] | Prisma.ListEnumWebhookProcessingStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumWebhookProcessingStatusWithAggregatesFilter<$PrismaModel> | $Enums.WebhookProcessingStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumWebhookProcessingStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumWebhookProcessingStatusFilter<$PrismaModel>
 }
 
 export type EnumPqrsTypeFilter<$PrismaModel = never> = {
@@ -1007,6 +1041,23 @@ export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedDateTimeNullableFilter<$PrismaModel>
 }
 
+export type NestedEnumOrderStatusNullableFilter<$PrismaModel = never> = {
+  equals?: $Enums.OrderStatus | Prisma.EnumOrderStatusFieldRefInput<$PrismaModel> | null
+  in?: $Enums.OrderStatus[] | Prisma.ListEnumOrderStatusFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.OrderStatus[] | Prisma.ListEnumOrderStatusFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumOrderStatusNullableFilter<$PrismaModel> | $Enums.OrderStatus | null
+}
+
+export type NestedEnumOrderStatusNullableWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.OrderStatus | Prisma.EnumOrderStatusFieldRefInput<$PrismaModel> | null
+  in?: $Enums.OrderStatus[] | Prisma.ListEnumOrderStatusFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.OrderStatus[] | Prisma.ListEnumOrderStatusFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumOrderStatusNullableWithAggregatesFilter<$PrismaModel> | $Enums.OrderStatus | null
+  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumOrderStatusNullableFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumOrderStatusNullableFilter<$PrismaModel>
+}
+
 export type NestedJsonNullableFilter<$PrismaModel = never> =
 | Prisma.PatchUndefined<
     Prisma.Either<Required<NestedJsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>,
@@ -1046,6 +1097,23 @@ export type NestedEnumRoleWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumRoleFilter<$PrismaModel>
   _max?: Prisma.NestedEnumRoleFilter<$PrismaModel>
+}
+
+export type NestedEnumWebhookProcessingStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.WebhookProcessingStatus | Prisma.EnumWebhookProcessingStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.WebhookProcessingStatus[] | Prisma.ListEnumWebhookProcessingStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.WebhookProcessingStatus[] | Prisma.ListEnumWebhookProcessingStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumWebhookProcessingStatusFilter<$PrismaModel> | $Enums.WebhookProcessingStatus
+}
+
+export type NestedEnumWebhookProcessingStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.WebhookProcessingStatus | Prisma.EnumWebhookProcessingStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.WebhookProcessingStatus[] | Prisma.ListEnumWebhookProcessingStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.WebhookProcessingStatus[] | Prisma.ListEnumWebhookProcessingStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumWebhookProcessingStatusWithAggregatesFilter<$PrismaModel> | $Enums.WebhookProcessingStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumWebhookProcessingStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumWebhookProcessingStatusFilter<$PrismaModel>
 }
 
 export type NestedEnumPqrsTypeFilter<$PrismaModel = never> = {

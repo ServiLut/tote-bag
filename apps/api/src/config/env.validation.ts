@@ -77,6 +77,22 @@ class EnvironmentVariables {
   @IsUrl({ require_tld: false })
   @IsOptional()
   FRONTEND_URL: string;
+
+  @IsNumber()
+  @IsOptional()
+  ORDER_PENDING_EXPIRATION_HOURS: number = 24;
+
+  @IsNumber()
+  @IsOptional()
+  ORDER_EXPIRATION_CHECK_INTERVAL_MINUTES: number = 30;
+
+  @IsNumber()
+  @IsOptional()
+  WEBHOOK_RETRY_INTERVAL_MINUTES: number = 15;
+
+  @IsNumber()
+  @IsOptional()
+  WEBHOOK_RETRY_MAX_ATTEMPTS: number = 5;
 }
 
 export function envValidationSchema(config: Record<string, unknown>) {

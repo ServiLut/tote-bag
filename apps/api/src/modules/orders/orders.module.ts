@@ -7,6 +7,7 @@ import { InventoryModule } from '../inventory/inventory.module';
 import { RolesModule } from '../roles/roles.module';
 import { ReceiptPdfService } from './orders.pdf.service';
 import { ShippingModule } from '../shipping/shipping.module';
+import { OrderMaintenanceService } from './order-maintenance.service';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { ShippingModule } from '../shipping/shipping.module';
     ShippingModule,
   ],
   controllers: [OrdersController],
-  providers: [OrdersService, ReceiptPdfService],
+  providers: [OrdersService, ReceiptPdfService, OrderMaintenanceService],
   exports: [OrdersService, ReceiptPdfService],
 })
 export class OrdersModule {}

@@ -28,6 +28,9 @@ export type OrderStatusHistoryMinAggregateOutputType = {
   id: string | null
   orderId: string | null
   status: $Enums.OrderStatus | null
+  oldStatus: $Enums.OrderStatus | null
+  newStatus: $Enums.OrderStatus | null
+  userId: string | null
   createdAt: Date | null
 }
 
@@ -35,6 +38,9 @@ export type OrderStatusHistoryMaxAggregateOutputType = {
   id: string | null
   orderId: string | null
   status: $Enums.OrderStatus | null
+  oldStatus: $Enums.OrderStatus | null
+  newStatus: $Enums.OrderStatus | null
+  userId: string | null
   createdAt: Date | null
 }
 
@@ -42,6 +48,9 @@ export type OrderStatusHistoryCountAggregateOutputType = {
   id: number
   orderId: number
   status: number
+  oldStatus: number
+  newStatus: number
+  userId: number
   createdAt: number
   _all: number
 }
@@ -51,6 +60,9 @@ export type OrderStatusHistoryMinAggregateInputType = {
   id?: true
   orderId?: true
   status?: true
+  oldStatus?: true
+  newStatus?: true
+  userId?: true
   createdAt?: true
 }
 
@@ -58,6 +70,9 @@ export type OrderStatusHistoryMaxAggregateInputType = {
   id?: true
   orderId?: true
   status?: true
+  oldStatus?: true
+  newStatus?: true
+  userId?: true
   createdAt?: true
 }
 
@@ -65,6 +80,9 @@ export type OrderStatusHistoryCountAggregateInputType = {
   id?: true
   orderId?: true
   status?: true
+  oldStatus?: true
+  newStatus?: true
+  userId?: true
   createdAt?: true
   _all?: true
 }
@@ -145,6 +163,9 @@ export type OrderStatusHistoryGroupByOutputType = {
   id: string
   orderId: string
   status: $Enums.OrderStatus
+  oldStatus: $Enums.OrderStatus | null
+  newStatus: $Enums.OrderStatus | null
+  userId: string | null
   createdAt: Date
   _count: OrderStatusHistoryCountAggregateOutputType | null
   _min: OrderStatusHistoryMinAggregateOutputType | null
@@ -173,6 +194,9 @@ export type OrderStatusHistoryWhereInput = {
   id?: Prisma.StringFilter<"OrderStatusHistory"> | string
   orderId?: Prisma.StringFilter<"OrderStatusHistory"> | string
   status?: Prisma.EnumOrderStatusFilter<"OrderStatusHistory"> | $Enums.OrderStatus
+  oldStatus?: Prisma.EnumOrderStatusNullableFilter<"OrderStatusHistory"> | $Enums.OrderStatus | null
+  newStatus?: Prisma.EnumOrderStatusNullableFilter<"OrderStatusHistory"> | $Enums.OrderStatus | null
+  userId?: Prisma.StringNullableFilter<"OrderStatusHistory"> | string | null
   createdAt?: Prisma.DateTimeFilter<"OrderStatusHistory"> | Date | string
   order?: Prisma.XOR<Prisma.OrderScalarRelationFilter, Prisma.OrderWhereInput>
 }
@@ -181,6 +205,9 @@ export type OrderStatusHistoryOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   orderId?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  oldStatus?: Prisma.SortOrderInput | Prisma.SortOrder
+  newStatus?: Prisma.SortOrderInput | Prisma.SortOrder
+  userId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   order?: Prisma.OrderOrderByWithRelationInput
 }
@@ -192,6 +219,9 @@ export type OrderStatusHistoryWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.OrderStatusHistoryWhereInput | Prisma.OrderStatusHistoryWhereInput[]
   orderId?: Prisma.StringFilter<"OrderStatusHistory"> | string
   status?: Prisma.EnumOrderStatusFilter<"OrderStatusHistory"> | $Enums.OrderStatus
+  oldStatus?: Prisma.EnumOrderStatusNullableFilter<"OrderStatusHistory"> | $Enums.OrderStatus | null
+  newStatus?: Prisma.EnumOrderStatusNullableFilter<"OrderStatusHistory"> | $Enums.OrderStatus | null
+  userId?: Prisma.StringNullableFilter<"OrderStatusHistory"> | string | null
   createdAt?: Prisma.DateTimeFilter<"OrderStatusHistory"> | Date | string
   order?: Prisma.XOR<Prisma.OrderScalarRelationFilter, Prisma.OrderWhereInput>
 }, "id">
@@ -200,6 +230,9 @@ export type OrderStatusHistoryOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   orderId?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  oldStatus?: Prisma.SortOrderInput | Prisma.SortOrder
+  newStatus?: Prisma.SortOrderInput | Prisma.SortOrder
+  userId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.OrderStatusHistoryCountOrderByAggregateInput
   _max?: Prisma.OrderStatusHistoryMaxOrderByAggregateInput
@@ -213,12 +246,18 @@ export type OrderStatusHistoryScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"OrderStatusHistory"> | string
   orderId?: Prisma.StringWithAggregatesFilter<"OrderStatusHistory"> | string
   status?: Prisma.EnumOrderStatusWithAggregatesFilter<"OrderStatusHistory"> | $Enums.OrderStatus
+  oldStatus?: Prisma.EnumOrderStatusNullableWithAggregatesFilter<"OrderStatusHistory"> | $Enums.OrderStatus | null
+  newStatus?: Prisma.EnumOrderStatusNullableWithAggregatesFilter<"OrderStatusHistory"> | $Enums.OrderStatus | null
+  userId?: Prisma.StringNullableWithAggregatesFilter<"OrderStatusHistory"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"OrderStatusHistory"> | Date | string
 }
 
 export type OrderStatusHistoryCreateInput = {
   id?: string
   status: $Enums.OrderStatus
+  oldStatus?: $Enums.OrderStatus | null
+  newStatus?: $Enums.OrderStatus | null
+  userId?: string | null
   createdAt?: Date | string
   order: Prisma.OrderCreateNestedOneWithoutStatusHistoryInput
 }
@@ -227,12 +266,18 @@ export type OrderStatusHistoryUncheckedCreateInput = {
   id?: string
   orderId: string
   status: $Enums.OrderStatus
+  oldStatus?: $Enums.OrderStatus | null
+  newStatus?: $Enums.OrderStatus | null
+  userId?: string | null
   createdAt?: Date | string
 }
 
 export type OrderStatusHistoryUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+  oldStatus?: Prisma.NullableEnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus | null
+  newStatus?: Prisma.NullableEnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus | null
+  userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   order?: Prisma.OrderUpdateOneRequiredWithoutStatusHistoryNestedInput
 }
@@ -241,6 +286,9 @@ export type OrderStatusHistoryUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+  oldStatus?: Prisma.NullableEnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus | null
+  newStatus?: Prisma.NullableEnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus | null
+  userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -248,12 +296,18 @@ export type OrderStatusHistoryCreateManyInput = {
   id?: string
   orderId: string
   status: $Enums.OrderStatus
+  oldStatus?: $Enums.OrderStatus | null
+  newStatus?: $Enums.OrderStatus | null
+  userId?: string | null
   createdAt?: Date | string
 }
 
 export type OrderStatusHistoryUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+  oldStatus?: Prisma.NullableEnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus | null
+  newStatus?: Prisma.NullableEnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus | null
+  userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -261,6 +315,9 @@ export type OrderStatusHistoryUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+  oldStatus?: Prisma.NullableEnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus | null
+  newStatus?: Prisma.NullableEnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus | null
+  userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -278,6 +335,9 @@ export type OrderStatusHistoryCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   orderId?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  oldStatus?: Prisma.SortOrder
+  newStatus?: Prisma.SortOrder
+  userId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -285,6 +345,9 @@ export type OrderStatusHistoryMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   orderId?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  oldStatus?: Prisma.SortOrder
+  newStatus?: Prisma.SortOrder
+  userId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -292,6 +355,9 @@ export type OrderStatusHistoryMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   orderId?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  oldStatus?: Prisma.SortOrder
+  newStatus?: Prisma.SortOrder
+  userId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -337,15 +403,25 @@ export type OrderStatusHistoryUncheckedUpdateManyWithoutOrderNestedInput = {
   deleteMany?: Prisma.OrderStatusHistoryScalarWhereInput | Prisma.OrderStatusHistoryScalarWhereInput[]
 }
 
+export type NullableEnumOrderStatusFieldUpdateOperationsInput = {
+  set?: $Enums.OrderStatus | null
+}
+
 export type OrderStatusHistoryCreateWithoutOrderInput = {
   id?: string
   status: $Enums.OrderStatus
+  oldStatus?: $Enums.OrderStatus | null
+  newStatus?: $Enums.OrderStatus | null
+  userId?: string | null
   createdAt?: Date | string
 }
 
 export type OrderStatusHistoryUncheckedCreateWithoutOrderInput = {
   id?: string
   status: $Enums.OrderStatus
+  oldStatus?: $Enums.OrderStatus | null
+  newStatus?: $Enums.OrderStatus | null
+  userId?: string | null
   createdAt?: Date | string
 }
 
@@ -382,30 +458,45 @@ export type OrderStatusHistoryScalarWhereInput = {
   id?: Prisma.StringFilter<"OrderStatusHistory"> | string
   orderId?: Prisma.StringFilter<"OrderStatusHistory"> | string
   status?: Prisma.EnumOrderStatusFilter<"OrderStatusHistory"> | $Enums.OrderStatus
+  oldStatus?: Prisma.EnumOrderStatusNullableFilter<"OrderStatusHistory"> | $Enums.OrderStatus | null
+  newStatus?: Prisma.EnumOrderStatusNullableFilter<"OrderStatusHistory"> | $Enums.OrderStatus | null
+  userId?: Prisma.StringNullableFilter<"OrderStatusHistory"> | string | null
   createdAt?: Prisma.DateTimeFilter<"OrderStatusHistory"> | Date | string
 }
 
 export type OrderStatusHistoryCreateManyOrderInput = {
   id?: string
   status: $Enums.OrderStatus
+  oldStatus?: $Enums.OrderStatus | null
+  newStatus?: $Enums.OrderStatus | null
+  userId?: string | null
   createdAt?: Date | string
 }
 
 export type OrderStatusHistoryUpdateWithoutOrderInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+  oldStatus?: Prisma.NullableEnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus | null
+  newStatus?: Prisma.NullableEnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus | null
+  userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type OrderStatusHistoryUncheckedUpdateWithoutOrderInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+  oldStatus?: Prisma.NullableEnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus | null
+  newStatus?: Prisma.NullableEnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus | null
+  userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type OrderStatusHistoryUncheckedUpdateManyWithoutOrderInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+  oldStatus?: Prisma.NullableEnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus | null
+  newStatus?: Prisma.NullableEnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus | null
+  userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -415,6 +506,9 @@ export type OrderStatusHistorySelect<ExtArgs extends runtime.Types.Extensions.In
   id?: boolean
   orderId?: boolean
   status?: boolean
+  oldStatus?: boolean
+  newStatus?: boolean
+  userId?: boolean
   createdAt?: boolean
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["orderStatusHistory"]>
@@ -423,6 +517,9 @@ export type OrderStatusHistorySelectCreateManyAndReturn<ExtArgs extends runtime.
   id?: boolean
   orderId?: boolean
   status?: boolean
+  oldStatus?: boolean
+  newStatus?: boolean
+  userId?: boolean
   createdAt?: boolean
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["orderStatusHistory"]>
@@ -431,6 +528,9 @@ export type OrderStatusHistorySelectUpdateManyAndReturn<ExtArgs extends runtime.
   id?: boolean
   orderId?: boolean
   status?: boolean
+  oldStatus?: boolean
+  newStatus?: boolean
+  userId?: boolean
   createdAt?: boolean
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["orderStatusHistory"]>
@@ -439,10 +539,13 @@ export type OrderStatusHistorySelectScalar = {
   id?: boolean
   orderId?: boolean
   status?: boolean
+  oldStatus?: boolean
+  newStatus?: boolean
+  userId?: boolean
   createdAt?: boolean
 }
 
-export type OrderStatusHistoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "orderId" | "status" | "createdAt", ExtArgs["result"]["orderStatusHistory"]>
+export type OrderStatusHistoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "orderId" | "status" | "oldStatus" | "newStatus" | "userId" | "createdAt", ExtArgs["result"]["orderStatusHistory"]>
 export type OrderStatusHistoryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
 }
@@ -462,6 +565,9 @@ export type $OrderStatusHistoryPayload<ExtArgs extends runtime.Types.Extensions.
     id: string
     orderId: string
     status: $Enums.OrderStatus
+    oldStatus: $Enums.OrderStatus | null
+    newStatus: $Enums.OrderStatus | null
+    userId: string | null
     createdAt: Date
   }, ExtArgs["result"]["orderStatusHistory"]>
   composites: {}
@@ -890,6 +996,9 @@ export interface OrderStatusHistoryFieldRefs {
   readonly id: Prisma.FieldRef<"OrderStatusHistory", 'String'>
   readonly orderId: Prisma.FieldRef<"OrderStatusHistory", 'String'>
   readonly status: Prisma.FieldRef<"OrderStatusHistory", 'OrderStatus'>
+  readonly oldStatus: Prisma.FieldRef<"OrderStatusHistory", 'OrderStatus'>
+  readonly newStatus: Prisma.FieldRef<"OrderStatusHistory", 'OrderStatus'>
+  readonly userId: Prisma.FieldRef<"OrderStatusHistory", 'String'>
   readonly createdAt: Prisma.FieldRef<"OrderStatusHistory", 'DateTime'>
 }
     

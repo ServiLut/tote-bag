@@ -85,6 +85,9 @@ describe('OrdersController (e2e)', () => {
         initialStatus: 'PENDIENTE_PAGO',
       }),
       undefined,
+      {
+        idempotencyKey: undefined,
+      },
     );
   });
 
@@ -186,6 +189,46 @@ describe('OrdersController (e2e)', () => {
     expect(ordersService.create).toHaveBeenCalledWith(
       expect.any(Object),
       'user-7',
+      {
+        idempotencyKey: undefined,
+      },
+    );
+  });
+
+  it('POST /api/v1/orders reenvia el header de idempotencia al servicio', async () => {
+    ordersService.create.mockResolvedValue({ id: 'order-1', orderNumber: 103 });
+
+    await request(getTestServer(app))
+      .post('/api/v1/orders')
+      .set('x-idempotency-key', 'idem-order-1')
+      .send({
+        firstName: 'Deybis',
+        lastName: 'Asprilla',
+        customerEmail: 'demo@tote.com',
+        customerPhone: '3001234567',
+        department: 'Antioquia',
+        city: 'Medellin',
+        shippingAddress: {
+          city: 'Medellin',
+          address: 'Calle 1 # 2-3',
+          phone: '3001234567',
+        },
+        items: [
+          {
+            productId: 'prod-1',
+            sku: 'SKU-1',
+            quantity: 2,
+          },
+        ],
+      })
+      .expect(201);
+
+    expect(ordersService.create).toHaveBeenCalledWith(
+      expect.any(Object),
+      undefined,
+      {
+        idempotencyKey: 'idem-order-1',
+      },
     );
   });
 
