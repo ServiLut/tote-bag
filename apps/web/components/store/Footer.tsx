@@ -2,42 +2,41 @@
 
 import Link from 'next/link';
 import { COMPANY_INFO } from '@/utils/company-info';
+import { useTranslation } from 'react-i18next';
 
 export default function Footer() {
+  const { t } = useTranslation();
+
   return (
-    <footer className="force-light bg-primary text-base-color py-16 px-4 border-t border-theme transition-colors duration-300 mt-auto">
-      {/* 
-          Usamos force-light para asegurar que el footer siempre use los colores base
-          (negro para fondo y beige para texto) sin importar si el sitio está en modo oscuro.
-      */}
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
-        <div className="col-span-1 md:col-span-2 space-y-6">
+    <footer className="force-light mt-auto border-t border-theme bg-primary px-4 py-16 text-base-color transition-colors duration-300">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-12 md:grid-cols-4">
+        <div className="col-span-1 space-y-6 md:col-span-2">
           <h3 className="text-2xl font-serif font-bold tracking-tighter">{COMPANY_INFO.name}</h3>
-          <p className="opacity-90 text-sm max-w-xs leading-relaxed">
-            Diseño minimalista y sostenible para la vida moderna. Hecho a mano en Colombia con amor y respeto por el medio ambiente.
+          <p className="max-w-xs text-sm leading-relaxed opacity-90">
+            {t('footer_description')}
           </p>
         </div>
         <div>
-          <h4 className="font-bold mb-6 text-xs uppercase tracking-[0.2em]">Navegación</h4>
+          <h4 className="mb-6 text-xs font-bold uppercase tracking-[0.2em]">{t('footer_navigation')}</h4>
           <ul className="space-y-4 text-sm opacity-90">
-            <li><Link href="/catalog" className="hover:opacity-100 transition-opacity font-medium">Tienda</Link></li>
-            <li><Link href="/about" className="hover:opacity-100 transition-opacity font-medium">Nosotros</Link></li>
-            <li><Link href="/beneficios" className="hover:opacity-100 transition-opacity font-medium">Sostenibilidad</Link></li>
-            <li><Link href="/envios" className="hover:opacity-100 transition-opacity font-medium">Envios</Link></li>
+            <li><Link href="/catalog" className="font-medium transition-opacity hover:opacity-100">{t('nav_shop')}</Link></li>
+            <li><Link href="/about" className="font-medium transition-opacity hover:opacity-100">{t('footer_about')}</Link></li>
+            <li><Link href="/beneficios" className="font-medium transition-opacity hover:opacity-100">{t('footer_sustainability')}</Link></li>
           </ul>
         </div>
         <div>
-           <h4 className="font-bold mb-6 text-xs uppercase tracking-[0.2em]">Soporte</h4>
-           <ul className="space-y-4 text-sm opacity-90">
-            <li><Link href="/legal/privacy" className="hover:opacity-100 transition-opacity font-medium">Privacidad</Link></li>
-            <li><Link href="/legal/data-processing" className="hover:opacity-100 transition-opacity font-medium">Tratamiento de Datos</Link></li>
-            <li><Link href="/pqrs" className="hover:opacity-100 transition-opacity font-medium">PQRS</Link></li>
+          <h4 className="mb-6 text-xs font-bold uppercase tracking-[0.2em]">{t('footer_support')}</h4>
+          <ul className="space-y-4 text-sm opacity-90">
+            <li><Link href="/legal/privacy" className="font-medium transition-opacity hover:opacity-100">{t('footer_privacy')}</Link></li>
+            <li><Link href="/legal/data-processing" className="font-medium transition-opacity hover:opacity-100">{t('footer_data_processing')}</Link></li>
+            <li><Link href="/envios" className="font-medium transition-opacity hover:opacity-100">{t('footer_shipping')}</Link></li>
+            <li><Link href="/pqrs" className="font-medium transition-opacity hover:opacity-100">{t('footer_pqrs')}</Link></li>
           </ul>
         </div>
       </div>
-      <div className="max-w-7xl mx-auto mt-20 pt-8 border-t border-theme/20 text-[10px] opacity-70 uppercase tracking-widest flex flex-col md:flex-row justify-between items-center gap-4">
-        <span>&copy; {new Date().getFullYear()} {COMPANY_INFO.name}. Todos los derechos reservados.</span>
-        <span>Hecho en Colombia</span>
+      <div className="mx-auto mt-20 flex max-w-7xl flex-col items-center justify-between gap-4 border-t border-theme/20 pt-8 text-[10px] uppercase tracking-widest opacity-70 md:flex-row">
+        <span>&copy; {new Date().getFullYear()} {COMPANY_INFO.name}. {t('footer_rights')}</span>
+        <span>{t('footer_made_in_colombia')}</span>
       </div>
     </footer>
   );

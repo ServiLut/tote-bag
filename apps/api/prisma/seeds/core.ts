@@ -15,6 +15,61 @@ export async function runCoreSeed(prisma: PrismaClient) {
   await seedDepartmentsAndMunicipalities(prisma);
   await seedGlobalPersonalizationOptions(prisma);
   await seedRolesAndPermissions(prisma);
+  await seedWizardOptions(prisma);
+}
+
+async function seedWizardOptions(prisma: PrismaClient) {
+  console.log('Procesando opciones del wizard...');
+
+  const wizardOptions = [
+    // LINE
+    { category: 'LINE', code: 'ECO', name: 'Línea Eco', description: 'Materiales sostenibles y amigables con el medio ambiente.', basePriceModifier: -2000, sortOrder: 1 },
+    { category: 'LINE', code: 'COMERCIAL', name: 'Línea Comercial', description: 'Nuestra opción más versátil para todo tipo de uso.', basePriceModifier: 0, sortOrder: 2 },
+    { category: 'LINE', code: 'PREMIUM', name: 'Línea Premium', description: 'Acabados de alta calidad para un producto superior.', basePriceModifier: 5000, sortOrder: 3 },
+    { category: 'LINE', code: 'CORPORATIVA', name: 'Línea Corporativa', description: 'Diseñada para eventos y necesidades empresariales.', basePriceModifier: 3000, sortOrder: 4 },
+
+    // DIMENSION
+    { category: 'DIMENSION', code: 'STD', name: 'Estándar', description: '35x40 cm', basePriceModifier: 0, sortOrder: 1 },
+    { category: 'DIMENSION', code: 'MINI', name: 'Pequeña', description: '20x25 cm', basePriceModifier: -3000, sortOrder: 2 },
+    { category: 'DIMENSION', code: 'XL', name: 'Extra Grande', description: '45x50 cm', basePriceModifier: 5000, sortOrder: 3 },
+
+    // MATERIAL
+    { category: 'MATERIAL', code: 'LONA', name: 'Lona', description: 'Resistente y duradera.', basePriceModifier: 3000, sortOrder: 1 },
+    { category: 'MATERIAL', code: 'ALGODON', name: 'Algodón', description: 'Suave y natural.', basePriceModifier: 0, sortOrder: 2 },
+    { category: 'MATERIAL', code: 'POLIESTER', name: 'Poliéster', description: 'Liviano y versátil.', basePriceModifier: -1000, sortOrder: 3 },
+
+    // TECHNIQUE
+    { category: 'TECHNIQUE', code: 'SERIGRAFIA', name: 'Serigrafía', description: 'Ideal para grandes volúmenes.', basePriceModifier: 0, sortOrder: 1, allowedMaterialValues: ['Lona', 'Algodón'] },
+    { category: 'TECHNIQUE', code: 'DTF', name: 'DTF', description: 'Impresión digital a todo color.', basePriceModifier: 2000, sortOrder: 2, allowedMaterialValues: ['Lona', 'Algodón', 'Poliéster'] },
+    { category: 'TECHNIQUE', code: 'BORDADO', name: 'Bordado', description: 'Elegancia y durabilidad.', basePriceModifier: 5000, sortOrder: 3, allowedMaterialValues: ['Lona', 'Algodón'] },
+    
+    // OTHERS (categorized as TECHNIQUE for the wizard logic)
+    { category: 'TECHNIQUE', code: 'ZIPPER', name: 'Cierre', description: 'Cierre de cremallera superior.', basePriceModifier: 3000, sortOrder: 4 },
+    { category: 'TECHNIQUE', code: 'BUTTON', name: 'Botón', description: 'Broche magnético o de presión.', basePriceModifier: 1500, sortOrder: 5 },
+  ];
+
+  for (const option of wizardOptions) {
+    await prisma.wizardOption.upsert({
+      where: { code: option.code },
+      update: {
+        category: option.category as any,
+        name: option.name,
+        description: option.description,
+        basePriceModifier: option.basePriceModifier,
+        sortOrder: option.sortOrder,
+        allowedMaterialValues: option.allowedMaterialValues || [],
+      },
+      create: {
+        category: option.category as any,
+        code: option.code,
+        name: option.name,
+        description: option.description,
+        basePriceModifier: option.basePriceModifier,
+        sortOrder: option.sortOrder,
+        allowedMaterialValues: option.allowedMaterialValues || [],
+      },
+    });
+  }
 }
 
 async function seedDepartmentsAndMunicipalities(prisma: PrismaClient) {

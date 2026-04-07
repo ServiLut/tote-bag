@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Mail, Loader2, AlertCircle, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import Image from 'next/image';
+import { apiFetch } from '@/utils/api';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -17,9 +18,7 @@ export default function ForgotPasswordPage() {
     setError(null);
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
-      
-      const res = await fetch(`${API_URL}/auth/forgot-password`, {
+      const res = await apiFetch('/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -156,6 +155,7 @@ export default function ForgotPasswordPage() {
     </div>
   );
 }
+
 
 
 

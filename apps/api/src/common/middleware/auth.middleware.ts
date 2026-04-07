@@ -3,112 +3,122 @@ import { Request, Response, NextFunction } from 'express';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
+import { Role } from '../../generated/client/enums';
+import { WHITELISTED_OPERATOR_EMAILS } from '../constants/whitelisted-operator-emails';
 import { DebugRoleContextService } from '../context/debug-role-context.service';
 import {
   canUseDebugRole,
+  DEBUG_ROLE_HEADER,
   getDebugRoleFromHeader,
-  type DebugRole,
 } from '../utils/debug-role.util';
 
-type ResolvedUserRole = 'ADMIN' | 'MANAGER' | 'CUSTOMER';
+type RequestUser = {
+  id: string;
+  email?: string | null;
+  role?: Role | null;
+};
 
-type AuthenticatedRequest = Request & {
-  user?: {
-    id: string;
-    email?: string | null;
-    role?: DebugRole | null;
-  };
+type RequestWithUser = Request & {
+  user?: RequestUser;
 };
 
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {
   private supabase: SupabaseClient<any, any, any, any>;
-  private readonly superAdminEmails = new Set([
-    'deybisasprilla@gmail.com',
-    'admin@tote-bag.com',
-  ]);
-  private readonly managerEmails = new Set(['totebagbolsadetela@gmail.com']);
 
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly debugRoleContext: DebugRoleContextService,
   ) {
-    const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
-    const supabaseKey =
+    const stripQuotes = (str: string | undefined) =>
+      str?.replace(/^["']|["']$/g, '') || '';
+
+    const supabaseUrl = stripQuotes(
+      this.configService.get<string>('SUPABASE_URL') ||
+        this.configService.get<string>('NEXT_PUBLIC_SUPABASE_URL'),
+    );
+    const supabaseKey = stripQuotes(
       this.configService.get<string>('SUPABASE_ANON_KEY') ||
-      this.configService.get<string>('SERVICE_ROLE');
+        this.configService.get<string>('SERVICE_ROLE') ||
+        this.configService.get<string>('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
+    );
 
     if (!supabaseUrl || !supabaseKey) {
-      console.warn('AuthMiddleware: Missing Supabase configuration');
+      console.warn(
+        'AuthMiddleware: Missing Supabase configuration. Using fallbacks if available.',
+      );
     }
 
-    this.supabase = createClient(supabaseUrl || '', supabaseKey || '');
+    this.supabase = createClient(supabaseUrl, supabaseKey);
   }
 
-  private getWhitelistedRoleByEmail(
-    email?: string | null,
-  ): ResolvedUserRole | null {
+  private resolveRoleByEmail(email?: string | null): Role {
     const normalizedEmail = email?.trim().toLowerCase();
-    if (!normalizedEmail) {
-      return null;
+    if (normalizedEmail && WHITELISTED_OPERATOR_EMAILS.has(normalizedEmail)) {
+      return Role.MANAGER;
     }
 
-    if (this.superAdminEmails.has(normalizedEmail)) {
-      return 'ADMIN';
-    }
-
-    if (this.managerEmails.has(normalizedEmail)) {
-      return 'MANAGER';
-    }
-
-    return null;
+    return Role.CUSTOMER;
   }
 
   private async syncAuthenticatedUser(user: {
     id: string;
     email?: string | null;
   }) {
-    const normalizedEmail = user.email?.trim().toLowerCase();
+    const normalizedEmail = user.email?.trim();
+
     if (!normalizedEmail) {
       return;
     }
 
-    const whitelistedRole = this.getWhitelistedRoleByEmail(normalizedEmail);
-    const existingUser = await this.prisma.user.findUnique({
-      where: { id: user.id },
-      select: { role: true },
-    });
+    await this.prisma.$transaction(async (tx) => {
+      const existingUser = await tx.user.findUnique({
+        where: { id: user.id },
+        select: { role: true },
+      });
 
-    await this.prisma.user.upsert({
-      where: { id: user.id },
-      update: {
-        email: normalizedEmail,
-        role: whitelistedRole ?? existingUser?.role ?? 'CUSTOMER',
-        isActive: true,
-      },
-      create: {
-        id: user.id,
-        email: normalizedEmail,
-        role: whitelistedRole ?? 'CUSTOMER',
-        isActive: true,
-      },
+      const resolvedRoleByEmail = this.resolveRoleByEmail(normalizedEmail);
+      const resolvedRole =
+        resolvedRoleByEmail === Role.MANAGER
+          ? Role.MANAGER
+          : (existingUser?.role ?? resolvedRoleByEmail);
+
+      await tx.user.upsert({
+        where: { id: user.id },
+        update: {
+          email: normalizedEmail,
+          role: resolvedRole,
+          isActive: true,
+        },
+        create: {
+          id: user.id,
+          email: normalizedEmail,
+          role: resolvedRole,
+          isActive: true,
+        },
+      });
     });
   }
 
-  async use(req: AuthenticatedRequest, _res: Response, next: NextFunction) {
-    const authHeader = req.headers.authorization;
+  async use(req: RequestWithUser, _res: Response, next: NextFunction) {
     const requestedDebugRole = getDebugRoleFromHeader(
-      req.headers['x-debug-role'],
+      req.headers[DEBUG_ROLE_HEADER],
     );
-    let effectiveDebugRole: DebugRole | null = null;
+    const authHeader = req.headers.authorization;
+    let effectiveDebugRole: Role | null = null;
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1];
       if (token) {
         try {
           const { data, error } = await this.supabase.auth.getUser(token);
-          if (!error && data.user) {
+          if (error) {
+            console.error(
+              'AuthMiddleware: Supabase validation error:',
+              error.message,
+            );
+          } else if (data.user) {
             const canUseRequestedDebugRole = canUseDebugRole(
               data.user.email,
               this.configService.get<string>('NODE_ENV'),
@@ -124,18 +134,22 @@ export class AuthMiddleware implements NestMiddleware {
                 id: data.user.id,
                 email: data.user.email,
               });
+              req.user = {
+                id: data.user.id,
+                email: data.user.email,
+                role: effectiveDebugRole ?? null,
+              };
             } catch (syncError) {
               console.error('AuthMiddleware: User sync failed:', syncError);
+              req.user = {
+                id: data.user.id,
+                email: data.user.email,
+                role: effectiveDebugRole ?? null,
+              };
             }
-
-            req.user = {
-              id: data.user.id,
-              email: data.user.email,
-              role: effectiveDebugRole,
-            };
           }
-        } catch {
-          // Ignore error, request will proceed without user
+        } catch (error) {
+          console.error('AuthMiddleware: Unexpected exception:', error);
         }
       }
     }

@@ -93,7 +93,7 @@ export function CreatableCombobox({
       </button>
 
       {open && (
-        <div className="absolute z-50 w-full mt-1 bg-surface border border-theme rounded-lg shadow-lg max-h-60 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100">
+        <div className="absolute z-[80] w-full mt-1 bg-surface border border-theme rounded-lg shadow-lg max-h-60 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100">
           <div className="p-2 border-b border-theme">
             <input
               type="text"

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { getPermissionsForRole } from '../../common/utils/role-permissions.util';
 import { DebugRoleContextService } from '../../common/context/debug-role-context.service';
 import { Role } from '../../generated/client/enums';
 
@@ -20,46 +21,19 @@ export class RolesService {
 
     return {
       user,
-      effectiveRole: (debugRole ?? user?.role ?? null) as Role | null,
+      effectiveRole: debugRole ?? user?.role ?? null,
       debugRole,
     };
   }
 
   async getUserPermissions(userId: string) {
-    const [{ effectiveRole }, userRoles] = await Promise.all([
-      this.getEffectiveRole(userId),
-      this.prisma.userRole.findMany({
-        where: { userId },
-        include: {
-          role: {
-            include: {
-              permissions: {
-                include: {
-                  permission: true,
-                },
-              },
-            },
-          },
-        },
-      }),
-    ]);
-
-    // Flatten permissions
-    const directPermissions = userRoles.flatMap((ur) =>
-      ur.role.permissions.map((rp) => ({
-        resource: rp.permission.resource,
-        action: rp.permission.action,
-      })),
+    const { user, effectiveRole, debugRole } =
+      await this.getEffectiveRole(userId);
+    console.log(
+      `RolesService: resolving permissions for user=${userId} email=${user?.email ?? 'unknown'} storedRole=${user?.role ?? 'unknown'} effectiveRole=${effectiveRole ?? 'unknown'} debugRole=${debugRole ?? 'none'}`,
     );
 
-    // Backward-compatible fallback:
-    // if user_roles are not populated, infer permissions from legacy user.role.
-    if (directPermissions.length === 0 && effectiveRole) {
-      const inferred = await this.getLegacyRolePermissions(effectiveRole);
-      return this.dedupePermissions(inferred);
-    }
-
-    return this.dedupePermissions(directPermissions);
+    return this.dedupePermissions(getPermissionsForRole(effectiveRole));
   }
 
   private dedupePermissions(
@@ -74,48 +48,6 @@ export class RolesService {
     });
   }
 
-  private async getLegacyRolePermissions(role: Role) {
-    if (role === 'ADMIN') {
-      return this.prisma.permission.findMany({
-        select: { resource: true, action: true },
-      });
-    }
-
-    // Map legacy enum role to seeded RBAC role names.
-    const mappedRoleName =
-      role === 'MANAGER'
-        ? 'manager'
-        : role === 'CUSTOMER'
-          ? 'customer'
-          : null;
-
-    if (mappedRoleName) {
-      const mappedRole = await this.prisma.roleModel.findUnique({
-        where: { name: mappedRoleName },
-        include: {
-          permissions: {
-            include: {
-              permission: true,
-            },
-          },
-        },
-      });
-
-      if (mappedRole) {
-        return mappedRole.permissions.map((rp) => ({
-          resource: rp.permission.resource,
-          action: rp.permission.action,
-        }));
-      }
-    }
-
-    // VIEWER (or unknown) fallback: read-only dashboard access.
-    return [
-      { resource: 'products', action: 'read' },
-      { resource: 'orders', action: 'read' },
-    ];
-  }
-
   async hasPermission(
     userId: string,
     resource: string,
@@ -123,12 +55,23 @@ export class RolesService {
   ): Promise<boolean> {
     const { effectiveRole } = await this.getEffectiveRole(userId);
     if (effectiveRole === Role.ADMIN) {
+      if (resource === 'shipping') {
+        console.log(
+          `RolesService: shipping permission check user=${userId} action=${action} allowed=true permissions=*:*`,
+        );
+      }
       return true;
     }
 
     const permissions = await this.getUserPermissions(userId);
-    return permissions.some(
+    const allowed = permissions.some(
       (p) => p.resource === resource && p.action === action,
     );
+    if (resource === 'shipping') {
+      console.log(
+        `RolesService: shipping permission check user=${userId} action=${action} allowed=${allowed} permissions=${permissions.map((p) => `${p.resource}:${p.action}`).join(',')}`,
+      );
+    }
+    return allowed;
   }
 }

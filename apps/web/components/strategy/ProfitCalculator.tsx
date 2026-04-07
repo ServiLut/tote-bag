@@ -3,24 +3,28 @@
 import { useEffect, useState } from 'react';
 import { ApiResponse } from '@/types/api';
 import { Product } from '@/types/product';
+import {
+  createCurrencyInputState,
+  handleCurrencyInputChangeWithState,
+} from '@/lib/numeric-input';
 import { AlertCircle, Calculator, DollarSign, Loader2, TrendingUp } from 'lucide-react';
+import { Input, InputGroup } from '@tote-bag/ui';
+import { apiFetch } from '@/utils/api';
 
 export default function ProfitCalculator() {
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProductId, setSelectedProductId] = useState<string>('');
-  const [suggestedPrice, setSuggestedPrice] = useState<number>(0);
-  const [avgCost, setAvgCost] = useState<number>(0);
+  const [suggestedPrice, setSuggestedPrice] = useState(() => createCurrencyInputState(0));
+  const [avgCost, setAvgCost] = useState(() => createCurrencyInputState(''));
   const [productsLoading, setProductsLoading] = useState(true);
   const [productsError, setProductsError] = useState<string | null>(null);
-
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setProductsError(null);
 
-        const res = await fetch(`${API_URL}/catalog/products`);
+        const res = await apiFetch('/catalog/products');
         if (!res.ok) {
           throw new Error('No se pudo cargar el catalogo de productos.');
         }
@@ -36,30 +40,34 @@ export default function ProfitCalculator() {
     };
 
     fetchProducts();
-  }, [API_URL]);
+  }, []);
 
   useEffect(() => {
     const product = products.find((item) => item.id === selectedProductId);
 
     if (!product) {
-      setAvgCost(0);
-      setSuggestedPrice(0);
+      setAvgCost(createCurrencyInputState(''));
+      setSuggestedPrice(createCurrencyInputState(0));
       return;
     }
 
-    setSuggestedPrice(product.basePrice || 0);
-  }, [API_URL, products, selectedProductId]);
+    setSuggestedPrice(createCurrencyInputState(product.basePrice || 0));
+  }, [products, selectedProductId]);
 
-  const grossProfit = suggestedPrice - avgCost;
+  const grossProfit = suggestedPrice.numericValue - avgCost.numericValue;
   const hasSelection = Boolean(selectedProductId);
-  const hasRealCost = avgCost > 0;
+  const hasRealCost = avgCost.numericValue > 0;
   const canCalculateMetrics = hasSelection && hasRealCost;
-  const marginPercentage = canCalculateMetrics && suggestedPrice > 0 ? (grossProfit / suggestedPrice) * 100 : 0;
-  const markupPercentage = canCalculateMetrics && avgCost > 0 ? (grossProfit / avgCost) * 100 : 0;
+  const marginPercentage = canCalculateMetrics && suggestedPrice.numericValue > 0
+    ? (grossProfit / suggestedPrice.numericValue) * 100
+    : 0;
+  const markupPercentage = canCalculateMetrics && avgCost.numericValue > 0
+    ? (grossProfit / avgCost.numericValue) * 100
+    : 0;
 
   const getTargetPrice = (targetMargin: number) => {
-    if (avgCost <= 0 || targetMargin >= 100) return 0;
-    return avgCost / (1 - targetMargin / 100);
+    if (avgCost.numericValue <= 0 || targetMargin >= 100) return 0;
+    return avgCost.numericValue / (1 - targetMargin / 100);
   };
 
   return (
@@ -106,16 +114,19 @@ export default function ProfitCalculator() {
             <label className="mb-2 block text-sm font-bold uppercase tracking-wider text-muted">
               Costo Promedio Ponderado
             </label>
-            <div className="relative">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-muted">$</div>
-              <input
-                type="number"
-                value={avgCost}
+            <InputGroup
+              prefix={<span className="font-bold text-muted">$</span>}
+              className="flex items-center gap-2 rounded-xl border border-theme bg-base px-4"
+            >
+              <Input
+                type="text"
+                inputMode="decimal"
+                value={avgCost.formattedValue}
                 disabled={!hasSelection}
-                onChange={(event) => setAvgCost(Number(event.target.value))}
-                className="w-full rounded-xl border border-theme bg-base py-3 pl-8 pr-4 font-bold text-primary outline-none transition-all focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+                onChange={(event) => handleCurrencyInputChangeWithState(event, setAvgCost)}
+                className="w-full bg-transparent py-3 font-bold text-primary outline-none transition-all focus:ring-0 disabled:cursor-not-allowed disabled:opacity-60"
               />
-            </div>
+            </InputGroup>
             {hasSelection && !hasRealCost ? (
               <p className="mt-1 text-[10px] font-medium italic text-amber-600">
                 Ingresa un costo para calcular utilidad, margen y markup.
@@ -131,16 +142,19 @@ export default function ProfitCalculator() {
             <label className="mb-2 block text-sm font-bold uppercase tracking-wider text-muted">
               Precio de Venta Sugerido
             </label>
-            <div className="relative">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-muted">$</div>
-              <input
-                type="number"
-                value={suggestedPrice}
+            <InputGroup
+              prefix={<span className="font-bold text-muted">$</span>}
+              className="flex items-center gap-2 rounded-xl border border-theme bg-base px-4"
+            >
+              <Input
+                type="text"
+                inputMode="decimal"
+                value={suggestedPrice.formattedValue}
                 disabled={!hasSelection}
-                onChange={(event) => setSuggestedPrice(Number(event.target.value))}
-                className="w-full rounded-xl border border-theme bg-base py-3 pl-8 pr-4 font-bold text-primary outline-none transition-all focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+                onChange={(event) => handleCurrencyInputChangeWithState(event, setSuggestedPrice)}
+                className="w-full bg-transparent py-3 font-bold text-primary outline-none transition-all focus:ring-0 disabled:cursor-not-allowed disabled:opacity-60"
               />
-            </div>
+            </InputGroup>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -225,7 +239,7 @@ export default function ProfitCalculator() {
             )}
           </div>
 
-          {canCalculateMetrics && suggestedPrice < avgCost && (
+          {canCalculateMetrics && suggestedPrice.numericValue < avgCost.numericValue && (
             <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
               El precio sugerido esta por debajo del costo promedio ponderado del inventario activo.
             </div>
@@ -235,3 +249,4 @@ export default function ProfitCalculator() {
     </div>
   );
 }
+

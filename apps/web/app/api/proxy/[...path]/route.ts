@@ -37,15 +37,30 @@ async function forwardRequest(
       : await request.arrayBuffer();
 
   let lastError: unknown;
+  const attemptedUrls: string[] = [];
 
   for (const baseUrl of getApiCandidates()) {
+    const targetUrl = `${baseUrl}/${pathname}${query}`;
+    attemptedUrls.push(targetUrl);
+
     try {
-      const upstreamResponse = await fetch(`${baseUrl}/${pathname}${query}`, {
+      if (pathname.startsWith('shipping/')) {
+        console.log(
+          `[api/proxy] ${request.method} ${pathname} -> ${targetUrl} auth=${headers.has('authorization')}`,
+        );
+      }
+      const upstreamResponse = await fetch(targetUrl, {
         method: request.method,
         headers,
         body,
         cache: 'no-store',
       });
+
+      if (pathname.startsWith('shipping/')) {
+        console.log(
+          `[api/proxy] ${request.method} ${pathname} <- ${upstreamResponse.status} from ${targetUrl}`,
+        );
+      }
 
       const responseHeaders = new Headers(upstreamResponse.headers);
       responseHeaders.delete('content-encoding');
@@ -65,7 +80,9 @@ async function forwardRequest(
     lastError instanceof Error ? lastError.message : 'Sin detalle adicional';
 
   return NextResponse.json(
-    { message: `No fue posible conectar con la API. Detalle: ${detail}` },
+    {
+      message: `No fue posible conectar con la API. URLs probadas: ${attemptedUrls.join(', ')}. Detalle: ${detail}`,
+    },
     { status: 502 },
   );
 }

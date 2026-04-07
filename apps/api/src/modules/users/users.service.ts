@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Role } from '../../generated/client/enums';
 
@@ -27,7 +32,11 @@ export class UsersService {
     });
   }
 
-  async updateUserRole(userId: string, newRole: Role) {
+  async updateUserRole(userId: string, newRole: Role, actorUserId?: string) {
+    if (!actorUserId) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -36,47 +45,36 @@ export class UsersService {
       throw new NotFoundException(`Usuario con ID ${userId} no encontrado`);
     }
 
+    if (
+      actorUserId === userId &&
+      user.role === Role.ADMIN &&
+      newRole !== Role.ADMIN
+    ) {
+      throw new ForbiddenException(
+        'No puedes quitarte a ti mismo el rol ADMIN',
+      );
+    }
+
+    if (user.role === Role.ADMIN && newRole !== Role.ADMIN) {
+      const activeAdminCount = await this.prisma.user.count({
+        where: {
+          role: Role.ADMIN,
+          isActive: true,
+        },
+      });
+
+      if (activeAdminCount <= 1) {
+        throw new ForbiddenException(
+          'No puedes cambiar el rol del ultimo ADMIN activo',
+        );
+      }
+    }
+
     return this.prisma.$transaction(async (tx) => {
-      // 1. Actualizar el campo 'role' en el modelo User
       await tx.user.update({
         where: { id: userId },
         data: { role: newRole },
       });
-
-      // 2. Sincronizar la tabla 'UserRole'
-      // Mapeo de Role enum a nombres de RoleModel (según seed)
-      const roleMapping: Record<string, string> = {
-        [Role.ADMIN]: 'admin',
-        [Role.MANAGER]: 'manager',
-        [Role.CUSTOMER]: 'customer',
-      };
-
-      const roleName = roleMapping[newRole] || newRole.toLowerCase();
-
-      // Buscar el RoleModel correspondiente
-      const roleModel = await tx.roleModel.findFirst({
-        where: {
-          name: {
-            equals: roleName,
-            mode: 'insensitive',
-          },
-        },
-      });
-
-      if (roleModel) {
-        // Eliminar roles anteriores
-        await tx.userRole.deleteMany({
-          where: { userId },
-        });
-
-        // Asignar el nuevo rol
-        await tx.userRole.create({
-          data: {
-            userId,
-            roleId: roleModel.id,
-          },
-        });
-      }
 
       return { message: 'Rol actualizado exitosamente', role: newRole };
     });

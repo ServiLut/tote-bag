@@ -1,19 +1,41 @@
 import {
   Controller,
+  ForbiddenException,
   Get,
+  Header,
   Post,
   Body,
   Request,
   Query,
   Param,
   ParseUUIDPipe,
+  UnauthorizedException,
 } from '@nestjs/common';
+import { Role } from '../../generated/client/client';
 import { InventoryService } from './inventory.service';
 import { FinanceService } from './finance.service';
 import { CreatePurchaseBatchDto } from './dto/create-purchase-batch.dto';
+import {
+  CreateOpexDto,
+  CreateOpexCategoryDto,
+  CreateSupplierPaymentDto,
+} from './dto/finance-inputs.dto';
+import { RolesService } from '../roles/roles.service';
 
 interface RequestWithUser {
   user?: { id: string };
+}
+
+function parseDateQuery(value?: string, endOfDay = false) {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = new Date(`${value}T00:00:00`);
+  if (endOfDay) {
+    parsed.setHours(23, 59, 59, 999);
+  }
+  return parsed;
 }
 
 @Controller('inventory')
@@ -21,22 +43,43 @@ export class InventoryController {
   constructor(
     private readonly inventoryService: InventoryService,
     private readonly financeService: FinanceService,
+    private readonly rolesService: RolesService,
   ) {}
 
+  private async ensureAdmin(userId?: string) {
+    if (!userId) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    const { effectiveRole } = await this.rolesService.getEffectiveRole(userId);
+
+    if (effectiveRole !== Role.ADMIN) {
+      throw new ForbiddenException(
+        'Solo los usuarios ADMIN pueden gestionar inventario y finanzas',
+      );
+    }
+  }
+
   @Get('detailed')
-  async getDetailedInventory() {
+  async getDetailedInventory(@Request() req: RequestWithUser) {
+    await this.ensureAdmin(req.user?.id);
     return this.inventoryService.getDetailedInventory();
   }
 
   @Get('movements')
-  async getInventoryMovements() {
+  async getInventoryMovements(@Request() req: RequestWithUser) {
+    await this.ensureAdmin(req.user?.id);
     return this.inventoryService.getInventoryMovements();
   }
 
   @Get('products/:productId/average-cost')
+  @Header('Deprecation', 'true')
+  @Header('Sunset', 'Tue, 30 Jun 2026 23:59:59 GMT')
   async getAverageCost(
     @Param('productId', new ParseUUIDPipe({ version: '4' })) productId: string,
+    @Request() req: RequestWithUser,
   ) {
+    await this.ensureAdmin(req.user?.id);
     const averageCost = await this.inventoryService.getAverageCost(productId);
 
     return {
@@ -46,6 +89,8 @@ export class InventoryController {
   }
 
   @Post('batch')
+  @Header('Deprecation', 'true')
+  @Header('Sunset', 'Tue, 30 Jun 2026 23:59:59 GMT')
   async createBatch(
     @Body()
     body: {
@@ -58,23 +103,25 @@ export class InventoryController {
     },
     @Request() req: RequestWithUser,
   ) {
-    const userId = req.user?.id || 'auth0|admin-test-id'; // Fallback for manual testing
+    await this.ensureAdmin(req.user?.id);
     return this.inventoryService.createBatch({
       ...body,
       purchaseDate: new Date(body.purchaseDate),
-      userId,
+      userId: req.user!.id,
     });
   }
 
   @Post('receive-batch')
+  @Header('Deprecation', 'true')
+  @Header('Sunset', 'Tue, 30 Jun 2026 23:59:59 GMT')
   async receiveBatch(
     @Body() data: CreatePurchaseBatchDto,
     @Request() req: RequestWithUser,
   ) {
-    const userId = req.user?.id || 'auth0|admin-test-id';
+    await this.ensureAdmin(req.user?.id);
     return this.inventoryService.receiveBatch({
       ...data,
-      userId,
+      userId: req.user!.id,
     });
   }
 
@@ -83,20 +130,22 @@ export class InventoryController {
     @Body() data: CreatePurchaseBatchDto,
     @Request() req: RequestWithUser,
   ) {
-    const userId = req.user?.id || 'auth0|admin-test-id';
+    await this.ensureAdmin(req.user?.id);
     return this.inventoryService.createPurchaseBatch({
       ...data,
-      userId,
+      userId: req.user!.id,
     });
   }
 
   @Get('batches')
-  async findAllBatches() {
+  async findAllBatches(@Request() req: RequestWithUser) {
+    await this.ensureAdmin(req.user?.id);
     return this.inventoryService.findAllBatches();
   }
 
   @Get('suppliers')
-  async findAllSuppliers() {
+  async findAllSuppliers(@Request() req: RequestWithUser) {
+    await this.ensureAdmin(req.user?.id);
     return this.financeService.findAllSuppliers();
   }
 
@@ -110,26 +159,32 @@ export class InventoryController {
       phone?: string;
       email?: string;
     },
+    @Request() req: RequestWithUser,
   ) {
+    await this.ensureAdmin(req.user?.id);
     return this.financeService.createSupplier(body);
   }
 
   @Get('suppliers/:id')
-  async getSupplierDetails(@Param('id') id: string) {
+  async getSupplierDetails(
+    @Param('id') id: string,
+    @Request() req: RequestWithUser,
+  ) {
+    await this.ensureAdmin(req.user?.id);
     return this.financeService.getSupplierDetails(id);
   }
 
   @Post('suppliers/:id/payments')
   async createSupplierPayment(
     @Param('id') id: string,
-    @Body() body: { amount: number; description: string },
+    @Body() body: CreateSupplierPaymentDto,
     @Request() req: RequestWithUser,
   ) {
-    const userId = req.user?.id || 'auth0|admin-test-id';
+    await this.ensureAdmin(req.user?.id);
     return this.financeService.createSupplierPayment({
       ...body,
       supplierId: id,
-      userId,
+      userId: req.user!.id,
     });
   }
 
@@ -137,44 +192,61 @@ export class InventoryController {
   async getFinancialSummary(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
+    @Request() req?: RequestWithUser,
   ) {
-    return this.financeService.getFinancialSummary(
-      startDate ? new Date(startDate) : undefined,
-      endDate ? new Date(endDate) : undefined,
+    await this.ensureAdmin(req?.user?.id);
+    return this.financeService.getFinancialSummaryLocalized(
+      parseDateQuery(startDate),
+      parseDateQuery(endDate, true),
     );
   }
 
   @Get('finance/cash-flow')
-  async getCashFlowData(@Query('period') period?: 'daily' | 'monthly') {
-    return this.financeService.getCashFlowData(period);
+  async getCashFlowData(
+    @Query('period') period?: 'daily' | 'monthly',
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Request() req?: RequestWithUser,
+  ) {
+    await this.ensureAdmin(req?.user?.id);
+    return this.financeService.getCashFlowData(
+      period,
+      parseDateQuery(startDate),
+      parseDateQuery(endDate, true),
+    );
   }
 
   @Get('finance/opex-categories')
-  async getOpexCategories() {
-    return this.financeService.getOpexCategories();
+  async getOpexCategories(@Request() req: RequestWithUser) {
+    await this.ensureAdmin(req.user?.id);
+    return this.financeService.getOpexCategoriesSafe();
+  }
+
+  @Post('finance/opex-categories')
+  async createOpexCategory(
+    @Body() body: CreateOpexCategoryDto,
+    @Request() req: RequestWithUser,
+  ) {
+    await this.ensureAdmin(req.user?.id);
+    return this.financeService.createOpexCategory(body.name);
   }
 
   @Get('finance/opex-transactions')
-  async getOpexTransactions() {
+  async getOpexTransactions(@Request() req: RequestWithUser) {
+    await this.ensureAdmin(req.user?.id);
     return this.financeService.getOpexTransactions();
   }
 
   @Post('finance/opex')
   async createOpex(
-    @Body()
-    body: {
-      amount: number;
-      description: string;
-      opexCategoryId: string;
-      createdAt?: string;
-    },
+    @Body() body: CreateOpexDto,
     @Request() req: RequestWithUser,
   ) {
-    const userId = req.user?.id || 'auth0|admin-test-id';
-    return this.financeService.createOpex({
+    await this.ensureAdmin(req.user?.id);
+    return this.financeService.createOpexSafe({
       ...body,
       createdAt: body.createdAt ? new Date(body.createdAt) : undefined,
-      userId,
+      userId: req.user!.id,
     });
   }
 }

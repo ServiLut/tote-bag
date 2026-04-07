@@ -87,6 +87,7 @@ async function bootstrap() {
     },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Accept, Authorization',
+    credentials: true,
   });
   const port = process.env.PORT ?? 4003;
   // Triggering reload for new routes

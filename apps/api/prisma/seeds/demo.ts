@@ -184,4 +184,22 @@ export async function runDemoSeed(prisma: PrismaClient) {
   for (const rule of pricingRules) {
     await prisma.pricingRule.create({ data: rule });
   }
+
+  // 10. Variantes (Necesarias para el configurador)
+  console.log('🌈 Creando variantes para el producto base...');
+  await prisma.variant.upsert({
+    where: { sku: 'TOTE-CL-BASE' },
+    update: {
+      color: 'Base',
+      stock: 1000,
+      imageUrl: '/placeholder.svg',
+    },
+    create: {
+      productId: product.id,
+      sku: 'TOTE-CL-BASE',
+      color: 'Base',
+      stock: 1000,
+      imageUrl: '/placeholder.svg',
+    },
+  });
 }

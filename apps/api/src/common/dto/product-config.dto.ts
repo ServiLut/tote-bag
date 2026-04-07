@@ -16,8 +16,8 @@ export class PersonalizationInputDto {
 
   @IsArray()
   @IsString({ each: true })
-  @IsNotEmpty({ each: true })
-  options: string[];
+  @IsOptional()
+  options?: string[];
 }
 
 export class ProductConfigInputDto {

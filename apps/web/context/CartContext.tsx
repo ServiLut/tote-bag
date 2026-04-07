@@ -12,6 +12,8 @@ export interface CartItem {
   configuration?: Record<string, unknown>;
   unitPrice: number;
   configCode?: string;
+  isCustom?: boolean;
+  customImageURL?: string;
 }
 
 interface CartContextType {
@@ -76,6 +78,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
   ) => {
     setItems((currentItems) => {
       const itemId = configCode ? `${variant.sku}-${configCode}` : variant.sku;
+      const configurationImage =
+        typeof configuration?.customImageURL === 'string'
+          ? configuration.customImageURL
+          : typeof configuration?.previewUrl === 'string'
+            ? configuration.previewUrl
+            : configuration?.customizationSettings &&
+                typeof configuration.customizationSettings === 'object' &&
+                typeof (configuration.customizationSettings as Record<string, unknown>)
+                  .customImageURL === 'string'
+              ? ((configuration.customizationSettings as Record<string, unknown>)
+                  .customImageURL as string)
+            : undefined;
+      const customImageURL = configurationImage || variant.imageUrl || undefined;
+      const isCustom = Boolean(configCode || customImageURL);
       const existingItemIndex = currentItems.findIndex(
         (item) => item.id === itemId
       );
@@ -97,7 +113,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         quantity, 
         configuration, 
         unitPrice: price,
-        configCode
+        configCode,
+        isCustom,
+        customImageURL,
       }];
     });
     setIsOpen(true);

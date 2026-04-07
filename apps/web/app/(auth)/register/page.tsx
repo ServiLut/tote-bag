@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Mail, Lock, Loader2, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
+import { apiFetch } from '@/utils/api';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -30,10 +31,7 @@ export default function RegisterPage() {
     setSuccess(null);
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
-      console.log("DEBUG: Connecting to API at:", API_URL);
-
-      const response = await fetch(`${API_URL}/auth/register`, {
+      const response = await apiFetch('/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -172,7 +170,7 @@ export default function RegisterPage() {
                   </div>
                   <div className="ml-3 text-sm">
                     <label htmlFor="terms" className="font-medium text-muted">
-                      Acepto los <Link href="/legal/terms" className="text-primary hover:underline">Términos y Condiciones</Link> y la <Link href="/legal/privacy" className="text-primary hover:underline">Política de Privacidad</Link>.
+                      Acepto la <Link href="/legal/privacy" className="text-primary hover:underline">Política de Privacidad</Link> y el <Link href="/legal/data-processing" className="text-primary hover:underline">Tratamiento de Datos</Link>.
                     </label>
                   </div>
                 </div>
@@ -230,6 +228,7 @@ export default function RegisterPage() {
     </div>
   );
 }
+
 
 
 

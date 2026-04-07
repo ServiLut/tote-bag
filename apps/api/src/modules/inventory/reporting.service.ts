@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '../../generated/client/client';
 import {
@@ -14,7 +14,21 @@ import { format } from 'date-fns';
 export class ReportingService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private validateDateRange(startDate: Date, endDate: Date) {
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      throw new BadRequestException('Rango de fechas invalido');
+    }
+
+    if (startDate > endDate) {
+      throw new BadRequestException(
+        'La fecha inicial no puede ser mayor que la fecha final',
+      );
+    }
+  }
+
   async getAccountingReport(startDate: Date, endDate: Date) {
+    this.validateDateRange(startDate, endDate);
+
     const whereClause: Prisma.FinancialTransactionWhereInput = {
       createdAt: { gte: startDate, lte: endDate },
     };
@@ -100,6 +114,7 @@ export class ReportingService {
     startDate: Date,
     endDate: Date,
   ): Promise<Buffer> {
+    this.validateDateRange(startDate, endDate);
     const data = await this.getAccountingReport(startDate, endDate);
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet('Reporte Contable');
@@ -238,6 +253,7 @@ export class ReportingService {
   }
 
   async generateAccountingPDF(startDate: Date, endDate: Date): Promise<Buffer> {
+    this.validateDateRange(startDate, endDate);
     const data = await this.getAccountingReport(startDate, endDate);
 
     return new Promise((resolve, reject) => {
@@ -385,6 +401,8 @@ export class ReportingService {
   }
 
   async getClosingReport(startDate: Date, endDate: Date, userId: string) {
+    this.validateDateRange(startDate, endDate);
+
     const whereClause: Prisma.FinancialTransactionWhereInput = {
       createdAt: { gte: startDate, lte: endDate },
     };

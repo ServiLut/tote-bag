@@ -15,11 +15,15 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "backfill:shipments": "ts-node src/scripts/backfill-shipments.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
-    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register ./node_modules/jest/bin/jest.js --runInBand",
+    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "seed": "ts-node prisma/seed.ts",
+    "seed:all": "ts-node prisma/seed-all.ts",
+    "seed:demo": "ts-node prisma/seed-prueba.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

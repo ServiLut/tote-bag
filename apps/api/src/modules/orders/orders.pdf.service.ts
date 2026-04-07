@@ -129,6 +129,7 @@ export class ReceiptPdfService {
       .font('Helvetica-Bold')
       .text('INFORMACIÓN DE PAGO:', 50, totalsY + 60);
     doc.fontSize(9).font('Helvetica').text(`Estado: ${order.status}`);
+    doc.text(`Origen: ${order.source}`);
     doc.text(`Método: Transferencia / Pasarela Web`);
     doc.moveDown();
 

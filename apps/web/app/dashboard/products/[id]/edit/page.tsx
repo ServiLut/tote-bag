@@ -6,8 +6,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ApiResponse } from '@/types/api';
-import { apiFetch } from '@/utils/api';
-import { getAuthHeaders } from '@/utils/supabase/auth';
+import { getApiBaseUrl } from '@/lib/api-config';
 
 interface Product {
   id: string;
@@ -32,13 +31,14 @@ export default function EditProductPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const API_URL = getApiBaseUrl();
+
   useEffect(() => {
     if (!id) return;
 
     const fetchProduct = async () => {
       try {
-        const headers = await getAuthHeaders();
-        const res = await apiFetch(`/catalog/${id}`, { headers: headers || undefined });
+        const res = await fetch(`${API_URL}/catalog/${id}`);
         if (!res.ok) throw new Error('No se pudo cargar el producto');
         const responseBody: ApiResponse<Product> = await res.json();
         setProductData(responseBody.data);
@@ -51,7 +51,7 @@ export default function EditProductPage() {
     };
 
     fetchProduct();
-  }, [id]);
+  }, [id, API_URL]);
 
   if (loading) {
     return (

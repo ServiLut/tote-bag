@@ -12,6 +12,7 @@ import {
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ProductConfigInputDto } from '../../../common/dto/product-config.dto';
+import { parseLocalizedNumber } from '../../../common/utils/parse-localized-number';
 
 class AddressDto {
   @IsString()
@@ -43,11 +44,13 @@ class CreateOrderItemDto {
   @IsNumber()
   @IsPositive()
   @IsNotEmpty()
+  @Transform(({ value }) => parseLocalizedNumber(value))
   quantity: number;
 
   @IsNumber()
   @IsPositive()
   @IsOptional()
+  @Transform(({ value }) => parseLocalizedNumber(value))
   price?: number;
 
   @ValidateNested()
@@ -114,11 +117,12 @@ export class CreateOrderDto {
 
   @IsOptional()
   @IsString()
-  initialStatus?: string;
+  @IsIn(['ECOMMERCE', 'MANUAL'])
+  source?: string;
 
   @IsOptional()
-  @IsIn(['ECOMMERCE', 'MANUAL'])
-  source?: 'ECOMMERCE' | 'MANUAL';
+  @IsString()
+  initialStatus?: string;
 
   @IsOptional()
   @IsIn(['amount', 'percent'])
@@ -128,7 +132,7 @@ export class CreateOrderDto {
   @Transform(({ value }) =>
     value === '' || value === null || value === undefined
       ? undefined
-      : Number(value),
+      : parseLocalizedNumber(value),
   )
   @IsNumber()
   @Min(0)

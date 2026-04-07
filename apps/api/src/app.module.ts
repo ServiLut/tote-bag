@@ -81,6 +81,7 @@ import cacheConfig from './config/cache.config';
       },
       inject: [ConfigService],
     }),
+    DebugRoleContextModule,
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
@@ -92,7 +93,6 @@ import cacheConfig from './config/cache.config';
     }),
     StorageModule,
     PrismaModule,
-    DebugRoleContextModule,
     RolesModule,
     DashboardModule,
     B2BModule,

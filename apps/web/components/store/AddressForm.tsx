@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react';
 import { Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { Combobox } from '@/components/ui/Combobox';
+import { apiFetch } from '@/utils/api';
 
 interface Department {
   id: string;
@@ -18,11 +20,11 @@ interface Municipality {
 interface AddressFormProps {
   onClose: () => void;
   onSuccess: () => void;
-  apiUrl: string;
   token: string;
 }
 
-export default function AddressForm({ onClose, onSuccess, apiUrl, token }: AddressFormProps) {
+export default function AddressForm({ onClose, onSuccess, token }: AddressFormProps) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
@@ -41,13 +43,13 @@ export default function AddressForm({ onClose, onSuccess, apiUrl, token }: Addre
     isDefault: false,
   });
 
-  const departmentOptions = departments.map(d => ({ value: d.id, label: d.name }));
-  const municipalityOptions = municipalities.map(m => ({ value: m.id, label: m.name }));
+  const departmentOptions = departments.map((d) => ({ value: d.id, label: d.name }));
+  const municipalityOptions = municipalities.map((m) => ({ value: m.id, label: m.name }));
 
   useEffect(() => {
     const fetchDepartments = async () => {
       try {
-        const res = await fetch(`${apiUrl}/locations/departments`);
+        const res = await apiFetch('/locations/departments');
         if (res.ok) {
           const response = await res.json();
           setDepartments(response.data || []);
@@ -60,7 +62,7 @@ export default function AddressForm({ onClose, onSuccess, apiUrl, token }: Addre
     };
 
     fetchDepartments();
-  }, [apiUrl]);
+  }, []);
 
   useEffect(() => {
     const fetchMunicipalities = async () => {
@@ -70,7 +72,7 @@ export default function AddressForm({ onClose, onSuccess, apiUrl, token }: Addre
       }
 
       try {
-        const res = await fetch(`${apiUrl}/locations/municipalities/${formData.departmentId}`);
+        const res = await apiFetch(`/locations/municipalities/${formData.departmentId}`);
         if (res.ok) {
           const response = await res.json();
           setMunicipalities(response.data || []);
@@ -81,38 +83,38 @@ export default function AddressForm({ onClose, onSuccess, apiUrl, token }: Addre
     };
 
     fetchMunicipalities();
-  }, [formData.departmentId, apiUrl]);
+  }, [formData.departmentId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.departmentId || !formData.municipalityId) {
-      toast.error('Por favor selecciona departamento y municipio');
+      toast.error(t('address_select_department_city'));
       return;
     }
 
     setLoading(true);
 
     try {
-      const res = await fetch(`${apiUrl}/addresses`, {
+      const res = await apiFetch('/addresses', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(formData),
       });
 
       if (res.ok) {
-        toast.success('Dirección agregada correctamente');
+        toast.success(t('address_added_success'));
         onSuccess();
         onClose();
       } else {
         const error = await res.json();
-        toast.error(error.message || 'Error al agregar la dirección');
+        toast.error(error.message || t('address_add_error'));
       }
     } catch (error) {
-      toast.error('Error de red al agregar la dirección');
+      toast.error(t('address_network_error'));
       console.error(error);
     } finally {
       setLoading(false);
@@ -123,7 +125,7 @@ export default function AddressForm({ onClose, onSuccess, apiUrl, token }: Addre
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-surface w-full max-w-lg rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in duration-200">
         <div className="flex justify-between items-center px-6 py-4 border-b border-theme">
-          <h2 className="text-xl font-bold text-primary">Agregar Nueva Dirección</h2>
+          <h2 className="text-xl font-bold text-primary">{t('address_add_new')}</h2>
           <button onClick={onClose} className="text-muted hover:text-primary transition-colors">
             <X className="w-6 h-6" />
           </button>
@@ -132,11 +134,11 @@ export default function AddressForm({ onClose, onSuccess, apiUrl, token }: Addre
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
           <div className="grid grid-cols-1 gap-4">
             <div>
-              <label className="block text-sm font-medium text-primary mb-1">Nombre de la dirección (ej: Mi Casa)</label>
+              <label className="block text-sm font-medium text-primary mb-1">{t('address_label_name')}</label>
               <input
                 required
                 type="text"
-                placeholder="Mi Casa, Oficina..."
+                placeholder={t('address_label_name_placeholder')}
                 className="w-full px-4 py-2 bg-base border border-theme rounded-lg focus:ring-2 focus:ring-accent outline-none transition-all"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -145,7 +147,7 @@ export default function AddressForm({ onClose, onSuccess, apiUrl, token }: Addre
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-primary mb-1">Nombre</label>
+                <label className="block text-sm font-medium text-primary mb-1">{t('address_first_name')}</label>
                 <input
                   required
                   type="text"
@@ -155,7 +157,7 @@ export default function AddressForm({ onClose, onSuccess, apiUrl, token }: Addre
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-primary mb-1">Apellido</label>
+                <label className="block text-sm font-medium text-primary mb-1">{t('address_last_name')}</label>
                 <input
                   required
                   type="text"
@@ -167,7 +169,7 @@ export default function AddressForm({ onClose, onSuccess, apiUrl, token }: Addre
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-primary mb-1">Teléfono</label>
+              <label className="block text-sm font-medium text-primary mb-1">{t('address_phone')}</label>
               <input
                 required
                 type="tel"
@@ -179,35 +181,35 @@ export default function AddressForm({ onClose, onSuccess, apiUrl, token }: Addre
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-primary mb-1">Departamento</label>
+                <label className="block text-sm font-medium text-primary mb-1">{t('address_department')}</label>
                 <Combobox
                   options={departmentOptions}
                   value={formData.departmentId}
                   onChange={(val) => setFormData({ ...formData, departmentId: val, municipalityId: '' })}
                   disabled={loadingLocations}
-                  placeholder="Seleccionar..."
-                  searchPlaceholder="Buscar departamento..."
+                  placeholder={t('address_select_placeholder')}
+                  searchPlaceholder={t('address_search_department')}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-primary mb-1">Municipio</label>
+                <label className="block text-sm font-medium text-primary mb-1">{t('address_municipality')}</label>
                 <Combobox
                   options={municipalityOptions}
                   value={formData.municipalityId}
                   onChange={(val) => setFormData({ ...formData, municipalityId: val })}
                   disabled={!formData.departmentId}
-                  placeholder={formData.departmentId ? "Seleccionar..." : "Primero elige depto"}
-                  searchPlaceholder="Buscar municipio..."
+                  placeholder={formData.departmentId ? t('address_select_placeholder') : t('address_choose_department_first')}
+                  searchPlaceholder={t('address_search_municipality')}
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-primary mb-1">Dirección</label>
+              <label className="block text-sm font-medium text-primary mb-1">{t('address_exact')}</label>
               <input
                 required
                 type="text"
-                placeholder="Calle 123 #45-67..."
+                placeholder={t('address_exact_placeholder')}
                 className="w-full px-4 py-2 bg-base border border-theme rounded-lg focus:ring-2 focus:ring-accent outline-none"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
@@ -216,7 +218,7 @@ export default function AddressForm({ onClose, onSuccess, apiUrl, token }: Addre
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-primary mb-1">Barrio</label>
+                <label className="block text-sm font-medium text-primary mb-1">{t('address_neighborhood')}</label>
                 <input
                   type="text"
                   className="w-full px-4 py-2 bg-base border border-theme rounded-lg focus:ring-2 focus:ring-accent outline-none"
@@ -225,7 +227,7 @@ export default function AddressForm({ onClose, onSuccess, apiUrl, token }: Addre
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-primary mb-1">Apto, Suite, etc.</label>
+                <label className="block text-sm font-medium text-primary mb-1">{t('address_additional_info')}</label>
                 <input
                   type="text"
                   className="w-full px-4 py-2 bg-base border border-theme rounded-lg focus:ring-2 focus:ring-accent outline-none"
@@ -244,7 +246,7 @@ export default function AddressForm({ onClose, onSuccess, apiUrl, token }: Addre
                 onChange={(e) => setFormData({ ...formData, isDefault: e.target.checked })}
               />
               <label htmlFor="isDefault" className="text-sm font-medium text-primary">
-                Establecer como dirección predeterminada
+                {t('address_set_default')}
               </label>
             </div>
           </div>
@@ -255,7 +257,7 @@ export default function AddressForm({ onClose, onSuccess, apiUrl, token }: Addre
               onClick={onClose}
               className="flex-1 px-4 py-2 border border-theme rounded-lg font-bold text-primary hover:bg-base transition-colors"
             >
-              Cancelar
+              {t('address_cancel')}
             </button>
             <button
               type="submit"
@@ -263,7 +265,7 @@ export default function AddressForm({ onClose, onSuccess, apiUrl, token }: Addre
               className="flex-1 px-4 py-2 bg-primary text-surface rounded-lg font-bold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              Guardar Dirección
+              {t('address_save')}
             </button>
           </div>
         </form>

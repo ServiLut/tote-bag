@@ -1,6 +1,27 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
+const entityAliases: Record<string, string[]> = {
+  Auth: ['Auth', 'auth'],
+  B2BQuote: ['B2BQuote', 'b2b'],
+  FinancialTransaction: ['FinancialTransaction', 'finance'],
+  Order: ['Order', 'orders'],
+  PayrollBillingStatement: ['PayrollBillingStatement'],
+  PayrollShift: ['PayrollShift'],
+  Product: ['Product', 'products'],
+  Profile: ['Profile', 'profiles'],
+  PurchaseBatch: ['PurchaseBatch', 'batch', 'batches'],
+  PqrsTicket: ['PqrsTicket', 'pqrs'],
+  Shipment: ['Shipment', 'shipping'],
+  ShippingProvider: ['ShippingProvider'],
+  Supplier: ['Supplier', 'suppliers'],
+  System: ['System'],
+  User: ['User', 'users'],
+  Variant: ['Variant'],
+  WizardOption: ['WizardOption'],
+  OpexCategory: ['OpexCategory'],
+};
+
 @Injectable()
 export class AuditService {
   constructor(private readonly prisma: PrismaService) {}
@@ -13,9 +34,10 @@ export class AuditService {
     take?: number;
   }) {
     const { entity, action, userId, skip = 0, take = 50 } = query;
+    const entityFilter = entity ? entityAliases[entity] || [entity] : undefined;
 
     const where = {
-      ...(entity && { entity }),
+      ...(entityFilter && { entity: { in: entityFilter } }),
       ...(action && { action }),
       ...(userId && { userId }),
     };

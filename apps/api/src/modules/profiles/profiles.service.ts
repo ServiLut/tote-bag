@@ -9,30 +9,18 @@ export class ProfilesService {
     private readonly prisma: PrismaService,
     private readonly debugRoleContext: DebugRoleContextService,
   ) {}
-  private readonly superAdminEmails = new Set([
-    'deybisasprilla@gmail.com',
-    'admin@tote-bag.com',
-  ]);
-  private readonly managerEmails = new Set(['totebagbolsadetela@gmail.com']);
-
-  private getWhitelistedRoleByEmail(
-    email?: string | null,
-  ): 'ADMIN' | 'MANAGER' | null {
-    const normalizedEmail = email?.toLowerCase();
-    if (!normalizedEmail) return null;
-    if (this.superAdminEmails.has(normalizedEmail)) return 'ADMIN';
-    if (this.managerEmails.has(normalizedEmail)) return 'MANAGER';
-    return null;
-  }
 
   async findAll(
     filters: {
       role?: 'ADMIN' | 'CUSTOMER';
       department?: string;
       municipality?: string;
+      search?: string;
+      page?: number;
+      pageSize?: number;
     } = {},
   ) {
-    const { role, department, municipality } = filters;
+    const { role, department, municipality, search, page, pageSize } = filters;
 
     const where: Prisma.ProfileWhereInput = {};
     if (role) {
@@ -40,10 +28,27 @@ export class ProfilesService {
     }
     if (department) where.department = department;
     if (municipality) where.municipality = municipality;
+    if (search?.trim()) {
+      const term = search.trim();
+      where.OR = [
+        { email: { contains: term, mode: 'insensitive' } },
+        { phone: { contains: term, mode: 'insensitive' } },
+        { firstName: { contains: term, mode: 'insensitive' } },
+        { lastName: { contains: term, mode: 'insensitive' } },
+      ];
+    }
 
-    return this.prisma.profile.findMany({
+    const shouldPaginate =
+      typeof page === 'number' &&
+      Number.isFinite(page) &&
+      page > 0 &&
+      typeof pageSize === 'number' &&
+      Number.isFinite(pageSize) &&
+      pageSize > 0;
+
+    const queryOptions = {
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: 'desc' as const },
       include: {
         user: {
           select: { role: true, isActive: true },
@@ -52,7 +57,34 @@ export class ProfilesService {
           select: { orders: true },
         },
       },
-    });
+    };
+
+    if (!shouldPaginate) {
+      return this.prisma.profile.findMany(queryOptions);
+    }
+
+    const safePage = page;
+    const safePageSize = Math.min(pageSize, 100);
+    const skip = (safePage - 1) * safePageSize;
+
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.profile.findMany({
+        ...queryOptions,
+        skip,
+        take: safePageSize,
+      }),
+      this.prisma.profile.count({ where }),
+    ]);
+
+    return {
+      items,
+      pagination: {
+        page: safePage,
+        pageSize: safePageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / safePageSize)),
+      },
+    };
   }
 
   // Removiendo findAllByRole ya que findAll ahora maneja los filtros
@@ -75,36 +107,8 @@ export class ProfilesService {
       include: { user: true },
     });
 
-    if (!profile) return profile;
-
-    const whitelistedRole = this.getWhitelistedRoleByEmail(profile.user?.email);
-    if (whitelistedRole && profile.user?.role !== whitelistedRole) {
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: { role: whitelistedRole },
-      });
-
-      const syncedProfile = await this.prisma.profile.findUnique({
-        where: { userId },
-        include: { user: true },
-      });
-
-      const debugRole = this.debugRoleContext.getDebugRole();
-      if (!syncedProfile || !syncedProfile.user || !debugRole) {
-        return syncedProfile;
-      }
-
-      return {
-        ...syncedProfile,
-        user: {
-          ...syncedProfile.user,
-          role: debugRole,
-        },
-      };
-    }
-
     const debugRole = this.debugRoleContext.getDebugRole();
-    if (!profile.user || !debugRole) {
+    if (!profile || !profile.user || !debugRole) {
       return profile;
     }
 

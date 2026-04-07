@@ -51,12 +51,6 @@ export function isDashboardPrivilegedRole(
   return role === 'ADMIN' || role === 'MANAGER';
 }
 
-export function isDashboardReadOnlyRole(
-  _role: DashboardRole | null | undefined,
-) {
-  return false;
-}
-
 export function canUseDashboardDebugRole(
   email: string | null | undefined,
   nodeEnv: string | undefined = process.env.NODE_ENV,

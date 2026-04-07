@@ -1,102 +1,93 @@
+'use client';
+
 import Image from 'next/image';
 import { COMPANY_INFO } from '@/utils/company-info';
 import { Leaf, Handshake, Infinity } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function AboutPage() {
+  const { t } = useTranslation();
+
   return (
     <>
-      {/* Hero Section */}
       <section className="h-[60vh] w-full flex items-center justify-center bg-secondary/10 px-4">
         <div className="text-center px-4 max-w-4xl mx-auto space-y-6">
-          <span className="uppercase tracking-[0.2em] text-sm font-medium text-secondary mb-4 block">Nuestra Historia</span>
+          <span className="uppercase tracking-[0.2em] text-sm font-medium text-secondary mb-4 block">{t('about_history')}</span>
           <h1 className="text-5xl md:text-7xl font-serif font-bold text-primary mb-6">
-            Tejiendo un futuro sostenible.
+            {t('about_hero_title')}
           </h1>
           <p className="text-xl md:text-2xl font-light text-muted max-w-2xl mx-auto">
-            Creemos que la moda puede ser bella, funcional y ética al mismo tiempo.
+            {t('about_hero_description')}
           </p>
         </div>
       </section>
 
-      {/* Mission Section */}
       <section className="py-24 px-4 container mx-auto max-w-6xl">
         <div className="grid md:grid-cols-2 gap-16 items-center">
           <div className="space-y-6">
-            <h2 className="text-4xl font-serif font-bold text-primary">Más que una bolsa, un movimiento.</h2>
+            <h2 className="text-4xl font-serif font-bold text-primary">{t('about_mission_title')}</h2>
             <div className="w-20 h-1 bg-secondary" />
             <p className="text-lg text-muted leading-relaxed">
-              En <strong>{COMPANY_INFO.name}</strong>, nacimos con una misión simple pero ambiciosa: eliminar el uso de bolsas plásticas de un solo uso en Colombia, sin sacrificar el estilo.
+              {t('about_mission_paragraph_1', { company: COMPANY_INFO.name })}
             </p>
             <p className="text-lg text-muted leading-relaxed">
-              Lo que comenzó en 2024 como un pequeño taller en Medellín, se ha convertido en una comunidad de personas conscientes que eligen calidad sobre cantidad. Cada tote bag que fabricamos lleva consigo horas de dedicación, materiales seleccionados y el compromiso de reducir nuestra huella ambiental.
+              {t('about_mission_paragraph_2')}
             </p>
           </div>
           <div className="relative h-[500px] w-full bg-surface rounded-lg overflow-hidden shadow-xl">
-             {/* Placeholder for mission image */}
-             <Image
-                src="/tote_bag_lifestyle.png" // Reusing existing image or placeholder
-                alt="Artesanos trabajando"
-                fill
-                className="object-cover opacity-90"
-                priority
-              />
-             
-             <div className="absolute inset-0 bg-secondary/10 flex items-center justify-center">
-                {/* <span className="text-muted font-serif italic text-2xl">Imagen del Taller</span> */}
-             </div>
+            <Image
+              src="/tote_bag_lifestyle.png"
+              alt={t('about_image_alt')}
+              fill
+              className="object-cover opacity-90"
+              priority
+            />
+            <div className="absolute inset-0 bg-secondary/10 flex items-center justify-center" />
           </div>
         </div>
       </section>
 
-      {/* Values Section */}
       <section className="bg-surface py-24 px-4 border-y border-theme">
         <div className="container mx-auto max-w-6xl text-center">
-          <h2 className="text-3xl font-serif font-bold text-primary mb-16">Nuestros Pilares</h2>
+          <h2 className="text-3xl font-serif font-bold text-primary mb-16">{t('about_values_title')}</h2>
 
           <div className="grid md:grid-cols-3 gap-12">
             <div className="space-y-4 p-6">
               <div className="w-16 h-16 bg-secondary/20 rounded-full mx-auto flex items-center justify-center mb-6">
                 <Leaf className="w-8 h-8 text-secondary" />
               </div>
-              <h3 className="text-xl font-bold text-primary">100% Ecológico</h3>
-              <p className="text-muted">
-                Utilizamos exclusivamente algodón orgánico certificado y tintas a base de agua, libres de químicos nocivos para el planeta.
-              </p>
+              <h3 className="text-xl font-bold text-primary">{t('about_eco_title')}</h3>
+              <p className="text-muted">{t('about_eco_description')}</p>
             </div>
 
             <div className="space-y-4 p-6">
               <div className="w-16 h-16 bg-accent/20 rounded-full mx-auto flex items-center justify-center mb-6">
                 <Handshake className="w-8 h-8 text-accent" />
               </div>
-              <h3 className="text-xl font-bold text-primary">Comercio Justo</h3>
-              <p className="text-muted">
-                Trabajamos directamente con artesanos locales, garantizando salarios dignos y condiciones laborales seguras y éticas.
-              </p>
+              <h3 className="text-xl font-bold text-primary">{t('about_fair_trade_title')}</h3>
+              <p className="text-muted">{t('about_fair_trade_description')}</p>
             </div>
 
             <div className="space-y-4 p-6">
               <div className="w-16 h-16 bg-primary/10 rounded-full mx-auto flex items-center justify-center mb-6">
                 <Infinity className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-xl font-bold text-primary">Durabilidad</h3>
-              <p className="text-muted">
-                Diseñamos productos para durar años, no temporadas. Una tote bag nuestra reemplaza hasta 500 bolsas plásticas al año.
-              </p>
+              <h3 className="text-xl font-bold text-primary">{t('about_durability_title')}</h3>
+              <p className="text-muted">{t('about_durability_description')}</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Team/Contact Section */}
       <section className="py-24 px-4 container mx-auto max-w-4xl text-center">
-        <h2 className="text-4xl font-serif font-bold text-primary mb-6">Únete al cambio</h2>
+        <h2 className="text-4xl font-serif font-bold text-primary mb-6">{t('about_join_title')}</h2>
         <p className="text-lg text-muted mb-10 max-w-2xl mx-auto">
-          ¿Tienes preguntas sobre nuestro proceso o quieres colaborar con nosotros? Nos encantaría escucharte.
+          {t('about_join_description')}
         </p>
         <div className="bg-primary text-base-color p-8 rounded-lg inline-block text-left shadow-lg">
           <p className="mb-2"><strong>Email:</strong> {COMPANY_INFO.email.support}</p>
-          <p className="mb-2"><strong>Teléfono:</strong> {COMPANY_INFO.phone}</p>
-          <p><strong>Ubicación:</strong> {COMPANY_INFO.address}</p>
+          <p className="mb-2"><strong>{t('about_phone')}</strong> {COMPANY_INFO.phone}</p>
+          <p><strong>{t('about_location')}</strong> {COMPANY_INFO.address}</p>
         </div>
       </section>
     </>

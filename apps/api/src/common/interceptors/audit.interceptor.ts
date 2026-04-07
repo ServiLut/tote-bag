@@ -1,14 +1,14 @@
 import {
+  CallHandler,
+  ExecutionContext,
   Injectable,
   NestInterceptor,
-  ExecutionContext,
-  CallHandler,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '../../generated/client/client';
-import { Request } from 'express';
+import { PrismaService } from '../../prisma/prisma.service';
 
 interface RequestWithUser extends Request {
   user?: {
@@ -17,9 +17,55 @@ interface RequestWithUser extends Request {
   };
 }
 
+type AuditEntity =
+  | 'Auth'
+  | 'B2BQuote'
+  | 'FinancialTransaction'
+  | 'Order'
+  | 'PersonalizationRequest'
+  | 'PayrollBillingStatement'
+  | 'PayrollWorker'
+  | 'PayrollShift'
+  | 'Product'
+  | 'Profile'
+  | 'PurchaseBatch'
+  | 'PqrsTicket'
+  | 'Shipment'
+  | 'ShippingProvider'
+  | 'Supplier'
+  | 'System'
+  | 'User'
+  | 'Variant'
+  | 'WizardOption'
+  | 'OpexCategory';
+
+const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+const ENTITY_ID_PARAM_KEYS = [
+  'id',
+  'entityId',
+  'orderId',
+  'productId',
+  'userId',
+];
+
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {
   constructor(private readonly prisma: PrismaService) {}
+
+  private normalizeEntityId(entity: AuditEntity, id: string) {
+    const intIdEntities = new Set<AuditEntity>([
+      'PayrollBillingStatement',
+      'PayrollWorker',
+      'PayrollShift',
+    ]);
+
+    if (!intIdEntities.has(entity)) {
+      return id;
+    }
+
+    const numericId = Number(id);
+    return Number.isInteger(numericId) ? numericId : null;
+  }
 
   async intercept(
     context: ExecutionContext,
@@ -28,78 +74,226 @@ export class AuditInterceptor implements NestInterceptor {
     const http = context.switchToHttp();
     const request = http.getRequest<RequestWithUser>();
     const method = request.method;
-    const url = request.url;
+
+    if (!WRITE_METHODS.has(method)) {
+      return next.handle();
+    }
+
     const body = request.body as unknown;
     const ip = request.ip;
     const userAgent = request.headers['user-agent'];
     const user = request.user;
     const params = request.params as Record<string, string | undefined>;
+    const segments = this.getPathSegments(request.originalUrl || request.url);
+    const contextInfo = this.resolveAuditContext(segments, params, body, null);
 
-    const writeMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
-    if (!writeMethods.includes(method)) {
-      return next.handle();
-    }
-
-    const entity = url.split('/')[1]?.split('?')[0] || 'unknown';
-    const bodyId =
-      body && typeof body === 'object' && 'id' in body
-        ? (body as { id: unknown }).id
-        : null;
-
-    let entityId: string | null = null;
-    if (typeof bodyId === 'string' || typeof bodyId === 'number') {
-      entityId = String(bodyId);
-    } else {
-      const paramId = params?.['id'];
-      if (paramId) {
-        entityId = paramId;
-      }
-    }
-
-    // Capture previous data if updating or deleting
-    let previousData: any = null;
+    let previousData: unknown = null;
     if (
       (method === 'PUT' || method === 'PATCH' || method === 'DELETE') &&
-      entityId
+      contextInfo.entityId
     ) {
-      try {
-        previousData = await this.getPreviousData(entity, entityId);
-      } catch (e) {
-        console.error('Failed to fetch previous data for audit:', e);
-      }
+      previousData = await this.getPreviousData(
+        contextInfo.entity,
+        contextInfo.entityId,
+      );
     }
 
     return next.handle().pipe(
-      tap(() => {
-        // Execute logging in background to not block the response
+      tap((result) => {
+        const finalContext = this.resolveAuditContext(
+          segments,
+          params,
+          body,
+          this.extractResponseData(result),
+        );
+
         this.logAction(
           method,
-          entity,
-          entityId,
+          finalContext.entity,
+          finalContext.entityId,
           body,
           previousData,
           user?.id,
           ip,
           userAgent,
-        ).catch((err) => console.error('Audit Log Error:', err));
+        ).catch((error) => console.error('Audit Log Error:', error));
       }),
     );
   }
 
-  private async getPreviousData(entity: string, id: string): Promise<unknown> {
+  private getPathSegments(url: string) {
+    const cleanUrl = url.split('?')[0] || '';
+
+    return cleanUrl
+      .split('/')
+      .map((segment) => segment.trim())
+      .filter(Boolean)
+      .filter((segment) => segment !== 'api' && !/^v\d+$/i.test(segment));
+  }
+
+  private resolveAuditContext(
+    segments: string[],
+    params: Record<string, string | undefined>,
+    body: unknown,
+    responseData: unknown,
+  ): { entity: AuditEntity; entityId: string | null } {
+    const [root, child, third] = segments;
+    const entity = this.resolveEntity(root, child, third, params);
+    const entityId = this.resolveEntityId(params, body, responseData);
+
+    return { entity, entityId };
+  }
+
+  private resolveEntity(
+    root?: string,
+    child?: string,
+    third?: string,
+    params?: Record<string, string | undefined>,
+  ): AuditEntity {
+    if (root === 'catalog' && child === 'products') return 'Product';
+    if (root === 'products') return 'Product';
+    if (root === 'orders') return 'Order';
+    if (root === 'profiles') return 'Profile';
+    if (root === 'b2b') return 'B2BQuote';
+    if (root === 'personalizations' && child === 'requests') {
+      return 'PersonalizationRequest';
+    }
+    if (root === 'auth') return 'Auth';
+    if (root === 'users') return 'User';
+    if (root === 'pqrs') return 'PqrsTicket';
+    if (root === 'wizard') return 'WizardOption';
+
+    if (root === 'payments' && child === 'upload-receipt') {
+      if (third === 'order') return 'Order';
+      if (third === 'b2b') return 'B2BQuote';
+      if (third === 'batch') return 'PurchaseBatch';
+    }
+
+    if (root === 'shipping') {
+      if (child === 'providers') return 'ShippingProvider';
+      if (child === 'shipments') return 'Shipment';
+      return 'Shipment';
+    }
+
+    if (root === 'inventory') {
+      if (
+        child === 'batch' ||
+        child === 'batches' ||
+        child === 'receive-batch'
+      ) {
+        return 'PurchaseBatch';
+      }
+      if (child === 'suppliers') {
+        return third === 'payments' ? 'FinancialTransaction' : 'Supplier';
+      }
+      if (child === 'finance') {
+        if (third === 'opex') return 'FinancialTransaction';
+        if (third === 'opex-categories') return 'OpexCategory';
+        return 'FinancialTransaction';
+      }
+      if (child === 'reporting') return 'System';
+      return 'PurchaseBatch';
+    }
+
+    if (root === 'payroll') {
+      if (child === 'workers') return 'PayrollWorker';
+      if (child === 'shifts') return 'PayrollShift';
+      if (child === 'statements') return 'PayrollBillingStatement';
+      return 'PayrollBillingStatement';
+    }
+
+    if (params?.orderId) return 'Shipment';
+    return 'System';
+  }
+
+  private resolveEntityId(
+    params: Record<string, string | undefined>,
+    body: unknown,
+    responseData: unknown,
+  ) {
+    for (const key of ENTITY_ID_PARAM_KEYS) {
+      const paramValue = params[key];
+      if (paramValue) {
+        return paramValue;
+      }
+    }
+
+    const bodyId = this.extractId(body);
+    if (bodyId) {
+      return bodyId;
+    }
+
+    return this.extractId(responseData);
+  }
+
+  private extractId(value: unknown): string | null {
+    if (!value || typeof value !== 'object') {
+      return null;
+    }
+
+    for (const key of ['id', 'entityId', 'orderId']) {
+      if (key in value) {
+        const candidate = (value as Record<string, unknown>)[key];
+        if (typeof candidate === 'string' || typeof candidate === 'number') {
+          return String(candidate);
+        }
+      }
+    }
+
+    return null;
+  }
+
+  private extractResponseData(result: unknown) {
+    if (
+      result &&
+      typeof result === 'object' &&
+      'data' in result &&
+      (result as Record<string, unknown>).data
+    ) {
+      return (result as Record<string, unknown>).data;
+    }
+
+    return result;
+  }
+
+  private async getPreviousData(
+    entity: AuditEntity,
+    id: string,
+  ): Promise<unknown> {
+    const modelMap: Record<AuditEntity, string | null> = {
+      Auth: null,
+      B2BQuote: 'b2BQuote',
+      FinancialTransaction: 'financialTransaction',
+      OpexCategory: 'opexCategory',
+      Order: 'order',
+      PersonalizationRequest: 'personalizationRequest',
+      PayrollBillingStatement: 'payrollBillingStatement',
+      PayrollWorker: 'payrollWorker',
+      PayrollShift: 'payrollShift',
+      Product: 'product',
+      Profile: 'profile',
+      PurchaseBatch: 'purchaseBatch',
+      PqrsTicket: 'pqrsTicket',
+      Shipment: 'shipment',
+      ShippingProvider: 'shippingProvider',
+      Supplier: 'supplier',
+      System: null,
+      User: 'user',
+      Variant: 'variant',
+      WizardOption: 'wizardOption',
+    };
+
+    const modelName = modelMap[entity];
+    if (!modelName) {
+      return null;
+    }
+
     try {
-      // Map entity names to prisma models
-      const modelMap: Record<string, string> = {
-        products: 'product',
-        orders: 'order',
-        profiles: 'profile',
-        b2b: 'b2BQuote', // case sensitive as per prisma client
-      };
+      const normalizedId = this.normalizeEntityId(entity, id);
+      if (normalizedId === null) {
+        return null;
+      }
 
-      const modelName = modelMap[entity];
-      if (!modelName) return null;
-
-      // Access prisma model dynamically
       const model = (this.prisma as unknown as Record<string, unknown>)[
         modelName
       ];
@@ -109,19 +303,22 @@ export class AuditInterceptor implements NestInterceptor {
       ) {
         return await (
           model as {
-            findUnique: (args: { where: { id: string } }) => Promise<unknown>;
+            findUnique: (args: {
+              where: { id: string | number };
+            }) => Promise<unknown>;
           }
-        ).findUnique({ where: { id } });
+        ).findUnique({ where: { id: normalizedId } });
       }
-    } catch {
-      return null;
+    } catch (error) {
+      console.error('Failed to fetch previous data for audit:', error);
     }
+
     return null;
   }
 
   private async logAction(
     method: string,
-    entity: string,
+    entity: AuditEntity,
     entityId: string | null,
     body: unknown,
     previousData: unknown,
@@ -133,8 +330,8 @@ export class AuditInterceptor implements NestInterceptor {
       await this.prisma.auditLog.create({
         data: {
           action: method,
-          entity: entity,
-          entityId: entityId,
+          entity,
+          entityId,
           payload:
             body && typeof body === 'object' && Object.keys(body).length > 0
               ? (body as Prisma.InputJsonValue)

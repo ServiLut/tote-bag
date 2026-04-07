@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   OrderStatus,
+  PersonalizationRequestStatus,
   ShipmentStatus,
   TransactionType,
 } from '../../generated/client/enums';
@@ -53,9 +54,13 @@ export class DashboardService {
       dailyProduction,
       lowStockCount,
       pendingQuotes,
+      newPqrsCount,
       pendingPaymentOrders,
       inProductionOrders,
       pendingShipments,
+      pendingPersonalizationRequests,
+      inReviewPersonalizationRequests,
+      approvedPersonalizationRequests,
       staleBatches,
       supplierBalanceAggregate,
       monthlyTransactions,
@@ -84,12 +89,17 @@ export class DashboardService {
         where: {
           status: {
             notIn: [
-              'DISE\u00d1O_APROBADO',
-              'DISE\u00d1O_APROBADO',
-              'DISE\u00d1O_APROBADO',
-              'DISE\u00d1O_APROBADO',
+              'DISEÑO_APROBADO',
+              'DISEÑO_APROBADO',
+              'DISEÃ‘O_APROBADO',
+              'DISEÃƒâ€˜O_APROBADO',
             ],
           },
+        },
+      }),
+      this.prisma.pqrsTicket.count({
+        where: {
+          status: 'NUEVO',
         },
       }),
       this.prisma.order.count({
@@ -115,6 +125,21 @@ export class DashboardService {
               },
             },
           ],
+        },
+      }),
+      this.prisma.personalizationRequest.count({
+        where: {
+          status: PersonalizationRequestStatus.PENDING,
+        },
+      }),
+      this.prisma.personalizationRequest.count({
+        where: {
+          status: PersonalizationRequestStatus.IN_REVIEW,
+        },
+      }),
+      this.prisma.personalizationRequest.count({
+        where: {
+          status: PersonalizationRequestStatus.APPROVED,
         },
       }),
       this.prisma.purchaseBatch.count({
@@ -260,9 +285,13 @@ export class DashboardService {
       dailyProduction,
       lowStockCount,
       pendingQuotes,
+      newPqrsCount,
       pendingPaymentOrders,
       inProductionOrders,
       pendingShipments,
+      pendingPersonalizationRequests,
+      inReviewPersonalizationRequests,
+      approvedPersonalizationRequests,
       staleBatches,
       supplierPendingBalance: supplierBalanceAggregate._sum.balance || 0,
       monthlyCashFlowNet,

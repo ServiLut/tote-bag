@@ -8,6 +8,8 @@ import {
   Req,
   ForbiddenException,
   UnauthorizedException,
+  ParseIntPipe,
+  DefaultValuePipe,
 } from '@nestjs/common';
 import { ProfilesService } from './profiles.service';
 import { Request } from 'express';
@@ -51,26 +53,34 @@ export class ProfilesController {
     @Query('role') role?: 'ADMIN' | 'CUSTOMER',
     @Query('department') department?: string,
     @Query('municipality') municipality?: string,
+    @Query('search') search?: string,
+    @Query('page', new DefaultValuePipe(0), ParseIntPipe) page?: number,
+    @Query('pageSize', new DefaultValuePipe(0), ParseIntPipe) pageSize?: number,
   ) {
     const user = req.user;
     if (!user?.id) throw new UnauthorizedException();
+    const normalizedPage =
+      typeof page === 'number' && page > 0 ? page : undefined;
+    const normalizedPageSize =
+      typeof pageSize === 'number' && pageSize > 0 ? pageSize : undefined;
 
     const canReadUsers = await this.rolesService.hasPermission(
       user.id,
       'users',
       'read',
     );
-    const canCreateOrders = await this.rolesService.hasPermission(
-      user.id,
-      'orders',
-      'create',
-    );
-
-    if (!canReadUsers && !canCreateOrders) {
+    if (!canReadUsers) {
       throw new ForbiddenException('Insufficient permissions');
     }
 
-    return this.profilesService.findAll({ role, department, municipality });
+    return this.profilesService.findAll({
+      role,
+      department,
+      municipality,
+      search,
+      page: normalizedPage,
+      pageSize: normalizedPageSize,
+    });
   }
 
   @Get(':id')

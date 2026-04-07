@@ -19,18 +19,11 @@ import {
 @Injectable()
 export class AuthService {
   private readonly supabase: { auth: SupabaseClient['auth'] } | null;
-  private readonly superAdminEmails = new Set([
-    'deybisasprilla@gmail.com',
-    'admin@tote-bag.com',
-  ]);
-  private readonly managerEmails = new Set(['totebagbolsadetela@gmail.com']);
 
   constructor(private prisma: PrismaService) {
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey =
-      process.env.SUPABASE_ANON_KEY ??
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
-      process.env.SERVICE_ROLE;
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SERVICE_ROLE;
 
     this.supabase =
       supabaseUrl && supabaseKey
@@ -50,29 +43,17 @@ export class AuthService {
     return this.supabase.auth;
   }
 
-  private getWhitelistedRoleByEmail(
-    email?: string | null,
-  ): 'ADMIN' | 'MANAGER' | null {
-    const normalizedEmail = email?.toLowerCase();
-    if (!normalizedEmail) return null;
-    if (this.superAdminEmails.has(normalizedEmail)) return 'ADMIN';
-    if (this.managerEmails.has(normalizedEmail)) return 'MANAGER';
-    return null;
-  }
-
   async register(registerDto: RegisterDto, ip?: string) {
     const { email, password, acceptTerms, acceptDataPolicy } = registerDto;
     const supabaseAuth = this.getSupabaseAuth();
 
-    // 1. Intentar registro en Supabase
     const { data, error } = await supabaseAuth.signUp({
       email,
       password,
     });
 
     if (error) {
-      // Manejo de errores específicos
-      console.error('Supabase Auth Error:', error); // Log para debugging
+      console.error('Supabase Auth Error:', error);
       const msg = error.message.toLowerCase();
 
       if (msg.includes('already registered') || error.status === 422) {
@@ -80,7 +61,7 @@ export class AuthService {
       }
 
       if (msg.includes('password') || msg.includes('weak')) {
-        throw new BadRequestException('Contraseña demasiado débil');
+        throw new BadRequestException('Contrasena demasiado debil');
       }
 
       throw new BadRequestException(error.message);
@@ -94,8 +75,6 @@ export class AuthService {
 
     const user = data.user;
 
-    // 2. Guardar en PostgreSQL (Prisma)
-    // Verificamos si ya existe el usuario para evitar error 500 feo
     const existingUser = await this.prisma.user.findUnique({
       where: { id: user.id },
     });
@@ -105,11 +84,8 @@ export class AuthService {
     }
 
     try {
-      // Determinar el rol inicial basado en el correo
-      const initialRole =
-        this.getWhitelistedRoleByEmail(user.email) ?? 'CUSTOMER';
+      const initialRole = 'CUSTOMER';
 
-      // Usamos una transacción para asegurar que ambos se creen
       await this.prisma.$transaction(async (tx) => {
         await tx.user.create({
           data: {
@@ -135,20 +111,17 @@ export class AuthService {
         });
       });
     } catch (error: unknown) {
-      // Rollback idealmente, pero sin service_role no podemos borrar el user de supabase fácilmente.
       console.error('Error creating user/profile:', error);
       throw new InternalServerErrorException(
         'Error al crear el perfil de usuario',
       );
     }
 
-    // 3. Respuesta estructurada
-    // Si session es null, suele indicar que se requiere confirmación de correo
     const requiresEmailVerification = !data.session;
 
     return {
       message: requiresEmailVerification
-        ? 'Registro iniciado. Por favor verifica tu correo electrónico.'
+        ? 'Registro iniciado. Por favor verifica tu correo electronico.'
         : 'Registro exitoso.',
       user: {
         id: user.id,
@@ -168,7 +141,7 @@ export class AuthService {
     });
 
     if (error || !data.user) {
-      throw new BadRequestException('Credenciales inválidas');
+      throw new BadRequestException('Credenciales invalidas');
     }
 
     const user = data.user;
@@ -178,7 +151,6 @@ export class AuthService {
       include: { profile: true },
     });
 
-    // Auto-healing: If user exists in Auth but not in our DB, create it.
     if (!userInDb && user) {
       try {
         console.log(`Creating missing user/profile for user ${user.email}`);
@@ -186,7 +158,7 @@ export class AuthService {
           data: {
             id: user.id,
             email: user.email!,
-            role: this.getWhitelistedRoleByEmail(user.email) ?? 'CUSTOMER',
+            role: 'CUSTOMER',
             profile: {
               create: {
                 email: user.email!,
@@ -199,7 +171,6 @@ export class AuthService {
         console.error('Failed to auto-create user/profile on login', err);
       }
     } else if (userInDb && !userInDb.profile) {
-      // User exists but profile doesn't (rare)
       try {
         await this.prisma.profile.create({
           data: {
@@ -215,18 +186,8 @@ export class AuthService {
       }
     }
 
-    // Guarantee whitelisted roles for privileged emails.
-    const whitelistedRole = this.getWhitelistedRoleByEmail(userInDb?.email);
-    if (userInDb && whitelistedRole && userInDb.role !== whitelistedRole) {
-      userInDb = await this.prisma.user.update({
-        where: { id: userInDb.id },
-        data: { role: whitelistedRole },
-        include: { profile: true },
-      });
-    }
-
     return {
-      message: 'Inicio de sesión exitoso',
+      message: 'Inicio de sesion exitoso',
       user: data.user,
       session: data.session,
       role: userInDb?.role || 'CUSTOMER',
@@ -245,9 +206,10 @@ export class AuthService {
     }
 
     return {
-      message: 'Correo de recuperación enviado con éxito',
+      message: 'Correo de recuperacion enviado con exito',
     };
   }
+
   changeDebugRole(newRole: Role, email?: string | null) {
     if (!canUseDebugRole(email, process.env.NODE_ENV)) {
       throw new NotFoundException();

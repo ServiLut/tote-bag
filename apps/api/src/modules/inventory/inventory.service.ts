@@ -6,11 +6,18 @@ import {
   TransactionType,
   TransactionCategory,
 } from '../../generated/client/enums';
-import { CreatePurchaseBatchDto } from './dto/create-purchase-batch.dto';
+import {
+  BatchInputStatus,
+  CreatePurchaseBatchDto,
+} from './dto/create-purchase-batch.dto';
 
 @Injectable()
 export class InventoryService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private isReceivedStatus(status: CreatePurchaseBatchDto['status']) {
+    return status === BatchInputStatus.RECIBIDO;
+  }
 
   async receiveBatch(data: CreatePurchaseBatchDto & { userId: string }) {
     return this.prisma.$transaction(async (tx) => {
@@ -34,7 +41,8 @@ export class InventoryService {
         );
       }
 
-      const unitCost = data.totalCost / quantity;
+      const totalCost = data.totalCost;
+      const unitCost = totalCost / quantity;
 
       // 1. Encontrar o crear la categoría de OPEX 'Materia Prima'
       let opexCategory = await tx.opexCategory.findUnique({
@@ -51,8 +59,9 @@ export class InventoryService {
       }
 
       // Map status
-      const statusValue =
-        data.status === 'RECIBIDO' ? BatchStatus.IN_STOCK : BatchStatus.PENDING;
+      const statusValue = this.isReceivedStatus(data.status)
+        ? BatchStatus.IN_STOCK
+        : BatchStatus.PENDING;
 
       // 2. Crear el registro en la tabla PurchaseBatch
       const batch = await tx.purchaseBatch.create({
@@ -61,9 +70,9 @@ export class InventoryService {
           variantId: data.variantId,
           supplierId: data.supplierId,
           quantityReceived: quantity,
-          quantityRemaining: data.status === 'RECIBIDO' ? quantity : 0,
+          quantityRemaining: this.isReceivedStatus(data.status) ? quantity : 0,
           unitCost: unitCost,
-          totalCost: data.totalCost,
+          totalCost: totalCost,
           status: statusValue,
           createdAt: data.purchaseDate
             ? new Date(data.purchaseDate)
@@ -76,7 +85,7 @@ export class InventoryService {
       });
 
       // 2.5 Actualizar stock de la variante si es recibido
-      if (data.status === 'RECIBIDO') {
+      if (this.isReceivedStatus(data.status)) {
         await tx.variant.update({
           where: { id: data.variantId },
           data: {
@@ -86,12 +95,12 @@ export class InventoryService {
       }
 
       // 3. Si el estado es 'RECIBIDO', crear automáticamente una FinancialTransaction vinculada
-      if (data.status === 'RECIBIDO') {
+      if (this.isReceivedStatus(data.status)) {
         await tx.financialTransaction.create({
           data: {
             type: TransactionType.EXPENSE,
             category: TransactionCategory.PURCHASE,
-            amount: data.totalCost,
+            amount: totalCost,
             description: `Compra de lote (Materia Prima): Producto ${productId} - Prov: ${data.supplierId}`,
             userId: data.userId,
             purchaseBatchId: batch.id,
@@ -104,7 +113,7 @@ export class InventoryService {
         await tx.supplier.update({
           where: { id: data.supplierId },
           data: {
-            balance: { increment: data.totalCost },
+            balance: { increment: totalCost },
           },
         });
       }
@@ -119,7 +128,7 @@ export class InventoryService {
           payload: {
             productId: productId,
             quantity: quantity,
-            totalCost: data.totalCost,
+            totalCost: totalCost,
             status: data.status,
           },
         },
@@ -131,6 +140,12 @@ export class InventoryService {
 
   async createPurchaseBatch(data: CreatePurchaseBatchDto & { userId: string }) {
     return this.prisma.$transaction(async (tx) => {
+      if (!data.items.length) {
+        throw new BadRequestException(
+          'Debes registrar al menos un item en el lote',
+        );
+      }
+
       // 1. Encontrar o crear la categoría de OPEX 'Materia Prima'
       let opexCategory = await tx.opexCategory.findUnique({
         where: { name: 'Materia Prima' },
@@ -145,11 +160,13 @@ export class InventoryService {
         });
       }
 
-      const statusValue =
-        data.status === 'RECIBIDO' ? BatchStatus.IN_STOCK : BatchStatus.PENDING;
+      const statusValue = this.isReceivedStatus(data.status)
+        ? BatchStatus.IN_STOCK
+        : BatchStatus.PENDING;
+      let recalculatedTotalCost = 0;
 
       const batches: Prisma.PurchaseBatchGetPayload<{
-        include: { product: true; supplier: true };
+        include: { product: true; supplier: true; variant: true };
       }>[] = [];
 
       // 2. Crear cada item del lote como un PurchaseBatch individual
@@ -195,7 +212,9 @@ export class InventoryService {
             variantId: item.variantId,
             supplierId: data.supplierId,
             quantityReceived: item.cantidad,
-            quantityRemaining: data.status === 'RECIBIDO' ? item.cantidad : 0,
+            quantityRemaining: this.isReceivedStatus(data.status)
+              ? item.cantidad
+              : 0,
             unitCost: item.costoUnitario,
             totalCost: item.cantidad * item.costoUnitario,
             status: statusValue,
@@ -206,11 +225,14 @@ export class InventoryService {
           include: {
             product: true,
             supplier: true,
+            variant: true,
           },
         });
 
+        recalculatedTotalCost += item.cantidad * item.costoUnitario;
+
         // Actualizar stock de la variante si es recibido
-        if (data.status === 'RECIBIDO') {
+        if (this.isReceivedStatus(data.status)) {
           await tx.variant.update({
             where: { id: item.variantId },
             data: {
@@ -222,7 +244,7 @@ export class InventoryService {
       }
 
       // 3. Si el estado es 'RECIBIDO', crear la FinancialTransaction por el TOTAL
-      if (data.status === 'RECIBIDO') {
+      if (this.isReceivedStatus(data.status)) {
         const supplier = await tx.supplier.findUnique({
           where: { id: data.supplierId },
         });
@@ -231,7 +253,7 @@ export class InventoryService {
           data: {
             type: TransactionType.EXPENSE,
             category: TransactionCategory.PURCHASE,
-            amount: data.totalCost,
+            amount: recalculatedTotalCost,
             description: `Compra de lote de insumos - Prov: ${supplier?.name || 'Desconocido'}`,
             userId: data.userId,
             supplierId: data.supplierId,
@@ -243,7 +265,7 @@ export class InventoryService {
         await tx.supplier.update({
           where: { id: data.supplierId },
           data: {
-            balance: { increment: data.totalCost },
+            balance: { increment: recalculatedTotalCost },
           },
         });
       }
@@ -257,7 +279,7 @@ export class InventoryService {
           payload: {
             supplierId: data.supplierId,
             itemCount: data.items.length,
-            totalCost: data.totalCost,
+            totalCost: recalculatedTotalCost,
             status: data.status,
           },
         },
@@ -311,7 +333,9 @@ export class InventoryService {
   async getInventoryMovements() {
     return this.prisma.auditLog.findMany({
       where: {
-        action: 'REDUCE_STOCK_FIFO',
+        action: {
+          in: ['REDUCE_STOCK_FIFO', 'RETURN_TO_STOCK'],
+        },
       },
       orderBy: { createdAt: 'desc' },
       take: 50,
@@ -413,6 +437,7 @@ export class InventoryService {
       include: {
         product: true,
         supplier: true,
+        variant: true,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -427,7 +452,7 @@ export class InventoryService {
   async reduceStockFIFO(
     variantId: string,
     quantityToSell: number,
-    userId: string,
+    userId?: string,
     txClient?: Prisma.TransactionClient,
   ) {
     const execute = async (tx: Prisma.TransactionClient) => {
@@ -445,6 +470,7 @@ export class InventoryService {
       let totalCOGS = 0;
       const reductions: {
         batchId: string;
+        supplierId: string;
         quantity: number;
         unitCost: number;
       }[] = [];
@@ -484,7 +510,7 @@ export class InventoryService {
             action: 'REDUCE_STOCK_FIFO',
             entity: 'PurchaseBatch',
             entityId: batch.id,
-            userId,
+            userId: userId ?? null,
             payload: {
               variantId,
               quantityReduced: amountFromThisBatch,
@@ -497,6 +523,7 @@ export class InventoryService {
 
         reductions.push({
           batchId: batch.id,
+          supplierId: batch.supplierId,
           quantity: amountFromThisBatch,
           unitCost: batch.unitCost,
         });

@@ -1,4 +1,5 @@
-import { Controller, Get, Query, Param } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
+import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { AuditService } from './audit.service';
 
 @Controller('audit')
@@ -6,6 +7,7 @@ export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 
   @Get()
+  @RequirePermissions({ resource: 'audit', action: 'read' })
   async findAll(
     @Query('entity') entity?: string,
     @Query('action') action?: string,
@@ -23,6 +25,7 @@ export class AuditController {
   }
 
   @Get(':id')
+  @RequirePermissions({ resource: 'audit', action: 'read' })
   async findOne(@Param('id') id: string) {
     return this.auditService.findOne(id);
   }

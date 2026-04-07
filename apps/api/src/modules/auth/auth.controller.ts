@@ -54,6 +54,6 @@ export class AuthController {
       throw new UnauthorizedException();
     }
 
-    return this.authService.changeDebugRole(dto.newRole, req.user.email);
+    return this.authService.changeDebugRole(dto.newRole, req.user?.email);
   }
 }

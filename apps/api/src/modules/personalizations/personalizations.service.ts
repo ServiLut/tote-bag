@@ -422,12 +422,6 @@ export class PersonalizationsService {
     const personalizations = Array.isArray(request.personalizations)
       ? request.personalizations
       : [];
-    const normalizedRequestPersonalizations = normalizeSnapshotPersonalizations(
-      personalizations as {
-        code: string;
-        options?: string[];
-      }[],
-    );
 
     return {
       firstName,
@@ -465,7 +459,10 @@ export class PersonalizationsService {
                 ? configuration.customImageURL
                 : (request.designUrl ?? undefined),
             quantity: request.quantity,
-            personalizations: normalizedRequestPersonalizations,
+            personalizations: personalizations as {
+              code: string;
+              options?: string[];
+            }[],
           },
         },
       ],

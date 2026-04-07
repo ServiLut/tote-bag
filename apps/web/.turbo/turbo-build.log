@@ -6,40 +6,56 @@
 - Environments: .env
 
   Creating an optimized production build ...
-✓ Compiled successfully in 9.8s
+✓ Compiled successfully in 10.6s
   Running TypeScript ...
   Collecting page data using 7 workers ...
-  Generating static pages using 7 workers (0/28) ...
-  Generating static pages using 7 workers (7/28) 
-  Generating static pages using 7 workers (14/28) 
-Error fetching dashboard stats: Error: Dynamic server usage: Route /dashboard couldn't be rendered statically because it used revalidate: 0 fetch http://127.0.0.1:4001/orders /dashboard. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
-    at w (C:\Users\user\Desktop\deybis\tote-bag\apps\web\.next\server\chunks\ssr\[root-of-the-server]__bd86e026._.js:1:89491)
-    at <unknown> (C:\Users\user\Desktop\deybis\tote-bag\apps\web\.next\server\chunks\ssr\[root-of-the-server]__bd86e026._.js:8:10522) {
-  description: "Route /dashboard couldn't be rendered statically because it used revalidate: 0 fetch http://127.0.0.1:4001/orders /dashboard. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
-  digest: 'DYNAMIC_SERVER_USAGE'
-}
-  Generating static pages using 7 workers (21/28) 
-✓ Generating static pages using 7 workers (28/28) in 819.4ms
+  Generating static pages using 7 workers (0/48) ...
+🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
+🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
+  Generating static pages using 7 workers (12/48) 
+  Generating static pages using 7 workers (24/48) 
+  Generating static pages using 7 workers (36/48) 
+✓ Generating static pages using 7 workers (48/48) in 1043.6ms
   Finalizing page optimization ...
 
 Route (app)
 ┌ ○ /
 ├ ○ /_not-found
 ├ ○ /about
+├ ƒ /api/proxy/[...path]
+├ ƒ /auth/signout
 ├ ○ /b2b
+├ ○ /beneficios
 ├ ○ /catalog
 ├ ƒ /catalog/[slug]
 ├ ○ /checkout
+├ ○ /checkout/confirmacion
 ├ ○ /corporativo
 ├ ƒ /dashboard
-├ ○ /dashboard/audit
-├ ○ /dashboard/b2b
-├ ○ /dashboard/customers
-├ ○ /dashboard/orders
-├ ○ /dashboard/products
+├ ƒ /dashboard/audit
+├ ƒ /dashboard/b2b
+├ ƒ /dashboard/compras/recepcion
+├ ƒ /dashboard/customers
+├ ƒ /dashboard/finanzas
+├ ƒ /dashboard/finanzas/cash-flow
+├ ƒ /dashboard/finanzas/nomina
+├ ƒ /dashboard/finanzas/opex
+├ ƒ /dashboard/logistica/envios
+├ ƒ /dashboard/logistica/insumos
+├ ƒ /dashboard/logistica/inventario
+├ ƒ /dashboard/logistica/proveedores
+├ ƒ /dashboard/orders
+├ ƒ /dashboard/orders/new
+├ ƒ /dashboard/personalizaciones
+├ ƒ /dashboard/pqrs
+├ ƒ /dashboard/products
 ├ ƒ /dashboard/products/[id]/edit
-├ ○ /dashboard/products/new
-├ ○ /dashboard/settings
+├ ƒ /dashboard/products/new
+├ ƒ /dashboard/reportes
+├ ƒ /dashboard/settings
+├ ƒ /dashboard/settings/users
+├ ƒ /dashboard/strategy/pricing
+├ ○ /envios
 ├ ○ /forgot-password
 ├ ○ /legal/cookies
 ├ ○ /legal/data-processing
@@ -47,8 +63,9 @@ Route (app)
 ├ ƒ /linea/[slug]
 ├ ○ /lineas
 ├ ○ /login
-├ ○ /personaliza
-├ ○ /personaliza/configurador
+├ ƒ /personaliza
+├ ƒ /personaliza/configurador
+├ ○ /pqrs
 ├ ○ /profile
 ├ ○ /register
 └ ○ /reset-password

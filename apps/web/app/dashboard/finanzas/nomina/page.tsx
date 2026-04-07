@@ -4,11 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import Image from 'next/image';
 import { Camera, Download, Edit3, Image as ImageIcon, Loader2, Plus, Trash2, UploadCloud, Users, Wallet, X } from 'lucide-react';
-import { Button, Input } from '@tote-bag/ui';
+import { Button, Input, Tabs, TabsContent, TabsList, TabsTrigger } from '@tote-bag/ui';
 import { createClient } from '@/utils/supabase/client';
 import { apiFetch } from '@/utils/api';
 import { notifyFinanceDataChanged } from '@/lib/finance-events';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 
 type WorkerType = 'EMPLOYEE' | 'CONTRACTOR' | 'TEMPORARY' | 'OTHER';
 type StatementStatus = 'PENDIENTE' | 'ENVIADA' | 'PAGADA';

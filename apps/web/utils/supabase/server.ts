@@ -1,12 +1,50 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { tryGetSupabaseEnv } from '@/lib/env'
+
+type MissingServerSupabaseClient = {
+  auth: {
+    getUser: () => Promise<{
+      data: { user: null };
+      error: Error | null;
+    }>;
+    getSession: () => Promise<{
+      data: { session: null };
+      error: Error | null;
+    }>;
+  };
+}
+
+function createMissingServerClient(): MissingServerSupabaseClient {
+  return {
+    auth: {
+      async getUser() {
+        return {
+          data: { user: null },
+          error: null,
+        };
+      },
+      async getSession() {
+        return {
+          data: { session: null },
+          error: null,
+        };
+      },
+    },
+  }
+}
 
 export async function createClient() {
   const cookieStore = await cookies()
+  const env = tryGetSupabaseEnv()
+
+  if (!env) {
+    return createMissingServerClient()
+  }
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key',
+    env.supabaseUrl,
+    env.supabaseAnonKey,
     {
       cookies: {
         getAll() {

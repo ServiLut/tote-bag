@@ -1,14 +1,60 @@
-import { Controller, Get, Query, Request, Res } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  ForbiddenException,
+  Get,
+  Header,
+  Query,
+  Request,
+  Res,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ReportingService } from './reporting.service';
 import { Response } from 'express';
+import { Role } from '../../generated/client/client';
+import { RolesService } from '../roles/roles.service';
 
 interface RequestWithUser {
   user?: { id: string };
 }
 
+function parseDateQuery(value: string, endOfDay = false) {
+  if (!value) {
+    throw new BadRequestException('La fecha es obligatoria');
+  }
+
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new BadRequestException('Rango de fechas invalido');
+  }
+
+  if (endOfDay) {
+    parsed.setHours(23, 59, 59, 999);
+  }
+
+  return parsed;
+}
+
 @Controller('inventory/reporting')
 export class ReportingController {
-  constructor(private readonly reportingService: ReportingService) {}
+  constructor(
+    private readonly reportingService: ReportingService,
+    private readonly rolesService: RolesService,
+  ) {}
+
+  private async ensureAdmin(userId?: string) {
+    if (!userId) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    const { effectiveRole } = await this.rolesService.getEffectiveRole(userId);
+
+    if (effectiveRole !== Role.ADMIN) {
+      throw new ForbiddenException(
+        'Solo los usuarios ADMIN pueden acceder a reportes contables',
+      );
+    }
+  }
 
   @Get('closing')
   async getClosingReport(
@@ -16,16 +62,19 @@ export class ReportingController {
     @Query('endDate') endDate: string,
     @Request() req: RequestWithUser,
   ) {
-    const userId = req.user?.id || 'auth0|admin-test-id';
+    await this.ensureAdmin(req.user?.id);
     return this.reportingService.getClosingReport(
-      new Date(startDate),
-      new Date(endDate),
-      userId,
+      parseDateQuery(startDate),
+      parseDateQuery(endDate, true),
+      req.user!.id,
     );
   }
 
   @Get('valuation')
-  async getInventoryValuation() {
+  @Header('Deprecation', 'true')
+  @Header('Sunset', 'Tue, 30 Jun 2026 23:59:59 GMT')
+  async getInventoryValuation(@Request() req: RequestWithUser) {
+    await this.ensureAdmin(req.user?.id);
     return this.reportingService.getInventoryValuation();
   }
 
@@ -33,10 +82,12 @@ export class ReportingController {
   async getAccountingReport(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
+    @Request() req: RequestWithUser,
   ) {
+    await this.ensureAdmin(req.user?.id);
     return this.reportingService.getAccountingReport(
-      new Date(startDate),
-      new Date(endDate),
+      parseDateQuery(startDate),
+      parseDateQuery(endDate, true),
     );
   }
 
@@ -44,11 +95,13 @@ export class ReportingController {
   async exportAccountingExcel(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
+    @Request() req: RequestWithUser,
     @Res() res: Response,
   ) {
+    await this.ensureAdmin(req.user?.id);
     const buffer = await this.reportingService.generateAccountingExcel(
-      new Date(startDate),
-      new Date(endDate),
+      parseDateQuery(startDate),
+      parseDateQuery(endDate, true),
     );
 
     res.set({
@@ -65,11 +118,13 @@ export class ReportingController {
   async exportAccountingPDF(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
+    @Request() req: RequestWithUser,
     @Res() res: Response,
   ) {
+    await this.ensureAdmin(req.user?.id);
     const buffer = await this.reportingService.generateAccountingPDF(
-      new Date(startDate),
-      new Date(endDate),
+      parseDateQuery(startDate),
+      parseDateQuery(endDate, true),
     );
 
     res.set({

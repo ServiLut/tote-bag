@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import ProductCard from '@/components/store/ProductCard';
 import { Product } from '@/types/product';
 import { ApiResponse } from '@/types/api';
+import { apiFetch } from '@/utils/api';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
@@ -14,8 +15,6 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
-
   const toggleLanguage = () => {
     const newLang = i18n.language === 'es' ? 'en' : 'es';
     i18n.changeLanguage(newLang);
@@ -24,40 +23,39 @@ export default function Home() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await fetch(`${API_URL}/catalog/products`);
-        if (!res.ok) throw new Error('Error al cargar productos');
+        const res = await apiFetch('/catalog/products');
+        if (!res.ok) throw new Error(t('home_load_error'));
         const responseBody: ApiResponse<Product[]> = await res.json();
         setProducts(responseBody.data);
       } catch (err) {
         console.error(err);
-        setError('No pudimos cargar los productos en este momento.');
+        setError(t('home_products_unavailable'));
       } finally {
         setLoading(false);
       }
     };
 
     fetchProducts();
-  }, [API_URL]);
+  }, [t]);
 
   return (
     <>
-      {/* Hero Section */}
       <section className="relative w-full h-[80vh] bg-base flex items-center justify-center overflow-hidden transition-colors duration-300">
         <div className="absolute inset-0 z-0 opacity-10">
-           <div className="w-full h-full bg-[url('https://www.transparenttextures.com/patterns/linen.png')] dark:invert"></div>
+          <div className="w-full h-full bg-[url('https://www.transparenttextures.com/patterns/linen.png')] dark:invert"></div>
         </div>
-        
+
         <div className="relative z-10 text-center space-y-6 max-w-2xl px-4">
-          <button 
+          <button
             onClick={toggleLanguage}
             className="mb-4 px-3 py-1 text-xs border border-primary/30 rounded-full hover:bg-primary/10 transition-colors"
           >
-            {i18n.language === 'es' ? 'English' : 'Español'}
+            {t('home_language_toggle')}
           </button>
           <br />
           <span className="text-secondary font-bold tracking-widest uppercase text-sm">{t('welcome')} - 2026</span>
           <h1 className="text-5xl md:text-7xl font-serif text-primary leading-tight">
-            Marca Dual: <br/> Stock y Producción.
+            {t('home_hero_title_line_1')} <br /> {t('home_hero_title_line_2')}
           </h1>
           <p className="text-lg text-muted max-w-lg mx-auto">
             {t('description')}
@@ -73,7 +71,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured Products */}
       <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
         <div className="flex justify-between items-end mb-12 border-b border-theme pb-6">
           <div>
@@ -104,17 +101,16 @@ export default function Home() {
             ))}
           </div>
         )}
-        
+
         {!loading && !error && products.length > 0 && (
           <div className="mt-16 text-center sm:hidden">
-             <Link href="/catalog" className="text-primary font-bold uppercase text-xs tracking-widest border-b-2 border-primary pb-1">
+            <Link href="/catalog" className="text-primary font-bold uppercase text-xs tracking-widest border-b-2 border-primary pb-1">
               {t('view_all_catalog')}
             </Link>
           </div>
         )}
       </section>
 
-      {/* Banner Sostenibilidad */}
       <section className="bg-secondary text-white py-24 px-4 transition-colors duration-300">
         <div className="max-w-4xl mx-auto text-center space-y-8">
           <span className="text-white/70 font-bold tracking-[0.2em] uppercase text-xs">{t('sustainability_commitment')}</span>

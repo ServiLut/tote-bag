@@ -30,11 +30,17 @@ describe('AuthMiddleware', () => {
     }),
   } as unknown as ConfigService;
 
-  const prisma = {
+  const tx = {
     user: {
       findUnique: jest.fn(),
       upsert: jest.fn(),
     },
+  };
+
+  const prisma = {
+    $transaction: jest.fn((callback: (client: typeof tx) => Promise<unknown>) =>
+      callback(tx),
+    ),
   };
 
   const debugRoleContext = {
@@ -62,8 +68,8 @@ describe('AuthMiddleware', () => {
       },
       error: null,
     });
-    prisma.user.findUnique.mockResolvedValue({ role: Role.MANAGER });
-    prisma.user.upsert.mockResolvedValue({});
+    tx.user.findUnique.mockResolvedValue({ role: Role.MANAGER });
+    tx.user.upsert.mockResolvedValue({});
 
     const req = {
       method: 'GET',
@@ -76,7 +82,7 @@ describe('AuthMiddleware', () => {
 
     await middleware.use(req, {} as Response, next);
 
-    const upsertCalls = prisma.user.upsert.mock.calls as Array<
+    const upsertCalls = tx.user.upsert.mock.calls as Array<
       [{ update: { role: Role }; create: { role: Role } }]
     >;
     const upsertArg = upsertCalls[0][0];
@@ -84,7 +90,7 @@ describe('AuthMiddleware', () => {
     expect(upsertArg).toBeDefined();
 
     expect(upsertArg.update.role).toBe(Role.MANAGER);
-    expect(upsertArg.create.role).toBe(Role.CUSTOMER);
+    expect(upsertArg.create.role).toBe(Role.MANAGER);
     expect(next).toHaveBeenCalled();
   });
 
@@ -98,8 +104,8 @@ describe('AuthMiddleware', () => {
       },
       error: null,
     });
-    prisma.user.findUnique.mockResolvedValue({ role: Role.CUSTOMER });
-    prisma.user.upsert.mockResolvedValue({});
+    tx.user.findUnique.mockResolvedValue({ role: Role.CUSTOMER });
+    tx.user.upsert.mockResolvedValue({});
 
     const req = {
       method: 'GET',
@@ -112,7 +118,7 @@ describe('AuthMiddleware', () => {
 
     await middleware.use(req, {} as Response, next);
 
-    const whitelistedUpsertCalls = prisma.user.upsert.mock.calls as Array<
+    const whitelistedUpsertCalls = tx.user.upsert.mock.calls as Array<
       [{ update: { role: Role }; create: { role: Role } }]
     >;
     const upsertArg = whitelistedUpsertCalls[0][0];

@@ -28,7 +28,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --color-base: #1a1a1a;
-    --color-primary: #F5F1EB;
+    --color-primary: #F5F1EB; 
     --color-secondary: #8DA168;
     --color-accent: #D97E5E;
     --color-text-main: #F5F1EB;
@@ -41,7 +41,7 @@
 .dark {
   /* Dark mode overrides when .dark class is present */
   --color-base: #1a1a1a;
-  --color-primary: #F5F1EB;
+  --color-primary: #F5F1EB; 
   --color-secondary: #8DA168;
   --color-accent: #D97E5E;
   --color-text-main: #F5F1EB;
@@ -99,7 +99,6 @@ body {
   color: var(--color-base);
   transition: opacity 0.2s;
 }
-
 .btn-primary:hover {
   opacity: 0.9;
 }
@@ -114,7 +113,6 @@ body {
   color: var(--color-primary);
   background: transparent;
 }
-
 .btn-outline:hover {
   background-color: var(--color-primary);
   color: var(--color-base);

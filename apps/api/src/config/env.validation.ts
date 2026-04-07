@@ -54,6 +54,14 @@ class EnvironmentVariables {
   @IsOptional()
   WOMPI_INTEGRITY_SECRET: string;
 
+  @IsString()
+  @IsOptional()
+  WOMPI_EVENTS_SECRET: string;
+
+  @IsString()
+  @IsOptional()
+  NEXT_PUBLIC_WOMPI_PUBLIC_KEY: string;
+
   @IsUrl({ require_tld: false })
   @IsOptional()
   SENTRY_DSN: string;

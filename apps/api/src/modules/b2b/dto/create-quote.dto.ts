@@ -18,8 +18,7 @@ export enum QrType {
 }
 
 export enum B2BPackage {
-  STARTER = 'Starter',
-  PRO = 'Pro',
+  EMPRESA = 'Empresa',
   EVENTO = 'Evento',
 }
 

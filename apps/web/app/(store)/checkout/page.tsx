@@ -134,15 +134,8 @@ function normalizePhone(value: string) {
 const CUSTOM_TOTE_FALLBACK_IMAGE = '/tote_bag_lifestyle.png';
 
 function getCheckoutItemImage(item: CartItem) {
-  const customImageURL =
-    item.configuration &&
-    typeof item.configuration === 'object' &&
-    typeof (item.configuration as { customImageURL?: unknown }).customImageURL === 'string'
-      ? (item.configuration as { customImageURL: string }).customImageURL
-      : undefined;
-
-  if (customImageURL) {
-    return customImageURL;
+  if (item.isCustom) {
+    return item.customImageURL || CUSTOM_TOTE_FALLBACK_IMAGE;
   }
 
   return item.product.images[0]?.url || item.variant.imageUrl || CUSTOM_TOTE_FALLBACK_IMAGE;
@@ -863,3 +856,4 @@ export default function CheckoutPage() {
     </Suspense>
   );
 }
+

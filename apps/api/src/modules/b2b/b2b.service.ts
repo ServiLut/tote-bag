@@ -1,42 +1,34 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateQuoteDto, B2BPackage } from './dto/create-quote.dto';
-import { createClient } from '@supabase/supabase-js';
 import { PricingService } from '../pricing/pricing.service';
 import { PriceRuleScope } from '../../generated/client/enums';
 import { Prisma } from '../../generated/client/client';
-import { ConfigurationSnapshot } from '../../common/interfaces/snapshots.interface';
+import {
+  ConfigurationSnapshot,
+  normalizeSnapshotPersonalizations,
+} from '../../common/interfaces/snapshots.interface';
+import { StorageService } from '../../common/storage/storage.service';
 
 @Injectable()
 export class B2bService {
-  private supabase: ReturnType<typeof createClient>;
+  private static readonly APPROVED_DESIGN_STATUSES = new Set([
+    'DISEÑO_APROBADO',
+    'DISEÃ‘O_APROBADO',
+    'DISEÃƒâ€˜O_APROBADO',
+    'DISEÃƒÆ’Ã¢â‚¬ËœO_APROBADO',
+  ]);
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly pricingService: PricingService,
-  ) {
-    const supabaseUrl =
-      this.configService.get<string>('SUPABASE_URL') ||
-      this.configService.get<string>('NEXT_PUBLIC_SUPABASE_URL');
-    const supabaseKey =
-      this.configService.get<string>('SERVICE_ROLE') ||
-      this.configService.get<string>('SUPABASE_KEY') ||
-      this.configService.get<string>('NEXT_PUBLIC_SUPABASE_ANON_KEY');
-
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error(
-        'Supabase URL or Key is missing in environment variables. Please check SUPABASE_URL and SUPABASE_KEY.',
-      );
-    }
-
-    this.supabase = createClient(supabaseUrl, supabaseKey);
-  }
+    private readonly storageService: StorageService,
+  ) {}
 
   calculatePackage(quantity: number): B2BPackage {
-    if (quantity < 50) return B2BPackage.STARTER;
-    if (quantity <= 200) return B2BPackage.PRO;
+    if (quantity < 100) return B2BPackage.EMPRESA;
     return B2BPackage.EVENTO;
   }
 
@@ -51,9 +43,8 @@ export class B2bService {
       const qty = createQuoteDto.quantity;
 
       let isValid = false;
-      if (pkg === B2BPackage.STARTER && qty >= 12) isValid = true;
-      if (pkg === B2BPackage.PRO && qty >= 50) isValid = true;
-      if (pkg === B2BPackage.EVENTO && qty >= 200) isValid = true;
+      if (pkg === B2BPackage.EMPRESA && qty >= 30) isValid = true;
+      if (pkg === B2BPackage.EVENTO && qty >= 100) isValid = true;
 
       if (isValid) {
         assignedPackage = pkg;
@@ -64,24 +55,11 @@ export class B2bService {
 
     if (logoFile) {
       const fileName = `b2b-quotes/${Date.now()}-${logoFile.originalname.replace(/\s+/g, '-')}`;
-
-      const { error } = await this.supabase.storage
-        .from('logo-corporativo')
-        .upload(fileName, logoFile.buffer, {
-          contentType: logoFile.mimetype,
-          upsert: false,
-        });
-
-      if (error) {
-        console.error('Supabase Upload Error:', error);
-        throw new InternalServerErrorException('Error uploading logo');
-      }
-
-      const { data: publicUrlData } = this.supabase.storage
-        .from('logo-corporativo')
-        .getPublicUrl(fileName);
-
-      logoUrl = publicUrlData.publicUrl;
+      logoUrl = await this.storageService.uploadFile(
+        'logo-corporativo',
+        fileName,
+        logoFile,
+      );
     }
 
     const quoteItems = createQuoteDto.items
@@ -110,7 +88,9 @@ export class B2bService {
                 size: item.configuration.size,
                 material: item.configuration.material,
                 quality: item.configuration.quality,
-                personalizations: item.configuration.personalizations,
+                personalizations: normalizeSnapshotPersonalizations(
+                  item.configuration.personalizations,
+                ),
                 timestamp: new Date().toISOString(),
               };
 
@@ -168,10 +148,17 @@ export class B2bService {
   }
 
   async findAll() {
-    return this.prisma.b2BQuote.findMany({
+    const quotes = await this.prisma.b2BQuote.findMany({
       include: { items: true },
       orderBy: { createdAt: 'desc' },
     });
+
+    return quotes.map((quote) => ({
+      ...quote,
+      status: B2bService.APPROVED_DESIGN_STATUSES.has(quote.status)
+        ? 'DISEÑO_APROBADO'
+        : quote.status,
+    }));
   }
 
   async approveDesign(id: string) {

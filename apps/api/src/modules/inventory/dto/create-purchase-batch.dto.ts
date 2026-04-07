@@ -1,11 +1,13 @@
 import {
+  IsEnum,
   IsString,
   IsNumber,
   IsOptional,
   IsArray,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
+import { parseLocalizedNumber } from '../../../common/utils/parse-localized-number';
 
 export enum BatchInputStatus {
   RECIBIDO = 'RECIBIDO',
@@ -25,9 +27,11 @@ export class PurchaseBatchItemDto {
   variantId?: string;
 
   @IsNumber()
+  @Transform(({ value }) => parseLocalizedNumber(value))
   cantidad: number;
 
   @IsNumber()
+  @Transform(({ value }) => parseLocalizedNumber(value))
   costoUnitario: number;
 }
 
@@ -36,10 +40,11 @@ export class CreatePurchaseBatchDto {
   supplierId: string;
 
   @IsNumber()
+  @Transform(({ value }) => parseLocalizedNumber(value))
   totalCost: number;
 
-  @IsString()
-  status: string;
+  @IsEnum(BatchInputStatus)
+  status: BatchInputStatus;
 
   @IsOptional()
   @IsString()
@@ -61,5 +66,6 @@ export class CreatePurchaseBatchDto {
 
   @IsNumber()
   @IsOptional()
+  @Transform(({ value }) => parseLocalizedNumber(value))
   quantityReceived?: number;
 }

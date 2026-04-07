@@ -35,51 +35,74 @@ export class OrdersController {
     private readonly receiptPdfService: ReceiptPdfService,
   ) {}
 
+  private isPrivilegedOrderCreation(createOrderDto: CreateOrderDto) {
+    return (
+      createOrderDto.isManual === true ||
+      createOrderDto.source === 'MANUAL' ||
+      createOrderDto.initialStatus !== undefined ||
+      createOrderDto.manualDiscountType !== undefined ||
+      createOrderDto.manualDiscountValue !== undefined
+    );
+  }
+
+  private sanitizePublicOrderPayload(
+    createOrderDto: CreateOrderDto,
+  ): CreateOrderDto {
+    return {
+      ...createOrderDto,
+      isManual: false,
+      source: 'ECOMMERCE',
+      initialStatus: 'PENDIENTE_PAGO',
+      manualDiscountType: undefined,
+      manualDiscountValue: undefined,
+    };
+  }
+
   @Post()
   async create(
     @Body() createOrderDto: CreateOrderDto,
     @Req() req: RequestWithUser,
   ) {
-    const source = createOrderDto.source ?? (createOrderDto.isManual ? 'MANUAL' : 'ECOMMERCE');
-    const initialStatus = createOrderDto.initialStatus ?? 'PENDIENTE_PAGO';
-    const normalizedCreateOrderDto: CreateOrderDto = {
-      ...createOrderDto,
-      source,
-      initialStatus,
-    };
+    const actorUserId = req.user?.id;
+    const requiresOperationalPrivileges =
+      this.isPrivilegedOrderCreation(createOrderDto);
 
-    if (source === 'MANUAL' || createOrderDto.isManual) {
-      const userId = req.user?.id;
-      if (!userId) {
+    if (requiresOperationalPrivileges) {
+      if (!actorUserId) {
         throw new UnauthorizedException('User not authenticated');
       }
 
-      const hasPermission = await this.rolesService.hasPermission(
-        userId,
+      const canCreateManualOrders = await this.rolesService.hasPermission(
+        actorUserId,
         'orders',
         'create',
       );
 
-      if (!hasPermission) {
+      if (!canCreateManualOrders) {
         throw new ForbiddenException('Insufficient permissions');
       }
 
-      return this.ordersService.create(normalizedCreateOrderDto, userId);
+      return this.ordersService.create(createOrderDto, actorUserId);
     }
 
-    return this.ordersService.create(normalizedCreateOrderDto, undefined);
+    return this.ordersService.create(
+      this.sanitizePublicOrderPayload(createOrderDto),
+      actorUserId,
+    );
   }
 
   @Get()
   @RequirePermissions({ resource: 'orders', action: 'read' })
   findAll(
     @Query('status') status?: string,
+    @Query('source') source?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('search') search?: string,
   ) {
     return this.ordersService.findAll({
       status,
+      source,
       startDate: startDate ? new Date(startDate) : undefined,
       endDate: endDate ? new Date(endDate) : undefined,
       search,

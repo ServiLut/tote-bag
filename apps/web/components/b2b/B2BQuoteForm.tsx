@@ -1,10 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { UploadCloud, CheckCircle2, Loader2, QrCode, Zap, Briefcase, Crown } from 'lucide-react';
+import { UploadCloud, CheckCircle2, Loader2, QrCode, Briefcase, CalendarRange } from 'lucide-react';
 import { toast } from 'sonner';
 import { Combobox } from '@/components/ui/Combobox';
 import { cn } from '@/utils/cn';
+import { sanitizeIntegerInput } from '@/lib/numeric-input';
+import { apiFetch } from '@/utils/api';
+
+const SHOW_QR_PERSONALIZATION_SECTION = false;
 
 interface Department {
   id: string;
@@ -16,22 +20,13 @@ interface Municipality {
   name: string;
 }
 
-type PackageType = 'Starter' | 'Pro' | 'Evento';
+type PackageType = 'Empresa' | 'Evento';
 
 const PACKAGES = [
   {
-    id: 'Starter',
-    label: 'Starter',
-    min: 12,
-    icon: Zap,
-    activeClass: 'bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-600 dark:ring-blue-500',
-    iconClass: 'text-blue-600 dark:text-blue-400',
-    textClass: 'text-blue-700 dark:text-blue-300'
-  },
-  {
-    id: 'Pro',
-    label: 'Pro',
-    min: 50,
+    id: 'Empresa',
+    label: 'Empresa',
+    min: 30,
     icon: Briefcase,
     activeClass: 'bg-purple-50 dark:bg-purple-900/30 ring-2 ring-purple-600 dark:ring-purple-500',
     iconClass: 'text-purple-600 dark:text-purple-400',
@@ -40,8 +35,8 @@ const PACKAGES = [
   {
     id: 'Evento',
     label: 'Evento',
-    min: 200,
-    icon: Crown,
+    min: 100,
+    icon: CalendarRange,
     activeClass: 'bg-amber-50 dark:bg-amber-900/30 ring-2 ring-amber-600 dark:ring-amber-500',
     iconClass: 'text-amber-600 dark:text-amber-400',
     textClass: 'text-amber-700 dark:text-amber-300'
@@ -82,7 +77,7 @@ export default function B2BQuoteForm() {
     material: string;
   }>({
     businessName: '',
-    quantity: 12,
+    quantity: 30,
     department: '',
     municipality: '',
     neighborhood: '',
@@ -90,7 +85,7 @@ export default function B2BQuoteForm() {
     contactPhone: '',
     qrType: 'WHATSAPP',
     qrData: '',
-    package: 'Starter',
+    package: 'Empresa',
     size: '',
     material: '',
   });
@@ -108,13 +103,11 @@ export default function B2BQuoteForm() {
   }>({ sizes: [], materials: [] });
   const [loadingOptions, setLoadingOptions] = useState(true);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
-
   useEffect(() => {
     // Fetch departments on load
     const fetchDepartments = async () => {
       try {
-        const res = await fetch(`${API_URL}/locations/departments`);
+        const res = await apiFetch('/locations/departments');
         if (res.ok) {
           const resJson = await res.json();
           setDepartments(resJson.data || []);
@@ -127,7 +120,7 @@ export default function B2BQuoteForm() {
     const fetchOptions = async () => {
       setLoadingOptions(true);
       try {
-        const res = await fetch(`${API_URL}/wizard-options/grouped`);
+        const res = await apiFetch('/wizard-options/grouped');
         if (res.ok) {
           const responseData = await res.json();
           const data = (responseData.data || responseData) as GroupedWizardOptions | WizardOption[];
@@ -165,17 +158,30 @@ export default function B2BQuoteForm() {
 
     fetchDepartments();
     fetchOptions();
-  }, [API_URL]);
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const sanitizedValue = sanitizeIntegerInput(e.target.value);
+
+    if (sanitizedValue === null) {
+      return;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      quantity: sanitizedValue,
+    }));
   };
 
   const handlePackageChange = (pkgId: PackageType) => {
     const pkg = PACKAGES.find(p => p.id === pkgId);
     if (!pkg) return;
 
-    let newQuantity = Number(formData.quantity);
+    let newQuantity = Number(formData.quantity || 0);
     if (newQuantity < pkg.min) {
       newQuantity = pkg.min;
     }
@@ -183,7 +189,7 @@ export default function B2BQuoteForm() {
     setFormData(prev => ({
       ...prev,
       package: pkgId,
-      quantity: newQuantity
+      quantity: String(newQuantity)
     }));
   };
 
@@ -194,7 +200,7 @@ export default function B2BQuoteForm() {
 
     if (deptId) {
       try {
-        const res = await fetch(`${API_URL}/locations/municipalities/${deptId}`);
+        const res = await apiFetch(`/locations/municipalities/${deptId}`);
         if (res.ok) {
           const resJson = await res.json();
           setMunicipalities(resJson.data || []);
@@ -231,6 +237,11 @@ export default function B2BQuoteForm() {
     setLoading(true);
 
     try {
+      const qrType = SHOW_QR_PERSONALIZATION_SECTION ? formData.qrType : 'WHATSAPP';
+      const qrData = SHOW_QR_PERSONALIZATION_SECTION
+        ? formData.qrData
+        : formData.contactPhone.trim();
+
       const data = new FormData();
       data.append('businessName', formData.businessName);
       data.append('quantity', String(formData.quantity));
@@ -239,14 +250,14 @@ export default function B2BQuoteForm() {
       data.append('neighborhood', formData.neighborhood);
       data.append('address', formData.address);
       data.append('contactPhone', formData.contactPhone);
-      data.append('qrType', formData.qrType);
-      data.append('qrData', formData.qrData);
+      data.append('qrType', qrType);
+      data.append('qrData', qrData);
       data.append('package', formData.package);
       data.append('size', formData.size);
       data.append('material', formData.material);
       data.append('logo', logoFile);
 
-      const res = await fetch(`${API_URL}/b2b/quote`, {
+      const res = await apiFetch('/b2b/quote', {
         method: 'POST',
         body: data,
       });
@@ -272,14 +283,14 @@ export default function B2BQuoteForm() {
         <div className="flex justify-center mb-4">
           <CheckCircle2 className="w-16 h-16 text-green-600" />
         </div>
-        <h3 className="text-2xl font-serif font-bold text-green-900 mb-2">￡Solicitud Recibida!</h3>
+        <h3 className="text-2xl font-serif font-bold text-green-900 mb-2">Solicitud Recibida</h3>
         <p className="text-green-800 max-w-md mx-auto">
           Hemos recibido tu solicitud B2B. Nuestro equipo comercial te contactará al <strong>{formData.contactPhone}</strong> en menos de 24 horas para finalizar los detalles de tu pedido corporativo.
         </p>
         <button
           onClick={() => {
             setSuccess(false);
-            setFormData({ businessName: '', quantity: 12, department: '', municipality: '', neighborhood: '', address: '', contactPhone: '', qrType: 'WHATSAPP', qrData: '', package: 'Starter', size: '', material: '' });
+            setFormData({ businessName: '', quantity: '30', department: '', municipality: '', neighborhood: '', address: '', contactPhone: '', qrType: 'WHATSAPP', qrData: '', package: 'Empresa', size: '', material: '' });
             setLogoFile(null);
             setSelectedDeptId('');
             setMunicipalities([]);
@@ -292,7 +303,7 @@ export default function B2BQuoteForm() {
     );
   }
 
-  const currentMin = PACKAGES.find(p => p.id === formData.package)?.min || 12;
+  const currentMin = PACKAGES.find(p => p.id === formData.package)?.min || 30;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 bg-surface p-8 rounded-2xl shadow-sm border border-theme">
@@ -300,7 +311,7 @@ export default function B2BQuoteForm() {
       {/* Package Selector */}
       <div className="space-y-3">
         <label className="text-xs font-bold uppercase tracking-wide text-muted">Selecciona tu Paquete</label>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {PACKAGES.map((pkg) => {
             const Icon = pkg.icon;
             const isSelected = formData.package === pkg.id;
@@ -343,12 +354,11 @@ export default function B2BQuoteForm() {
           <label className="text-xs font-bold uppercase tracking-wide text-muted">Cantidad (Unidades)</label>
           <div className="relative">
             <input
-              type="number"
+              type="text"
               name="quantity"
-              min={currentMin}
-              onKeyDown={(e) => { if (['-', 'e', '+'].includes(e.key)) e.preventDefault(); }}
+              inputMode="numeric"
               value={formData.quantity}
-              onChange={handleChange}
+              onChange={handleQuantityChange}
               required
               className="w-full p-3 bg-base/50 border border-theme rounded-lg focus:ring-2 focus:ring-primary focus:bg-surface transition-all outline-none text-primary placeholder:text-muted/50"
               placeholder={`Mínimo ${currentMin} unidades`}
@@ -449,6 +459,7 @@ export default function B2BQuoteForm() {
         </div>
       </div>
 
+      {SHOW_QR_PERSONALIZATION_SECTION ? (
       <div className="pt-4 border-t border-theme">
         <h4 className="text-sm font-bold text-primary mb-4 flex items-center gap-2">
           <QrCode className="w-4 h-4" /> Personalización Inteligente
@@ -515,6 +526,33 @@ export default function B2BQuoteForm() {
           </div>
         </div>
       </div>
+      ) : (
+      <div className="pt-4 border-t border-theme">
+        <div className="space-y-2">
+          <label className="text-xs font-bold uppercase tracking-wide text-muted">Logo Corporativo (Alta Calidad)</label>
+          <div className="relative group">
+            <input
+              type="file"
+              accept="image/png, image/jpeg, image/svg+xml"
+              onChange={handleFileChange}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+            />
+            <div className={cn(
+              "w-full p-3 border-2 border-dashed rounded-lg flex items-center justify-center gap-3 transition-colors",
+              logoFile
+                ? 'border-secondary bg-secondary/5 text-secondary'
+                : 'border-theme bg-base/50 text-muted group-hover:border-primary group-hover:text-primary'
+            )}>
+              <UploadCloud className="w-5 h-5" />
+              <span className="text-sm font-medium truncate max-w-[200px]">
+                {logoFile ? logoFile.name : 'Haz clic para subir tu logo'}
+              </span>
+            </div>
+          </div>
+          <p className="text-[10px] text-muted">Formatos: PNG, JPG, SVG. Fondo transparente recomendado.</p>
+        </div>
+      </div>
+      )}
 
       <button
         type="submit"
@@ -530,6 +568,7 @@ export default function B2BQuoteForm() {
     </form>
   );
 }
+
 
 
 

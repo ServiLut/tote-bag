@@ -11,16 +11,14 @@ import {
   Req,
   UnauthorizedException,
 } from '@nestjs/common';
-import type { Request } from 'express';
 import { CollectionsService } from './collections.service';
 import { CreateCollectionDto } from './dto/create-collection.dto';
 import { UpdateCollectionDto } from './dto/update-collection.dto';
 import { RolesService } from '../roles/roles.service';
 
-interface RequestWithUser extends Request {
+interface RequestWithUser {
   user?: {
     id: string;
-    [key: string]: unknown;
   };
 }
 
@@ -32,9 +30,14 @@ export class CollectionsController {
   ) {}
 
   private async ensurePermission(
-    userId: string,
+    req: RequestWithUser,
     action: 'create' | 'update' | 'delete',
   ) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
     const hasPermission = await this.rolesService.hasPermission(
       userId,
       'products',
@@ -56,11 +59,7 @@ export class CollectionsController {
     @Body() createCollectionDto: CreateCollectionDto,
     @Req() req: RequestWithUser,
   ) {
-    if (!req.user?.id) {
-      throw new UnauthorizedException();
-    }
-
-    await this.ensurePermission(req.user.id, 'create');
+    await this.ensurePermission(req, 'create');
     return this.collectionsService.create(createCollectionDto);
   }
 
@@ -70,11 +69,7 @@ export class CollectionsController {
     @Body() updateCollectionDto: UpdateCollectionDto,
     @Req() req: RequestWithUser,
   ) {
-    if (!req.user?.id) {
-      throw new UnauthorizedException();
-    }
-
-    await this.ensurePermission(req.user.id, 'update');
+    await this.ensurePermission(req, 'update');
     return this.collectionsService.update(id, updateCollectionDto);
   }
 
@@ -83,11 +78,7 @@ export class CollectionsController {
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Req() req: RequestWithUser,
   ) {
-    if (!req.user?.id) {
-      throw new UnauthorizedException();
-    }
-
-    await this.ensurePermission(req.user.id, 'delete');
+    await this.ensurePermission(req, 'delete');
     return this.collectionsService.remove(id);
   }
 }

@@ -1,30 +1,20 @@
-const DEBUG_ROLE_HEADER = 'x-debug-role';
+import { Role } from '../../generated/client/enums';
 
-const AVAILABLE_DEBUG_ROLES = [
-  'ADMIN',
-  'MANAGER',
-  'CUSTOMER',
-] as const;
-
-export type DebugRole = (typeof AVAILABLE_DEBUG_ROLES)[number];
-
+export const DEBUG_ROLE_HEADER = 'x-debug-role';
 export const DEBUG_ROLE_ALLOWED_EMAILS = new Set([
   'deybisasprilla@gmail.com',
   'admin@tote-bag.com',
 ]);
 
-export function getDebugRoleHeaderName() {
-  return DEBUG_ROLE_HEADER;
-}
+const AVAILABLE_DEBUG_ROLES = Object.values(Role);
 
-export function isDebugRole(value: unknown): value is DebugRole {
+export function isDebugRole(value: unknown): value is Role {
   return (
-    typeof value === 'string' &&
-    AVAILABLE_DEBUG_ROLES.includes(value as DebugRole)
+    typeof value === 'string' && AVAILABLE_DEBUG_ROLES.includes(value as Role)
   );
 }
 
-export function getDebugRoleFromHeader(value: unknown): DebugRole | null {
+export function getDebugRoleFromHeader(value: unknown): Role | null {
   if (Array.isArray(value)) {
     return getDebugRoleFromHeader(value[0]);
   }
@@ -32,8 +22,8 @@ export function getDebugRoleFromHeader(value: unknown): DebugRole | null {
   return isDebugRole(value) ? value : null;
 }
 
-export function getAvailableDebugRoles(): readonly DebugRole[] {
-  return AVAILABLE_DEBUG_ROLES;
+export function getAvailableDebugRoles(): Role[] {
+  return [...AVAILABLE_DEBUG_ROLES];
 }
 
 export function canUseDebugRole(email?: string | null, nodeEnv?: string) {

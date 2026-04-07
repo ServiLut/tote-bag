@@ -18,7 +18,7 @@ import {
 
 type InventoryConsumptionReduction = {
   batchId: string;
-  supplierId?: string;
+  supplierId: string;
   quantity: number;
   unitCost: number;
 };
@@ -87,7 +87,7 @@ export class OrdersService {
     const stockReduction = await this.inventoryService.reduceStockFIFO(
       targetVariantId,
       item.quantity,
-      userId ?? 'SYSTEM_ADMIN_ID',
+      userId,
       tx,
     );
 

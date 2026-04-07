@@ -5,7 +5,6 @@ import { Toaster } from 'sonner';
 import { CartProvider } from "@/context/CartContext";
 import { ThemeProvider } from "@/components/theme-provider";
 import { CookieConsent } from "@/components/ui/CookieConsent";
-import { I18nProvider } from "@/components/I18nProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,6 +27,8 @@ export const metadata: Metadata = {
     canonical: '/',
   }
 };
+
+import { I18nProvider } from "@/components/I18nProvider";
 
 export default function RootLayout({
   children,

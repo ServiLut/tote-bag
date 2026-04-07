@@ -12,11 +12,6 @@ export class CreateShippingProviderDto {
   @IsOptional()
   contact?: string;
 
-  @ApiProperty({ example: 'sk_test_123', required: false })
-  @IsString()
-  @IsOptional()
-  apiKey?: string;
-
   @ApiProperty({ default: true, required: false })
   @IsBoolean()
   @IsOptional()
