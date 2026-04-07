@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { apiFetch } from '@/utils/api';
+import { getAuthHeaders } from '@/utils/supabase/auth';
 
 interface Batch {
   id: string;
@@ -55,15 +57,14 @@ export default function InventoryFIFOPage() {
   const [activeTab, setActiveTab] = useState<'current' | 'movements'>('current');
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
   const [search, setSearch] = useState('');
-
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
-
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
+      const headers = await getAuthHeaders();
+      if (!headers) return;
       const [invRes, movRes] = await Promise.all([
-        fetch(`${API_URL}/inventory/detailed`),
-        fetch(`${API_URL}/inventory/movements`),
+        apiFetch('/inventory/detailed', { headers }),
+        apiFetch('/inventory/movements', { headers }),
       ]);
       if (invRes.ok) {
         const result = await invRes.json();
@@ -78,7 +79,7 @@ export default function InventoryFIFOPage() {
     } finally {
       setLoading(false);
     }
-  }, [API_URL]);
+  }, []);
 
   useEffect(() => {
     fetchData();

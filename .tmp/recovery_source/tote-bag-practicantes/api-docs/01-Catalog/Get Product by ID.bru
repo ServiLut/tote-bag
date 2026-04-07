@@ -1,0 +1,15 @@
+meta {
+  name: Obtener Producto por ID
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{url}}/products/:id
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 
+}

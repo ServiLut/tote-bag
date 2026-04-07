@@ -3,15 +3,22 @@ import {
   BadRequestException,
   ConflictException,
   InternalServerErrorException,
+  NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { Role } from '../../generated/client/enums';
+import {
+  canUseDebugRole,
+  getAvailableDebugRoles,
+} from '../../common/utils/debug-role.util';
 
 @Injectable()
 export class AuthService {
-  private supabase: { auth: SupabaseClient['auth'] };
+  private readonly supabase: { auth: SupabaseClient['auth'] } | null;
   private readonly superAdminEmails = new Set([
     'deybisasprilla@gmail.com',
     'admin@tote-bag.com',
@@ -21,17 +28,26 @@ export class AuthService {
   constructor(private prisma: PrismaService) {
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey =
-      process.env.SUPABASE_ANON_KEY ?? process.env.SERVICE_ROLE;
+      process.env.SUPABASE_ANON_KEY ??
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+      process.env.SERVICE_ROLE;
 
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error(
-        'Missing Supabase configuration: SUPABASE_URL or SUPABASE_ANON_KEY/SERVICE_ROLE is not set.',
+    this.supabase =
+      supabaseUrl && supabaseKey
+        ? (createClient(supabaseUrl, supabaseKey) as unknown as {
+            auth: SupabaseClient['auth'];
+          })
+        : null;
+  }
+
+  private getSupabaseAuth() {
+    if (!this.supabase) {
+      throw new ServiceUnavailableException(
+        'El servicio de autenticacion no esta configurado correctamente.',
       );
     }
 
-    this.supabase = createClient(supabaseUrl, supabaseKey) as unknown as {
-      auth: SupabaseClient['auth'];
-    };
+    return this.supabase.auth;
   }
 
   private getWhitelistedRoleByEmail(
@@ -46,9 +62,10 @@ export class AuthService {
 
   async register(registerDto: RegisterDto, ip?: string) {
     const { email, password, acceptTerms, acceptDataPolicy } = registerDto;
+    const supabaseAuth = this.getSupabaseAuth();
 
     // 1. Intentar registro en Supabase
-    const { data, error } = await this.supabase.auth.signUp({
+    const { data, error } = await supabaseAuth.signUp({
       email,
       password,
     });
@@ -143,8 +160,9 @@ export class AuthService {
 
   async login(loginDto: LoginDto) {
     const { email, password } = loginDto;
+    const supabaseAuth = this.getSupabaseAuth();
 
-    const { data, error } = await this.supabase.auth.signInWithPassword({
+    const { data, error } = await supabaseAuth.signInWithPassword({
       email,
       password,
     });
@@ -216,7 +234,9 @@ export class AuthService {
   }
 
   async forgotPassword(email: string) {
-    const { error } = await this.supabase.auth.resetPasswordForEmail(email, {
+    const supabaseAuth = this.getSupabaseAuth();
+
+    const { error } = await supabaseAuth.resetPasswordForEmail(email, {
       redirectTo: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password`,
     });
 
@@ -226,6 +246,17 @@ export class AuthService {
 
     return {
       message: 'Correo de recuperación enviado con éxito',
+    };
+  }
+  changeDebugRole(newRole: Role, email?: string | null) {
+    if (!canUseDebugRole(email, process.env.NODE_ENV)) {
+      throw new NotFoundException();
+    }
+
+    return {
+      message: 'Rol de QA actualizado para la sesion actual',
+      role: newRole,
+      availableRoles: getAvailableDebugRoles(),
     };
   }
 }

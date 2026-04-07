@@ -1,0 +1,25 @@
+- [x] Define the audit scope.
+- [x] SAST Recon on `apps/api/prisma.config.ts`
+- [x] SAST Recon on `apps/api/prisma/schema.prisma`
+  - [ ] Investigate data flow to `AuditLog` payload on line 456.
+  - [ ] Investigate protection of `ShippingProvider.apiKey` on line 120.
+- [x] SAST Recon on `apps/api/prisma/seed-prueba.ts`
+- [x] SAST Recon on `apps/api/prisma/seed.ts`
+- [x] SAST Recon on `apps/api/setup-storage.ts`
+- [x] SAST Recon on `apps/api/src/app.module.ts`
+- [x] SAST Recon on `apps/api/src/modules/b2b/b2b.service.ts`
+  - [ ] Investigate file upload sanitization for `logoFile` and its filename on line 51.
+- [x] SAST Recon on `apps/api/src/common/decorators/require-permissions.decorator.ts`
+- [x] SAST Recon on `apps/api/src/common/dto/product-config.dto.ts`
+- [x] SAST Recon on `apps/api/src/common/guards/permissions.guard.ts`
+- [x] SAST Recon on `apps/api/src/common/guards/throttler.guard.ts`
+- [x] SAST Recon on `apps/api/src/common/interceptors/transform.interceptor.ts`
+- [x] SAST Recon on `apps/api/src/common/interfaces/snapshots.interface.ts`
+- [x] SAST Recon on `apps/api/src/common/utils/hash.util.ts`
+- [x] SAST Recon on `apps/api/src/config/app.config.ts`
+- [x] SAST Recon on `apps/api/src/config/auth.config.ts`
+- [x] SAST Recon on `apps/api/src/config/cache.config.ts`
+- [x] SAST Recon on `apps/api/src/config/database.config.ts`
+- [x] SAST Recon on `apps/api/src/config/env.validation.ts`
+- [x] SAST Recon on `apps/api/src/config/payment.config.ts`
+- [ ] Conduct the final review of all findings as per your **Minimizing False Positives** operating principle and generate the final report.

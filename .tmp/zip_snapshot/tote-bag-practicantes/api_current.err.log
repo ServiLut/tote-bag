@@ -1,0 +1,122 @@
+AuthMiddleware: Supabase validation error: invalid JWT: unable to parse or verify signature, token is malformed: token contains an invalid number of segments
+Failed to fetch previous data for audit: PrismaClientValidationError: 
+Invalid `).findUnique()` invocation in
+C:\Users\user\Desktop\deybis\tote-bag\apps\api\src\common\interceptors\audit.interceptor.ts:283:11
+
+  280   model as {
+  281     findUnique: (args: { where: { id: string } }) => Promise<unknown>;
+  282   }
+â†’ 283 ).findUnique({
+        where: {
+          id: "1"
+              ~~~
+        }
+      })
+
+Argument `id`: Invalid value provided. Expected Int, provided String.
+    at throwValidationException (C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\@prisma+client@7.3.0_prisma_e0afbdab6f544ca7a8c759a63bc48423\node_modules\@prisma\client\src\runtime\core\errorRendering\throwValidationException.ts:46:9)
+    at Vr.handleRequestError (C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\@prisma+client@7.3.0_prisma_e0afbdab6f544ca7a8c759a63bc48423\node_modules\@prisma\client\src\runtime\RequestHandler.ts:202:7)
+    at Vr.handleAndLogRequestError (C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\@prisma+client@7.3.0_prisma_e0afbdab6f544ca7a8c759a63bc48423\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+    at Vr.request (C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\@prisma+client@7.3.0_prisma_e0afbdab6f544ca7a8c759a63bc48423\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async a (C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\@prisma+client@7.3.0_prisma_e0afbdab6f544ca7a8c759a63bc48423\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:805:24)
+    at async AuditInterceptor.getPreviousData (C:\Users\user\Desktop\deybis\tote-bag\apps\api\src\common\interceptors\audit.interceptor.ts:279:16)
+    at async AuditInterceptor.intercept (C:\Users\user\Desktop\deybis\tote-bag\apps\api\src\common\interceptors\audit.interceptor.ts:79:22) {
+  clientVersion: '7.3.0'
+}
+AuthMiddleware: Missing Authorization header for GET /
+Failed to fetch previous data for audit: PrismaClientValidationError: 
+Invalid `).findUnique()` invocation in
+C:\Users\user\Desktop\deybis\tote-bag\apps\api\src\common\interceptors\audit.interceptor.ts:283:11
+
+  280   model as {
+  281     findUnique: (args: { where: { id: string } }) => Promise<unknown>;
+  282   }
+â†’ 283 ).findUnique({
+        where: {
+          id: "1"
+              ~~~
+        }
+      })
+
+Argument `id`: Invalid value provided. Expected Int, provided String.
+    at throwValidationException (C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\@prisma+client@7.3.0_prisma_e0afbdab6f544ca7a8c759a63bc48423\node_modules\@prisma\client\src\runtime\core\errorRendering\throwValidationException.ts:46:9)
+    at Vr.handleRequestError (C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\@prisma+client@7.3.0_prisma_e0afbdab6f544ca7a8c759a63bc48423\node_modules\@prisma\client\src\runtime\RequestHandler.ts:202:7)
+    at Vr.handleAndLogRequestError (C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\@prisma+client@7.3.0_prisma_e0afbdab6f544ca7a8c759a63bc48423\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+    at Vr.request (C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\@prisma+client@7.3.0_prisma_e0afbdab6f544ca7a8c759a63bc48423\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async a (C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\@prisma+client@7.3.0_prisma_e0afbdab6f544ca7a8c759a63bc48423\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:805:24)
+    at async AuditInterceptor.getPreviousData (C:\Users\user\Desktop\deybis\tote-bag\apps\api\src\common\interceptors\audit.interceptor.ts:279:16)
+    at async AuditInterceptor.intercept (C:\Users\user\Desktop\deybis\tote-bag\apps\api\src\common\interceptors\audit.interceptor.ts:79:22) {
+  clientVersion: '7.3.0'
+}
+AuthMiddleware: Missing Authorization header for GET /
+AuthMiddleware: Missing Authorization header for GET /
+AuthMiddleware: Missing Authorization header for GET /
+AuthMiddleware: Missing Authorization header for POST /
+AuthMiddleware: Missing Authorization header for POST /
+AuthMiddleware: Missing Authorization header for GET /
+AuthMiddleware: Missing Authorization header for GET /
+AuthMiddleware: Missing Authorization header for GET /?
+AuthMiddleware: Missing Authorization header for GET /
+AuthMiddleware: Missing Authorization header for GET /
+AuthMiddleware: Missing Authorization header for GET /?
+AuthMiddleware: Missing Authorization header for GET /
+AuthMiddleware: Missing Authorization header for GET /
+AuthMiddleware: Missing Authorization header for GET /
+AuthMiddleware: Missing Authorization header for GET /
+Error: listen EADDRINUSE: address already in use 0.0.0.0:4004
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:89:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4004
+}
+ERROR: no se encontr¢ el proceso "4300".
+ERROR: no se encontr¢ el proceso "4300".
+node:child_process:1000
+    throw err;
+    ^
+
+Error: Command failed: taskkill /pid 4300 /T /F
+ERROR: no se encontrï¿½ el proceso "4300".
+
+    at genericNodeError (node:internal/errors:985:15)
+    at wrappedFn (node:internal/errors:539:14)
+    at checkExecSyncError (node:child_process:925:11)
+    at execSync (node:child_process:997:15)
+    at treeKillSync (C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\@nestjs+cli@11.0.16_@types+node@22.19.8\node_modules\@nestjs\cli\lib\utils\tree-kill.js:7:38)
+    at C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\@nestjs+cli@11.0.16_@types+node@22.19.8\node_modules\@nestjs\cli\actions\start.action.js:68:46
+    at Object.onWatchStatusChange (C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\@nestjs+cli@11.0.16_@types+node@22.19.8\node_modules\@nestjs\cli\lib\compiler\watch-compiler.js:83:17)
+    at C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\typescript@5.9.3\node_modules\typescript\lib\typescript.js:133916:30
+    at emitFilesAndReportErrors (C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\typescript@5.9.3\node_modules\typescript\lib\typescript.js:133737:5)
+    at result.afterProgramCreate (C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\typescript@5.9.3\node_modules\typescript\lib\typescript.js:133912:5) {
+  status: 128,
+  signal: null,
+  output: [
+    null,
+    Buffer(0) [Uint8Array] [],
+    Buffer(42) [Uint8Array] [
+       69,  82,  82,  79,  82,  58, 32, 110, 111,
+       32, 115, 101,  32, 101, 110, 99, 111, 110,
+      116, 114, 162,  32, 101, 108, 32, 112, 114,
+      111,  99, 101, 115, 111,  32, 34,  52,  51,
+       48,  48,  34,  46,  13,  10
+    ]
+  ],
+  pid: 21284,
+  stdout: Buffer(0) [Uint8Array] [],
+  stderr: Buffer(42) [Uint8Array] [
+     69,  82,  82,  79,  82,  58, 32, 110, 111,
+     32, 115, 101,  32, 101, 110, 99, 111, 110,
+    116, 114, 162,  32, 101, 108, 32, 112, 114,
+    111,  99, 101, 115, 111,  32, 34,  52,  51,
+     48,  48,  34,  46,  13,  10
+  ]
+}
+
+Node.js v24.13.1

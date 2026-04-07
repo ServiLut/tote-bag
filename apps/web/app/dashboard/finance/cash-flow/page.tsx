@@ -21,6 +21,8 @@ import {
   Loader2,
 } from 'lucide-react';
 import { parseISO, subDays, subMonths, isAfter } from 'date-fns';
+import { apiFetch } from '@/utils/api';
+import { getAuthHeaders } from '@/utils/supabase/auth';
 
 interface CashFlowPoint {
   label: string;
@@ -35,14 +37,13 @@ export default function CashFlowPage() {
   const [loading, setLoading] = useState(true);
   const [timeRange, setRange] = useState('30_DAYS');
   const [period, setPeriod] = useState<'daily' | 'monthly'>('daily');
-
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
-
   useEffect(() => {
     const fetchFlow = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${API_URL}/inventory/finance/cash-flow?period=${period}`);
+        const headers = await getAuthHeaders();
+        if (!headers) return;
+        const res = await apiFetch(`/inventory/finance/cash-flow?period=${period}`, { headers });
         if (res.ok) {
           const result = await res.json();
           setRawData(result.data || []);
@@ -54,7 +55,7 @@ export default function CashFlowPage() {
       }
     };
     fetchFlow();
-  }, [API_URL, period]);
+  }, [period]);
 
   const filteredData = rawData.filter(point => {
     const date = period === 'daily' ? parseISO(point.label) : parseISO(`${point.label}-01`);

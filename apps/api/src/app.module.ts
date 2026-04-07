@@ -29,12 +29,16 @@ import { InventoryModule } from './modules/inventory/inventory.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { UsersModule } from './modules/users/users.module';
 import { ShippingModule } from './modules/shipping/shipping.module';
+import { PqrsModule } from './modules/pqrs/pqrs.module';
+import { PayrollModule } from './modules/payroll/payroll.module';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthMiddleware } from './common/middleware/auth.middleware';
 import { ThrottlerBehindProxyGuard } from './common/guards/throttler.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
 import { RolesModule } from './modules/roles/roles.module';
+import { StorageModule } from './common/storage/storage.module';
+import { DebugRoleContextModule } from './common/context/debug-role-context.module';
 import envValidationSchema from './config/env.validation';
 import appConfig from './config/app.config';
 import authConfig from './config/auth.config';
@@ -86,7 +90,9 @@ import cacheConfig from './config/cache.config';
     PrometheusModule.register({
       path: '/metrics',
     }),
+    StorageModule,
     PrismaModule,
+    DebugRoleContextModule,
     RolesModule,
     DashboardModule,
     B2BModule,
@@ -108,6 +114,8 @@ import cacheConfig from './config/cache.config';
     InventoryModule,
     UsersModule,
     ShippingModule,
+    PqrsModule,
+    PayrollModule,
   ],
   controllers: [AppController],
   providers: [

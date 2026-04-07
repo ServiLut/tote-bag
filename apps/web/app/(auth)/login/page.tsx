@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { Mail, Lock, Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import Image from 'next/image';
+import { DASHBOARD_DEBUG_ROLE_COOKIE_NAME } from '@/lib/dashboard-auth';
+import { resolvePostLoginRedirectPath } from '@/lib/frontend-routing';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -50,12 +52,9 @@ export default function LoginPage() {
 
       // Store role in localStorage for simple frontend checks
       localStorage.setItem('user_role', role);
+      document.cookie = `${DASHBOARD_DEBUG_ROLE_COOKIE_NAME}=${encodeURIComponent(role)}; path=/; SameSite=Lax`;
 
-      if (role === 'ADMIN' || role === 'MANAGER' || role === 'ADVISOR' || role === 'VIEWER') {
-        router.push('/dashboard');
-      } else {
-        router.push('/profile');
-      }
+      router.push(resolvePostLoginRedirectPath({ role }));
       
       router.refresh();
     } catch (err) {

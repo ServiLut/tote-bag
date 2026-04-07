@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '../../generated/client/client';
+import PDFDocument from 'pdfkit';
+import { format } from 'date-fns';
 import {
   TransactionType,
   TransactionCategory,
@@ -115,13 +117,7 @@ export class FinanceService {
 
     if (categories.length === 0) {
       // Seed if empty
-      const defaultCategories = [
-        'Nómina',
-        'Arriendo',
-        'Servicios',
-        'Marketing',
-        'Mantenimiento',
-      ];
+      const defaultCategories = ['N\u00f3mina', 'Arriendo', 'Servicios', 'Marketing', 'Mantenimiento'];
       await this.prisma.opexCategory.createMany({
         data: defaultCategories.map((name) => ({ name })),
         skipDuplicates: true,
@@ -141,11 +137,17 @@ export class FinanceService {
     const category = await this.prisma.opexCategory.findUnique({
       where: { id: data.opexCategoryId },
     });
+    const normalizedCategoryName = (category?.name || '')
+      .replace(/\u00C3\u00B3/g, 'o')
+      .replace(/\u00C3/g, 'a')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
 
     return this.prisma.financialTransaction.create({
       data: {
         type: TransactionType.EXPENSE,
-        category: category?.name.toLowerCase().includes('nómina')
+        category: normalizedCategoryName.includes('nomina')
           ? TransactionCategory.PAYROLL
           : TransactionCategory.OPEX,
         amount: data.amount,
@@ -319,6 +321,115 @@ export class FinanceService {
       },
       cashFlowChart,
       recentTransactions,
+    };
+  }
+
+  private resolveReportRange(query: {
+    startDate?: string;
+    endDate?: string;
+    month?: string;
+    year?: string;
+  }) {
+    const { startDate, endDate, month, year } = query;
+
+    if (startDate || endDate) {
+      return {
+        start: startDate ? new Date(`${startDate}T00:00:00`) : undefined,
+        end: endDate ? new Date(`${endDate}T23:59:59.999`) : undefined,
+        label: `${startDate || 'inicio'} - ${endDate || 'hoy'}`,
+      };
+    }
+
+    if (month && year) {
+      const monthIndex = Number.parseInt(month, 10) - 1;
+      const numericYear = Number.parseInt(year, 10);
+      const start = new Date(numericYear, monthIndex, 1);
+      const end = new Date(numericYear, monthIndex + 1, 0, 23, 59, 59, 999);
+
+      return {
+        start,
+        end,
+        label: format(start, 'MMMM yyyy'),
+      };
+    }
+
+    if (year) {
+      const numericYear = Number.parseInt(year, 10);
+      return {
+        start: new Date(numericYear, 0, 1),
+        end: new Date(numericYear, 11, 31, 23, 59, 59, 999),
+        label: year,
+      };
+    }
+
+    const today = new Date();
+    return {
+      start: new Date(today.getFullYear(), today.getMonth(), 1),
+      end: new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999),
+      label: format(today, 'MMMM yyyy'),
+    };
+  }
+
+  async getFinancialReportPreview(query: {
+    startDate?: string;
+    endDate?: string;
+    month?: string;
+    year?: string;
+  }) {
+    const { start, end, label } = this.resolveReportRange(query);
+    const summary = await this.getFinancialSummary(start, end);
+
+    return {
+      periodLabel: label,
+      generatedAt: new Date().toISOString(),
+      ...summary,
+    };
+  }
+
+  async generateFinancialReportPdf(query: {
+    startDate?: string;
+    endDate?: string;
+    month?: string;
+    year?: string;
+  }) {
+    const preview = await this.getFinancialReportPreview(query);
+    const buffer = await new Promise<Buffer>((resolve, reject) => {
+      const doc = new PDFDocument({ margin: 48 });
+      const chunks: Buffer[] = [];
+
+      doc.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      doc.fontSize(18).text('Reporte financiero', { align: 'left' });
+      doc.moveDown(0.5);
+      doc.fontSize(10).fillColor('#555').text(`Periodo: ${preview.periodLabel}`);
+      doc.text(`Generado: ${format(new Date(preview.generatedAt), 'dd/MM/yyyy HH:mm')}`);
+      doc.moveDown();
+
+      doc.fillColor('#111').fontSize(12).text('Indicadores');
+      doc.moveDown(0.5);
+      doc.fontSize(10);
+      doc.text(`Ingresos: ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(preview.kpis.totalIncome || 0)}`);
+      doc.text(`OPEX: ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(preview.kpis.totalOpex || 0)}`);
+      doc.text(`Compras: ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(preview.kpis.totalPurchases || 0)}`);
+      doc.text(`COGS: ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(preview.kpis.totalCOGS || 0)}`);
+      doc.moveDown();
+
+      doc.fontSize(12).text('Flujo de caja');
+      doc.moveDown(0.5);
+      preview.cashFlowChart.slice(0, 12).forEach((row) => {
+        doc.fontSize(10).text(
+          `${row.month}: ingresos ${row.income}, egresos ${row.expense}`,
+        );
+      });
+
+      doc.end();
+    });
+
+    return {
+      fileName: `financial-report-${Date.now()}.pdf`,
+      buffer,
     };
   }
 }

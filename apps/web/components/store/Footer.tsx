@@ -23,6 +23,7 @@ export default function Footer() {
             <li><Link href="/catalog" className="hover:opacity-100 transition-opacity font-medium">Tienda</Link></li>
             <li><Link href="/about" className="hover:opacity-100 transition-opacity font-medium">Nosotros</Link></li>
             <li><Link href="/beneficios" className="hover:opacity-100 transition-opacity font-medium">Sostenibilidad</Link></li>
+            <li><Link href="/envios" className="hover:opacity-100 transition-opacity font-medium">Envios</Link></li>
           </ul>
         </div>
         <div>
@@ -30,7 +31,7 @@ export default function Footer() {
            <ul className="space-y-4 text-sm opacity-90">
             <li><Link href="/legal/privacy" className="hover:opacity-100 transition-opacity font-medium">Privacidad</Link></li>
             <li><Link href="/legal/data-processing" className="hover:opacity-100 transition-opacity font-medium">Tratamiento de Datos</Link></li>
-            <li><Link href="#" className="hover:opacity-100 transition-opacity font-medium">Envíos</Link></li>
+            <li><Link href="/pqrs" className="hover:opacity-100 transition-opacity font-medium">PQRS</Link></li>
           </ul>
         </div>
       </div>

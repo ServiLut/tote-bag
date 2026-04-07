@@ -45,6 +45,10 @@ export class ProductConfigInputDto {
   @IsOptional()
   quality?: string;
 
+  @IsString()
+  @IsOptional()
+  customImageURL?: string;
+
   @IsNumber()
   @Min(1)
   quantity: number;

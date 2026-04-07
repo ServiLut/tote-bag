@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "harden": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "computedHash": "54072e299abb30b20ddca38dcbb8c585ccd3dcecc414586d6279db1fccae3578"
+    }
+  }
+}

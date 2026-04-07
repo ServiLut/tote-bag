@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { apiFetch } from '@/utils/api';
+import { getAuthHeaders } from '@/utils/supabase/auth';
 
 interface OpexCategory {
   id: string;
@@ -41,7 +43,6 @@ export default function OpexPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [filterCategory, setFilterCategory] = useState('ALL');
-
   // Form State
   const [formData, setFormData] = useState({
     description: '',
@@ -50,13 +51,13 @@ export default function OpexPage() {
     createdAt: new Date().toISOString().split('T')[0],
   });
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
-
   const fetchData = useCallback(async () => {
     try {
+      const headers = await getAuthHeaders();
+      if (!headers) return;
       const [txRes, catRes] = await Promise.all([
-        fetch(`${API_URL}/inventory/finance/opex-transactions`),
-        fetch(`${API_URL}/inventory/finance/opex-categories`),
+        apiFetch('/inventory/finance/opex-transactions', { headers }),
+        apiFetch('/inventory/finance/opex-categories', { headers }),
       ]);
 
       if (txRes.ok) {
@@ -72,7 +73,7 @@ export default function OpexPage() {
     } finally {
       setLoading(false);
     }
-  }, [API_URL]);
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -80,11 +81,13 @@ export default function OpexPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
+      setSubmitting(true);
     try {
-      const res = await fetch(`${API_URL}/inventory/finance/opex`, {
+      const headers = await getAuthHeaders();
+      if (!headers) return;
+      const res = await apiFetch('/inventory/finance/opex', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...headers },
         body: JSON.stringify(formData),
       });
 

@@ -1,0 +1,36 @@
+meta {
+  name: Actualizar Producto
+  type: http
+  seq: 2
+}
+
+patch {
+  url: {{url}}/products/:id
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 
+}
+
+body:json {
+  {
+    "status": "DISPONIBLE",
+    "basePrice": 52000,
+    "comparePrice": 60000,
+    "tags": ["oferta", "verano", "limitado"],
+    "images": [
+      {
+        "url": "https://images.unsplash.com/photo-1544816155-12df9643f363",
+        "alt": "Nueva vista",
+        "position": 0
+      },
+      {
+        "url": "https://images.unsplash.com/new-image.jpg",
+        "alt": "Detalle",
+        "position": 1
+      }
+    ]
+  }
+}

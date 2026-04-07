@@ -1,0 +1,24 @@
+meta {
+  name: Crear Cotización (Multipart)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{url}}/b2b/quote
+  body: multipartForm
+  auth: inherit
+}
+
+body:multipart-form {
+  businessName: Empresa S.A.S.
+  quantity: 50
+  department: Cundinamarca
+  municipality: Bogotá
+  neighborhood: Chapinero
+  address: Calle 123 #45-67
+  contactPhone: 3001234567
+  qrType: WHATSAPP
+  qrData: 3001234567
+  logo: @file()
+}

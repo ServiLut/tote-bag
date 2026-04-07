@@ -1,0 +1,50 @@
+meta {
+  name: Crear Producto
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{url}}/products
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Tote Bag Premium",
+    "slug": "tote-bag-premium-2026",
+    "description": "Bolsa de algodón de alto gramaje para uso diario.",
+    "basePrice": 50000,
+    "minPrice": 35000,
+    "comparePrice": 65000,
+    "costPrice": 25000,
+    "status": "BAJO_PEDIDO",
+    "collectionName": "VERANO2026",
+    "deliveryTime": "5 días",
+    "material": "Algodón 300g",
+    "dimensions": "35x40cm",
+    "printType": "DTF",
+    "images": [
+      {
+        "url": "https://images.unsplash.com/photo-1544816155-12df9643f363",
+        "alt": "Vista frontal",
+        "position": 0
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1597484662317-c9313897018e",
+        "alt": "Vista trasera",
+        "position": 1
+      }
+    ],
+    "tags": ["verano", "premium", "algodon"],
+    "variants": [
+      {
+        "sku": "TB-VERANO2026-PREMIUM-NEGRO",
+        "color": "NEGRO",
+        "imageUrl": "https://images.unsplash.com/photo-1597484662317-c9313897018e",
+        "stock": 100
+      }
+    ]
+  }
+}

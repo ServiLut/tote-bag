@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@tote-bag/ui": ["../../packages/ui/index.ts"]
     }
   },
   "include": [

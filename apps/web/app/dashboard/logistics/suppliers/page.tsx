@@ -15,6 +15,8 @@ import {
   CreditCard,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { apiFetch } from '@/utils/api';
+import { getAuthHeaders } from '@/utils/supabase/auth';
 
 interface Supplier {
   id: string;
@@ -59,24 +61,25 @@ export default function SuppliersPage() {
     name: '', nit: '', contact: '', email: '', phone: '', address: ''
   });
   const [paymentData, setPaymentData] = useState({ amount: 0, description: '' });
-
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1';
-
   const fetchSuppliers = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/inventory/suppliers`);
+      const headers = await getAuthHeaders();
+      if (!headers) return;
+      const res = await apiFetch('/inventory/suppliers', { headers });
       if (res.ok) {
         const result = await res.json();
         setSuppliers(result.data || []);
       }
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
-  }, [API_URL]);
+  }, []);
 
   const fetchDetails = async (id: string) => {
     setDetailsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/inventory/suppliers/${id}`);
+      const headers = await getAuthHeaders();
+      if (!headers) return;
+      const res = await apiFetch(`/inventory/suppliers/${id}`, { headers });
       if (res.ok) {
         const result = await res.json();
         setSupplierDetails(result.data || null);
@@ -91,9 +94,11 @@ export default function SuppliersPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_URL}/inventory/suppliers`, {
+      const headers = await getAuthHeaders();
+      if (!headers) return;
+      const res = await apiFetch('/inventory/suppliers', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...headers },
         body: JSON.stringify(formData),
       });
       if (res.ok) {
@@ -110,9 +115,11 @@ export default function SuppliersPage() {
     if (!selectedSupplierId) return;
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_URL}/inventory/suppliers/${selectedSupplierId}/payments`, {
+      const headers = await getAuthHeaders();
+      if (!headers) return;
+      const res = await apiFetch(`/inventory/suppliers/${selectedSupplierId}/payments`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...headers },
         body: JSON.stringify(paymentData),
       });
       if (res.ok) {

@@ -5,8 +5,23 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 import { Prisma } from '../../generated/client/client';
 import { PricingService } from '../pricing/pricing.service';
 import { InventoryService } from '../inventory/inventory.service';
-import { PriceRuleScope, OrderStatus } from '../../generated/client/enums';
-import { ConfigurationSnapshot } from '../../common/interfaces/snapshots.interface';
+import { ShippingSyncService } from '../shipping/shipping-sync.service';
+import {
+  PriceRuleScope,
+  OrderStatus,
+  OrderSource,
+} from '../../generated/client/enums';
+import {
+  ConfigurationSnapshot,
+  normalizeSnapshotPersonalizations,
+} from '../../common/interfaces/snapshots.interface';
+
+type InventoryConsumptionReduction = {
+  batchId: string;
+  supplierId?: string;
+  quantity: number;
+  unitCost: number;
+};
 
 @Injectable()
 export class OrdersService {
@@ -14,7 +29,73 @@ export class OrdersService {
     private readonly prisma: PrismaService,
     private readonly pricingService: PricingService,
     private readonly inventoryService: InventoryService,
+    private readonly shippingSyncService: ShippingSyncService,
   ) {}
+
+  private async resolveVariantId(
+    tx: Prisma.TransactionClient,
+    item: {
+      variantId?: string | null;
+      sku: string;
+      productId: string;
+    },
+  ) {
+    if (item.variantId) {
+      return item.variantId;
+    }
+
+    if (!item.sku) {
+      throw new BadRequestException(
+        `No se pudo identificar la variante para el producto ${item.productId}`,
+      );
+    }
+
+    const variant = await tx.variant.findUnique({
+      where: { sku: item.sku },
+      select: { id: true },
+    });
+
+    if (!variant?.id) {
+      throw new BadRequestException(
+        `No se pudo identificar la variante para el producto ${item.sku || item.productId}`,
+      );
+    }
+
+    return variant.id;
+  }
+
+  private hasInventoryConsumption(pricingJson: Prisma.JsonValue | null) {
+    return (
+      !!pricingJson &&
+      typeof pricingJson === 'object' &&
+      !Array.isArray(pricingJson) &&
+      'inventoryConsumption' in pricingJson
+    );
+  }
+
+  private async buildInventoryConsumption(
+    tx: Prisma.TransactionClient,
+    item: {
+      variantId?: string | null;
+      sku: string;
+      productId: string;
+      quantity: number;
+    },
+    userId?: string,
+  ) {
+    const targetVariantId = await this.resolveVariantId(tx, item);
+    const stockReduction = await this.inventoryService.reduceStockFIFO(
+      targetVariantId,
+      item.quantity,
+      userId ?? 'SYSTEM_ADMIN_ID',
+      tx,
+    );
+
+    return {
+      totalCOGS: stockReduction.totalCOGS,
+      reductions: stockReduction.reductions,
+    };
+  }
 
   async create(createOrderDto: CreateOrderDto, userId?: string) {
     const {
@@ -29,6 +110,7 @@ export class OrdersService {
       manualDiscountValue,
       isB2B,
       isManual,
+      source,
       initialStatus,
       ...orderData
     } = createOrderDto;
@@ -37,29 +119,32 @@ export class OrdersService {
     const statusToSet =
       (initialStatus as OrderStatus) || OrderStatus.PENDIENTE_PAGO;
 
-    // Ensure we have a valid user for audit/transactions
-    let finalUserId = userId;
-    if (!finalUserId) {
-      // For guest checkout or if no userId is provided, we try to find a system user or use a default
-      const systemUser = await this.prisma.user.findFirst({
-        where: { role: 'ADMIN' },
-      });
-      finalUserId = systemUser?.id;
-
-      if (!finalUserId) {
-        // Fallback: create a system user if none exists (should only happen in fresh dev env)
-        const newUser = await this.prisma.user.create({
-          data: {
-            id: 'SYSTEM_ADMIN_ID',
-            email: 'system@totebag.com',
-            role: 'ADMIN',
-          },
-        });
-        finalUserId = newUser.id;
-      }
-    }
+    // Determine source
+    const sourceToSet =
+      (source as OrderSource) ||
+      (isManual ? OrderSource.MANUAL : OrderSource.ECOMMERCE);
+    const shouldReduceInventory =
+      sourceToSet === OrderSource.MANUAL ||
+      statusToSet !== OrderStatus.PENDIENTE_PAGO;
 
     return this.prisma.$transaction(async (tx) => {
+      let resolvedProfileId = orderData.profileId;
+
+      // Ecommerce orders created by an authenticated customer should stay linked
+      // to that customer's profile even if the frontend omitted profileId.
+      if (
+        !resolvedProfileId &&
+        userId &&
+        sourceToSet === OrderSource.ECOMMERCE
+      ) {
+        const actorProfile = await tx.profile.findUnique({
+          where: { userId },
+          select: { id: true },
+        });
+
+        resolvedProfileId = actorProfile?.id;
+      }
+
       const processedItems = await Promise.all(
         items.map(async (item) => {
           if (!item.productId) {
@@ -68,7 +153,16 @@ export class OrdersService {
 
           const baseProduct = await tx.product.findUnique({
             where: { id: item.productId },
-            select: { id: true, basePrice: true, minPrice: true },
+            select: {
+              id: true,
+              basePrice: true,
+              minPrice: true,
+              images: {
+                select: { url: true },
+                orderBy: { position: 'asc' },
+                take: 1,
+              },
+            },
           });
 
           if (!baseProduct) {
@@ -81,7 +175,8 @@ export class OrdersService {
           let unitPrice = Math.max(baseProduct.basePrice, baseProduct.minPrice);
           let totalPrice = unitPrice * item.quantity;
           let configurationJson: Prisma.InputJsonValue | undefined = undefined;
-          let pricingJson: Prisma.InputJsonValue | undefined = undefined;
+          let pricingJsonPayload: Record<string, unknown> = {};
+          let imageUrl: string | null = null;
 
           if (item.configuration) {
             const scope = isB2B ? PriceRuleScope.B2B : PriceRuleScope.B2C;
@@ -106,64 +201,66 @@ export class OrdersService {
               size: item.configuration.size,
               material: item.configuration.material,
               quality: item.configuration.quality,
-              personalizations: item.configuration.personalizations,
+              customImageURL: item.configuration.customImageURL,
+              personalizations: normalizeSnapshotPersonalizations(
+                item.configuration.personalizations,
+              ),
               timestamp: new Date().toISOString(),
             };
 
             configurationJson =
               configSnapshot as unknown as Prisma.InputJsonValue;
-            pricingJson = quote.snapshot as unknown as Prisma.InputJsonValue;
+            pricingJsonPayload = {
+              ...(quote.snapshot as unknown as Record<string, unknown>),
+            };
+
+            imageUrl = item.configuration.customImageURL ?? null;
           }
 
-          // 1. Reduce stock for each item
-          try {
-            // Priority: variantId from DTO
-            let targetVariantId = item.variantId;
+          let inventoryConsumption: {
+            totalCOGS: number;
+            reductions: InventoryConsumptionReduction[];
+          } | null = null;
 
-            // Fallback: If no variantId provided, try to find it by SKU
-            if (!targetVariantId && item.sku) {
-              const variant = await tx.variant.findUnique({
-                where: { sku: item.sku },
-                select: { id: true },
-              });
-              targetVariantId = variant?.id;
-            }
-
-            if (!targetVariantId) {
-              throw new BadRequestException(
-                `No se pudo identificar la variante para el producto ${item.sku || item.productId}`,
+          if (shouldReduceInventory) {
+            try {
+              inventoryConsumption = await this.buildInventoryConsumption(
+                tx,
+                item,
+                userId,
               );
-            }
-
-            await this.inventoryService.reduceStockFIFO(
-              targetVariantId,
-              item.quantity,
-              finalUserId,
-              tx,
-            );
-          } catch (error: unknown) {
-            // If stock reduction fails (e.g. insufficient stock), we catch it
-            // and decide whether to fail the whole order or just log it.
-            // Requirement says: "maneja el error de forma controlada"
-            const errorMessage =
-              error instanceof Error ? error.message : 'Unknown error';
-            console.warn(
-              `Stock reduction failed for item ${item.sku || item.productId}: ${errorMessage}`,
-            );
-            // If it's "Stock insuficiente", we probably WANT to fail the order to avoid overselling
-            if (error instanceof BadRequestException) {
-              throw error;
+            } catch (error: unknown) {
+              const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
+              console.warn(
+                `Stock reduction failed for item ${item.sku || item.productId}: ${errorMessage}`,
+              );
+              if (error instanceof BadRequestException) {
+                throw error;
+              }
             }
           }
+
+          const pricingJson =
+            inventoryConsumption || Object.keys(pricingJsonPayload).length > 0
+              ? ({
+                  ...pricingJsonPayload,
+                  ...(inventoryConsumption
+                    ? {
+                        inventoryConsumption,
+                      }
+                    : {}),
+                } as Prisma.InputJsonValue)
+              : (null as unknown as Prisma.InputJsonValue);
 
           return {
             ...item,
+            imageUrl: imageUrl ?? baseProduct.images[0]?.url ?? null,
             unitPrice,
             totalPrice,
             configurationJson:
               configurationJson ?? (null as unknown as Prisma.InputJsonValue),
-            pricingJson:
-              pricingJson ?? (null as unknown as Prisma.InputJsonValue),
+            pricingJson,
           };
         }),
       );
@@ -217,12 +314,14 @@ export class OrdersService {
             : null,
       } as Prisma.InputJsonValue;
 
-      return tx.order.create({
+      const createdOrder = await tx.order.create({
         data: {
           ...orderData,
+          profileId: resolvedProfileId,
           carrier: resolvedCarrier,
           isB2B: !!isB2B,
           isManual: !!isManual,
+          source: sourceToSet,
           status: statusToSet,
           shippingAddress: shippingAddressJson,
           totalAmount,
@@ -238,37 +337,139 @@ export class OrdersService {
               unitPrice: item.unitPrice,
               totalPrice: item.totalPrice,
               sku: item.sku,
+              imageUrl: item.imageUrl,
               variantId: item.variantId,
               configurationJson: item.configurationJson,
               pricingJson: item.pricingJson,
             })),
           },
-          ...(provider && {
+          ...((provider || resolvedCarrier) && {
             shipment: {
               create: {
-                providerId: provider.id,
+                ...(provider ? { providerId: provider.id } : {}),
               },
             },
           }),
         },
         include: { items: true, statusHistory: true, shipment: true },
       });
+
+      if (statusToSet !== OrderStatus.PENDIENTE_PAGO) {
+        await this.shippingSyncService.ensureShipmentForOrder(
+          createdOrder.id,
+          tx,
+        );
+      }
+
+      return createdOrder;
     });
+  }
+
+  async confirmPendingOrderPayment(
+    orderId: string,
+    userId?: string,
+    txClient?: Prisma.TransactionClient,
+  ) {
+    const execute = async (tx: Prisma.TransactionClient) => {
+      const order = await tx.order.findUnique({
+        where: { id: orderId },
+        include: {
+          items: {
+            select: {
+              id: true,
+              productId: true,
+              variantId: true,
+              sku: true,
+              quantity: true,
+              pricingJson: true,
+            },
+          },
+        },
+      });
+
+      if (!order) {
+        throw new BadRequestException('Orden no encontrada');
+      }
+
+      if (order.status === OrderStatus.PAGADA) {
+        return order;
+      }
+
+      if (order.status !== OrderStatus.PENDIENTE_PAGO) {
+        return order;
+      }
+
+      for (const item of order.items) {
+        if (this.hasInventoryConsumption(item.pricingJson)) {
+          continue;
+        }
+
+        const inventoryConsumption = await this.buildInventoryConsumption(
+          tx,
+          item,
+          userId,
+        );
+
+        const basePricingJson =
+          item.pricingJson &&
+          typeof item.pricingJson === 'object' &&
+          !Array.isArray(item.pricingJson)
+            ? (item.pricingJson as Record<string, unknown>)
+            : {};
+
+        await tx.orderItem.update({
+          where: { id: item.id },
+          data: {
+            pricingJson: {
+              ...basePricingJson,
+              inventoryConsumption,
+            } as Prisma.InputJsonValue,
+          },
+        });
+      }
+
+      const updatedOrder = await tx.order.update({
+        where: { id: orderId },
+        data: {
+          status: OrderStatus.PAGADA,
+          statusHistory: {
+            create: {
+              status: OrderStatus.PAGADA,
+            },
+          },
+        },
+      });
+
+      await this.shippingSyncService.ensureShipmentForOrder(orderId, tx);
+
+      return updatedOrder;
+    };
+
+    if (txClient) {
+      return execute(txClient);
+    }
+
+    return this.prisma.$transaction(async (tx) => execute(tx));
   }
 
   async findAll(
     filters: {
       status?: string;
+      source?: string;
       startDate?: Date;
       endDate?: Date;
       search?: string;
     } = {},
   ) {
-    const { status, startDate, endDate, search } = filters;
+    const { status, source, startDate, endDate, search } = filters;
     const where: Prisma.OrderWhereInput = {};
 
     if (status) {
       where.status = status as OrderStatus;
+    }
+
+    if (source) {
+      where.source = source as OrderSource;
     }
 
     if (startDate || endDate) {
@@ -307,6 +508,7 @@ export class OrdersService {
         city: true,
         totalAmount: true,
         status: true,
+        source: true,
         trackingNumber: true,
         createdAt: true,
         items: {
@@ -369,11 +571,31 @@ export class OrdersService {
   }
 
   async findByUser(userId: string) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { userId },
+      select: { id: true, email: true },
+    });
+
+    if (!profile) {
+      return [];
+    }
+
     return this.prisma.order.findMany({
       where: {
-        profile: {
-          userId: userId,
-        },
+        OR: [
+          {
+            profile: {
+              userId,
+            },
+          },
+          {
+            profileId: null,
+            customerEmail: {
+              equals: profile.email,
+              mode: 'insensitive',
+            },
+          },
+        ],
       },
       include: {
         items: {
@@ -401,7 +623,7 @@ export class OrdersService {
 
     if (status) {
       // If status changes, add to history
-      return this.prisma.order.update({
+      const updatedOrder = await this.prisma.order.update({
         where: { id },
         data: {
           status,
@@ -413,11 +635,21 @@ export class OrdersService {
           },
         },
       });
+
+      await this.shippingSyncService.ensureShipmentForOrder(id);
+
+      return updatedOrder;
     }
 
-    return this.prisma.order.update({
+    const updatedOrder = await this.prisma.order.update({
       where: { id },
       data: updateOrderDto,
     });
+
+    if (updateOrderDto.trackingNumber || updateOrderDto.carrier) {
+      await this.shippingSyncService.ensureShipmentForOrder(id);
+    }
+
+    return updatedOrder;
   }
 }

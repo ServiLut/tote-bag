@@ -1,16 +1,33 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { DebugRoleContextService } from '../../common/context/debug-role-context.service';
+import { Role } from '../../generated/client/enums';
 
 @Injectable()
 export class RolesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly debugRoleContext: DebugRoleContextService,
+  ) {}
+
+  async getEffectiveRole(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true, email: true },
+    });
+
+    const debugRole = this.debugRoleContext.getDebugRole();
+
+    return {
+      user,
+      effectiveRole: (debugRole ?? user?.role ?? null) as Role | null,
+      debugRole,
+    };
+  }
 
   async getUserPermissions(userId: string) {
-    const [user, userRoles] = await Promise.all([
-      this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { role: true },
-      }),
+    const [{ effectiveRole }, userRoles] = await Promise.all([
+      this.getEffectiveRole(userId),
       this.prisma.userRole.findMany({
         where: { userId },
         include: {
@@ -37,8 +54,8 @@ export class RolesService {
 
     // Backward-compatible fallback:
     // if user_roles are not populated, infer permissions from legacy user.role.
-    if (directPermissions.length === 0 && user?.role) {
-      const inferred = await this.getLegacyRolePermissions(user.role);
+    if (directPermissions.length === 0 && effectiveRole) {
+      const inferred = await this.getLegacyRolePermissions(effectiveRole);
       return this.dedupePermissions(inferred);
     }
 
@@ -57,7 +74,7 @@ export class RolesService {
     });
   }
 
-  private async getLegacyRolePermissions(role: string) {
+  private async getLegacyRolePermissions(role: Role) {
     if (role === 'ADMIN') {
       return this.prisma.permission.findMany({
         select: { resource: true, action: true },
@@ -66,7 +83,7 @@ export class RolesService {
 
     // Map legacy enum role to seeded RBAC role names.
     const mappedRoleName =
-      role === 'MANAGER' || role === 'ADVISOR'
+      role === 'MANAGER'
         ? 'manager'
         : role === 'CUSTOMER'
           ? 'customer'
@@ -104,6 +121,11 @@ export class RolesService {
     resource: string,
     action: string,
   ): Promise<boolean> {
+    const { effectiveRole } = await this.getEffectiveRole(userId);
+    if (effectiveRole === Role.ADMIN) {
+      return true;
+    }
+
     const permissions = await this.getUserPermissions(userId);
     return permissions.some(
       (p) => p.resource === resource && p.action === action,

@@ -8,7 +8,7 @@ import { Product } from '@/types/product';
 import { ApiResponse } from '@/types/api';
 import { Loader2, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 
-export default function CatalogPage() {
+function CatalogPageContent() {
   const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [collections, setCollections] = useState<{ id: string, name: string }[]>([]);
@@ -213,5 +213,19 @@ export default function CatalogPage() {
         </div>
       </main>
     </>
+  );
+}
+
+export default function CatalogPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[40vh] items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-secondary" />
+        </div>
+      }
+    >
+      <CatalogPageContent />
+    </Suspense>
   );
 }

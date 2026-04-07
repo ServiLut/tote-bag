@@ -36,8 +36,38 @@ export class OrdersController {
   ) {}
 
   @Post()
-  create(@Body() createOrderDto: CreateOrderDto) {
-    return this.ordersService.create(createOrderDto);
+  async create(
+    @Body() createOrderDto: CreateOrderDto,
+    @Req() req: RequestWithUser,
+  ) {
+    const source = createOrderDto.source ?? (createOrderDto.isManual ? 'MANUAL' : 'ECOMMERCE');
+    const initialStatus = createOrderDto.initialStatus ?? 'PENDIENTE_PAGO';
+    const normalizedCreateOrderDto: CreateOrderDto = {
+      ...createOrderDto,
+      source,
+      initialStatus,
+    };
+
+    if (source === 'MANUAL' || createOrderDto.isManual) {
+      const userId = req.user?.id;
+      if (!userId) {
+        throw new UnauthorizedException('User not authenticated');
+      }
+
+      const hasPermission = await this.rolesService.hasPermission(
+        userId,
+        'orders',
+        'create',
+      );
+
+      if (!hasPermission) {
+        throw new ForbiddenException('Insufficient permissions');
+      }
+
+      return this.ordersService.create(normalizedCreateOrderDto, userId);
+    }
+
+    return this.ordersService.create(normalizedCreateOrderDto, undefined);
   }
 
   @Get()

@@ -49,8 +49,6 @@ export class UsersService {
         [Role.ADMIN]: 'admin',
         [Role.MANAGER]: 'manager',
         [Role.CUSTOMER]: 'customer',
-        [Role.ADVISOR]: 'manager',
-        [Role.VIEWER]: 'viewer', // Podría no existir en el seed pero es buena práctica
       };
 
       const roleName = roleMapping[newRole] || newRole.toLowerCase();

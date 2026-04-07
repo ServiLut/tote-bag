@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '../../generated/client/client';
+import { DebugRoleContextService } from '../../common/context/debug-role-context.service';
 
 @Injectable()
 export class ProfilesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly debugRoleContext: DebugRoleContextService,
+  ) {}
   private readonly superAdminEmails = new Set([
     'deybisasprilla@gmail.com',
     'admin@tote-bag.com',
@@ -80,13 +84,37 @@ export class ProfilesService {
         data: { role: whitelistedRole },
       });
 
-      return this.prisma.profile.findUnique({
+      const syncedProfile = await this.prisma.profile.findUnique({
         where: { userId },
         include: { user: true },
       });
+
+      const debugRole = this.debugRoleContext.getDebugRole();
+      if (!syncedProfile || !syncedProfile.user || !debugRole) {
+        return syncedProfile;
+      }
+
+      return {
+        ...syncedProfile,
+        user: {
+          ...syncedProfile.user,
+          role: debugRole,
+        },
+      };
     }
 
-    return profile;
+    const debugRole = this.debugRoleContext.getDebugRole();
+    if (!profile.user || !debugRole) {
+      return profile;
+    }
+
+    return {
+      ...profile,
+      user: {
+        ...profile.user,
+        role: debugRole,
+      },
+    };
   }
 
   async update(userId: string, data: Prisma.ProfileUpdateInput) {

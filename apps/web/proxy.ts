@@ -1,33 +1,34 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
-
-type DashboardRole = 'ADMIN' | 'MANAGER' | 'ADVISOR' | 'VIEWER' | 'CUSTOMER';
+import {
+  DASHBOARD_DEBUG_ROLE_COOKIE_NAME,
+  DASHBOARD_DEBUG_ROLE_HEADER_NAME,
+  extractRoleFromProfilePayload,
+  parseDashboardDebugRoleCookie,
+  type DashboardRole,
+} from '@/lib/dashboard-auth';
+import { resolveProxyAccess } from '@/lib/frontend-routing';
+import { getApiBaseUrl } from '@/utils/api';
 
 async function getRoleFromApi(
-  apiUrl: string,
   accessToken: string,
+  debugRole: DashboardRole | null,
 ): Promise<DashboardRole | null> {
   try {
-    const res = await fetch(`${apiUrl}/profiles/me`, {
+    const res = await fetch(`${getApiBaseUrl()}/profiles/me`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
+        ...(debugRole ? { [DASHBOARD_DEBUG_ROLE_HEADER_NAME]: debugRole } : {}),
       },
       cache: 'no-store',
     });
 
-    if (!res.ok) return null;
+    if (!res.ok) return debugRole ?? null;
 
-    const body = (await res.json()) as {
-      data?: {
-        user?: {
-          role?: DashboardRole;
-        };
-      };
-    };
-
-    return body?.data?.user?.role ?? null;
+    const body = await res.json();
+    return extractRoleFromProfilePayload(body) ?? debugRole ?? null;
   } catch {
-    return null;
+    return debugRole ?? null;
   }
 }
 
@@ -54,18 +55,20 @@ export async function proxy(request: NextRequest) {
             request,
           });
           cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
+            response.cookies.set(name, value, options),
           );
         },
       },
-    }
+    },
   );
 
-  // Refreshing the auth token
-  const { 
-    data: { user }, 
+  const {
+    data: { user },
   } = await supabase.auth.getUser();
-  let role: DashboardRole = 'CUSTOMER';
+  let role: DashboardRole | null = null;
+  const debugRole = parseDashboardDebugRoleCookie(
+    request.cookies.get(DASHBOARD_DEBUG_ROLE_COOKIE_NAME)?.value,
+  );
 
   if (user) {
     const {
@@ -73,47 +76,18 @@ export async function proxy(request: NextRequest) {
     } = await supabase.auth.getSession();
 
     if (session?.access_token) {
-      const roleFromApi = await getRoleFromApi(
-        process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4003/api/v1',
-        session.access_token,
-      );
-      role = roleFromApi ?? 'CUSTOMER';
+      role = await getRoleFromApi(session.access_token, debugRole);
     }
   }
 
-  // Protected routes logic
-  const isAuthPage = request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/register');
-  const isDashboardPage = request.nextUrl.pathname.startsWith('/dashboard');
-  const isFinancePage = request.nextUrl.pathname.startsWith('/dashboard/finanzas') || 
-                        request.nextUrl.pathname.startsWith('/dashboard/finance') ||
-                        request.nextUrl.pathname.startsWith('/dashboard/reportes');
-  const isSettingsPage = request.nextUrl.pathname.startsWith('/dashboard/settings') ||
-                         request.nextUrl.pathname.startsWith('/dashboard/audit');
-
-  // 1. If trying to access dashboard but not logged in -> login
-  if (isDashboardPage && !user) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-
-  // 2. If logged in and trying to access auth pages -> redirect based on role
-  if (isAuthPage && user) {
-    if (role === 'ADMIN' || role === 'MANAGER' || role === 'ADVISOR') {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-    return NextResponse.redirect(new URL('/profile', request.url));
-  }
-
-  // 3. Role-based access control for Dashboard
-  if (isDashboardPage) {
-    // CUSTOMER cannot access dashboard
-    if (role === 'CUSTOMER') {
-      return NextResponse.redirect(new URL('/profile', request.url));
-    }
-
-    // MANAGER cannot access Finance or Settings/Audit
-    if (role === 'MANAGER' && (isFinancePage || isSettingsPage)) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
+  const redirectPath = resolveProxyAccess({
+    pathname: request.nextUrl.pathname,
+    hasUser: !!user,
+    role,
+    requestedRedirect: request.nextUrl.searchParams.get('redirect'),
+  });
+  if (redirectPath) {
+    return NextResponse.redirect(new URL(redirectPath, request.url));
   }
 
   return response;
@@ -121,13 +95,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (images, etc)
-     */
-    '/((?!_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

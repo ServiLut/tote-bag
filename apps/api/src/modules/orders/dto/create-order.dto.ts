@@ -117,6 +117,10 @@ export class CreateOrderDto {
   initialStatus?: string;
 
   @IsOptional()
+  @IsIn(['ECOMMERCE', 'MANUAL'])
+  source?: 'ECOMMERCE' | 'MANUAL';
+
+  @IsOptional()
   @IsIn(['amount', 'percent'])
   manualDiscountType?: 'amount' | 'percent';
 
