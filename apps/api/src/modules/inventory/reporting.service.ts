@@ -49,14 +49,17 @@ export class ReportingService {
     const opexTransactions = await this.prisma.financialTransaction.findMany({
       where: {
         ...whereClause,
-        type: TransactionType.EXPENSE,
         OR: [
           {
+            type: TransactionType.EXPENSE,
             category: {
               in: [TransactionCategory.OPEX, TransactionCategory.PAYROLL],
             },
           },
           {
+            type: {
+              in: [TransactionType.EXPENSE, TransactionType.INCOME],
+            },
             category: TransactionCategory.PURCHASE,
             opexCategoryId: { not: null },
           },
@@ -68,7 +71,9 @@ export class ReportingService {
     const opexByCategory: Record<string, number> = {};
     opexTransactions.forEach((tx) => {
       const catName = tx.opexCategory?.name || 'Otros';
-      opexByCategory[catName] = (opexByCategory[catName] || 0) + tx.amount;
+      const signedAmount =
+        tx.type === TransactionType.INCOME ? -tx.amount : tx.amount;
+      opexByCategory[catName] = (opexByCategory[catName] || 0) + signedAmount;
     });
     const totalOpex = Object.values(opexByCategory).reduce(
       (sum, val) => sum + val,
@@ -440,14 +445,17 @@ export class ReportingService {
     const opexTransactions = await this.prisma.financialTransaction.findMany({
       where: {
         ...whereClause,
-        type: TransactionType.EXPENSE,
         OR: [
           {
+            type: TransactionType.EXPENSE,
             category: {
               in: [TransactionCategory.OPEX, TransactionCategory.PAYROLL],
             },
           },
           {
+            type: {
+              in: [TransactionType.EXPENSE, TransactionType.INCOME],
+            },
             category: TransactionCategory.PURCHASE,
             opexCategoryId: { not: null },
           },
@@ -459,7 +467,9 @@ export class ReportingService {
     const opexByCategory: Record<string, number> = {};
     opexTransactions.forEach((tx) => {
       const catName = tx.opexCategory?.name || 'Otros';
-      opexByCategory[catName] = (opexByCategory[catName] || 0) + tx.amount;
+      const signedAmount =
+        tx.type === TransactionType.INCOME ? -tx.amount : tx.amount;
+      opexByCategory[catName] = (opexByCategory[catName] || 0) + signedAmount;
     });
 
     // 4. Calculations

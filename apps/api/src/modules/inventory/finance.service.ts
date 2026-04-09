@@ -1061,7 +1061,14 @@ export class FinanceService {
       whereClause.createdAt = createdAtFilter;
     }
 
-    const [income, opex, purchases, transactions, recentTransactions] =
+    const [
+      income,
+      opex,
+      purchases,
+      purchaseReversals,
+      transactions,
+      recentTransactions,
+    ] =
       await Promise.all([
         this.prisma.financialTransaction.aggregate({
           where: {
@@ -1085,6 +1092,14 @@ export class FinanceService {
           where: {
             ...whereClause,
             type: TransactionType.EXPENSE,
+            category: TransactionCategory.PURCHASE,
+          },
+          _sum: { amount: true },
+        }),
+        this.prisma.financialTransaction.aggregate({
+          where: {
+            ...whereClause,
+            type: TransactionType.INCOME,
             category: TransactionCategory.PURCHASE,
           },
           _sum: { amount: true },
@@ -1140,7 +1155,9 @@ export class FinanceService {
       kpis: {
         totalIncome: income._sum.amount || 0,
         totalOpex: opex._sum.amount || 0,
-        totalPurchases: purchases._sum.amount || 0,
+        totalPurchases:
+          (purchases._sum.amount || 0)
+          - (purchaseReversals?._sum?.amount || 0),
         totalCOGS,
       },
       cashFlowChart,
@@ -1233,7 +1250,14 @@ export class FinanceService {
       whereClause.createdAt = createdAtFilter;
     }
 
-    const [income, opex, purchases, transactions, recentTransactions] =
+    const [
+      income,
+      opex,
+      purchases,
+      purchaseReversals,
+      transactions,
+      recentTransactions,
+    ] =
       await Promise.all([
         this.prisma.financialTransaction.aggregate({
           where: {
@@ -1257,6 +1281,14 @@ export class FinanceService {
           where: {
             ...whereClause,
             type: TransactionType.EXPENSE,
+            category: TransactionCategory.PURCHASE,
+          },
+          _sum: { amount: true },
+        }),
+        this.prisma.financialTransaction.aggregate({
+          where: {
+            ...whereClause,
+            type: TransactionType.INCOME,
             category: TransactionCategory.PURCHASE,
           },
           _sum: { amount: true },
@@ -1314,7 +1346,9 @@ export class FinanceService {
       kpis: {
         totalIncome: income._sum.amount || 0,
         totalOpex: opex._sum.amount || 0,
-        totalPurchases: purchases._sum.amount || 0,
+        totalPurchases:
+          (purchases._sum.amount || 0)
+          - (purchaseReversals?._sum?.amount || 0),
         totalCOGS,
       },
       cashFlowChart,

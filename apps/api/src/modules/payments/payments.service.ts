@@ -130,7 +130,7 @@ export class PaymentsService {
 
   async uploadPaymentReceipt(
     entityId: string,
-    entityType: 'order' | 'b2b' | 'batch',
+    entityType: 'order' | 'b2b' | 'batch' | 'purchase-invoice',
     file: Express.Multer.File,
   ) {
     const fileName = `receipts/${entityType}/${entityId}-${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`;
@@ -156,6 +156,11 @@ export class PaymentsService {
       updatedEntity = await this.prisma.purchaseBatch.update({
         where: { id: entityId },
         data: { paymentReceiptUrl: url },
+      });
+    } else if (entityType === 'purchase-invoice') {
+      await this.prisma.purchaseInvoice.findUniqueOrThrow({
+        where: { id: entityId },
+        select: { id: true },
       });
     }
 

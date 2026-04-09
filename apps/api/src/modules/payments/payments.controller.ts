@@ -57,7 +57,8 @@ export class PaymentsController {
   @Post('upload-receipt/:entityType/:entityId')
   @UseInterceptors(FileInterceptor('file'))
   async uploadReceipt(
-    @Param('entityType') entityType: 'order' | 'b2b' | 'batch',
+    @Param('entityType')
+    entityType: 'order' | 'b2b' | 'batch' | 'purchase-invoice',
     @Param('entityId') entityId: string,
     @UploadedFile() file: Express.Multer.File,
     @Request() req: RequestWithUser,
@@ -81,7 +82,7 @@ export class PaymentsController {
 
   private async ensureUploadPermission(
     userId: string,
-    entityType: 'order' | 'b2b' | 'batch',
+    entityType: 'order' | 'b2b' | 'batch' | 'purchase-invoice',
   ) {
     if (entityType === 'order') {
       const hasPermission = await this.rolesService.hasPermission(
@@ -109,6 +110,19 @@ export class PaymentsController {
       if (!hasPermission) {
         throw new ForbiddenException(
           'No tienes permisos para actualizar comprobantes B2B.',
+        );
+      }
+
+      return;
+    }
+
+    if (entityType === 'purchase-invoice') {
+      const { effectiveRole } =
+        await this.rolesService.getEffectiveRole(userId);
+
+      if (effectiveRole !== Role.ADMIN) {
+        throw new ForbiddenException(
+          'Solo los usuarios ADMIN pueden subir comprobantes de facturas de compra.',
         );
       }
 

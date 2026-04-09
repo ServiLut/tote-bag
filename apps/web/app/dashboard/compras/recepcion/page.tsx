@@ -7,7 +7,9 @@ import {
   CheckCircle2,
   Database,
   Loader2,
+  MoreHorizontal,
   Package,
+  Pencil,
   Plus,
   Search,
   Trash2,
@@ -16,8 +18,15 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Button, Input, InputGroup, Select } from '@tote-bag/ui';
-import { ReceiptUpload } from '@/components/dashboard/ReceiptUpload';
+import {
+  Button,
+  Input,
+  InputGroup,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Select,
+} from '@tote-bag/ui';
 import {
   createCurrencyInputState,
   handleCurrencyInputChangeWithState,
@@ -62,6 +71,17 @@ interface BatchItem {
   costoUnitario: number;
 }
 
+interface EditBatchFormData {
+  supplierId: string;
+  productId: string;
+  variantId: string;
+  quantityReceived: number;
+  unitCostInput: string;
+  unitCost: number;
+  status: 'RECIBIDO' | 'PENDIENTE';
+  purchaseDate: string;
+}
+
 export default function BatchReceptionPage() {
   const createEmptyItem = (): BatchItem => ({
     productId: '',
@@ -74,6 +94,28 @@ export default function BatchReceptionPage() {
     costoUnitario: 0,
   });
 
+  const getBatchInputStatus = (
+    batch: PurchaseBatch,
+  ): EditBatchFormData['status'] => (batch.status === 'PENDING' ? 'PENDIENTE' : 'RECIBIDO');
+
+  const createEditFormFromBatch = (batch: PurchaseBatch): EditBatchFormData => {
+    const costState = createCurrencyInputState(batch.unitCost);
+
+    return {
+      supplierId: batch.supplierId,
+      productId: batch.productId,
+      variantId: batch.variantId || '',
+      quantityReceived: batch.quantityReceived,
+      unitCostInput: costState.formattedValue,
+      unitCost: costState.numericValue,
+      status: getBatchInputStatus(batch),
+      purchaseDate: new Date(batch.createdAt).toISOString().split('T')[0],
+    };
+  };
+
+  const canModifyBatch = (batch: PurchaseBatch) =>
+    batch.status === 'PENDING' || batch.quantityRemaining === batch.quantityReceived;
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
@@ -83,7 +125,11 @@ export default function BatchReceptionPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [editingBatchId, setEditingBatchId] = useState<string | null>(null);
+  const [deletingBatchId, setDeletingBatchId] = useState<string | null>(null);
+  const [activeActionMenu, setActiveActionMenu] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'IN_STOCK' | 'PENDING' | 'DEPLETED'>('all');
   const [stockFilter, setStockFilter] = useState<'all' | 'available' | 'partial' | 'empty'>('all');
@@ -96,6 +142,16 @@ export default function BatchReceptionPage() {
     status: 'RECIBIDO',
     purchaseDate: new Date().toISOString().split('T')[0],
     items: [createEmptyItem()] as BatchItem[],
+  });
+  const [editFormData, setEditFormData] = useState<EditBatchFormData>({
+    supplierId: '',
+    productId: '',
+    variantId: '',
+    quantityReceived: 1,
+    unitCostInput: '',
+    unitCost: 0,
+    status: 'RECIBIDO',
+    purchaseDate: new Date().toISOString().split('T')[0],
   });
 
   const getAuthHeaders = useCallback(async (): Promise<Record<string, string>> => {
@@ -192,6 +248,26 @@ export default function BatchReceptionPage() {
       setSearch(incomingSearch);
     }
   }, [searchParams]);
+
+  const resolveApiErrorMessage = async (
+    response: Response,
+    fallback: string,
+  ) => {
+    const errorBody = await response.json().catch(() => null);
+    return errorBody?.message || fallback;
+  };
+
+  const closeEditModal = () => {
+    setIsEditModalOpen(false);
+    setEditingBatchId(null);
+  };
+
+  const openEditModal = (batch: PurchaseBatch) => {
+    setError(null);
+    setEditingBatchId(batch.id);
+    setEditFormData(createEditFormFromBatch(batch));
+    setIsEditModalOpen(true);
+  };
 
   const addItem = () => {
     setFormData((current) => ({
@@ -362,6 +438,168 @@ export default function BatchReceptionPage() {
     return (product?.attributes || []).filter(
       (attribute) => attribute.type === type && attribute.isActive,
     );
+  };
+
+  const handleEditFieldChange = (
+    field: keyof EditBatchFormData,
+    value: string | number,
+  ) => {
+    setEditFormData((current) => {
+      if (field === 'productId') {
+        const product = products.find((item) => item.id === value);
+        const fallbackVariant =
+          product?.variants.find((variant) => variant.isActive !== false)
+          || product?.variants[0];
+        const costState = createCurrencyInputState(
+          fallbackVariant?.costPrice || current.unitCost || 0,
+        );
+
+        return {
+          ...current,
+          productId: value as string,
+          variantId: '',
+          unitCostInput: costState.formattedValue,
+          unitCost: costState.numericValue,
+        };
+      }
+
+      if (field === 'variantId') {
+        const product = products.find((item) => item.id === current.productId);
+        const variant = product?.variants.find((item) => item.id === value);
+        const costState = createCurrencyInputState(
+          variant?.costPrice || current.unitCost || 0,
+        );
+
+        return {
+          ...current,
+          variantId: value as string,
+          unitCostInput: costState.formattedValue,
+          unitCost: costState.numericValue,
+        };
+      }
+
+      return {
+        ...current,
+        [field]: value,
+      } as EditBatchFormData;
+    });
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!editingBatchId) {
+      return;
+    }
+
+    if (
+      !editFormData.supplierId
+      || !editFormData.productId
+      || !editFormData.variantId
+      || editFormData.quantityReceived <= 0
+    ) {
+      setError('Completa proveedor, producto, variante y cantidad valida para editar el lote.');
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      const authHeaders = await getAuthHeaders();
+      const response = await apiFetch(`/inventory/batches/${editingBatchId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders,
+        },
+        body: JSON.stringify({
+          supplierId: editFormData.supplierId,
+          productId: editFormData.productId,
+          variantId: editFormData.variantId,
+          quantityReceived: editFormData.quantityReceived,
+          unitCost: editFormData.unitCost,
+          status: editFormData.status,
+          purchaseDate: editFormData.purchaseDate,
+        }),
+      });
+
+      if (!response.ok) {
+        setError(
+          await resolveApiErrorMessage(
+            response,
+            'No fue posible actualizar el lote.',
+          ),
+        );
+        return;
+      }
+
+      closeEditModal();
+      await fetchData();
+      notifyFinanceDataChanged();
+    } catch (submitError) {
+      console.error('Error updating batch:', submitError);
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : 'No fue posible actualizar el lote.',
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteBatch = async (batch: PurchaseBatch) => {
+    if (deletingBatchId) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Deseas borrar el lote de ${batch.product?.name || 'este producto'}? Esta accion revertira su impacto en inventario y compras.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingBatchId(batch.id);
+    setError(null);
+
+    try {
+      const authHeaders = await getAuthHeaders();
+      const response = await apiFetch(`/inventory/batches/${batch.id}`, {
+        method: 'DELETE',
+        headers: {
+          ...authHeaders,
+        },
+      });
+
+      if (!response.ok) {
+        setError(
+          await resolveApiErrorMessage(
+            response,
+            'No fue posible borrar el lote.',
+          ),
+        );
+        return;
+      }
+
+      if (editingBatchId === batch.id) {
+        closeEditModal();
+      }
+
+      await fetchData();
+      notifyFinanceDataChanged();
+    } catch (deleteError) {
+      console.error('Error deleting batch:', deleteError);
+      setError(
+        deleteError instanceof Error
+          ? deleteError.message
+          : 'No fue posible borrar el lote.',
+      );
+    } finally {
+      setDeletingBatchId(null);
+    }
   };
 
   const normalizedSearch = search.trim().toLowerCase();
@@ -580,22 +818,73 @@ export default function BatchReceptionPage() {
                             : 'Agotado'}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <ReceiptUpload
-                        entityId={batch.id}
-                        entityType="batch"
-                        mode="button"
-                        initialUrl={batch.paymentReceiptUrl}
-                        onUploadSuccess={(url) => {
-                          setBatches((current) =>
-                            current.map((item) =>
-                              item.id === batch.id
-                                ? { ...item, paymentReceiptUrl: url }
-                                : item,
-                            ),
-                          );
-                        }}
-                      />
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex justify-end">
+                        <Popover
+                          open={activeActionMenu === batch.id}
+                          onOpenChange={(open) =>
+                            setActiveActionMenu(open ? batch.id : null)
+                          }
+                        >
+                          <PopoverTrigger>
+                            <button
+                              type="button"
+                              className="inline-flex items-center rounded-xl border border-theme bg-base p-2 text-primary transition-colors hover:bg-primary/5"
+                              aria-label={`Acciones para lote ${batch.id.slice(0, 8)}`}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            side="bottom"
+                            align="end"
+                            className="w-60 overflow-hidden rounded-2xl border border-theme bg-surface shadow-xl"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveActionMenu(null);
+                                openEditModal(batch);
+                              }}
+                              disabled={!canModifyBatch(batch) || deletingBatchId === batch.id}
+                              title={
+                                canModifyBatch(batch)
+                                  ? 'Editar lote'
+                                  : 'Solo puedes editar lotes sin movimiento de stock'
+                              }
+                              className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-primary transition-colors hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              <Pencil className="h-4 w-4" />
+                              {canModifyBatch(batch)
+                                ? 'Editar'
+                                : 'Sin movimiento de stock para editar'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveActionMenu(null);
+                                void handleDeleteBatch(batch);
+                              }}
+                              disabled={!canModifyBatch(batch) || deletingBatchId === batch.id}
+                              title={
+                                canModifyBatch(batch)
+                                  ? 'Borrar lote'
+                                  : 'Solo puedes borrar lotes sin movimiento de stock'
+                              }
+                              className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-rose-700 transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {deletingBatchId === batch.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                              {canModifyBatch(batch)
+                                ? 'Borrar'
+                                : 'Sin movimiento de stock para borrar'}
+                            </button>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -604,6 +893,213 @@ export default function BatchReceptionPage() {
           </table>
         </div>
       </div>
+
+      {isEditModalOpen ? (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-primary/20 backdrop-blur-sm animate-in fade-in duration-300"
+            onClick={closeEditModal}
+          />
+
+          <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-theme bg-surface shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="border-b border-theme bg-primary p-6 text-base-color">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-black">Editar Lote</h2>
+                  <p className="mt-1 text-sm font-medium text-primary-foreground/70">
+                    Corrige un lote registrado con errores antes de que tenga movimientos.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeEditModal}
+                  className="rounded-xl p-2 transition-colors hover:bg-white/10"
+                  aria-label="Cerrar modal"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="space-y-6 p-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted">
+                    Proveedor
+                  </label>
+                  <Select
+                    required
+                    value={editFormData.supplierId}
+                    onChange={(e) => handleEditFieldChange('supplierId', e.target.value)}
+                    className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-primary/20"
+                  >
+                    <option value="">Seleccionar...</option>
+                    {suppliers.map((supplier) => (
+                      <option key={supplier.id} value={supplier.id}>
+                        {supplier.name}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted">
+                    Estado
+                  </label>
+                  <Select
+                    required
+                    value={editFormData.status}
+                    onChange={(e) => handleEditFieldChange('status', e.target.value)}
+                    className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-primary/20"
+                  >
+                    <option value="RECIBIDO">RECIBIDO (Suma al stock)</option>
+                    <option value="PENDIENTE">PENDIENTE (Sin stock)</option>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted">
+                    Producto
+                  </label>
+                  <Select
+                    required
+                    value={editFormData.productId}
+                    onChange={(e) => handleEditFieldChange('productId', e.target.value)}
+                    className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-primary/20"
+                  >
+                    <option value="">Seleccionar producto...</option>
+                    {products.map((product) => (
+                      <option key={product.id} value={product.id}>
+                        {product.name}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted">
+                    Variante
+                  </label>
+                  <Select
+                    required
+                    value={editFormData.variantId}
+                    onChange={(e) => handleEditFieldChange('variantId', e.target.value)}
+                    disabled={!editFormData.productId}
+                    className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+                  >
+                    <option value="">Seleccionar variante...</option>
+                    {getVariantsForProduct(editFormData.productId).map((variant) => (
+                      <option key={variant.id || variant.sku} value={variant.id || ''}>
+                        {[variant.size, variant.color, variant.sku].filter(Boolean).join(' - ')}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted">
+                    Cantidad
+                  </label>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    value={
+                      editFormData.quantityReceived === 0
+                        ? ''
+                        : String(editFormData.quantityReceived)
+                    }
+                    onChange={(e) => {
+                      const nextValue = sanitizeIntegerInput(e.target.value);
+                      if (nextValue !== null) {
+                        handleEditFieldChange(
+                          'quantityReceived',
+                          parseInt(nextValue, 10) || 0,
+                        );
+                      }
+                    }}
+                    className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted">
+                    Costo Unitario
+                  </label>
+                  <InputGroup
+                    prefix={<span className="text-xs text-muted">$</span>}
+                    className="flex items-center gap-1"
+                  >
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      value={editFormData.unitCostInput}
+                      onChange={(e) =>
+                        handleCurrencyInputChangeWithState(e, (nextValue) =>
+                          setEditFormData((current) => ({
+                            ...current,
+                            unitCostInput: nextValue.formattedValue,
+                            unitCost: nextValue.numericValue,
+                          })),
+                        )
+                      }
+                      className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-primary/20"
+                    />
+                  </InputGroup>
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted">
+                    Fecha
+                  </label>
+                  <Input
+                    type="date"
+                    required
+                    value={editFormData.purchaseDate}
+                    onChange={(e) => handleEditFieldChange('purchaseDate', e.target.value)}
+                    className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between rounded-2xl border border-theme bg-base/40 px-4 py-3">
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-muted">
+                    Total corregido
+                  </div>
+                  <div className="text-xl font-black text-primary">
+                    ${(editFormData.quantityReceived * editFormData.unitCost).toLocaleString('es-CO')}
+                  </div>
+                </div>
+                <div className="text-right text-xs font-medium text-muted">
+                  Solo se permiten lotes sin movimientos de stock ni facturas asociadas.
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <Button
+                  type="button"
+                  onClick={closeEditModal}
+                  className="cursor-pointer rounded-2xl border border-theme bg-base px-6 py-3 font-bold text-muted transition-all hover:bg-theme/5"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl bg-primary px-8 py-3 font-black text-base-color shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                >
+                  {submitting ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-5 w-5" />
+                  )}
+                  Guardar Cambios
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
 
       {isModalOpen ? (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">

@@ -590,6 +590,7 @@ model Supplier {
   updatedAt    DateTime               @updatedAt @map("updated_at")
   transactions FinancialTransaction[]
   batches      PurchaseBatch[]
+  invoices     PurchaseInvoice[]
 
   @@map("suppliers")
   @@schema("tote-bag")
@@ -609,11 +610,48 @@ model PurchaseBatch {
   createdAt         DateTime               @default(now()) @map("created_at")
   updatedAt         DateTime               @updatedAt @map("updated_at")
   transactions      FinancialTransaction[]
+  invoices          PurchaseInvoice[]
   product           Product                @relation(fields: [productId], references: [id])
   supplier          Supplier               @relation(fields: [supplierId], references: [id])
   variant           Variant?               @relation(fields: [variantId], references: [id])
 
   @@map("purchase_batches")
+  @@schema("tote-bag")
+}
+
+model PurchaseInvoice {
+  id              String                @id @default(uuid()) @map("id")
+  totalAmount     Decimal               @db.Decimal(18, 2) @map("total_amount")
+  paidAmount      Decimal               @default(0) @db.Decimal(18, 2) @map("paid_amount")
+  balanceDue      Decimal               @db.Decimal(18, 2) @map("balance_due")
+  status          PurchaseInvoiceStatus @default(PENDING) @map("status")
+  issueDate       DateTime              @map("issue_date")
+  supplierId      String?               @map("supplier_id")
+  purchaseBatchId String?               @map("purchase_batch_id")
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+  payments        PurchasePayment[]
+  supplier        Supplier?             @relation(fields: [supplierId], references: [id])
+  purchaseBatch   PurchaseBatch?        @relation(fields: [purchaseBatchId], references: [id])
+
+  @@index([supplierId, status, issueDate])
+  @@index([purchaseBatchId])
+  @@map("purchase_invoices")
+  @@schema("tote-bag")
+}
+
+model PurchasePayment {
+  id          String          @id @default(uuid()) @map("id")
+  invoiceId   String          @map("invoice_id")
+  amount      Decimal         @db.Decimal(18, 2) @map("amount")
+  paymentDate DateTime        @map("payment_date")
+  proofUrl    String?         @map("proof_url")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+  invoice     PurchaseInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId, paymentDate])
+  @@map("purchase_payments")
   @@schema("tote-bag")
 }
 
@@ -851,6 +889,14 @@ enum BatchStatus {
   IN_STOCK
   DEPLETED
   CANCELLED
+
+  @@schema("tote-bag")
+}
+
+enum PurchaseInvoiceStatus {
+  PENDING
+  PARTIAL
+  PAID
 
   @@schema("tote-bag")
 }

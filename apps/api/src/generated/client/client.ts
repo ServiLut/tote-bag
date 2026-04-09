@@ -197,6 +197,16 @@ export type Supplier = Prisma.SupplierModel
  */
 export type PurchaseBatch = Prisma.PurchaseBatchModel
 /**
+ * Model PurchaseInvoice
+ * 
+ */
+export type PurchaseInvoice = Prisma.PurchaseInvoiceModel
+/**
+ * Model PurchasePayment
+ * 
+ */
+export type PurchasePayment = Prisma.PurchasePaymentModel
+/**
  * Model FinancialTransaction
  * 
  */

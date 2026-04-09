@@ -24,6 +24,7 @@ import {
   BarChart3,
   FileText,
   Inbox,
+  ChevronDown,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
@@ -31,6 +32,44 @@ import { apiFetch } from '@/utils/api';
 import { getAuthHeaders } from '@/utils/supabase/auth';
 import { DashboardRole } from './DashboardAuthContext';
 import { canAccessDashboardPath } from '@/lib/frontend-routing';
+
+type MenuLinkItem = {
+  name: string;
+  href: string;
+  icon: typeof LayoutDashboard;
+};
+
+type MenuSubmenuItem = {
+  type: 'submenu';
+  name: string;
+  icon: typeof LayoutDashboard;
+  key: string;
+  items: MenuLinkItem[];
+};
+
+type MenuItem = MenuLinkItem | MenuSubmenuItem;
+
+type MenuGroup = {
+  title: string;
+  items: MenuItem[];
+};
+
+const comprasYEntradasItems: MenuLinkItem[] = [
+  {
+    name: 'Pagos y Facturacion',
+    href: '/dashboard/compras/facturacion',
+    icon: Receipt,
+  },
+  {
+    name: 'Recepcion de Lotes',
+    href: '/dashboard/compras/recepcion',
+    icon: Database,
+  },
+];
+
+function isSubmenuItem(item: MenuItem): item is MenuSubmenuItem {
+  return 'type' in item && item.type === 'submenu';
+}
 
 const menuGroups = [
   {
@@ -60,7 +99,13 @@ const menuGroups = [
       { name: 'Proveedores de Envio', href: '/dashboard/logistica/proveedores', icon: Truck },
       { name: 'Gestion de Envios', href: '/dashboard/logistica/envios', icon: Package },
       { name: 'Proveedores Insumos', href: '/dashboard/logistica/insumos', icon: Truck },
-      { name: 'Recepcion de Lotes', href: '/dashboard/compras/recepcion', icon: Database },
+      {
+        type: 'submenu',
+        key: 'compras-y-entradas',
+        name: 'Compras y Entradas',
+        icon: Database,
+        items: comprasYEntradasItems,
+      },
       { name: 'Inventario FIFO', href: '/dashboard/logistica/inventario', icon: Package },
     ],
   },
@@ -78,7 +123,7 @@ const menuGroups = [
       { name: 'Configuracion', href: '/dashboard/settings', icon: Settings },
     ],
   },
-];
+] satisfies MenuGroup[];
 
 interface SidebarProps {
   user: { email?: string | null } | null;
@@ -99,6 +144,7 @@ export default function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname();
   const [newPqrsCount, setNewPqrsCount] = useState(0);
+  const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
   const supabase = createClient();
   const canAccessPqrs = canAccessDashboardPath(role, '/dashboard/pqrs');
 
@@ -108,6 +154,9 @@ export default function Sidebar({
     }
     return pathname === href || pathname.startsWith(`${href}/`);
   };
+
+  const isSubmenuActive = (item: MenuSubmenuItem) =>
+    item.items.some((child) => isItemActive(child.href));
 
   const loadPqrsCount = useCallback(async () => {
     if (!canAccessPqrs) {
@@ -206,9 +255,103 @@ export default function Sidebar({
   const filteredMenuGroups = menuGroups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => canAccessDashboardPath(role, item.href)),
+      items: group.items
+        .map((item) => {
+          if (!isSubmenuItem(item)) {
+            return canAccessDashboardPath(role, item.href) ? item : null;
+          }
+
+          const visibleChildren = item.items.filter((child) =>
+            canAccessDashboardPath(role, child.href),
+          );
+
+          if (visibleChildren.length === 0) {
+            return null;
+          }
+
+          return {
+            ...item,
+            items: visibleChildren,
+          };
+        })
+        .filter((item): item is MenuItem => item !== null),
     }))
     .filter((group) => group.items.length > 0);
+
+  const renderDesktopLink = (item: MenuLinkItem, nested = false) => {
+    const isActive = isItemActive(item.href);
+    const Icon = item.icon;
+    const showPqrsBadge = item.href === '/dashboard/pqrs' && newPqrsCount > 0;
+
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        title={isCollapsed ? item.name : undefined}
+        className={`group relative flex items-center gap-3 rounded-xl text-sm font-bold transition-all duration-200 ${
+          isActive
+            ? 'bg-primary text-base-color shadow-md shadow-primary/10'
+            : 'text-muted hover:bg-primary/5 hover:text-primary'
+        } ${isCollapsed ? 'justify-center px-0 py-2.5' : nested ? 'ml-4 px-4 py-2.5' : 'px-4 py-2.5'}`}
+      >
+        <Icon
+          className={`h-4 w-4 transition-colors ${
+            isActive ? 'text-base-color' : 'text-muted group-hover:text-primary'
+          }`}
+        />
+        {!isCollapsed ? (
+          <span className="flex min-w-0 flex-1 items-center justify-between gap-3">
+            <span className="truncate">{item.name}</span>
+            {showPqrsBadge ? (
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+                  isActive ? 'bg-base-color/15 text-base-color' : 'bg-rose-100 text-rose-700'
+                }`}
+              >
+                {newPqrsCount}
+              </span>
+            ) : null}
+          </span>
+        ) : showPqrsBadge ? (
+          <span className="absolute right-2 top-1 rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] font-black text-rose-700">
+            {newPqrsCount}
+          </span>
+        ) : null}
+      </Link>
+    );
+  };
+
+  const renderMobileLink = (item: MenuLinkItem, nested = false) => {
+    const active = isItemActive(item.href);
+    const showPqrsBadge = item.href === '/dashboard/pqrs' && newPqrsCount > 0;
+
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={() => setIsMobileMenuOpen(false)}
+        className={`flex items-center gap-4 rounded-2xl text-base font-bold transition-all ${
+          active
+            ? 'scale-[1.02] bg-primary text-base-color shadow-xl shadow-primary/10'
+            : 'border border-theme bg-surface text-muted'
+        } ${nested ? 'ml-4 px-4 py-3' : 'px-5 py-3.5'}`}
+      >
+        <item.icon className={`h-5 w-5 ${active ? 'text-base-color' : 'text-muted'}`} />
+        <span className="flex min-w-0 flex-1 items-center justify-between gap-3">
+          <span className="truncate">{item.name}</span>
+          {showPqrsBadge ? (
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+                active ? 'bg-base-color/15 text-base-color' : 'bg-rose-100 text-rose-700'
+              }`}
+            >
+              {newPqrsCount}
+            </span>
+          ) : null}
+        </span>
+      </Link>
+    );
+  };
 
   return (
     <>
@@ -242,47 +385,74 @@ export default function Sidebar({
               ) : null}
               <div className="space-y-1">
                 {group.items.map((item) => {
-                  const isActive = isItemActive(item.href);
+                  if (!isSubmenuItem(item)) {
+                    return renderDesktopLink(item);
+                  }
+
+                  const isActive = isSubmenuActive(item);
+                  const isOpen = openSubmenus[item.key] ?? isActive;
                   const Icon = item.icon;
-                  const showPqrsBadge = item.href === '/dashboard/pqrs' && newPqrsCount > 0;
 
                   return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      title={isCollapsed ? item.name : undefined}
-                      className={`group relative flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-bold transition-all duration-200 ${
-                        isActive
-                          ? 'bg-primary text-base-color shadow-md shadow-primary/10'
-                          : 'text-muted hover:bg-primary/5 hover:text-primary'
-                      } ${isCollapsed ? 'justify-center px-0' : ''}`}
-                    >
-                      <Icon
-                        className={`h-4 w-4 transition-colors ${
-                          isActive ? 'text-base-color' : 'text-muted group-hover:text-primary'
-                        }`}
-                      />
-                      {!isCollapsed ? (
-                        <span className="flex min-w-0 flex-1 items-center justify-between gap-3">
-                          <span className="truncate">{item.name}</span>
-                          {showPqrsBadge ? (
-                            <span
-                              className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
-                                isActive
-                                  ? 'bg-base-color/15 text-base-color'
-                                  : 'bg-rose-100 text-rose-700'
+                    <div key={item.key} className="relative">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setOpenSubmenus((current) => ({
+                            ...current,
+                            [item.key]: !isOpen,
+                          }))
+                        }
+                        title={isCollapsed ? item.name : undefined}
+                        className={`group relative flex w-full items-center gap-3 rounded-xl text-sm font-bold transition-all duration-200 ${
+                          isActive
+                            ? 'bg-primary/10 text-primary'
+                            : 'text-muted hover:bg-primary/5 hover:text-primary'
+                        } ${isCollapsed ? 'justify-center px-0 py-2.5' : 'px-4 py-2.5'}`}
+                      >
+                        <Icon
+                          className={`h-4 w-4 transition-colors ${
+                            isActive ? 'text-primary' : 'text-muted group-hover:text-primary'
+                          }`}
+                        />
+                        {!isCollapsed ? (
+                          <>
+                            <span className="min-w-0 flex-1 truncate text-left">{item.name}</span>
+                            <ChevronDown
+                              className={`h-4 w-4 transition-transform duration-200 ${
+                                isOpen ? 'rotate-180 text-primary' : 'text-muted'
                               }`}
-                            >
-                              {newPqrsCount}
-                            </span>
-                          ) : null}
-                        </span>
-                      ) : showPqrsBadge ? (
-                        <span className="absolute right-2 top-1 rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] font-black text-rose-700">
-                          {newPqrsCount}
-                        </span>
+                            />
+                          </>
+                        ) : (
+                          <ChevronDown
+                            className={`absolute -bottom-0.5 right-1 h-3 w-3 transition-transform duration-200 ${
+                              isOpen ? 'rotate-180 text-primary' : 'text-muted'
+                            }`}
+                          />
+                        )}
+                      </button>
+
+                      {!isCollapsed && isOpen ? (
+                        <div className="mt-1 space-y-1">
+                          {item.items.map((child) => renderDesktopLink(child, true))}
+                        </div>
                       ) : null}
-                    </Link>
+
+                      {isCollapsed && isOpen ? (
+                        <div className="absolute left-full top-0 z-30 ml-3 w-64 rounded-2xl border border-theme bg-surface p-3 shadow-2xl shadow-black/10">
+                          <div className="mb-2 flex items-center gap-2 px-2">
+                            <Icon className="h-4 w-4 text-primary" />
+                            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-primary">
+                              {item.name}
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            {item.items.map((child) => renderDesktopLink(child))}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
                   );
                 })}
               </div>
@@ -344,38 +514,44 @@ export default function Sidebar({
                 </h3>
                 <div className="space-y-2">
                   {group.items.map((item) => {
-                    const active = isItemActive(item.href);
-                    const showPqrsBadge = item.href === '/dashboard/pqrs' && newPqrsCount > 0;
+                    if (!isSubmenuItem(item)) {
+                      return renderMobileLink(item);
+                    }
+
+                    const isActive = isSubmenuActive(item);
+                    const isOpen = openSubmenus[item.key] ?? isActive;
+                    const Icon = item.icon;
 
                     return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={`flex items-center gap-4 rounded-2xl px-5 py-3.5 text-base font-bold transition-all ${
-                          active
-                            ? 'scale-[1.02] bg-primary text-base-color shadow-xl shadow-primary/10'
-                            : 'border border-theme bg-surface text-muted'
-                        }`}
-                      >
-                        <item.icon
-                          className={`h-5 w-5 ${active ? 'text-base-color' : 'text-muted'}`}
-                        />
-                        <span className="flex min-w-0 flex-1 items-center justify-between gap-3">
-                          <span className="truncate">{item.name}</span>
-                          {showPqrsBadge ? (
-                            <span
-                              className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
-                                active
-                                  ? 'bg-base-color/15 text-base-color'
-                                  : 'bg-rose-100 text-rose-700'
-                              }`}
-                            >
-                              {newPqrsCount}
-                            </span>
-                          ) : null}
-                        </span>
-                      </Link>
+                      <div key={item.key} className="space-y-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setOpenSubmenus((current) => ({
+                              ...current,
+                              [item.key]: !isOpen,
+                            }))
+                          }
+                          className={`flex w-full items-center gap-4 rounded-2xl px-5 py-3.5 text-base font-bold transition-all ${
+                            isActive
+                              ? 'bg-primary/10 text-primary'
+                              : 'border border-theme bg-surface text-muted'
+                          }`}
+                        >
+                          <Icon className={`h-5 w-5 ${isActive ? 'text-primary' : 'text-muted'}`} />
+                          <span className="min-w-0 flex-1 text-left">{item.name}</span>
+                          <ChevronDown
+                            className={`h-4 w-4 transition-transform duration-200 ${
+                              isOpen ? 'rotate-180 text-primary' : 'text-muted'
+                            }`}
+                          />
+                        </button>
+                        {isOpen ? (
+                          <div className="space-y-2">
+                            {item.items.map((child) => renderMobileLink(child, true))}
+                          </div>
+                        ) : null}
+                      </div>
                     );
                   })}
                 </div>

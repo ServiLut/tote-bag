@@ -5,6 +5,7 @@ import { ValidationPipe, Logger, VersioningType } from '@nestjs/common';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { Request, Response, NextFunction, json, urlencoded } from 'express';
 import { randomUUID } from 'crypto';
+import { createRequire } from 'module';
 import { winstonConfig } from './common/logger/winston.config';
 
 type CorsOriginCallback = (err: Error | null, allow?: boolean) => void;
@@ -15,21 +16,35 @@ type RequestWithCorrelation = Request & {
   correlationId?: string;
 };
 
-function resolveHelmetMiddleware():
-  | ((req: Request, res: Response, next: NextFunction) => void)
-  | null {
+type HelmetMiddleware = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => void;
+type HelmetFactory = (options?: Record<string, unknown>) => HelmetMiddleware;
+const moduleRequire = createRequire(__filename);
+
+function resolveHelmetFactory(moduleValue: unknown): HelmetFactory | null {
+  if (typeof moduleValue === 'function') {
+    return moduleValue as HelmetFactory;
+  }
+
+  if (
+    typeof moduleValue === 'object' &&
+    moduleValue !== null &&
+    'default' in moduleValue &&
+    typeof moduleValue.default === 'function'
+  ) {
+    return moduleValue.default as HelmetFactory;
+  }
+
+  return null;
+}
+
+function resolveHelmetMiddleware(): HelmetMiddleware | null {
   try {
-    const helmetModule = require('helmet') as
-      | ((
-          options?: Record<string, unknown>,
-        ) => (req: Request, res: Response, next: NextFunction) => void)
-      | {
-          default?: (
-            options?: Record<string, unknown>,
-          ) => (req: Request, res: Response, next: NextFunction) => void;
-        };
-    const helmetFactory =
-      typeof helmetModule === 'function' ? helmetModule : helmetModule.default;
+    const helmetModule: unknown = moduleRequire('helmet');
+    const helmetFactory = resolveHelmetFactory(helmetModule);
 
     if (!helmetFactory) {
       return null;
@@ -59,7 +74,10 @@ async function bootstrap() {
     type: VersioningType.URI,
     defaultVersion: '1',
   });
-  app.getHttpAdapter().getInstance().set('trust proxy', 1);
+  const httpAdapter = app.getHttpAdapter().getInstance() as {
+    set: (setting: string, value: unknown) => void;
+  };
+  httpAdapter.set('trust proxy', 1);
 
   app.use(json({ limit: bodyLimit }));
   app.use(

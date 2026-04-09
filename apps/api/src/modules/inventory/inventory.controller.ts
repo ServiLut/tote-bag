@@ -5,6 +5,7 @@ import {
   Header,
   Post,
   Patch,
+  Delete,
   Body,
   Request,
   Query,
@@ -16,6 +17,7 @@ import { Role } from '../../generated/client/client';
 import { InventoryService } from './inventory.service';
 import { FinanceService } from './finance.service';
 import { CreatePurchaseBatchDto } from './dto/create-purchase-batch.dto';
+import { UpdatePurchaseBatchDto } from './dto/update-purchase-batch.dto';
 import {
   CreateOpexDto,
   CreateOpexCategoryDto,
@@ -143,6 +145,28 @@ export class InventoryController {
   async findAllBatches(@Request() req: RequestWithUser) {
     await this.ensureAdmin(req.user?.id);
     return this.inventoryService.findAllBatches();
+  }
+
+  @Patch('batches/:id')
+  async updatePurchaseBatch(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() data: UpdatePurchaseBatchDto,
+    @Request() req: RequestWithUser,
+  ) {
+    await this.ensureAdmin(req.user?.id);
+    return this.inventoryService.updatePurchaseBatch(id, {
+      ...data,
+      userId: req.user!.id,
+    });
+  }
+
+  @Delete('batches/:id')
+  async deletePurchaseBatch(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Request() req: RequestWithUser,
+  ) {
+    await this.ensureAdmin(req.user?.id);
+    return this.inventoryService.deletePurchaseBatch(id, req.user!.id);
   }
 
   @Get('suppliers')

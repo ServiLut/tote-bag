@@ -36,14 +36,32 @@ export function Combobox({
 
   // Close when clicking outside
   React.useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handlePointerDown(event: PointerEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         setOpen(false);
       }
     }
-    document.addEventListener('mousedown', handleClickOutside);
+
+    function handleFocusIn(event: FocusEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('focusin', handleFocusIn);
+    document.addEventListener('keydown', handleEscape);
+
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('focusin', handleFocusIn);
+      document.removeEventListener('keydown', handleEscape);
     };
   }, []);
 

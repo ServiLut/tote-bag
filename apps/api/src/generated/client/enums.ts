@@ -147,6 +147,15 @@ export const BatchStatus = {
 export type BatchStatus = (typeof BatchStatus)[keyof typeof BatchStatus]
 
 
+export const PurchaseInvoiceStatus = {
+  PENDING: 'PENDING',
+  PARTIAL: 'PARTIAL',
+  PAID: 'PAID'
+} as const
+
+export type PurchaseInvoiceStatus = (typeof PurchaseInvoiceStatus)[keyof typeof PurchaseInvoiceStatus]
+
+
 export const TransactionType = {
   INCOME: 'INCOME',
   EXPENSE: 'EXPENSE'

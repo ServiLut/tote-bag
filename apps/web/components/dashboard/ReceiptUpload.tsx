@@ -8,7 +8,7 @@ import { apiFetch } from '@/utils/api';
 
 interface ReceiptUploadProps {
   entityId: string;
-  entityType: 'order' | 'b2b' | 'batch';
+  entityType: 'order' | 'b2b' | 'batch' | 'purchase-invoice';
   initialUrl?: string | null;
   onUploadSuccess?: (url: string) => void;
   className?: string;
@@ -156,4 +156,3 @@ export function ReceiptUpload({
     </div>
   );
 }
-

@@ -82,6 +82,8 @@ export const ModelName = {
   WizardOption: 'WizardOption',
   Supplier: 'Supplier',
   PurchaseBatch: 'PurchaseBatch',
+  PurchaseInvoice: 'PurchaseInvoice',
+  PurchasePayment: 'PurchasePayment',
   FinancialTransaction: 'FinancialTransaction',
   PayrollWorker: 'PayrollWorker',
   PayrollShift: 'PayrollShift',
@@ -618,6 +620,35 @@ export const PurchaseBatchScalarFieldEnum = {
 } as const
 
 export type PurchaseBatchScalarFieldEnum = (typeof PurchaseBatchScalarFieldEnum)[keyof typeof PurchaseBatchScalarFieldEnum]
+
+
+export const PurchaseInvoiceScalarFieldEnum = {
+  id: 'id',
+  totalAmount: 'totalAmount',
+  paidAmount: 'paidAmount',
+  balanceDue: 'balanceDue',
+  status: 'status',
+  issueDate: 'issueDate',
+  supplierId: 'supplierId',
+  purchaseBatchId: 'purchaseBatchId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PurchaseInvoiceScalarFieldEnum = (typeof PurchaseInvoiceScalarFieldEnum)[keyof typeof PurchaseInvoiceScalarFieldEnum]
+
+
+export const PurchasePaymentScalarFieldEnum = {
+  id: 'id',
+  invoiceId: 'invoiceId',
+  amount: 'amount',
+  paymentDate: 'paymentDate',
+  proofUrl: 'proofUrl',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PurchasePaymentScalarFieldEnum = (typeof PurchasePaymentScalarFieldEnum)[keyof typeof PurchasePaymentScalarFieldEnum]
 
 
 export const FinancialTransactionScalarFieldEnum = {

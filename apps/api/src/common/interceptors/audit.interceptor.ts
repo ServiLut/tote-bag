@@ -29,6 +29,7 @@ type AuditEntity =
   | 'Product'
   | 'Profile'
   | 'PurchaseBatch'
+  | 'PurchaseInvoice'
   | 'PqrsTicket'
   | 'Shipment'
   | 'ShippingProvider'
@@ -163,6 +164,7 @@ export class AuditInterceptor implements NestInterceptor {
     if (root === 'users') return 'User';
     if (root === 'pqrs') return 'PqrsTicket';
     if (root === 'wizard') return 'WizardOption';
+    if (root === 'purchase-invoices') return 'PurchaseInvoice';
 
     if (root === 'payments' && child === 'upload-receipt') {
       if (third === 'order') return 'Order';
@@ -274,6 +276,7 @@ export class AuditInterceptor implements NestInterceptor {
       Product: 'product',
       Profile: 'profile',
       PurchaseBatch: 'purchaseBatch',
+      PurchaseInvoice: 'purchaseInvoice',
       PqrsTicket: 'pqrsTicket',
       Shipment: 'shipment',
       ShippingProvider: 'shippingProvider',

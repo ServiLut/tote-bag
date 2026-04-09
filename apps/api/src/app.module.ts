@@ -31,6 +31,7 @@ import { UsersModule } from './modules/users/users.module';
 import { ShippingModule } from './modules/shipping/shipping.module';
 import { PqrsModule } from './modules/pqrs/pqrs.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
+import { PurchasesModule } from './modules/purchases/purchases.module';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthMiddleware } from './common/middleware/auth.middleware';
@@ -116,6 +117,7 @@ import cacheConfig from './config/cache.config';
     ShippingModule,
     PqrsModule,
     PayrollModule,
+    PurchasesModule,
   ],
   controllers: [AppController],
   providers: [
