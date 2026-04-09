@@ -1,16 +1,14 @@
 import { createSeedPrismaClient } from './seeds/client';
 import { runCoreSeed } from './seeds/core';
-import { runDemoSeed } from './seeds/demo';
 
 async function main() {
-  console.log('Iniciando seed completo (Core + Demo)...');
+  console.log('Iniciando seed base (Core only)...');
 
   const prisma = createSeedPrismaClient();
 
   try {
     await runCoreSeed(prisma);
-    await runDemoSeed(prisma);
-    console.log('Seed completado exitosamente.');
+    console.log('Seed base completado exitosamente.');
   } finally {
     await prisma.$disconnect();
   }

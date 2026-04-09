@@ -2,6 +2,7 @@ export interface ConfigurationSnapshot {
   version: string;
   configCode: string;
   productId: string;
+  variantId?: string;
   productName: string;
   line: string;
   size: string;
@@ -31,6 +32,8 @@ export interface PricingSnapshot {
   version: string;
   configCode: string;
   basePrice: number;
+  variantId?: string;
+  size?: string;
   attributeModifiers: Array<{
     type: string;
     name: string;

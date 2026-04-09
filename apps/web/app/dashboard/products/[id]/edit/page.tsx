@@ -1,6 +1,13 @@
 'use client';
 
-import { AdminProductForm, type ProductStatus, type VariantData } from '@/components/dashboard/AdminProductForm';
+import {
+  AdminProductForm,
+  type ProductStatus,
+  type VariantData,
+  type AttributeData,
+  type PricingRuleData,
+  type PrintType,
+} from '@/components/dashboard/AdminProductForm';
 import Link from 'next/link';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
@@ -12,17 +19,21 @@ interface Product {
   id: string;
   name: string;
   slug: string;
-  collection: string;
+  collection: string | { id: string; name: string };
   description: string;
-  images: string[];
-  basePrice: number;
-  minPrice: number;
-  costPrice?: number | null;
-  comparePrice?: number | null;
+  seoTitle?: string;
+  seoDescription?: string;
+  material?: string;
+  dimensions?: string;
+  careInstructions?: string;
+  printType?: PrintType;
+  images: Array<string | { id?: string; url: string; position?: number }>;
   status: ProductStatus;
   variants: VariantData[];
   tags: string[];
   deliveryTime: string;
+  attributes?: Array<AttributeData & { type: 'SIZE' | AttributeData['type'] }>;
+  pricingRules?: PricingRuleData[];
 }
 
 export default function EditProductPage() {
@@ -82,7 +93,7 @@ export default function EditProductPage() {
         </Link>
         <h1 className="text-3xl font-black tracking-tight text-primary">Editar Producto</h1>
         <p className="mt-2 text-muted font-medium">
-          Modifica los detalles, precios o variantes del producto.
+          Modifica la informaciÃ³n general, las variantes comerciales y las configuraciones opcionales del producto.
         </p>
       </div>
 

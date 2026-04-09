@@ -29,11 +29,14 @@ export class PaymentsMaintenanceService
       this.configService.get<number>('WEBHOOK_RETRY_INTERVAL_MINUTES') ?? 15,
     );
 
-    this.intervalRef = setInterval(() => {
-      void this.retryFailedWebhooks().catch((error) => {
-        this.logger.error('Webhook retry cycle failed', error);
-      });
-    }, intervalMinutes * 60 * 1000);
+    this.intervalRef = setInterval(
+      () => {
+        void this.retryFailedWebhooks().catch((error) => {
+          this.logger.error('Webhook retry cycle failed', error);
+        });
+      },
+      intervalMinutes * 60 * 1000,
+    );
   }
 
   onModuleDestroy() {

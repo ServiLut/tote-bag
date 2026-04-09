@@ -49,10 +49,11 @@ interface PersonalizerWizardProps {
 
 type Step = 1 | 2 | 3 | 4 | 5;
 type ProductResolution = {
-  id: string;
+  product: Product;
   variant: {
     id: string;
     sku: string;
+    size: string;
     color: string;
     imageUrl: string;
     stock: number;
@@ -84,18 +85,57 @@ const getDimensionVisualLabel = (option: WizardOption) => {
   return candidate ? candidate : option.name;
 };
 
+const getActiveCommercialVariants = (product?: Partial<Product> | null) =>
+  (product?.variants || []).filter(
+    (variant) => variant.isActive !== false && !!variant.id && !!variant.sku,
+  );
+
+const getReferenceVariant = (product?: Partial<Product> | null) => {
+  const activeVariants = getActiveCommercialVariants(product);
+
+  return (
+    activeVariants
+      .filter((variant) => typeof variant.salePrice === 'number')
+      .sort((left, right) => (left.salePrice ?? 0) - (right.salePrice ?? 0))[0]
+    || activeVariants[0]
+    || null
+  );
+};
+
+const resolveVariantBySize = (
+  product: Partial<Product> | null | undefined,
+  size: string,
+  preferredVariantId?: string | null,
+) => {
+  const activeVariants = getActiveCommercialVariants(product);
+  const normalizedSize = size.trim().toLowerCase();
+  const matchingVariants = activeVariants.filter(
+    (variant) => variant.size?.trim().toLowerCase() === normalizedSize,
+  );
+
+  if (matchingVariants.length === 0) {
+    return null;
+  }
+
+  return (
+    matchingVariants.find((variant) => variant.id === preferredVariantId)
+    || matchingVariants[0]
+  );
+};
+
 const resolveProductSelection = (product?: Partial<Product> | null): ProductResolution | null => {
-  const variant = product?.variants?.[0];
+  const variant = getReferenceVariant(product);
 
   if (!product?.id || !variant?.id || !variant?.sku) {
     return null;
   }
 
   return {
-    id: product.id,
+    product: product as Product,
     variant: {
       id: variant.id,
       sku: variant.sku,
+      size: variant.size || '',
       color: variant.color || 'Base',
       imageUrl: variant.imageUrl || '',
       stock: variant.stock || 0,
@@ -116,10 +156,12 @@ export default function PersonalizerWizard({
   const [optionsError, setOptionsError] = useState<string | null>(null);
   const [isPricingLoading, setIsPricingLoading] = useState(false);
   const [wizardOptions, setWizardOptions] = useState<GroupedOptions | null>(null);
+  const [resolvedProduct, setResolvedProduct] = useState<Product | null>(null);
   const [resolvedProductId, setResolvedProductId] = useState(productId ?? '');
   const [resolvedVariant, setResolvedVariant] = useState<{
     id: string;
     sku: string;
+    size: string;
     color: string;
     imageUrl: string;
     stock: number;
@@ -141,6 +183,7 @@ export default function PersonalizerWizard({
   const [calculatedUnitPrice, setCalculatedUnitPrice] = useState(0);
   const [calculatedTotalPrice, setCalculatedTotalPrice] = useState(0);
   const [configCode, setConfigCode] = useState('');
+  const [pricingError, setPricingError] = useState<string | null>(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
   const [submittedRequestId, setSubmittedRequestId] = useState<string | null>(null);
@@ -149,14 +192,28 @@ export default function PersonalizerWizard({
 
   useEffect(() => {
     setResolvedProductId(productId ?? '');
+    setResolvedProduct(null);
+    setResolvedVariant(null);
   }, [productId]);
 
   useEffect(() => {
-    if (resolvedProductId || !productSlug) return;
+    if (productId) {
+      return;
+    }
+
+    setResolvedProduct(null);
+    setResolvedVariant(null);
+  }, [productId, productSlug]);
+
+  useEffect(() => {
+    if (resolvedProduct) return;
 
     const fetchBaseProduct = async () => {
       try {
-        const res = await apiFetch(`/catalog/slug/${encodeURIComponent(productSlug)}`);
+        const targetUrl = productId
+          ? `/catalog/${encodeURIComponent(productId)}`
+          : `/catalog/slug/${encodeURIComponent(productSlug)}`;
+        const res = await apiFetch(targetUrl);
 
         if (res.ok) {
           const body = (await res.json()) as ApiResponse<Product>;
@@ -166,8 +223,13 @@ export default function PersonalizerWizard({
             throw new ProductResolutionError('Missing product id');
           }
 
-          setResolvedProductId(resolvedProduct.id);
+          setResolvedProduct(body.data);
+          setResolvedProductId(resolvedProduct.product.id);
           setResolvedVariant(resolvedProduct.variant);
+          setSelections((prev) => ({
+            ...prev,
+            size: resolvedProduct.variant.size || prev.size,
+          }));
           return;
         }
 
@@ -182,7 +244,7 @@ export default function PersonalizerWizard({
 
         const fallbackBody = (await fallbackRes.json()) as ApiResponse<Product[]>;
         const fallbackProduct = fallbackBody.data.find((product) =>
-          product.slug === productSlug || Boolean(resolveProductSelection(product)),
+          product.slug === productSlug || (productId ? product.id === productId : false),
         );
         const resolvedFallback = resolveProductSelection(fallbackProduct);
 
@@ -191,8 +253,13 @@ export default function PersonalizerWizard({
           return;
         }
 
-        setResolvedProductId(resolvedFallback.id);
+        setResolvedProduct(fallbackProduct ?? null);
+        setResolvedProductId(resolvedFallback.product.id);
         setResolvedVariant(resolvedFallback.variant);
+        setSelections((prev) => ({
+          ...prev,
+          size: resolvedFallback.variant.size || prev.size,
+        }));
       } catch (error) {
         if (error instanceof ProductResolutionError) {
           setOptionsError(t('wizard_unavailable'));
@@ -205,7 +272,44 @@ export default function PersonalizerWizard({
     };
 
     void fetchBaseProduct();
-  }, [productSlug, resolvedProductId, t]);
+  }, [productId, productSlug, resolvedProduct, t]);
+
+  useEffect(() => {
+    if (!resolvedProduct) {
+      return;
+    }
+
+    const activeVariants = getActiveCommercialVariants(resolvedProduct);
+    if (activeVariants.length === 0) {
+      return;
+    }
+
+    const nextVariant = selections.size
+      ? resolveVariantBySize(resolvedProduct, selections.size, resolvedVariant?.id)
+      : getReferenceVariant(resolvedProduct);
+
+    if (!nextVariant) {
+      return;
+    }
+
+    if (nextVariant.id !== resolvedVariant?.id) {
+      setResolvedVariant({
+        id: nextVariant.id as string,
+        sku: nextVariant.sku,
+        size: nextVariant.size || '',
+        color: nextVariant.color || 'Base',
+        imageUrl: nextVariant.imageUrl || '',
+        stock: nextVariant.stock || 0,
+      });
+    }
+
+    if (!selections.size && nextVariant.size) {
+      setSelections((prev) => ({
+        ...prev,
+        size: nextVariant.size || prev.size,
+      }));
+    }
+  }, [resolvedProduct, resolvedVariant?.id, selections.size]);
 
   useEffect(() => {
     const fetchOptions = async () => {
@@ -226,7 +330,7 @@ export default function PersonalizerWizard({
         setSelections(prev => ({
           ...prev,
           line: data.LINE?.[0]?.code || '',
-          size: data.DIMENSION?.[0]?.name || '',
+          size: prev.size || data.DIMENSION?.[0]?.name || '',
           material: data.MATERIAL?.[0]?.name || '',
           markingType: defaultMarking,
         }));
@@ -261,9 +365,10 @@ export default function PersonalizerWizard({
 
   const fetchPricing = useCallback(async () => {
     if (!selections.size || !selections.material || !wizardOptions || loadingOptions) return;
-    if (!resolvedProductId || !selections.line || !selections.size || !selections.material) return;
+    if (!resolvedProductId || !resolvedVariant?.id || !selections.line || !selections.size || !selections.material) return;
 
     setIsPricingLoading(true);
+    setPricingError(null);
     try {
       const personalizationOptions: Array<{ code: string; options: string[] }> = [];
       if ((selections.designUrl || uploadedLogo) && selections.markingType) {
@@ -284,6 +389,7 @@ export default function PersonalizerWizard({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           productId: resolvedProductId,
+          variantId: resolvedVariant.id,
           line: selections.line,
           size: selections.size,
           material: selections.material,
@@ -332,11 +438,15 @@ export default function PersonalizerWizard({
     } catch (err) {
       const message =
         err instanceof Error ? err.message : t('wizard_price_error');
+      setCalculatedUnitPrice(0);
+      setCalculatedTotalPrice(0);
+      setConfigCode('');
+      setPricingError(message);
       console.warn('Pricing fetch failed:', message);
     } finally {
       setIsPricingLoading(false);
     }
-  }, [selections, resolvedProductId, wizardOptions, uploadedLogo, loadingOptions, t]);
+  }, [selections, resolvedProductId, resolvedVariant?.id, wizardOptions, uploadedLogo, loadingOptions, t]);
 
   useEffect(() => {
     if (step >= 1 && wizardOptions) fetchPricing();
@@ -652,6 +762,29 @@ export default function PersonalizerWizard({
     availableTechniqueOptions.length === 0 && availableOtherOptions.length === 0;
   const estimatedPriceLabel =
     selections.quantity > 1 ? t('estimated_total') : t('estimated_price');
+  const commercialVariants = getActiveCommercialVariants(resolvedProduct);
+  const commercialSizeChoices = Array.from(
+    new Set(commercialVariants.map((variant) => variant.size).filter(Boolean)),
+  ) as string[];
+  const sizeChoices = commercialSizeChoices.length > 0
+    ? commercialSizeChoices.map((size) => {
+        const matchingDimension = wizardOptions.DIMENSION.find(
+          (option) => option.name.toLowerCase() === size.toLowerCase(),
+        );
+
+        return {
+          id: size,
+          name: size,
+          visualLabel: matchingDimension
+            ? getDimensionVisualLabel(matchingDimension)
+            : size,
+        };
+      })
+    : wizardOptions.DIMENSION.map((option) => ({
+        id: option.id,
+        name: option.name,
+        visualLabel: getDimensionVisualLabel(option),
+      }));
 
   return (
     <div className="w-full max-w-4xl mx-auto bg-surface border border-theme rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col md:flex-row min-h-[600px]">
@@ -689,6 +822,11 @@ export default function PersonalizerWizard({
           {selections.quantity > 1 && (
             <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-base-color/70">
               ${calculatedUnitPrice.toLocaleString('es-CO')} c/u
+            </p>
+          )}
+          {pricingError && (
+            <p className="mt-3 text-[10px] font-bold text-amber-100">
+              {pricingError}
             </p>
           )}
           {isPricingLoading && <Loader2 size={12} className="animate-spin mt-2" />}
@@ -734,10 +872,27 @@ export default function PersonalizerWizard({
                 <p className="text-muted text-sm">{t('wizard_step_2_description')}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                {wizardOptions?.DIMENSION.map(dim => (
+                {sizeChoices.map(dim => (
                   <button
                     key={dim.id}
-                    onClick={() => setSelections(prev => ({ ...prev, size: dim.name }))}
+                    onClick={() => {
+                      const matchedVariant = commercialVariants.length > 0
+                        ? resolveVariantBySize(resolvedProduct, dim.name, resolvedVariant?.id)
+                        : null;
+
+                      setSelections(prev => ({ ...prev, size: dim.name }));
+
+                      if (matchedVariant?.id) {
+                        setResolvedVariant({
+                          id: matchedVariant.id,
+                          sku: matchedVariant.sku,
+                          size: matchedVariant.size || '',
+                          color: matchedVariant.color || 'Base',
+                          imageUrl: matchedVariant.imageUrl || '',
+                          stock: matchedVariant.stock || 0,
+                        });
+                      }
+                    }}
                     className={`p-8 rounded-3xl border-2 flex flex-col items-center justify-center gap-4 transition-all ${selections.size === dim.name ? 'border-primary bg-primary/5' : 'border-theme hover:border-primary/30'}`}
                   >
                     <div className="relative flex items-center justify-center">
@@ -746,7 +901,7 @@ export default function PersonalizerWizard({
                         style={{ transform: `scale(${dim.name.toLowerCase().includes('peque') ? 0.75 : dim.name.toLowerCase().includes('grand') ? 1.2 : 1})` }}
                       />
                       <span className="absolute text-[9px] font-black uppercase tracking-[0.14em] text-primary">
-                        {getDimensionVisualLabel(dim)}
+                        {dim.visualLabel}
                       </span>
                     </div>
                     <span className="font-black uppercase tracking-widest text-[10px]">{dim.name}</span>

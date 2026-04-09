@@ -29,9 +29,10 @@ async function seedWizardOptions(prisma: PrismaClient) {
     { category: 'LINE', code: 'CORPORATIVA', name: 'Línea Corporativa', description: 'Diseñada para eventos y necesidades empresariales.', basePriceModifier: 3000, sortOrder: 4 },
 
     // DIMENSION
+    // Compatibility only: dimensions remain selectable metadata, not commercial price modifiers.
     { category: 'DIMENSION', code: 'STD', name: 'Estándar', description: '35x40 cm', basePriceModifier: 0, sortOrder: 1 },
-    { category: 'DIMENSION', code: 'MINI', name: 'Pequeña', description: '20x25 cm', basePriceModifier: -3000, sortOrder: 2 },
-    { category: 'DIMENSION', code: 'XL', name: 'Extra Grande', description: '45x50 cm', basePriceModifier: 5000, sortOrder: 3 },
+    { category: 'DIMENSION', code: 'MINI', name: 'Pequeña', description: '20x25 cm', basePriceModifier: 0, sortOrder: 2 },
+    { category: 'DIMENSION', code: 'XL', name: 'Extra Grande', description: '45x50 cm', basePriceModifier: 0, sortOrder: 3 },
 
     // MATERIAL
     { category: 'MATERIAL', code: 'LONA', name: 'Lona', description: 'Resistente y duradera.', basePriceModifier: 3000, sortOrder: 1 },

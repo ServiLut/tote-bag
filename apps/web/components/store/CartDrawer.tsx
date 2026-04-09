@@ -110,9 +110,11 @@ export default function CartDrawer() {
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                    <p className="text-xs text-muted mt-1">{t('cart_color', { color: item.variant.color })}</p>
+                    <p className="text-xs text-muted mt-1">
+                      {[item.variant.size, item.variant.color].filter(Boolean).join(' / ')}
+                    </p>
                     <p className="text-sm font-semibold mt-1 text-primary">
-                      ${item.product.basePrice.toLocaleString('es-CO')}
+                      ${item.unitPrice.toLocaleString('es-CO')}
                     </p>
                   </div>
 

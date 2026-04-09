@@ -413,10 +413,7 @@ export class PaymentsService {
           lt: maxAttempts,
         },
       },
-      orderBy: [
-        { failedAt: 'asc' },
-        { createdAt: 'asc' },
-      ],
+      orderBy: [{ failedAt: 'asc' }, { createdAt: 'asc' }],
       take: limit,
       select: {
         id: true,

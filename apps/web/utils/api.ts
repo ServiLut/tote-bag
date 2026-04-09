@@ -1,4 +1,7 @@
-import { getApiCandidates } from '@/lib/api-config';
+import {
+  getApiCandidates,
+  isRetryableApiResponseStatus,
+} from '@/lib/api-config';
 
 export async function apiFetch(path: string, init?: RequestInit) {
   if (typeof window !== 'undefined') {
@@ -13,6 +16,14 @@ export async function apiFetch(path: string, init?: RequestInit) {
     attemptedUrls.push(url);
     try {
       const response = await fetch(url, init);
+
+      if (isRetryableApiResponseStatus(response.status)) {
+        await response.body?.cancel().catch(() => undefined);
+        lastError = new Error(
+          `API candidate ${url} returned transient status ${response.status}`,
+        );
+        continue;
+      }
 
       // If we got a response, it means we reached A server.
       // We should return it and let the caller handle it (even if not ok).

@@ -70,8 +70,10 @@ describe('OrdersController (e2e)', () => {
         items: [
           {
             productId: 'prod-1',
+            variantId: 'variant-1',
             sku: 'SKU-1',
             quantity: 2,
+            price: 999999,
           },
         ],
       })
@@ -83,6 +85,11 @@ describe('OrdersController (e2e)', () => {
       expect.objectContaining({
         source: 'ECOMMERCE',
         initialStatus: 'PENDIENTE_PAGO',
+        items: [
+          expect.objectContaining({
+            price: undefined,
+          }),
+        ],
       }),
       undefined,
       {
@@ -110,6 +117,7 @@ describe('OrdersController (e2e)', () => {
         items: [
           {
             productId: 'prod-1',
+            variantId: 'variant-1',
             sku: 'SKU-1',
             quantity: 1,
           },
@@ -142,6 +150,7 @@ describe('OrdersController (e2e)', () => {
         items: [
           {
             productId: 'prod-1',
+            variantId: 'variant-1',
             sku: 'SKU-1',
             quantity: 1,
           },
@@ -179,15 +188,23 @@ describe('OrdersController (e2e)', () => {
         items: [
           {
             productId: 'prod-1',
+            variantId: 'variant-1',
             sku: 'SKU-1',
             quantity: 1,
+            price: 12345,
           },
         ],
       })
       .expect(201);
 
     expect(ordersService.create).toHaveBeenCalledWith(
-      expect.any(Object),
+      expect.objectContaining({
+        items: [
+          expect.objectContaining({
+            price: undefined,
+          }),
+        ],
+      }),
       'user-7',
       {
         idempotencyKey: undefined,
@@ -216,6 +233,7 @@ describe('OrdersController (e2e)', () => {
         items: [
           {
             productId: 'prod-1',
+            variantId: 'variant-1',
             sku: 'SKU-1',
             quantity: 2,
           },

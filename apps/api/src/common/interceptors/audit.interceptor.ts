@@ -150,6 +150,7 @@ export class AuditInterceptor implements NestInterceptor {
     third?: string,
     params?: Record<string, string | undefined>,
   ): AuditEntity {
+    if (root === 'catalog') return 'Product';
     if (root === 'catalog' && child === 'products') return 'Product';
     if (root === 'products') return 'Product';
     if (root === 'orders') return 'Order';

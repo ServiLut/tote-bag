@@ -15,9 +15,9 @@ export default function NewProductPage() {
           <ArrowLeft className="w-4 h-4" />
           Volver a productos
         </Link>
-        <h1 className="text-3xl font-black tracking-tight text-primary">Crear Nuevo Producto</h1>
+        <h1 className="text-3xl font-black tracking-tight text-primary">Crear nuevo producto</h1>
         <p className="mt-2 text-muted font-medium">
-          Define la información base, precios y variantes del nuevo diseño.
+          Define la información base, los precios y las variantes del nuevo producto.
         </p>
       </div>
 

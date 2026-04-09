@@ -9,8 +9,16 @@ export class ConfigurationService {
     const product = await this.prisma.product.findUnique({
       where: { slug },
       include: {
-        attributes: true,
-        pricingRules: true,
+        variants: {
+          where: { isActive: true },
+          orderBy: { salePrice: 'asc' },
+        },
+        attributes: {
+          where: { isActive: true },
+        },
+        pricingRules: {
+          where: { isActive: true },
+        },
       },
     });
 
@@ -18,12 +26,22 @@ export class ConfigurationService {
       throw new NotFoundException(`Product with slug ${slug} not found`);
     }
 
+    const referenceVariant = product.variants[0];
+    const hasVariantSizes = product.variants.some((variant) => !!variant.size);
+    const activeCommercialVariantCount = product.variants.length;
+
     return {
       productId: product.id,
       name: product.name,
-      basePrice: product.basePrice,
-      minPrice: product.minPrice,
-      attributes: product.attributes,
+      // Transitional compatibility for consumers that still expect a top-level price.
+      basePrice: referenceVariant?.salePrice ?? product.basePrice,
+      minPrice: referenceVariant?.minPrice ?? product.minPrice,
+      referenceVariantId: referenceVariant?.id ?? null,
+      requiresVariantSelection: activeCommercialVariantCount > 1,
+      variants: product.variants,
+      attributes: hasVariantSizes
+        ? product.attributes.filter((attribute) => attribute.type !== 'SIZE')
+        : product.attributes,
       pricingRules: product.pricingRules,
     };
   }

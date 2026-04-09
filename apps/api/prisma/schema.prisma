@@ -74,15 +74,23 @@ model Collection {
 model Variant {
   id              String          @id @default(uuid()) @map("id")
   sku             String          @unique @map("sku")
+  size            String?         @map("size")
   color           String          @map("color")
   imageUrl        String          @map("image_url")
+  salePrice       Float?          @map("sale_price")
+  minPrice        Float?          @map("min_price")
+  comparePrice    Float?          @map("compare_price")
+  costPrice       Float?          @map("cost_price")
   stock           Int             @default(0) @map("stock")
+  isActive        Boolean         @default(true) @map("is_active")
   productId       String          @map("product_id")
   orderItems      OrderItem[]
   personalizationRequests PersonalizationRequest[]
   product         Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
   purchaseBatches PurchaseBatch[]
 
+  @@index([productId, size])
+  @@index([productId, isActive])
   @@map("variants")
   @@schema("tote-bag")
 }

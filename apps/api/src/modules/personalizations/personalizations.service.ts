@@ -246,8 +246,19 @@ export class PersonalizationsService {
       PriceRuleScope.B2C,
     );
 
+    const resolvedVariantId =
+      typeof quote.snapshot.variantId === 'string' &&
+      quote.snapshot.variantId.trim().length > 0
+        ? quote.snapshot.variantId
+        : (data.variantId ?? null);
+    const resolvedSize =
+      typeof quote.snapshot.size === 'string' &&
+      quote.snapshot.size.trim().length > 0
+        ? quote.snapshot.size
+        : (data.size ?? '');
+
     const normalizedPersonalizations = normalizeSnapshotPersonalizations(
-      data.personalizations,
+      data.personalizations ?? [],
     );
 
     try {
@@ -256,10 +267,10 @@ export class PersonalizationsService {
           userId,
           profileId: profile?.id ?? null,
           productId: data.productId,
-          variantId: data.variantId ?? null,
+          variantId: resolvedVariantId,
           quantity: data.quantity,
           line: data.line,
-          size: data.size,
+          size: resolvedSize,
           material: data.material,
           quality: data.quality ?? null,
           configCode: quote.snapshot.configCode,
@@ -272,9 +283,9 @@ export class PersonalizationsService {
           personalizations: normalizedPersonalizations as Prisma.InputJsonValue,
           configurationJson: {
             productId: data.productId,
-            variantId: data.variantId ?? null,
+            variantId: resolvedVariantId,
             line: data.line,
-            size: data.size,
+            size: resolvedSize,
             material: data.material,
             quality: data.quality ?? null,
             quantity: data.quantity,
@@ -412,6 +423,12 @@ export class PersonalizationsService {
       );
     }
 
+    if (!request.variant?.id) {
+      throw new BadRequestException(
+        'La solicitud no tiene una variante comercial asociada. Debe recrearse con variantId explicito.',
+      );
+    }
+
     const configuration =
       request.configurationJson &&
       typeof request.configurationJson === 'object' &&
@@ -444,12 +461,12 @@ export class PersonalizationsService {
       items: [
         {
           productId: request.product.id,
-          variantId: request.variant?.id ?? undefined,
+          variantId: request.variant.id,
           sku: request.variant?.sku || request.configCode,
           quantity: request.quantity,
           configuration: {
             productId: request.product.id,
-            variantId: request.variant?.id ?? undefined,
+            variantId: request.variant.id,
             line: request.line,
             size: request.size,
             material: request.material,

@@ -16,10 +16,40 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   const { t } = useTranslation();
   const { addToCart } = useCart();
-  const [selectedVariant, setSelectedVariant] = useState<Variant>(product.variants[0]);
+  const allVariants = product.variants || [];
+  const activeVariants = allVariants.filter((variant) => variant.isActive !== false);
+  const initialVariant =
+    activeVariants
+      .filter((variant) => typeof variant.salePrice === 'number')
+      .sort((left, right) => (left.salePrice ?? 0) - (right.salePrice ?? 0))[0]
+    || activeVariants[0]
+    || allVariants[0]
+    || ({
+      sku: '',
+      color: '',
+      imageUrl: '',
+      stock: 0,
+    } as Variant);
+  const [selectedVariant, setSelectedVariant] = useState<Variant>(initialVariant);
   const [userSelectedImage, setUserSelectedImage] = useState<string | null>(null);
 
-  if (!product.variants || product.variants.length === 0) return null;
+  if (allVariants.length === 0) return null;
+
+  const referenceVariant = selectedVariant || initialVariant;
+  const cheapestActiveVariant =
+    activeVariants
+      .filter((variant) => typeof variant.salePrice === 'number')
+      .sort((left, right) => (left.salePrice ?? 0) - (right.salePrice ?? 0))[0]
+    || referenceVariant;
+  const variantSalePrice =
+    referenceVariant.salePrice
+    ?? cheapestActiveVariant?.salePrice
+    // Compatibility snapshot only. Operational pricing should come from the variant.
+    ?? product.basePrice;
+  const variantComparePrice =
+    referenceVariant.comparePrice
+    ?? cheapestActiveVariant?.comparePrice
+    ?? product.comparePrice;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -31,12 +61,12 @@ export default function ProductCard({ product }: ProductCardProps) {
     addToCart(product, selectedVariant, 1);
   };
 
-  const discount = product.comparePrice && product.comparePrice > product.basePrice
-    ? Math.round(((product.comparePrice - product.basePrice) / product.comparePrice) * 100)
+  const discount = variantComparePrice && variantComparePrice > variantSalePrice
+    ? Math.round(((variantComparePrice - variantSalePrice) / variantComparePrice) * 100)
     : 0;
 
   const allMainImages = product.images?.map(i => i.url) || [];
-  const allVariantImages = product.variants?.map(v => v.imageUrl).filter(Boolean) || [];
+  const allVariantImages = activeVariants?.map(v => v.imageUrl).filter(Boolean) || [];
   const orderedImages = [...allMainImages, ...allVariantImages];
   const displayImage = userSelectedImage || orderedImages[0] || '/placeholder.png';
   const hoverImage = orderedImages.find(img => img !== displayImage) || displayImage;
@@ -83,20 +113,20 @@ export default function ProductCard({ product }: ProductCardProps) {
 
           <div className="flex items-center gap-2 text-sm">
             <span className="font-semibold text-primary">
-              ${product.basePrice.toLocaleString('es-CO')}
+              ${variantSalePrice.toLocaleString('es-CO')}
             </span>
-            {product.comparePrice && (
+            {variantComparePrice && (
               <span className="text-muted line-through text-xs">
-                ${product.comparePrice.toLocaleString('es-CO')}
+                ${variantComparePrice.toLocaleString('es-CO')}
               </span>
             )}
           </div>
         </div>
       </Link>
 
-      {product.variants.length > 1 && (
+      {activeVariants.length > 1 && (
         <div className="flex gap-1">
-          {product.variants.map((variant) => (
+          {activeVariants.map((variant) => (
             <button
               key={variant.sku}
               onClick={(e) => {
@@ -129,5 +159,5 @@ function getVariantColorHex(colorName: string): string {
     'verde': '#008000',
     'rojo': '#FF0000',
   };
-  return map[colorName.toLowerCase()] || '#cccccc';
+  return map[colorName?.toLowerCase?.()] || '#cccccc';
 }

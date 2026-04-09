@@ -26,16 +26,20 @@ export class ProductConfigInputDto {
   productId: string;
 
   @IsString()
-  @IsOptional()
-  variantId?: string;
+  @IsNotEmpty()
+  // Commercial source of truth for operational flows. The sellable reference
+  // must be explicit whenever pricing or stock depends on the variant.
+  variantId: string;
 
   @IsString()
   @IsNotEmpty()
   line: string;
 
   @IsString()
-  @IsNotEmpty()
-  size: string;
+  @IsOptional()
+  // Keep as descriptive context for snapshots and UX, not for commercial
+  // resolution.
+  size?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -56,5 +60,6 @@ export class ProductConfigInputDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => PersonalizationInputDto)
-  personalizations: PersonalizationInputDto[];
+  @IsOptional()
+  personalizations?: PersonalizationInputDto[];
 }

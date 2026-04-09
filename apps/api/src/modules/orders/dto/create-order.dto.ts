@@ -34,8 +34,8 @@ class CreateOrderItemDto {
   productId: string;
 
   @IsString()
-  @IsOptional()
-  variantId?: string;
+  @IsNotEmpty()
+  variantId: string;
 
   @IsString()
   @IsNotEmpty()
@@ -51,6 +51,8 @@ class CreateOrderItemDto {
   @IsPositive()
   @IsOptional()
   @Transform(({ value }) => parseLocalizedNumber(value))
+  // Legacy input kept for compatibility. The backend recalculates pricing from
+  // variantId and configuration and does not trust this field as source of truth.
   price?: number;
 
   @ValidateNested()

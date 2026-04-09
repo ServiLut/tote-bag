@@ -227,8 +227,11 @@ export default function BatchReceptionPage() {
 
     if (field === 'productId') {
       const product = products.find((item) => item.id === value);
+      const fallbackVariant =
+        product?.variants.find((variant) => variant.isActive !== false)
+        || product?.variants[0];
       const costState = createCurrencyInputState(
-        product?.costPrice || newItems[index].costoUnitario || 0,
+        fallbackVariant?.costPrice || newItems[index].costoUnitario || 0,
       );
 
       newItems[index] = {
@@ -238,6 +241,20 @@ export default function BatchReceptionPage() {
         nombre: product?.name || '',
         size: '',
         material: '',
+        costoUnitarioInput: costState.formattedValue,
+        costoUnitario: costState.numericValue,
+      };
+    } else if (field === 'variantId') {
+      const product = products.find((item) => item.id === newItems[index].productId);
+      const variant = product?.variants.find((item) => item.id === value);
+      const costState = createCurrencyInputState(
+        variant?.costPrice || newItems[index].costoUnitario || 0,
+      );
+
+      newItems[index] = {
+        ...newItems[index],
+        variantId: value as string,
+        size: variant?.size || newItems[index].size,
         costoUnitarioInput: costState.formattedValue,
         costoUnitario: costState.numericValue,
       };
@@ -339,7 +356,7 @@ export default function BatchReceptionPage() {
 
   const getAttributeOptionsForProduct = (
     productId: string,
-    type: 'SIZE' | 'MATERIAL',
+    type: 'MATERIAL',
   ) => {
     const product = products.find((item) => item.id === productId);
     return (product?.attributes || []).filter(
@@ -734,27 +751,15 @@ export default function BatchReceptionPage() {
                               <option value="">Seleccionar variante...</option>
                               {getVariantsForProduct(item.productId).map((variant) => (
                                 <option key={variant.id || variant.sku} value={variant.id || ''}>
-                                  {variant.color} - {variant.sku}
+                                  {[variant.size, variant.color, variant.sku].filter(Boolean).join(' - ')}
                                 </option>
                               ))}
                             </Select>
                           </td>
                           <td className="px-4 py-3.5">
-                            <Select
-                              value={item.size}
-                              onChange={(e) =>
-                                updateItem(index, 'size', e.target.value)
-                              }
-                              disabled={!item.productId}
-                              className="w-full bg-transparent border-none text-sm font-bold focus:ring-0 outline-none disabled:opacity-50"
-                            >
-                              <option value="">Seleccionar tamaño...</option>
-                              {getAttributeOptionsForProduct(item.productId, 'SIZE').map((attribute) => (
-                                <option key={attribute.id} value={attribute.value}>
-                                  {attribute.value}
-                                </option>
-                              ))}
-                            </Select>
+                            <div className="px-2 text-sm font-bold text-primary">
+                              {item.size || 'Se define al elegir variante'}
+                            </div>
                           </td>
                           <td className="px-4 py-3.5">
                             <Select

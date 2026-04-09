@@ -7,13 +7,20 @@ export interface ProductImage {
 export interface Variant {
   id?: string;
   sku: string;
+  size?: string;
   color: string;
   imageUrl: string;
+  salePrice?: number;
+  minPrice?: number;
+  comparePrice?: number;
+  costPrice?: number;
   stock: number;
+  isActive?: boolean;
 }
 
 export interface Attribute {
   id: string;
+  // SIZE remains only for legacy compatibility while catalog data is normalized.
   type: 'SIZE' | 'MATERIAL' | 'QUALITY' | 'LINE';
   value: string;
   priceModifier: number;
@@ -26,7 +33,10 @@ export interface Product {
   name: string;
   slug: string;
   description: string;
+  // Deprecated as commercial source of truth. Keep only as compatibility snapshot
+  // while remaining consumers migrate to variant pricing.
   basePrice: number;
+  minPrice?: number;
   costPrice?: number;
   comparePrice?: number; // Precio tachado
   images: ProductImage[];

@@ -78,24 +78,37 @@ export class B2bService {
               );
               unitPrice = quote.unitPrice;
               totalPrice = quote.total;
+              const resolvedVariantId =
+                typeof quote.snapshot.variantId === 'string' &&
+                quote.snapshot.variantId.trim().length > 0
+                  ? quote.snapshot.variantId
+                  : (item.configuration.variantId ?? undefined);
+              const resolvedSize =
+                typeof quote.snapshot.size === 'string' &&
+                quote.snapshot.size.trim().length > 0
+                  ? quote.snapshot.size
+                  : (item.configuration.size ?? '');
 
               const configSnapshot: ConfigurationSnapshot = {
-                version: '1.1',
+                version: '1.2',
                 configCode: quote.snapshot.configCode,
                 productId: item.productId,
+                variantId: resolvedVariantId,
                 productName: `Product ${item.productId}`,
                 line: item.configuration.line,
-                size: item.configuration.size,
+                size: resolvedSize,
                 material: item.configuration.material,
                 quality: item.configuration.quality,
                 personalizations: normalizeSnapshotPersonalizations(
-                  item.configuration.personalizations,
+                  item.configuration.personalizations ?? [],
                 ),
                 timestamp: new Date().toISOString(),
               };
 
-              configurationJson =
-                configSnapshot as unknown as Prisma.InputJsonValue;
+              configurationJson = {
+                ...configSnapshot,
+                quantity: item.quantity,
+              } as unknown as Prisma.InputJsonValue;
               pricingJson = quote.snapshot as unknown as Prisma.InputJsonValue;
             }
 

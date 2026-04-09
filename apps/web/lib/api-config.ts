@@ -9,6 +9,8 @@ const LOCAL_API_CANDIDATES = [
   'http://127.0.0.1:4000/api/v1',
 ] as const;
 
+const RETRYABLE_API_RESPONSE_STATUSES = new Set([502, 503, 504]);
+
 export function getApiCandidates() {
   const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
 
@@ -29,4 +31,8 @@ export function getApiCandidates() {
 
 export function getApiBaseUrl() {
   return getApiCandidates()[0] ?? LOCAL_API_CANDIDATES[0];
+}
+
+export function isRetryableApiResponseStatus(status: number) {
+  return RETRYABLE_API_RESPONSE_STATUSES.has(status);
 }

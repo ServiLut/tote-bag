@@ -28,6 +28,19 @@ type InventoryConsumptionReduction = {
   unitCost: number;
 };
 
+type ResolvedCommercialVariant = {
+  id: string;
+  sku: string;
+  productId: string;
+  imageUrl: string;
+  salePrice: number | null;
+  minPrice: number | null;
+  comparePrice: number | null;
+  costPrice: number | null;
+  size: string | null;
+  isActive: boolean;
+};
+
 @Injectable()
 export class OrdersService {
   constructor(
@@ -37,36 +50,43 @@ export class OrdersService {
     private readonly shippingSyncService: ShippingSyncService,
   ) {}
 
-  private async resolveVariantId(
+  private async resolveCommercialVariant(
     tx: Prisma.TransactionClient,
     item: {
-      variantId?: string | null;
+      variantId: string;
       sku: string;
       productId: string;
     },
-  ) {
-    if (item.variantId) {
-      return item.variantId;
-    }
-
-    if (!item.sku) {
-      throw new BadRequestException(
-        `No se pudo identificar la variante para el producto ${item.productId}`,
-      );
-    }
-
+  ): Promise<ResolvedCommercialVariant> {
     const variant = await tx.variant.findUnique({
-      where: { sku: item.sku },
-      select: { id: true },
+      where: { id: item.variantId },
+      select: {
+        id: true,
+        sku: true,
+        productId: true,
+        imageUrl: true,
+        salePrice: true,
+        minPrice: true,
+        comparePrice: true,
+        costPrice: true,
+        size: true,
+        isActive: true,
+      },
     });
 
-    if (!variant?.id) {
+    if (!variant || variant.productId !== item.productId) {
       throw new BadRequestException(
-        `No se pudo identificar la variante para el producto ${item.sku || item.productId}`,
+        `La variante ${item.variantId} no existe o no pertenece al producto ${item.productId}`,
       );
     }
 
-    return variant.id;
+    if (!variant.isActive) {
+      throw new BadRequestException(
+        `La variante ${item.variantId} no se encuentra activa para la venta.`,
+      );
+    }
+
+    return variant;
   }
 
   private hasInventoryConsumption(pricingJson: Prisma.JsonValue | null) {
@@ -81,16 +101,16 @@ export class OrdersService {
   private async buildInventoryConsumption(
     tx: Prisma.TransactionClient,
     item: {
-      variantId?: string | null;
+      variantId: string;
       sku: string;
       productId: string;
       quantity: number;
     },
     userId?: string,
   ) {
-    const targetVariantId = await this.resolveVariantId(tx, item);
+    const targetVariant = await this.resolveCommercialVariant(tx, item);
     const stockReduction = await this.inventoryService.reduceStockFIFO(
-      targetVariantId,
+      targetVariant.id,
       item.quantity,
       userId,
       tx,
@@ -102,7 +122,10 @@ export class OrdersService {
     };
   }
 
-  private buildOrderRequestHash(createOrderDto: CreateOrderDto, userId?: string) {
+  private buildOrderRequestHash(
+    createOrderDto: CreateOrderDto,
+    userId?: string,
+  ) {
     return generateDeterministicHash({
       createOrderDto,
       userId: userId ?? null,
@@ -210,191 +233,210 @@ export class OrdersService {
           });
         }
 
-      let resolvedProfileId = orderData.profileId;
+        let resolvedProfileId = orderData.profileId;
 
-      // Ecommerce orders created by an authenticated customer should stay linked
-      // to that customer's profile even if the frontend omitted profileId.
-      if (
-        !resolvedProfileId &&
-        userId &&
-        sourceToSet === OrderSource.ECOMMERCE
-      ) {
-        const actorProfile = await tx.profile.findUnique({
-          where: { userId },
-          select: { id: true },
-        });
-
-        resolvedProfileId = actorProfile?.id;
-      }
-
-      const processedItems = await Promise.all(
-        items.map(async (item) => {
-          if (!item.productId) {
-            throw new BadRequestException('Cada item debe tener un productId');
-          }
-
-          const baseProduct = await tx.product.findUnique({
-            where: { id: item.productId },
-            select: {
-              id: true,
-              basePrice: true,
-              minPrice: true,
-              images: {
-                select: { url: true },
-                orderBy: { position: 'asc' },
-                take: 1,
-              },
-            },
+        // Ecommerce orders created by an authenticated customer should stay linked
+        // to that customer's profile even if the frontend omitted profileId.
+        if (
+          !resolvedProfileId &&
+          userId &&
+          sourceToSet === OrderSource.ECOMMERCE
+        ) {
+          const actorProfile = await tx.profile.findUnique({
+            where: { userId },
+            select: { id: true },
           });
 
-          if (!baseProduct) {
-            throw new BadRequestException(
-              `Producto no encontrado: ${item.productId}`,
+          resolvedProfileId = actorProfile?.id;
+        }
+
+        const processedItems = await Promise.all(
+          items.map(async (item) => {
+            if (!item.productId) {
+              throw new BadRequestException(
+                'Cada item debe tener un productId',
+              );
+            }
+
+            const resolvedVariant = await this.resolveCommercialVariant(
+              tx,
+              item,
             );
-          }
 
-          // Never trust client-side price; start from server-side product price.
-          let unitPrice = Math.max(baseProduct.basePrice, baseProduct.minPrice);
-          let totalPrice = unitPrice * item.quantity;
-          let configurationJson: Prisma.InputJsonValue | undefined = undefined;
-          let pricingJsonPayload: Record<string, unknown> = {};
-          let imageUrl: string | null = null;
-
-          if (item.configuration) {
-            const scope = isB2B ? PriceRuleScope.B2B : PriceRuleScope.B2C;
-            const quote = await this.pricingService.calculateQuote(
-              {
-                ...item.configuration,
-                productId: item.productId,
-                quantity: item.quantity,
+            const baseProduct = await tx.product.findUnique({
+              where: { id: item.productId },
+              select: {
+                id: true,
+                images: {
+                  select: { url: true },
+                  orderBy: { position: 'asc' },
+                  take: 1,
+                },
               },
-              scope,
+            });
+
+            if (!baseProduct) {
+              throw new BadRequestException(
+                `Producto no encontrado: ${item.productId}`,
+              );
+            }
+
+            let unitPrice = Math.max(
+              resolvedVariant.salePrice ?? 0,
+              resolvedVariant.minPrice ?? 0,
             );
-            unitPrice = quote.unitPrice;
-            totalPrice = quote.total;
+            let totalPrice = unitPrice * item.quantity;
+            let configurationJson: Prisma.InputJsonValue | undefined =
+              undefined;
+            let pricingJsonPayload: Record<string, unknown> = {};
+            let imageUrl: string | null = null;
 
-            // Generate Configuration Snapshot
-            const configSnapshot: ConfigurationSnapshot = {
-              version: '1.1',
-              configCode: quote.snapshot.configCode,
-              productId: item.productId,
-              productName: item.sku,
-              line: item.configuration.line,
-              size: item.configuration.size,
-              material: item.configuration.material,
-              quality: item.configuration.quality,
-              customImageURL: item.configuration.customImageURL,
-              personalizations: normalizeSnapshotPersonalizations(
-                item.configuration.personalizations,
-              ),
-              timestamp: new Date().toISOString(),
-            };
-
-            configurationJson =
-              configSnapshot as unknown as Prisma.InputJsonValue;
-            pricingJsonPayload = {
-              ...(quote.snapshot as unknown as Record<string, unknown>),
-            };
-
-            imageUrl = item.configuration.customImageURL ?? null;
-          }
-
-          let inventoryConsumption: {
-            totalCOGS: number;
-            reductions: InventoryConsumptionReduction[];
-          } | null = null;
-
-          if (shouldReduceInventory) {
-            try {
-              inventoryConsumption = await this.buildInventoryConsumption(
-                tx,
-                item,
-                userId,
+            if (item.configuration) {
+              const scope = isB2B ? PriceRuleScope.B2B : PriceRuleScope.B2C;
+              const quote = await this.pricingService.calculateQuote(
+                {
+                  ...item.configuration,
+                  productId: item.productId,
+                  variantId: resolvedVariant.id,
+                  size:
+                    item.configuration.size ||
+                    resolvedVariant.size ||
+                    undefined,
+                  quantity: item.quantity,
+                },
+                scope,
               );
-            } catch (error: unknown) {
-              const errorMessage =
-                error instanceof Error ? error.message : 'Unknown error';
-              console.warn(
-                `Stock reduction failed for item ${item.sku || item.productId}: ${errorMessage}`,
-              );
-              if (error instanceof BadRequestException) {
-                throw error;
+              unitPrice = quote.unitPrice;
+              totalPrice = quote.total;
+
+              // Generate Configuration Snapshot
+              const configSnapshot: ConfigurationSnapshot = {
+                version: '1.1',
+                configCode: quote.snapshot.configCode,
+                productId: item.productId,
+                productName: item.sku || resolvedVariant.sku,
+                line: item.configuration.line,
+                size: item.configuration.size || resolvedVariant.size || '',
+                material: item.configuration.material,
+                quality: item.configuration.quality,
+                customImageURL: item.configuration.customImageURL,
+                personalizations: normalizeSnapshotPersonalizations(
+                  item.configuration.personalizations ?? [],
+                ),
+                timestamp: new Date().toISOString(),
+              };
+
+              configurationJson =
+                configSnapshot as unknown as Prisma.InputJsonValue;
+              pricingJsonPayload = {
+                ...(quote.snapshot as unknown as Record<string, unknown>),
+              };
+
+              imageUrl = item.configuration.customImageURL ?? null;
+            }
+
+            let inventoryConsumption: {
+              totalCOGS: number;
+              reductions: InventoryConsumptionReduction[];
+            } | null = null;
+
+            if (shouldReduceInventory) {
+              try {
+                inventoryConsumption = await this.buildInventoryConsumption(
+                  tx,
+                  item,
+                  userId,
+                );
+              } catch (error: unknown) {
+                const errorMessage =
+                  error instanceof Error ? error.message : 'Unknown error';
+                console.warn(
+                  `Stock reduction failed for item ${item.sku || item.productId}: ${errorMessage}`,
+                );
+                if (error instanceof BadRequestException) {
+                  throw error;
+                }
               }
             }
+
+            const pricingJson =
+              inventoryConsumption || Object.keys(pricingJsonPayload).length > 0
+                ? ({
+                    ...pricingJsonPayload,
+                    ...(inventoryConsumption
+                      ? {
+                          inventoryConsumption,
+                        }
+                      : {}),
+                  } as Prisma.InputJsonValue)
+                : (null as unknown as Prisma.InputJsonValue);
+
+            return {
+              ...item,
+              variantId: resolvedVariant.id,
+              sku: resolvedVariant.sku,
+              imageUrl:
+                imageUrl ??
+                resolvedVariant.imageUrl ??
+                baseProduct.images[0]?.url ??
+                null,
+              unitPrice,
+              totalPrice,
+              configurationJson:
+                configurationJson ?? (null as unknown as Prisma.InputJsonValue),
+              pricingJson,
+            };
+          }),
+        );
+
+        const subtotalAmount = processedItems.reduce(
+          (sum, item) => sum + item.totalPrice,
+          0,
+        );
+
+        const normalizedDiscountValue = Math.max(0, manualDiscountValue ?? 0);
+        const discountAmount =
+          manualDiscountType === 'percent'
+            ? (subtotalAmount * normalizedDiscountValue) / 100
+            : normalizedDiscountValue;
+        const totalAmount = Math.max(0, subtotalAmount - discountAmount);
+
+        let provider: {
+          id: string;
+          name: string;
+        } | null = null;
+
+        if (shippingProviderId) {
+          provider = await tx.shippingProvider.findUnique({
+            where: { id: shippingProviderId },
+            select: { id: true, name: true },
+          });
+
+          if (!provider) {
+            throw new BadRequestException('Transportadora no encontrada');
           }
-
-          const pricingJson =
-            inventoryConsumption || Object.keys(pricingJsonPayload).length > 0
-              ? ({
-                  ...pricingJsonPayload,
-                  ...(inventoryConsumption
-                    ? {
-                        inventoryConsumption,
-                      }
-                    : {}),
-                } as Prisma.InputJsonValue)
-              : (null as unknown as Prisma.InputJsonValue);
-
-          return {
-            ...item,
-            imageUrl: imageUrl ?? baseProduct.images[0]?.url ?? null,
-            unitPrice,
-            totalPrice,
-            configurationJson:
-              configurationJson ?? (null as unknown as Prisma.InputJsonValue),
-            pricingJson,
-          };
-        }),
-      );
-
-      const subtotalAmount = processedItems.reduce(
-        (sum, item) => sum + item.totalPrice,
-        0,
-      );
-
-      const normalizedDiscountValue = Math.max(0, manualDiscountValue ?? 0);
-      const discountAmount =
-        manualDiscountType === 'percent'
-          ? (subtotalAmount * normalizedDiscountValue) / 100
-          : normalizedDiscountValue;
-      const totalAmount = Math.max(0, subtotalAmount - discountAmount);
-
-      let provider: {
-        id: string;
-        name: string;
-      } | null = null;
-
-      if (shippingProviderId) {
-        provider = await tx.shippingProvider.findUnique({
-          where: { id: shippingProviderId },
-          select: { id: true, name: true },
-        });
-
-        if (!provider) {
-          throw new BadRequestException('Transportadora no encontrada');
         }
-      }
 
-      // Prepare shipping address as JSON-compatible object
-      const resolvedCarrier = provider?.name ?? carrier ?? null;
+        // Prepare shipping address as JSON-compatible object
+        const resolvedCarrier = provider?.name ?? carrier ?? null;
 
-      const shippingAddressJson = {
-        ...(shippingAddress as object),
-        firstName,
-        lastName,
-        department,
-        shippingProviderId: provider?.id ?? null,
-        shippingProviderName: resolvedCarrier,
-        manualDiscount:
-          normalizedDiscountValue > 0
-            ? {
-                type: manualDiscountType ?? 'amount',
-                value: normalizedDiscountValue,
-                amount: discountAmount,
-                subtotal: subtotalAmount,
-              }
-            : null,
-      } as Prisma.InputJsonValue;
+        const shippingAddressJson = {
+          ...(shippingAddress as object),
+          firstName,
+          lastName,
+          department,
+          shippingProviderId: provider?.id ?? null,
+          shippingProviderName: resolvedCarrier,
+          manualDiscount:
+            normalizedDiscountValue > 0
+              ? {
+                  type: manualDiscountType ?? 'amount',
+                  value: normalizedDiscountValue,
+                  amount: discountAmount,
+                  subtotal: subtotalAmount,
+                }
+              : null,
+        } as Prisma.InputJsonValue;
 
         const createdOrder = await tx.order.create({
           data: {
@@ -524,9 +566,18 @@ export class OrdersService {
           continue;
         }
 
+        if (!item.variantId) {
+          throw new BadRequestException(
+            `La orden ${order.id} contiene items legacy sin variantId. Debe regularizarse antes de descontar inventario.`,
+          );
+        }
+
         const inventoryConsumption = await this.buildInventoryConsumption(
           tx,
-          item,
+          {
+            ...item,
+            variantId: item.variantId,
+          },
           userId,
         );
 
@@ -575,10 +626,7 @@ export class OrdersService {
     return this.prisma.$transaction(async (tx) => execute(tx));
   }
 
-  async expirePendingPaymentOrders(
-    expirationHours = 24,
-    actorUserId?: string,
-  ) {
+  async expirePendingPaymentOrders(expirationHours = 24, actorUserId?: string) {
     const cutoff = new Date(Date.now() - expirationHours * 60 * 60 * 1000);
 
     return this.prisma.$transaction(async (tx) => {

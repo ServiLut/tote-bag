@@ -29,11 +29,14 @@ export class OrderMaintenanceService implements OnModuleInit, OnModuleDestroy {
       ) ?? 30,
     );
 
-    this.intervalRef = setInterval(() => {
-      void this.expirePendingOrders().catch((error) => {
-        this.logger.error('Pending order expiration failed', error);
-      });
-    }, intervalMinutes * 60 * 1000);
+    this.intervalRef = setInterval(
+      () => {
+        void this.expirePendingOrders().catch((error) => {
+          this.logger.error('Pending order expiration failed', error);
+        });
+      },
+      intervalMinutes * 60 * 1000,
+    );
   }
 
   onModuleDestroy() {
@@ -49,9 +52,8 @@ export class OrderMaintenanceService implements OnModuleInit, OnModuleDestroy {
       this.configService.get<number>('ORDER_PENDING_EXPIRATION_HOURS') ?? 24,
     );
 
-    const result = await this.ordersService.expirePendingPaymentOrders(
-      expirationHours,
-    );
+    const result =
+      await this.ordersService.expirePendingPaymentOrders(expirationHours);
 
     if (result.expiredCount > 0) {
       this.logger.log(

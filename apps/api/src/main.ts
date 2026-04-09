@@ -3,13 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe, Logger, VersioningType } from '@nestjs/common';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
-import {
-  Request,
-  Response,
-  NextFunction,
-  json,
-  urlencoded,
-} from 'express';
+import { Request, Response, NextFunction, json, urlencoded } from 'express';
 import { randomUUID } from 'crypto';
 import { winstonConfig } from './common/logger/winston.config';
 
@@ -26,20 +20,16 @@ function resolveHelmetMiddleware():
   | null {
   try {
     const helmetModule = require('helmet') as
-      | ((options?: Record<string, unknown>) => (
-          req: Request,
-          res: Response,
-          next: NextFunction,
-        ) => void)
-      | { default?: (options?: Record<string, unknown>) => (
-          req: Request,
-          res: Response,
-          next: NextFunction,
-        ) => void };
+      | ((
+          options?: Record<string, unknown>,
+        ) => (req: Request, res: Response, next: NextFunction) => void)
+      | {
+          default?: (
+            options?: Record<string, unknown>,
+          ) => (req: Request, res: Response, next: NextFunction) => void;
+        };
     const helmetFactory =
-      typeof helmetModule === 'function'
-        ? helmetModule
-        : helmetModule.default;
+      typeof helmetModule === 'function' ? helmetModule : helmetModule.default;
 
     if (!helmetFactory) {
       return null;
@@ -96,20 +86,18 @@ async function bootstrap() {
     });
   }
 
-  app.use(
-    (req: RequestWithCorrelation, res: Response, next: NextFunction) => {
-      const forwardedRequestId =
-        req.get('x-request-id')?.trim() ||
-        req.get('x-correlation-id')?.trim() ||
-        randomUUID();
+  app.use((req: RequestWithCorrelation, res: Response, next: NextFunction) => {
+    const forwardedRequestId =
+      req.get('x-request-id')?.trim() ||
+      req.get('x-correlation-id')?.trim() ||
+      randomUUID();
 
-      req.requestId = forwardedRequestId;
-      req.correlationId = forwardedRequestId;
-      res.setHeader('x-request-id', forwardedRequestId);
-      res.setHeader('x-correlation-id', forwardedRequestId);
-      next();
-    },
-  );
+    req.requestId = forwardedRequestId;
+    req.correlationId = forwardedRequestId;
+    res.setHeader('x-request-id', forwardedRequestId);
+    res.setHeader('x-correlation-id', forwardedRequestId);
+    next();
+  });
 
   // Structured Logging middleware
   app.use((req: RequestWithCorrelation, res: Response, next: NextFunction) => {

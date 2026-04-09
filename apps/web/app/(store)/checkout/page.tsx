@@ -89,12 +89,12 @@ interface OrderPayload {
   };
   items: {
     productId: string;
-    variantId?: string;
+    variantId: string;
     sku: string;
     quantity: number;
-    price: number;
     configuration?: {
       productId: string;
+      variantId: string;
       line: string;
       size: string;
       material: string;
@@ -129,6 +129,14 @@ function getCheckoutConfirmationPath(orderId: string) {
 
 function normalizePhone(value: string) {
   return value.replace(/[^\d+]/g, '');
+}
+
+function getRequiredVariantId(item: CartItem) {
+  if (!item.variant.id) {
+    throw new Error(`El item ${item.product.name} no tiene variantId.`);
+  }
+
+  return item.variant.id;
 }
 
 const CUSTOM_TOTE_FALLBACK_IMAGE = '/tote_bag_lifestyle.png';
@@ -456,6 +464,7 @@ function CheckoutPageContent() {
 
     return {
       productId: item.product.id,
+      variantId: getRequiredVariantId(item),
       line,
       size,
       material,
@@ -492,10 +501,9 @@ function CheckoutPageContent() {
       },
       items: items.map((item) => ({
         productId: item.product.id,
-        variantId: item.variant.id,
+        variantId: getRequiredVariantId(item),
         sku: item.variant.sku,
         quantity: item.quantity,
-        price: item.unitPrice,
         configuration: buildItemConfiguration(item),
       })),
     };
@@ -525,10 +533,9 @@ function CheckoutPageContent() {
       },
       items: items.map((item) => ({
         productId: item.product.id,
-        variantId: item.variant.id,
+        variantId: getRequiredVariantId(item),
         sku: item.variant.sku,
         quantity: item.quantity,
-        price: item.unitPrice,
         configuration: buildItemConfiguration(item),
       })),
     };
@@ -810,9 +817,11 @@ function CheckoutPageContent() {
                     </div>
                     <div>
                       <h4 className="text-sm font-medium line-clamp-2 text-primary">{item.product.name}</h4>
-                      <p className="text-xs text-muted">{item.variant.color}</p>
+                      <p className="text-xs text-muted">
+                        {[item.variant.size, item.variant.color].filter(Boolean).join(' / ')}
+                      </p>
                       <p className="text-sm font-semibold mt-1 text-primary">
-                        ${(item.product.basePrice * item.quantity).toLocaleString('es-CO')}
+                        ${(item.unitPrice * item.quantity).toLocaleString('es-CO')}
                       </p>
                     </div>
                   </div>
@@ -856,4 +865,3 @@ export default function CheckoutPage() {
     </Suspense>
   );
 }
-

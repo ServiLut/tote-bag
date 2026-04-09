@@ -5,9 +5,12 @@ import {
   IsOptional,
   IsString,
   Min,
+  Max,
   IsArray,
   ValidateNested,
   IsBoolean,
+  Matches,
+  IsUUID,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
@@ -32,9 +35,21 @@ export class CreateProductImageDto {
 }
 
 export class CreateVariantDto {
+  @IsUUID()
+  @IsOptional()
+  id?: string;
+
   @IsString()
-  @IsNotEmpty()
-  sku: string;
+  @IsOptional()
+  @Matches(/^[A-Za-z0-9][A-Za-z0-9._/-]*$/, {
+    message:
+      'El SKU solo puede contener letras, numeros, puntos, guiones, slash o underscore.',
+  })
+  sku?: string;
+
+  @IsString()
+  @IsOptional()
+  size?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -43,6 +58,32 @@ export class CreateVariantDto {
   @IsString()
   @IsNotEmpty()
   imageUrl: string;
+
+  @IsNumber()
+  @Min(0)
+  salePrice: number;
+
+  @IsNumber()
+  @Min(0)
+  minPrice: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  comparePrice?: number;
+
+  @IsNumber()
+  @Min(0)
+  costPrice: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  stock?: number;
+
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
 }
 
 export class CreateProductAttributeDto {
@@ -75,14 +116,18 @@ export class CreatePricingRuleDto {
 
   @IsNumber()
   @IsOptional()
+  @Min(1)
   maxQty?: number;
 
   @IsNumber()
   @IsOptional()
+  @Min(0)
+  @Max(100)
   discountPct?: number;
 
   @IsNumber()
   @IsOptional()
+  @Min(0)
   fixedUnitPrice?: number;
 
   @IsBoolean()
@@ -101,11 +146,13 @@ export class CreateProductDto {
 
   @IsNumber()
   @Min(0)
-  basePrice: number;
+  @IsOptional()
+  basePrice?: number;
 
   @IsNumber()
   @Min(0)
-  minPrice: number;
+  @IsOptional()
+  minPrice?: number;
 
   @IsNumber()
   @Min(0)

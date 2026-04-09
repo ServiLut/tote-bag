@@ -51,14 +51,21 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
   const showExtraPersonalization = false;
   const { t } = useTranslation();
   const { addToCart } = useCart();
+  const activeVariants = product.variants.filter((variant) => variant.isActive !== false);
+  const fallbackVariant =
+    activeVariants
+      .filter((variant) => typeof variant.salePrice === 'number')
+      .sort((left, right) => (left.salePrice ?? 0) - (right.salePrice ?? 0))[0]
+    || activeVariants[0]
+    || product.variants[0]
+    || ({} as Variant);
+  const fallbackVariantPrice = fallbackVariant.salePrice ?? product.basePrice;
   const [activeTab, setActiveTab] = useState<'description' | 'reviews' | 'shipping'>('description');
   const [config, setConfig] = useState<ProductConfig | null>(null);
-  const [selectedVariant, setSelectedVariant] = useState<Variant>(
-    product.variants && product.variants.length > 0 ? product.variants[0] : ({} as Variant)
-  );
+  const [selectedVariant, setSelectedVariant] = useState<Variant>(fallbackVariant);
 
   const [selections, setSelections] = useState({
-    size: product.attributes?.find(a => a.type === 'SIZE' && a.isActive)?.value || '',
+    size: fallbackVariant.size || '',
     material: product.attributes?.find(a => a.type === 'MATERIAL' && a.isActive)?.value || '',
     quality: product.attributes?.find(a => a.type === 'QUALITY' && a.isActive)?.value || '',
     line: product.attributes?.find(a => a.type === 'LINE' && a.isActive)?.value || 'COMERCIAL',
@@ -67,7 +74,9 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
 
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [calculatedPrice, setCalculatedPrice] = useState<number>(product.basePrice);
+  const [calculatedPrice, setCalculatedPrice] = useState<number>(
+    fallbackVariantPrice,
+  );
   const [isPricingLoading, setIsPricingLoading] = useState(false);
   const [configCode, setConfigCode] = useState<string | undefined>();
   const [pricingSnapshot, setPricingSnapshot] = useState<PricingSnapshot | null>(null);
@@ -91,14 +100,12 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
         });
 
         const attrs = (data.attributes as Attribute[]) || [];
-        const defaultSize = attrs.find((a) => a.type === 'SIZE')?.value;
         const defaultMaterial = attrs.find((a) => a.type === 'MATERIAL')?.value;
         const defaultQuality = attrs.find((a) => a.type === 'QUALITY')?.value;
         const defaultLine = attrs.find((a) => a.type === 'LINE')?.value;
 
         setSelections(prev => ({
           ...prev,
-          size: defaultSize || prev.size,
           material: defaultMaterial || prev.material,
           quality: defaultQuality || prev.quality,
           line: defaultLine || prev.line || 'COMERCIAL',
@@ -111,7 +118,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
   }, [product.slug]);
 
   const calculatePricing = useCallback(async () => {
-    if (!selections.size || !selections.material) return;
+    if (!selectedVariant.id || !selections.material) return;
 
     setIsPricingLoading(true);
     try {
@@ -120,8 +127,10 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           productId: product.id,
+          variantId: selectedVariant.id,
           quantity,
           ...selections,
+          size: selectedVariant.size || selections.size,
           personalizations: selections.personalizations.map(p => ({ 
             code: p.code,
             options: p.options || [] 
@@ -134,7 +143,9 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
       const data = responseBody.data || responseBody;
 
       if (data) {
-        setCalculatedPrice(data.unitPrice || product.basePrice);
+        setCalculatedPrice(
+          data.unitPrice || selectedVariant.salePrice || fallbackVariantPrice,
+        );
         if (data.snapshot) {
           setConfigCode(data.snapshot.configCode);
           setPricingSnapshot(data.snapshot);
@@ -142,14 +153,29 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
       }
     } catch (err) {
       console.error('Pricing calculation error:', err);
+      setCalculatedPrice(selectedVariant.salePrice ?? fallbackVariantPrice);
     } finally {
       setIsPricingLoading(false);
     }
-  }, [product.id, product.basePrice, quantity, selections]);
+  }, [fallbackVariantPrice, product.id, quantity, selections, selectedVariant.id, selectedVariant.salePrice, selectedVariant.size]);
 
   useEffect(() => {
     calculatePricing();
   }, [calculatePricing]);
+
+  useEffect(() => {
+    setSelections((prev) => ({
+      ...prev,
+      size: selectedVariant.size || prev.size,
+    }));
+
+    if (selectedVariant.imageUrl) {
+      const variantImageIndex = allImagesRef(selectedVariant.imageUrl, product);
+      if (variantImageIndex >= 0) {
+        setCurrentImageIndex(variantImageIndex);
+      }
+    }
+  }, [product, selectedVariant]);
 
   const handleAddToCart = () => {
     if (!selectedVariant.sku) return;
@@ -182,12 +208,17 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
   };
 
   const mainImages = (product.images || []).map(img => ({ url: img.url, id: img.id || Math.random().toString() }));
-  const variantImages = (product.variants || [])
+  const variantImages = activeVariants
     .map(v => v.imageUrl ? { url: v.imageUrl, id: v.sku } : null)
     .filter(Boolean) as Array<{ url: string, id: string }>;
   const allImages = [...mainImages, ...variantImages];
   const currentImageUrl = allImages[currentImageIndex]?.url || '/placeholder.svg';
   const productDescription = product.description?.trim() || 'Este producto no tiene una descripcion disponible por ahora.';
+  const uniqueSizes = Array.from(new Set(activeVariants.map((variant) => variant.size).filter(Boolean))) as string[];
+  const variantsForSelectedSize = selections.size
+    ? activeVariants.filter((variant) => variant.size === selections.size)
+    : activeVariants;
+  const colorOptions = variantsForSelectedSize.length > 0 ? variantsForSelectedSize : activeVariants;
 
   const groupedAttributes = (config?.attributes || []).reduce((acc, attr) => {
     if (!acc[attr.type]) acc[attr.type] = [];
@@ -226,6 +257,11 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
               <span className="text-3xl font-bold text-primary">
                 ${calculatedPrice.toLocaleString('es-CO')}
               </span>
+              {selectedVariant.comparePrice && selectedVariant.comparePrice > calculatedPrice && (
+                <span className="text-sm text-muted line-through">
+                  ${selectedVariant.comparePrice.toLocaleString('es-CO')}
+                </span>
+              )}
               {isPricingLoading && <div className="flex items-center gap-1 text-[10px] text-muted animate-pulse mt-1"><Loader2 size={10} className="animate-spin" /> {t('product_updating_price')}</div>}
             </div>
             {configCode && (
@@ -236,10 +272,43 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
           </div>
 
           <div className="space-y-8 mb-10">
-            {['SIZE', 'MATERIAL'].map((type) => (
+            {uniqueSizes.length > 0 && (
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary block mb-4">
+                  {t('product_size')}:
+                  <span className="ml-2 text-slate-900 font-bold uppercase">
+                    {selectedVariant.size || selections.size || '...'}
+                  </span>
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {uniqueSizes.map((size) => (
+                    <button
+                      key={size}
+                      onClick={() => {
+                        const nextVariant =
+                          activeVariants.find((variant) => variant.size === size && variant.color === selectedVariant.color)
+                          || activeVariants.find((variant) => variant.size === size)
+                          || fallbackVariant;
+                        setSelectedVariant(nextVariant);
+                        setSelections((prev) => ({ ...prev, size }));
+                      }}
+                      className={`px-4 py-2 text-[11px] font-bold uppercase tracking-widest border transition-all ${
+                        (selectedVariant.size || selections.size) === size
+                          ? 'bg-primary border-primary text-white'
+                          : 'bg-white border-theme text-muted hover:border-primary hover:text-primary'
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {['MATERIAL'].map((type) => (
               <div key={type}>
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary block mb-4">
-                  {type === 'SIZE' ? t('product_size') : t('product_material')}:
+                  {t('product_material')}:
                   <span className="ml-2 text-slate-900 font-bold uppercase">
                     {(selections[type.toLowerCase() as keyof typeof selections] as string) || '...'}
                   </span>
@@ -287,17 +356,19 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
               </div>
             )}
 
-            {product.variants.length > 0 && (
+            {colorOptions.length > 0 && (
               <div>
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary block mb-4">{t('product_color')}</span>
                 <div className="flex flex-wrap gap-3">
-                  {product.variants.map((variant) => (
+                  {colorOptions.map((variant) => (
                     <button
                       key={variant.sku}
                       onClick={() => {
                         setSelectedVariant(variant);
-                        const variantImgIdx = allImages.findIndex(img => img.url === variant.imageUrl);
-                        if (variantImgIdx !== -1) setCurrentImageIndex(variantImgIdx);
+                        setSelections((prev) => ({
+                          ...prev,
+                          size: variant.size || prev.size,
+                        }));
                       }}
                       className={`w-8 h-8 rounded-full border border-theme ring-2 ring-offset-2 transition-all ${
                         selectedVariant.sku === variant.sku ? 'ring-primary' : 'ring-transparent'
@@ -319,7 +390,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
 
               <button
                 onClick={handleAddToCart}
-                disabled={selectedVariant.stock === 0 || isPricingLoading}
+                disabled={!selectedVariant.id || selectedVariant.stock === 0 || isPricingLoading}
                 className="flex-1 bg-primary text-white font-black uppercase tracking-[0.2em] py-4 px-8 rounded-lg hover:bg-primary/90 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
               >
                 <ShoppingBag className="w-5 h-5" />
@@ -413,5 +484,15 @@ function getVariantColorHex(colorName: string): string {
     'negro': '#000000', 'blanco': '#FFFFFF', 'crudo': '#F5F5DC', 'beige': '#D2B48C',
     'azul': '#1e3a8a', 'verde': '#166534', 'rojo': '#991b1b', 'rosa': '#f472b6', 'amarillo': '#facc15',
   };
-  return map[colorName.toLowerCase()] || '#cccccc';
+  return map[colorName?.toLowerCase?.()] || '#cccccc';
+}
+
+function allImagesRef(imageUrl: string, product: Product) {
+  const mainImages = (product.images || []).map((img) => img.url);
+  const variantImages = (product.variants || [])
+    .filter((variant) => variant.isActive !== false)
+    .map((variant) => variant.imageUrl)
+    .filter(Boolean);
+
+  return [...mainImages, ...variantImages].findIndex((url) => url === imageUrl);
 }

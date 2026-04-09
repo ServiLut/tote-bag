@@ -1,13 +1,132 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProductConfigInputDto } from '../../common/dto/product-config.dto';
-import { PriceRuleScope, WizardCategory } from '../../generated/client/enums';
+import {
+  AttributeType,
+  PriceRuleScope,
+  WizardCategory,
+} from '../../generated/client/enums';
 import { PricingSnapshot } from '../../common/interfaces/snapshots.interface';
 import { generateConfigCode } from '../../common/utils/hash.util';
 
 @Injectable()
 export class PricingService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private normalizeLabel(value?: string | null) {
+    return value?.trim().toLowerCase() ?? '';
+  }
+
+  private isAllowedValue(allowedValues: string[], value?: string | null) {
+    if (allowedValues.length === 0) {
+      return true;
+    }
+
+    if (!value?.trim()) {
+      return false;
+    }
+
+    return allowedValues.some(
+      (allowedValue) =>
+        this.normalizeLabel(allowedValue) === this.normalizeLabel(value),
+    );
+  }
+
+  private getVariantCommercialPricing(
+    variant: {
+      salePrice: number | null;
+      minPrice: number | null;
+    } | null,
+    product: {
+      basePrice: number;
+      minPrice: number;
+    },
+  ) {
+    if (!variant) {
+      return {
+        baseUnitPrice: product.basePrice,
+        baseMinPrice: product.minPrice,
+      };
+    }
+
+    return {
+      baseUnitPrice: variant.salePrice ?? product.basePrice,
+      baseMinPrice: variant.minPrice ?? product.minPrice,
+    };
+  }
+
+  private async resolveCommercialVariant(input: ProductConfigInputDto) {
+    if (input.variantId) {
+      const variant = await this.prisma.variant.findUnique({
+        where: { id: input.variantId },
+      });
+
+      if (!variant || variant.productId !== input.productId) {
+        throw new BadRequestException(
+          'La variante seleccionada no existe o no pertenece al producto.',
+        );
+      }
+
+      if (!variant.isActive) {
+        throw new BadRequestException(
+          'La variante seleccionada no se encuentra activa para la venta.',
+        );
+      }
+
+      return variant;
+    }
+
+    const activeVariants = await this.prisma.variant.findMany({
+      where: {
+        productId: input.productId,
+        isActive: true,
+      },
+      orderBy: { salePrice: 'asc' },
+    });
+
+    if (activeVariants.length === 0) {
+      return null;
+    }
+
+    if (input.size) {
+      const matchedBySize = activeVariants.find(
+        (variant) =>
+          this.normalizeLabel(variant.size) === this.normalizeLabel(input.size),
+      );
+
+      if (matchedBySize) {
+        return matchedBySize;
+      }
+    }
+
+    if (activeVariants.length === 1) {
+      return activeVariants[0];
+    }
+
+    const uniqueCommercialProfiles = new Set(
+      activeVariants.map((variant) =>
+        [
+          variant.salePrice ?? 'null',
+          variant.minPrice ?? 'null',
+          variant.comparePrice ?? 'null',
+          variant.costPrice ?? 'null',
+          this.normalizeLabel(variant.size),
+        ].join('::'),
+      ),
+    );
+
+    if (uniqueCommercialProfiles.size > 1) {
+      throw new BadRequestException(
+        'Debes indicar una variante para cotizar un producto con variantes comerciales diferenciadas.',
+      );
+    }
+
+    return activeVariants[0];
+  }
 
   async calculateQuote(
     input: ProductConfigInputDto,
@@ -27,10 +146,17 @@ export class PricingService {
       );
     }
 
-    // Generate Config Code based on technical attributes
+    const variant = await this.resolveCommercialVariant(input);
+    const effectiveSize = variant?.size ?? input.size ?? '';
+    const { baseUnitPrice, baseMinPrice } = this.getVariantCommercialPricing(
+      variant,
+      product,
+    );
+
     const configCode = generateConfigCode({
       productId: input.productId,
-      size: input.size,
+      variantId: variant?.id ?? input.variantId ?? null,
+      size: effectiveSize,
       material: input.material,
       quality: input.quality,
       line: input.line,
@@ -38,9 +164,11 @@ export class PricingService {
     });
 
     const snapshot: PricingSnapshot = {
-      version: '1.2',
+      version: '2.0',
       configCode,
-      basePrice: product.basePrice,
+      variantId: variant?.id ?? input.variantId ?? undefined,
+      size: effectiveSize || undefined,
+      basePrice: baseUnitPrice,
       attributeModifiers: [],
       personalizationSurcharges: [],
       minPriceGuardApplied: false,
@@ -51,15 +179,13 @@ export class PricingService {
       timestamp: new Date().toISOString(),
     };
 
-    let unitPrice = product.basePrice;
+    let unitPrice = baseUnitPrice;
 
-    // Fetch dynamic wizard options for modifiers
     const wizardOptions = await this.prisma.wizardOption.findMany({
       where: {
         isActive: true,
         OR: [
           { category: WizardCategory.LINE, code: input.line },
-          { category: WizardCategory.DIMENSION, name: input.size },
           { category: WizardCategory.MATERIAL, name: input.material },
           ...(input.quality
             ? [{ category: WizardCategory.QUALITY, name: input.quality }]
@@ -69,119 +195,153 @@ export class PricingService {
     });
 
     const inputAttributes = [
-      { type: 'SIZE', value: input.size },
-      { type: 'MATERIAL', value: input.material },
-      { type: 'QUALITY', value: input.quality },
-      { type: 'LINE', value: input.line },
+      { type: AttributeType.MATERIAL, value: input.material },
+      { type: AttributeType.QUALITY, value: input.quality },
+      { type: AttributeType.LINE, value: input.line },
     ];
 
-    for (const inputAttr of inputAttributes) {
-      if (!inputAttr.value) continue;
+    for (const inputAttribute of inputAttributes) {
+      if (!inputAttribute.value) continue;
 
-      // 1. Try to find product-specific attribute first
       const matchingAttr = product.attributes.find(
-        (a) => a.type === inputAttr.type && a.value === inputAttr.value,
+        (attribute) =>
+          attribute.type === inputAttribute.type &&
+          attribute.value === inputAttribute.value,
       );
 
       if (matchingAttr) {
         unitPrice += matchingAttr.priceModifier;
         snapshot.attributeModifiers.push({
-          type: inputAttr.type,
-          name: inputAttr.value,
+          type: inputAttribute.type,
+          name: inputAttribute.value,
           modifier: matchingAttr.priceModifier,
         });
-      } else {
-        // 2. Fallback to global WizardOption modifier
-        const globalOpt = wizardOptions.find(
-          (o) =>
-            (o.category === inputAttr.type &&
-              (o.name === inputAttr.value || o.code === inputAttr.value)) ||
-            (o.category === 'DIMENSION' &&
-              inputAttr.type === 'SIZE' &&
-              o.name === inputAttr.value),
-        );
+        continue;
+      }
 
-        if (globalOpt && globalOpt.basePriceModifier !== 0) {
-          unitPrice += globalOpt.basePriceModifier;
-          snapshot.attributeModifiers.push({
-            type: inputAttr.type,
-            name: inputAttr.value,
-            modifier: globalOpt.basePriceModifier,
-          });
-        }
+      const globalOption = wizardOptions.find(
+        (option) =>
+          (option.category === inputAttribute.type &&
+            (option.name === inputAttribute.value ||
+              option.code === inputAttribute.value)) ||
+          (option.category === WizardCategory.LINE &&
+            inputAttribute.type === AttributeType.LINE &&
+            option.code === inputAttribute.value),
+      );
+
+      if (globalOption && globalOption.basePriceModifier !== 0) {
+        unitPrice += globalOption.basePriceModifier;
+        snapshot.attributeModifiers.push({
+          type: inputAttribute.type,
+          name: inputAttribute.value,
+          modifier: globalOption.basePriceModifier,
+        });
       }
     }
 
-    // Personalization logic using both systems for compatibility
     if (input.personalizations && input.personalizations.length > 0) {
       const personalizationCodes = input.personalizations.map((p) => p.code);
 
-      // Try both tables
-      const [pOptions, wOptions] = await Promise.all([
-        this.prisma.personalizationOption.findMany({
-          where: { code: { in: personalizationCodes }, isActive: true },
-        }),
-        this.prisma.wizardOption.findMany({
-          where: {
-            category: 'TECHNIQUE',
-            code: { in: personalizationCodes },
-            isActive: true,
-          },
-        }),
-      ]);
-
-      for (const p of input.personalizations) {
-        const option = pOptions.find((o) => o.code === p.code);
-        const wizardOpt = wOptions.find((o) => o.code === p.code);
-
-        if (option) {
-          // Legacy logic for PersonalizationOption
-          const rule = await this.prisma.personalizationRule.findFirst({
+      const [personalizationOptions, wizardPersonalizations] =
+        await Promise.all([
+          this.prisma.personalizationOption.findMany({
+            where: { code: { in: personalizationCodes }, isActive: true },
+          }),
+          this.prisma.wizardOption.findMany({
             where: {
-              productId: product.id,
-              personalizationId: option.id,
+              category: WizardCategory.TECHNIQUE,
+              code: { in: personalizationCodes },
               isActive: true,
             },
+          }),
+        ]);
+      const personalizationRules =
+        await this.prisma.personalizationRule.findMany({
+          where: {
+            productId: product.id,
+            personalizationId: {
+              in: personalizationOptions.map((option) => option.id),
+            },
+            isActive: true,
+          },
+        });
+
+      for (const personalization of input.personalizations) {
+        const option = personalizationOptions.find(
+          (candidate) => candidate.code === personalization.code,
+        );
+        const wizardOption = wizardPersonalizations.find(
+          (candidate) => candidate.code === personalization.code,
+        );
+
+        if (option) {
+          const rule = personalizationRules.find(
+            (candidate) => candidate.personalizationId === option.id,
+          );
+
+          if (!rule) {
+            throw new BadRequestException(
+              `La configuracion ${personalization.code} no esta habilitada para este producto.`,
+            );
+          }
+
+          const effectiveAllowedMaterials =
+            rule.allowedMaterialValues.length > 0
+              ? rule.allowedMaterialValues
+              : option.allowedMaterialValues;
+
+          if (!this.isAllowedValue(effectiveAllowedMaterials, input.material)) {
+            throw new BadRequestException(
+              `La configuracion ${personalization.code} no aplica al material seleccionado.`,
+            );
+          }
+
+          if (!this.isAllowedValue(rule.allowedSizeValues, effectiveSize)) {
+            throw new BadRequestException(
+              `La configuracion ${personalization.code} no aplica al tamano seleccionado.`,
+            );
+          }
+
+          if (!this.isAllowedValue(rule.allowedQualityValues, input.quality)) {
+            throw new BadRequestException(
+              `La configuracion ${personalization.code} no aplica a la calidad seleccionada.`,
+            );
+          }
+
+          const surcharge = option.basePrice + rule.extraPrice;
+          unitPrice += surcharge;
+          snapshot.personalizationSurcharges.push({
+            code: personalization.code,
+            surcharge,
           });
-
-          if (rule) {
-            const effectiveAllowedMaterials =
-              rule.allowedMaterialValues &&
-              rule.allowedMaterialValues.length > 0
-                ? rule.allowedMaterialValues
-                : option.allowedMaterialValues;
-
-            if (
-              !effectiveAllowedMaterials ||
-              effectiveAllowedMaterials.length === 0 ||
-              effectiveAllowedMaterials.includes(input.material)
-            ) {
-              const surcharge = option.basePrice + rule.extraPrice;
-              unitPrice += surcharge;
-              snapshot.personalizationSurcharges.push({
-                code: p.code,
-                surcharge: surcharge,
-              });
-            }
-          }
-        } else if (wizardOpt) {
-          // Dynamic logic for WizardOption (TECHNIQUE)
-          if (
-            !wizardOpt.allowedMaterialValues ||
-            wizardOpt.allowedMaterialValues.length === 0 ||
-            wizardOpt.allowedMaterialValues.includes(input.material)
-          ) {
-            unitPrice += wizardOpt.basePriceModifier;
-            snapshot.personalizationSurcharges.push({
-              code: p.code,
-              surcharge: wizardOpt.basePriceModifier,
-            });
-          }
+          continue;
         }
+
+        if (!wizardOption) {
+          throw new BadRequestException(
+            `La configuracion ${personalization.code} no existe o no esta activa.`,
+          );
+        }
+
+        if (
+          !this.isAllowedValue(
+            wizardOption.allowedMaterialValues,
+            input.material,
+          )
+        ) {
+          throw new BadRequestException(
+            `La configuracion ${personalization.code} no aplica al material seleccionado.`,
+          );
+        }
+
+        unitPrice += wizardOption.basePriceModifier;
+        snapshot.personalizationSurcharges.push({
+          code: personalization.code,
+          surcharge: wizardOption.basePriceModifier,
+        });
       }
     }
 
-    // Applying PricingRules (B2C/B2B)
     const applicableRule = product.pricingRules
       .filter(
         (rule) =>
@@ -190,25 +350,30 @@ export class PricingService {
           input.quantity >= rule.minQty &&
           (!rule.maxQty || input.quantity <= rule.maxQty),
       )
-      .sort((a, b) => b.minQty - a.minQty)[0];
+      .sort((left, right) => right.minQty - left.minQty)[0];
 
     if (applicableRule) {
-      if (applicableRule.fixedUnitPrice) {
+      if (
+        applicableRule.fixedUnitPrice !== null &&
+        applicableRule.fixedUnitPrice !== undefined
+      ) {
         unitPrice = applicableRule.fixedUnitPrice;
-      } else if (applicableRule.discountPct) {
+      } else if (
+        applicableRule.discountPct !== null &&
+        applicableRule.discountPct !== undefined
+      ) {
         unitPrice = unitPrice * (1 - applicableRule.discountPct / 100);
       }
 
       snapshot.volumeDiscount = {
         minQuantity: applicableRule.minQty,
         percentage: applicableRule.discountPct || 0,
-        amount: 0, // Calculated post-hoc if needed
+        amount: 0,
       };
     }
 
-    // REGLA DE ORO: Min Price Guard
-    if (unitPrice < product.minPrice) {
-      unitPrice = product.minPrice;
+    if (unitPrice < baseMinPrice) {
+      unitPrice = baseMinPrice;
       snapshot.minPriceGuardApplied = true;
     }
 
@@ -221,7 +386,9 @@ export class PricingService {
       quantity: input.quantity,
       total,
       currency: 'COP',
-      snapshot,
+      snapshot: {
+        ...snapshot,
+      },
     };
   }
 }

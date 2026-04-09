@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getApiCandidates } from '@/lib/api-config';
+import {
+  getApiCandidates,
+  isRetryableApiResponseStatus,
+} from '@/lib/api-config';
 import {
   DASHBOARD_DEBUG_ROLE_COOKIE_NAME,
   DASHBOARD_DEBUG_ROLE_HEADER_NAME,
@@ -15,6 +18,10 @@ function buildForwardHeaders(request: NextRequest) {
   headers.delete('host');
   headers.delete('connection');
   headers.delete('content-length');
+  headers.delete('cookie');
+  headers.delete('accept-encoding');
+  headers.delete('origin');
+  headers.delete('referer');
 
   if (debugRole) {
     headers.set(DASHBOARD_DEBUG_ROLE_HEADER_NAME, debugRole);
@@ -54,7 +61,16 @@ async function forwardRequest(
         headers,
         body,
         cache: 'no-store',
+        signal: AbortSignal.timeout(10_000),
       });
+
+      if (isRetryableApiResponseStatus(upstreamResponse.status)) {
+        await upstreamResponse.body?.cancel().catch(() => undefined);
+        lastError = new Error(
+          `API candidate ${targetUrl} returned transient status ${upstreamResponse.status}`,
+        );
+        continue;
+      }
 
       if (pathname.startsWith('shipping/')) {
         console.log(

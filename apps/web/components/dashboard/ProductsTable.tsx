@@ -20,8 +20,14 @@ function cn(...inputs: (string | undefined | null | false)[]) {
 interface Variant {
   id: string;
   sku: string;
+  size?: string;
   color: string;
   stock: number;
+  salePrice?: number | null;
+  minPrice?: number | null;
+  costPrice?: number | null;
+  comparePrice?: number | null;
+  isActive?: boolean;
 }
 
 interface Collection {
@@ -74,6 +80,16 @@ interface Product {
 
 function ensureArray<T>(value: T[] | null | undefined): T[] {
   return Array.isArray(value) ? value : [];
+}
+
+function getReferenceVariant(variants: Variant[]) {
+  const activeVariants = variants.filter((variant) => variant.isActive !== false);
+  return activeVariants
+    .filter((variant) => typeof variant.salePrice === 'number')
+    .sort((left, right) => (left.salePrice ?? 0) - (right.salePrice ?? 0))[0]
+    || activeVariants[0]
+    || variants[0]
+    || null;
 }
 
 export default function ProductsTable() {
@@ -203,16 +219,35 @@ export default function ProductsTable() {
         return;
       }
 
-      if (!res.ok) throw new Error(`Failed to delete product (${res.status})`);
+      if (!res.ok) {
+        let errorMessage = `Failed to delete product (${res.status})`;
+
+        try {
+          const body = await res.json() as {
+            message?: string;
+            error?: string;
+          };
+          errorMessage = body.message || body.error || errorMessage;
+        } catch {
+          const fallbackText = await res.text().catch(() => '');
+          if (fallbackText.trim()) {
+            errorMessage = fallbackText.trim();
+          }
+        }
+
+        throw new Error(errorMessage);
+      }
 
       setProducts(prev => prev.filter(p => p.id !== id));
     } catch (err) {
       console.error('Error deleting product:', err);
-      alert('Error eliminando producto');
+      const message =
+        err instanceof Error ? err.message : 'Error eliminando producto';
+      alert(message);
     }
   };
 
-  const calculateMarginStatus = (base: number, cost?: number, min?: number) => {
+  const calculateMarginStatus = (base: number, cost?: number | null, min?: number | null) => {
     // 1. Profit Margin Risk (Priority)
     if (cost && base > 0) {
       const margin = ((base - cost) / base) * 100;
@@ -257,7 +292,18 @@ export default function ProductsTable() {
             {products.map((product) => {
               const productImages = ensureArray(product.images);
               const productVariants = ensureArray(product.variants);
-              const status = calculateMarginStatus(product.basePrice, product.costPrice, product.minPrice);
+              const referenceVariant = getReferenceVariant(productVariants);
+              const referenceSalePrice =
+                referenceVariant?.salePrice ?? product.basePrice;
+              const referenceMinPrice =
+                referenceVariant?.minPrice ?? product.minPrice;
+              const referenceCostPrice =
+                referenceVariant?.costPrice ?? product.costPrice;
+              const status = calculateMarginStatus(
+                referenceSalePrice,
+                referenceCostPrice,
+                referenceMinPrice,
+              );
               const firstImage = productImages[0]?.url;
               const mainImage = (firstImage && firstImage.trim().length > 0) ? firstImage : '/placeholder.svg';
 
@@ -308,8 +354,8 @@ export default function ProductsTable() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="font-bold text-primary">{formatCurrency(product.basePrice)}</div>
-                    <div className="text-[10px] text-muted font-bold">MIN: {formatCurrency(product.minPrice)}</div>
+                    <div className="font-bold text-primary">{formatCurrency(referenceSalePrice)}</div>
+                    <div className="text-[10px] text-muted font-bold">MIN: {formatCurrency(referenceMinPrice)}</div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex -space-x-2">
@@ -383,6 +429,11 @@ export default function ProductsTable() {
           const selectedVariants = ensureArray(selectedProduct.variants);
           const selectedAttributes = ensureArray(selectedProduct.attributes);
           const selectedPricingRules = ensureArray(selectedProduct.pricingRules);
+          const selectedReferenceVariant = getReferenceVariant(selectedVariants);
+          const selectedReferenceSalePrice =
+            selectedReferenceVariant?.salePrice ?? selectedProduct.basePrice;
+          const selectedReferenceMinPrice =
+            selectedReferenceVariant?.minPrice ?? selectedProduct.minPrice;
 
           return (
         <div
@@ -450,13 +501,13 @@ export default function ProductsTable() {
                     <p className="text-[10px] text-muted font-black uppercase tracking-widest mb-1 flex items-center gap-1.5">
                       <DollarSign className="w-3 h-3" /> Público
                     </p>
-                    <p className="text-xl font-black text-primary">{formatCurrency(selectedProduct.basePrice)}</p>
+                    <p className="text-xl font-black text-primary">{formatCurrency(selectedReferenceSalePrice)}</p>
                   </div>
                   <div className="p-4 bg-surface rounded-2xl border border-theme shadow-sm">
                     <p className="text-[10px] text-muted font-black uppercase tracking-widest mb-1 flex items-center gap-1.5">
                       <AlertTriangle className="w-3 h-3" /> Mínimo
                     </p>
-                    <p className="text-xl font-black text-secondary">{formatCurrency(selectedProduct.minPrice)}</p>
+                    <p className="text-xl font-black text-secondary">{formatCurrency(selectedReferenceMinPrice)}</p>
                   </div>
                 </div>
 
@@ -470,7 +521,9 @@ export default function ProductsTable() {
                         <thead className="bg-base/50 text-muted border-b border-theme">
                           <tr>
                             <th className="px-4 py-2.5 font-bold uppercase tracking-widest text-[9px]">SKU</th>
+                            <th className="px-4 py-2.5 font-bold uppercase tracking-widest text-[9px]">Talla</th>
                             <th className="px-4 py-2.5 font-bold uppercase tracking-widest text-[9px]">Color</th>
+                            <th className="px-4 py-2.5 font-bold uppercase tracking-widest text-[9px] text-right">Venta</th>
                             <th className="px-4 py-2.5 font-bold uppercase tracking-widest text-[9px] text-right">Stock</th>
                           </tr>
                         </thead>
@@ -478,7 +531,11 @@ export default function ProductsTable() {
                           {selectedVariants.map((v) => (
                             <tr key={v.id} className="group/row hover:bg-base/30 transition-colors">
                               <td className="px-4 py-2.5 font-mono text-muted text-[10px]">{v.sku}</td>
+                              <td className="px-4 py-2.5 font-bold text-primary">{v.size || 'Sin talla'}</td>
                               <td className="px-4 py-2.5 font-bold text-primary">{v.color}</td>
+                              <td className="px-4 py-2.5 text-right font-black text-primary">
+                                {formatCurrency(v.salePrice ?? selectedReferenceSalePrice)}
+                              </td>
                               <td className="px-4 py-2.5 text-right">
                                 <div className="flex items-center justify-end gap-3">
                                   <span className="font-black text-primary bg-base/50 px-2 py-0.5 rounded-md border border-theme/30" title="Stock actual (solo lectura)">
@@ -506,7 +563,7 @@ export default function ProductsTable() {
                     <div className="grid gap-3 sm:grid-cols-3">
                       {[
                         { label: 'Línea', type: 'LINE' },
-                        { label: 'Tamaño', type: 'SIZE' },
+                        { label: 'Calidad', type: 'QUALITY' },
                         { label: 'Material', type: 'MATERIAL' },
                       ].map((item) => {
                         const attr = selectedAttributes.find(a => a.type === item.type);
@@ -559,4 +616,3 @@ export default function ProductsTable() {
     </>
   );
 }
-

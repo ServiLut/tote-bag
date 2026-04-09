@@ -38,13 +38,16 @@ interface Profile {
 interface Variant {
   id: string;
   sku: string;
+  size?: string;
   color: string;
   stock: number;
+  salePrice?: number | null;
 }
 
 interface Product {
   id: string;
   name: string;
+  // Transitional compatibility for legacy API consumers.
   basePrice: number;
   variants: Variant[];
 }
@@ -59,6 +62,7 @@ interface OrderItem {
   variantId: string;
   sku: string;
   name: string;
+  size?: string;
   color: string;
   quantity: number;
   price: number;
@@ -277,9 +281,10 @@ export default function NewManualOrderPage() {
           variantId: variant.id,
           sku: variant.sku,
           name: selectedProduct.name,
+          size: variant.size,
           color: variant.color,
           quantity: 1,
-          price: selectedProduct.basePrice,
+          price: variant.salePrice ?? 0,
           stock: variant.stock,
         },
       ];
@@ -366,7 +371,6 @@ export default function NewManualOrderPage() {
             variantId: item.variantId,
             sku: item.sku,
             quantity: item.quantity,
-            price: item.price,
           })),
         }),
       });
@@ -544,7 +548,7 @@ export default function NewManualOrderPage() {
                 <option value="">Selecciona variante...</option>
                 {selectedProduct?.variants.map((variant) => (
                   <option key={variant.id} value={variant.id} disabled={variant.stock <= 0}>
-                    {variant.color} | {variant.sku} | Stock {variant.stock}
+                    {[variant.size, variant.color, variant.sku].filter(Boolean).join(' | ')} | Stock {variant.stock}
                   </option>
                 ))}
               </select>
@@ -560,7 +564,9 @@ export default function NewManualOrderPage() {
                 <div key={item.variantId} className="flex items-center justify-between gap-4 rounded-2xl border border-theme p-4">
                   <div>
                     <p className="font-bold text-primary">{item.name}</p>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-muted">{item.color} | {item.sku}</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted">
+                      {[item.size, item.color, item.sku].filter(Boolean).join(' | ')}
+                    </p>
                     <Badge className="mt-2 border-emerald-100 bg-emerald-50 text-emerald-600">Stock: {item.stock}</Badge>
                   </div>
                   <div className="flex items-center gap-3">
@@ -681,4 +687,3 @@ export default function NewManualOrderPage() {
     </div>
   );
 }
-

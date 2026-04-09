@@ -48,34 +48,6 @@ export async function runDemoSeed(prisma: PrismaClient) {
   const masterAttributes = [
     {
       productId: product.id,
-      type: AttributeType.SIZE,
-      value: 'Standard',
-      sortOrder: 1,
-      priceModifier: 0,
-    },
-    {
-      productId: product.id,
-      type: AttributeType.SIZE,
-      value: 'Mini',
-      sortOrder: 2,
-      priceModifier: -3000,
-    },
-    {
-      productId: product.id,
-      type: AttributeType.SIZE,
-      value: 'XL',
-      sortOrder: 3,
-      priceModifier: 5000,
-    },
-    {
-      productId: product.id,
-      type: AttributeType.SIZE,
-      value: 'Tote',
-      sortOrder: 4,
-      priceModifier: 2000,
-    },
-    {
-      productId: product.id,
       type: AttributeType.QUALITY,
       value: 'Basica',
       sortOrder: 1,
@@ -139,6 +111,13 @@ export async function runDemoSeed(prisma: PrismaClient) {
     },
   ];
 
+  await prisma.productAttribute.deleteMany({
+    where: {
+      productId: product.id,
+      type: AttributeType.SIZE,
+    },
+  });
+
   for (const attribute of masterAttributes) {
     await prisma.productAttribute.deleteMany({
       where: {
@@ -185,21 +164,43 @@ export async function runDemoSeed(prisma: PrismaClient) {
     await prisma.pricingRule.create({ data: rule });
   }
 
-  // 10. Variantes (Necesarias para el configurador)
-  console.log('🌈 Creando variantes para el producto base...');
-  await prisma.variant.upsert({
-    where: { sku: 'TOTE-CL-BASE' },
-    update: {
-      color: 'Base',
-      stock: 1000,
+  console.log('Creando variantes comerciales para el producto base...');
+
+  const demoVariants = [
+    {
+      sku: 'TOTE-CL-MINI-CRUDO',
+      size: 'Mini',
+      color: 'Crudo',
+      salePrice: 22000,
+      minPrice: 18000,
+      comparePrice: 25000,
+      costPrice: 12000,
+      stock: 400,
       imageUrl: '/placeholder.svg',
+      isActive: true,
     },
-    create: {
-      productId: product.id,
-      sku: 'TOTE-CL-BASE',
-      color: 'Base',
-      stock: 1000,
+    {
+      sku: 'TOTE-CL-STD-CRUDO',
+      size: 'Estandar',
+      color: 'Crudo',
+      salePrice: 25000,
+      minPrice: 20000,
+      comparePrice: 29000,
+      costPrice: 14000,
+      stock: 600,
       imageUrl: '/placeholder.svg',
+      isActive: true,
     },
-  });
+  ];
+
+  for (const variant of demoVariants) {
+    await prisma.variant.upsert({
+      where: { sku: variant.sku },
+      update: variant,
+      create: {
+        productId: product.id,
+        ...variant,
+      },
+    });
+  }
 }

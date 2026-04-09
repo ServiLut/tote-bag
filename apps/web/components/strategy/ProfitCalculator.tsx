@@ -51,7 +51,13 @@ export default function ProfitCalculator() {
       return;
     }
 
-    setSuggestedPrice(createCurrencyInputState(product.basePrice || 0));
+    const referenceVariant =
+      product.variants.find((variant) => variant.isActive !== false)
+      || product.variants[0];
+
+    setSuggestedPrice(
+      createCurrencyInputState(referenceVariant?.salePrice ?? product.basePrice ?? 0),
+    );
   }, [products, selectedProductId]);
 
   const grossProfit = suggestedPrice.numericValue - avgCost.numericValue;
@@ -249,4 +255,3 @@ export default function ProfitCalculator() {
     </div>
   );
 }
-

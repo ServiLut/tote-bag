@@ -50,12 +50,24 @@ export class OrdersController {
     createOrderDto: CreateOrderDto,
   ): CreateOrderDto {
     return {
-      ...createOrderDto,
+      ...this.stripClientControlledItemFields(createOrderDto),
       isManual: false,
       source: 'ECOMMERCE',
       initialStatus: 'PENDIENTE_PAGO',
       manualDiscountType: undefined,
       manualDiscountValue: undefined,
+    };
+  }
+
+  private stripClientControlledItemFields(
+    createOrderDto: CreateOrderDto,
+  ): CreateOrderDto {
+    return {
+      ...createOrderDto,
+      items: createOrderDto.items.map((item) => ({
+        ...item,
+        price: undefined,
+      })),
     };
   }
 
@@ -86,9 +98,13 @@ export class OrdersController {
         throw new ForbiddenException('Insufficient permissions');
       }
 
-      return this.ordersService.create(createOrderDto, actorUserId, {
-        idempotencyKey,
-      });
+      return this.ordersService.create(
+        this.stripClientControlledItemFields(createOrderDto),
+        actorUserId,
+        {
+          idempotencyKey,
+        },
+      );
     }
 
     return this.ordersService.create(

@@ -8,10 +8,15 @@ import {
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateProductDto } from './dto/create-product.dto';
+import {
+  CreateProductAttributeDto,
+  CreateProductDto,
+  CreatePricingRuleDto,
+  CreateVariantDto,
+} from './dto/create-product.dto';
 import { Product, Prisma } from '../../generated/client/client';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { ProductStatus } from '../../generated/client/enums';
+import { AttributeType, ProductStatus } from '../../generated/client/enums';
 
 export type ProductWithRelations = Prisma.ProductGetPayload<{
   include: {
@@ -37,6 +42,41 @@ export interface CatalogSearchSuggestion {
   }[];
 }
 
+type PreparedVariant = {
+  id?: string;
+  sku: string;
+  size?: string;
+  color: string;
+  imageUrl: string;
+  salePrice: number;
+  minPrice: number;
+  comparePrice?: number;
+  costPrice?: number;
+  stock: number;
+  isActive: boolean;
+};
+
+type ProductCommercialSnapshot = {
+  basePrice: number;
+  minPrice: number;
+  comparePrice?: number;
+  costPrice?: number;
+};
+
+type PreparedPricingRule = {
+  scope: CreatePricingRuleDto['scope'];
+  minQty: number;
+  maxQty?: number;
+  discountPct?: number;
+  fixedUnitPrice?: number;
+  isActive: boolean;
+};
+
+type ResolvedCollection = {
+  id: string;
+  name: string;
+};
+
 @Injectable()
 export class CatalogService {
   private readonly CACHE_KEY = 'products_list';
@@ -45,6 +85,628 @@ export class CatalogService {
     private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
+
+  private normalizeLabel(value?: string | null) {
+    return value?.trim().toLowerCase() ?? '';
+  }
+
+  private normalizeSkuToken(value?: string | null) {
+    return (
+      value
+        ?.normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^A-Za-z0-9]+/g, '')
+        .toUpperCase() ?? ''
+    );
+  }
+
+  private buildAutomaticSku(
+    productName: string,
+    collectionName: string,
+    variant: { size?: string; color: string },
+  ) {
+    const tokens = [
+      'TB',
+      this.normalizeSkuToken(collectionName) || 'COL',
+      this.normalizeSkuToken(productName) || 'PROD',
+    ];
+
+    const normalizedSize = this.normalizeSkuToken(variant.size);
+    if (normalizedSize) {
+      tokens.push(normalizedSize);
+    }
+
+    tokens.push(this.normalizeSkuToken(variant.color) || 'BASE');
+
+    return tokens.join('-');
+  }
+
+  private async generateUniqueSku(
+    tx: Prisma.TransactionClient,
+    baseSku: string,
+    reservedSkus: Set<string>,
+    currentVariantId?: string,
+  ) {
+    let attempt = 0;
+
+    while (true) {
+      const candidate = attempt === 0 ? baseSku : `${baseSku}-${attempt + 1}`;
+      const normalizedCandidate = this.normalizeLabel(candidate);
+
+      if (reservedSkus.has(normalizedCandidate)) {
+        attempt += 1;
+        continue;
+      }
+
+      const existing = await tx.variant.findFirst({
+        where: {
+          sku: {
+            equals: candidate,
+            mode: 'insensitive',
+          },
+        },
+        select: { id: true },
+      });
+
+      if (!existing || existing.id === currentVariantId) {
+        reservedSkus.add(normalizedCandidate);
+        return candidate;
+      }
+
+      attempt += 1;
+    }
+  }
+
+  private async assignAutomaticSkus(
+    tx: Prisma.TransactionClient,
+    variants: PreparedVariant[],
+    productName: string,
+    collectionName: string,
+  ) {
+    const reservedSkus = new Set<string>();
+
+    return Promise.all(
+      variants.map(async (variant) => {
+        const baseSku = this.buildAutomaticSku(
+          productName,
+          collectionName,
+          variant,
+        );
+
+        return {
+          ...variant,
+          sku: await this.generateUniqueSku(
+            tx,
+            baseSku,
+            reservedSkus,
+            variant.id,
+          ),
+        };
+      }),
+    );
+  }
+
+  private buildVariantCombinationKey(variant: {
+    size?: string | null;
+    color: string;
+  }) {
+    return [
+      this.normalizeLabel(variant.size),
+      this.normalizeLabel(variant.color),
+    ].join('::');
+  }
+
+  private hasVariantBasedSizing(
+    variants: PreparedVariant[],
+    attributes?: CreateProductAttributeDto[],
+  ) {
+    return (
+      variants.some((variant) => !!variant.size) ||
+      (attributes ?? []).some(
+        (attribute) => attribute.type === AttributeType.SIZE,
+      )
+    );
+  }
+
+  private prepareVariants(variants: CreateVariantDto[]) {
+    if (!variants.length) {
+      throw new BadRequestException(
+        'Debes registrar al menos una variante vendible.',
+      );
+    }
+
+    return variants.map((variant) => ({
+      id: variant.id?.trim() || undefined,
+      sku: variant.sku?.trim() || '',
+      size: variant.size?.trim() || undefined,
+      color: variant.color.trim(),
+      imageUrl: variant.imageUrl.trim(),
+      salePrice: variant.salePrice,
+      minPrice: variant.minPrice,
+      comparePrice: variant.comparePrice,
+      costPrice: variant.costPrice,
+      stock: variant.stock ?? 0,
+      isActive: variant.isActive ?? true,
+    }));
+  }
+
+  private preparePricingRules(rules?: CreatePricingRuleDto[]) {
+    return (rules ?? []).map((rule) => ({
+      scope: rule.scope,
+      minQty: rule.minQty,
+      maxQty: rule.maxQty,
+      discountPct: rule.discountPct,
+      fixedUnitPrice: rule.fixedUnitPrice,
+      isActive: rule.isActive ?? true,
+    }));
+  }
+
+  private validateVariants(
+    variants: PreparedVariant[],
+    attributes?: CreateProductAttributeDto[],
+  ) {
+    const duplicateSkuCheck = new Set<string>();
+    const duplicateCombinationCheck = new Set<string>();
+    const requiresSize = this.hasVariantBasedSizing(variants, attributes);
+
+    for (const variant of variants) {
+      if (!variant.sku) {
+        throw new BadRequestException('Cada variante debe tener SKU.');
+      }
+
+      if (!variant.color) {
+        throw new BadRequestException('Cada variante debe tener color.');
+      }
+
+      if (!variant.imageUrl) {
+        throw new BadRequestException('Cada variante debe tener imagen.');
+      }
+
+      if (requiresSize && !variant.size) {
+        throw new BadRequestException(
+          'El tamaño es obligatorio cuando el producto maneja variantes por tamaño.',
+        );
+      }
+
+      if (variant.costPrice === undefined) {
+        throw new BadRequestException(
+          `La variante ${variant.sku} debe incluir costo unitario.`,
+        );
+      }
+
+      if (variant.costPrice < 0) {
+        throw new BadRequestException(
+          `El costo de la variante ${variant.sku} no puede ser negativo.`,
+        );
+      }
+
+      if (variant.salePrice < 0) {
+        throw new BadRequestException(
+          `El precio de venta de la variante ${variant.sku} no puede ser negativo.`,
+        );
+      }
+
+      if (variant.minPrice < 0) {
+        throw new BadRequestException(
+          `El precio minimo de la variante ${variant.sku} no puede ser negativo.`,
+        );
+      }
+
+      if (variant.minPrice > variant.salePrice) {
+        throw new BadRequestException(
+          `El precio minimo de la variante ${variant.sku} no puede superar su precio de venta.`,
+        );
+      }
+
+      if (
+        variant.comparePrice !== undefined &&
+        variant.comparePrice < variant.salePrice
+      ) {
+        throw new BadRequestException(
+          `El precio compare/tachado de la variante ${variant.sku} no puede ser menor al precio de venta.`,
+        );
+      }
+
+      const normalizedSku = this.normalizeLabel(variant.sku);
+      if (duplicateSkuCheck.has(normalizedSku)) {
+        throw new BadRequestException(
+          `SKU duplicado en el payload: ${variant.sku}.`,
+        );
+      }
+      duplicateSkuCheck.add(normalizedSku);
+
+      const duplicateKey = this.buildVariantCombinationKey(variant);
+
+      if (variant.isActive) {
+        if (duplicateCombinationCheck.has(duplicateKey)) {
+          throw new BadRequestException(
+            `No se permiten variantes activas duplicadas con la misma combinacion size/color (${variant.size || 'sin-size'} / ${variant.color}).`,
+          );
+        }
+        duplicateCombinationCheck.add(duplicateKey);
+      }
+    }
+  }
+
+  private validatePricingRules(rules: PreparedPricingRule[]) {
+    if (!rules.length) {
+      return;
+    }
+
+    const duplicateRuleCheck = new Set<string>();
+
+    for (const rule of rules) {
+      if (rule.maxQty !== undefined && rule.maxQty < rule.minQty) {
+        throw new BadRequestException(
+          `La regla ${rule.scope} con minimo ${rule.minQty} no puede tener maximo menor al minimo.`,
+        );
+      }
+
+      if (rule.discountPct === undefined && rule.fixedUnitPrice === undefined) {
+        throw new BadRequestException(
+          `La regla ${rule.scope} con minimo ${rule.minQty} debe definir descuento o precio fijo.`,
+        );
+      }
+
+      if (rule.discountPct !== undefined && rule.fixedUnitPrice !== undefined) {
+        throw new BadRequestException(
+          `La regla ${rule.scope} con minimo ${rule.minQty} no puede mezclar descuento porcentual y precio fijo.`,
+        );
+      }
+
+      const duplicateKey = [
+        rule.scope,
+        rule.minQty,
+        rule.maxQty ?? 'open',
+      ].join('::');
+
+      if (duplicateRuleCheck.has(duplicateKey)) {
+        throw new BadRequestException(
+          `La regla ${rule.scope} con minimo ${rule.minQty} esta duplicada.`,
+        );
+      }
+
+      duplicateRuleCheck.add(duplicateKey);
+    }
+  }
+
+  private async assertSkuAvailability(
+    tx: Prisma.TransactionClient,
+    variants: PreparedVariant[],
+    currentProductId?: string,
+  ) {
+    if (!variants.length) {
+      return;
+    }
+
+    const existingMatches = await tx.variant.findMany({
+      where: {
+        OR: variants.map((variant) => ({
+          sku: {
+            equals: variant.sku,
+            mode: 'insensitive',
+          },
+        })),
+      },
+      select: {
+        id: true,
+        sku: true,
+        productId: true,
+      },
+    });
+
+    const currentProductVariants = currentProductId
+      ? await tx.variant.findMany({
+          where: { productId: currentProductId },
+          select: { id: true, sku: true },
+        })
+      : [];
+
+    const currentProductVariantIdBySku = new Map(
+      currentProductVariants.map((variant) => [
+        this.normalizeLabel(variant.sku),
+        variant.id,
+      ]),
+    );
+
+    for (const existing of existingMatches) {
+      const normalizedSku = this.normalizeLabel(existing.sku);
+      const incomingVariant = variants.find(
+        (variant) => this.normalizeLabel(variant.sku) === normalizedSku,
+      );
+
+      const belongsToCurrentProduct =
+        !!incomingVariant &&
+        !!currentProductId &&
+        existing.productId === currentProductId &&
+        (incomingVariant.id === existing.id ||
+          (!incomingVariant.id &&
+            currentProductVariantIdBySku.get(normalizedSku) === existing.id));
+
+      if (!belongsToCurrentProduct) {
+        throw new BadRequestException(
+          `El SKU ${existing.sku} ya existe y no puede reutilizarse.`,
+        );
+      }
+    }
+  }
+
+  private assertVariantCombinationAvailability(
+    currentVariants: Array<{
+      id: string;
+      sku: string;
+      size: string | null;
+      color: string;
+      isActive: boolean;
+    }>,
+    variants: PreparedVariant[],
+  ) {
+    const currentVariantById = new Map(
+      currentVariants.map((variant) => [variant.id, variant]),
+    );
+    const currentVariantBySku = new Map(
+      currentVariants.map((variant) => [
+        this.normalizeLabel(variant.sku),
+        variant,
+      ]),
+    );
+    const projectedVariants = new Map<
+      string,
+      {
+        id: string;
+        sku: string;
+        size: string | null;
+        color: string;
+        isActive: boolean;
+      }
+    >();
+    const matchedCurrentVariantIds = new Set<string>();
+
+    for (const currentVariant of currentVariants) {
+      if (currentVariant.isActive) {
+        projectedVariants.set(currentVariant.id, currentVariant);
+      }
+    }
+
+    variants.forEach((variant, index) => {
+      const existingVariant = variant.id
+        ? currentVariantById.get(variant.id)
+        : currentVariantBySku.get(this.normalizeLabel(variant.sku));
+
+      if (existingVariant) {
+        matchedCurrentVariantIds.add(existingVariant.id);
+        projectedVariants.set(existingVariant.id, {
+          ...existingVariant,
+          sku: variant.sku,
+          size: variant.size ?? null,
+          color: variant.color,
+          isActive: variant.isActive,
+        });
+        return;
+      }
+
+      projectedVariants.set(`new-${index}`, {
+        id: `new-${index}`,
+        sku: variant.sku,
+        size: variant.size ?? null,
+        color: variant.color,
+        isActive: variant.isActive,
+      });
+    });
+
+    for (const currentVariant of currentVariants) {
+      if (!matchedCurrentVariantIds.has(currentVariant.id)) {
+        projectedVariants.delete(currentVariant.id);
+      }
+    }
+
+    const activeCombinationCheck = new Set<string>();
+
+    for (const variant of projectedVariants.values()) {
+      if (!variant.isActive) {
+        continue;
+      }
+
+      const duplicateKey = this.buildVariantCombinationKey(variant);
+      if (activeCombinationCheck.has(duplicateKey)) {
+        throw new BadRequestException(
+          `Ya existe una variante activa para ${variant.size || 'sin-size'} / ${variant.color}.`,
+        );
+      }
+
+      activeCombinationCheck.add(duplicateKey);
+    }
+  }
+
+  private mapCatalogWriteError(error: unknown): never {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    ) {
+      const duplicateTargetMeta = error.meta?.target;
+      const duplicateTarget = Array.isArray(duplicateTargetMeta)
+        ? duplicateTargetMeta.join('::').toLowerCase()
+        : typeof duplicateTargetMeta === 'string'
+          ? duplicateTargetMeta.toLowerCase()
+          : error.message.toLowerCase();
+
+      if (duplicateTarget.includes('sku')) {
+        throw new BadRequestException(
+          'No fue posible generar un SKU unico para la variante. Ajusta nombre, coleccion, tamano o color.',
+        );
+      }
+
+      throw new BadRequestException(
+        'Ya existe una variante con la misma combinacion de atributos. Revisa tamano y color.',
+      );
+    }
+
+    throw error;
+  }
+
+  private sanitizeAttributes(
+    attributes: CreateProductAttributeDto[] | undefined,
+    variants: PreparedVariant[],
+  ) {
+    if (!attributes?.length) {
+      return [];
+    }
+
+    const usesVariantSizing = this.hasVariantBasedSizing(variants, attributes);
+
+    return attributes
+      .filter((attribute) => {
+        if (attribute.type !== AttributeType.SIZE) {
+          return true;
+        }
+
+        if (attribute.priceModifier !== 0) {
+          throw new BadRequestException(
+            'Tamaño no puede seguir modelado como atributo configurable con modificador de precio.',
+          );
+        }
+
+        return !usesVariantSizing;
+      })
+      .map((attribute, index) => ({
+        ...attribute,
+        value: attribute.value.trim(),
+        sortOrder: attribute.sortOrder ?? index,
+        isActive: attribute.isActive ?? true,
+      }));
+  }
+
+  private getProductCommercialSnapshot(
+    variants: PreparedVariant[],
+    fallback?: Partial<ProductCommercialSnapshot>,
+  ): ProductCommercialSnapshot {
+    // Keep product-level pricing only as a compatibility snapshot for older
+    // consumers. Variant pricing remains the operational source of truth.
+    const sourceVariants = variants.filter((variant) => variant.isActive);
+    const ordered = (
+      sourceVariants.length > 0 ? sourceVariants : variants
+    ).sort((left, right) => left.salePrice - right.salePrice);
+    const referenceVariant = ordered[0];
+
+    return {
+      basePrice: referenceVariant?.salePrice ?? fallback?.basePrice ?? 0,
+      minPrice: referenceVariant?.minPrice ?? fallback?.minPrice ?? 0,
+      comparePrice:
+        referenceVariant?.comparePrice ?? fallback?.comparePrice ?? undefined,
+      costPrice:
+        referenceVariant?.costPrice ?? fallback?.costPrice ?? undefined,
+    };
+  }
+
+  private getReferencePrice(product: {
+    basePrice: number;
+    variants: Array<{ salePrice: number | null; isActive: boolean }>;
+  }) {
+    const activeVariantPrice = product.variants
+      .filter((variant) => variant.isActive && variant.salePrice !== null)
+      .map((variant) => variant.salePrice as number)
+      .sort((left, right) => left - right)[0];
+
+    return activeVariantPrice ?? product.basePrice;
+  }
+
+  private buildLegacySizeFilter(values: string[]): Prisma.ProductWhereInput {
+    return {
+      AND: [
+        {
+          NOT: {
+            variants: {
+              some: {
+                isActive: true,
+                size: { not: null },
+              },
+            },
+          },
+        },
+        {
+          attributes: {
+            some: { type: 'SIZE', value: { in: values, mode: 'insensitive' } },
+          },
+        },
+      ],
+    };
+  }
+
+  private async resolveCollection(input: {
+    collectionId?: string;
+    collectionName?: string;
+  }): Promise<ResolvedCollection> {
+    const { collectionId, collectionName } = input;
+
+    if (collectionId) {
+      const collection = await this.prisma.collection.findUnique({
+        where: { id: collectionId },
+      });
+
+      if (!collection) {
+        throw new NotFoundException(
+          `Collection with ID ${collectionId} not found`,
+        );
+      }
+
+      return collection;
+    }
+
+    if (!collectionName) {
+      throw new BadRequestException(
+        'Either collectionId or collectionName is required',
+      );
+    }
+
+    const slug = collectionName
+      .toLowerCase()
+      .replace(/ /g, '-')
+      .replace(/[^\w-]+/g, '');
+
+    let collection = await this.prisma.collection.findFirst({
+      where: { OR: [{ name: collectionName }, { slug }] },
+    });
+
+    if (!collection) {
+      collection = await this.prisma.collection.create({
+        data: { name: collectionName, slug },
+      });
+    }
+
+    return {
+      id: collection.id,
+      name: collection.name,
+    };
+  }
+
+  private async hasHistoricalReferences(productId: string) {
+    const [
+      orderItemsCount,
+      b2bQuoteItemsCount,
+      purchaseBatchesCount,
+      personalizationRequestsCount,
+    ] = await this.prisma.$transaction([
+      this.prisma.orderItem.count({
+        where: { productId },
+      }),
+      this.prisma.b2BQuoteItem.count({
+        where: { productId },
+      }),
+      this.prisma.purchaseBatch.count({
+        where: { productId },
+      }),
+      this.prisma.personalizationRequest.count({
+        where: { productId },
+      }),
+    ]);
+
+    return (
+      orderItemsCount > 0 ||
+      b2bQuoteItemsCount > 0 ||
+      purchaseBatchesCount > 0 ||
+      personalizationRequestsCount > 0
+    );
+  }
 
   async update(
     id: string,
@@ -57,68 +719,76 @@ export class CatalogService {
       pricingRules,
       collectionId,
       collectionName,
+      basePrice,
+      minPrice,
+      comparePrice,
+      costPrice,
       ...data
     } = updateProductDto;
 
-    // Resolve Collection if needed
-    let activeCollectionId: string | undefined = collectionId;
+    const activeCollection =
+      collectionId || collectionName
+        ? await this.resolveCollection({ collectionId, collectionName })
+        : undefined;
 
-    if (collectionName) {
-      const slug = collectionName
-        .toLowerCase()
-        .replace(/ /g, '-')
-        .replace(/[^\w-]+/g, '');
+    const preparedVariants = variants
+      ? this.prepareVariants(variants)
+      : undefined;
+    const preparedPricingRules = this.preparePricingRules(pricingRules);
+    const sanitizedAttributes = preparedVariants
+      ? this.sanitizeAttributes(attributes, preparedVariants)
+      : (attributes ?? []).map((attribute, index) => ({
+          ...attribute,
+          value: attribute.value.trim(),
+          sortOrder: attribute.sortOrder ?? index,
+          isActive: attribute.isActive ?? true,
+        }));
 
-      let collection = await this.prisma.collection.findFirst({
-        where: { OR: [{ name: collectionName }, { slug }] },
-      });
+    this.validatePricingRules(preparedPricingRules);
 
-      if (!collection) {
-        collection = await this.prisma.collection.create({
-          data: { name: collectionName, slug },
-        });
-      }
+    const commercialSnapshot = preparedVariants
+      ? this.getProductCommercialSnapshot(preparedVariants, {
+          basePrice,
+          minPrice,
+          comparePrice,
+          costPrice,
+        })
+      : undefined;
 
-      activeCollectionId = collection.id;
-    }
-
-    // Prepare update data
     const updateData: Prisma.ProductUpdateInput = {
       ...data,
-      ...(activeCollectionId && { collectionId: activeCollectionId }), // Only add if resolved
+      ...(activeCollection && { collectionId: activeCollection.id }),
+      ...(commercialSnapshot ?? {}),
     };
 
-    // Handle images update if provided
     if (images) {
       updateData.images = {
-        deleteMany: {}, // Clear existing images
-        create: images.map((img) => ({
-          url: img.url,
-          alt: img.alt,
-          position: img.position,
+        deleteMany: {},
+        create: images.map((image) => ({
+          url: image.url,
+          alt: image.alt,
+          position: image.position,
         })),
       };
     }
 
-    // Handle Attributes update if provided
     if (attributes) {
       updateData.attributes = {
         deleteMany: {},
-        create: attributes.map((attr) => ({
-          type: attr.type,
-          value: attr.value,
-          priceModifier: attr.priceModifier,
-          sortOrder: attr.sortOrder || 0,
-          isActive: attr.isActive ?? true,
+        create: sanitizedAttributes.map((attribute) => ({
+          type: attribute.type,
+          value: attribute.value,
+          priceModifier: attribute.priceModifier,
+          sortOrder: attribute.sortOrder,
+          isActive: attribute.isActive,
         })),
       };
     }
 
-    // Handle PricingRules update if provided
     if (pricingRules) {
       updateData.pricingRules = {
         deleteMany: {},
-        create: pricingRules.map((rule) => ({
+        create: preparedPricingRules.map((rule) => ({
           scope: rule.scope,
           minQty: rule.minQty,
           maxQty: rule.maxQty,
@@ -129,84 +799,159 @@ export class CatalogService {
       };
     }
 
-    const updatedProduct = await this.prisma.$transaction(async (prisma) => {
-      // 1. Update Variants if provided
-      if (variants) {
-        const currentVariants = await prisma.variant.findMany({
-          where: { productId: id },
-          select: { id: true, sku: true },
-        });
-
-        const currentSkuSet = new Set(currentVariants.map((v) => v.sku.trim()));
-
-        const incomingSkuSet = new Set(variants.map((v) => v.sku.trim()));
-
-        // Delete removed variants
-        const variantsToDelete = currentVariants.filter(
-          (v) => !incomingSkuSet.has(v.sku.trim()),
-        );
-
-        if (variantsToDelete.length > 0) {
-          await prisma.variant.deleteMany({
-            where: { id: { in: variantsToDelete.map((v) => v.id) } },
+    try {
+      const updatedProduct = await this.prisma.$transaction(async (tx) => {
+        if (preparedVariants) {
+          const currentProduct = await tx.product.findUnique({
+            where: { id },
+            select: {
+              id: true,
+              name: true,
+              collection: {
+                select: {
+                  name: true,
+                },
+              },
+            },
           });
-        }
 
-        // Update or Create
-        for (const v of variants) {
-          const sku = v.sku.trim();
-          if (currentSkuSet.has(sku)) {
-            await prisma.variant.update({
-              where: { sku: sku },
-              data: {
-                color: v.color,
-                imageUrl: v.imageUrl,
+          if (!currentProduct) {
+            throw new NotFoundException(`Product with ID ${id} not found`);
+          }
+
+          const generatedVariants = await this.assignAutomaticSkus(
+            tx,
+            preparedVariants,
+            data.name?.trim() || currentProduct.name,
+            activeCollection?.name || currentProduct.collection?.name || 'COL',
+          );
+
+          this.validateVariants(generatedVariants, attributes);
+          await this.assertSkuAvailability(tx, generatedVariants, id);
+
+          const currentVariants = await tx.variant.findMany({
+            where: { productId: id },
+            select: {
+              id: true,
+              sku: true,
+              size: true,
+              color: true,
+              isActive: true,
+            },
+          });
+          this.assertVariantCombinationAvailability(
+            currentVariants,
+            generatedVariants,
+          );
+
+          const currentVariantById = new Map(
+            currentVariants.map((variant) => [variant.id, variant]),
+          );
+          const currentVariantBySku = new Map(
+            currentVariants.map((variant) => [
+              this.normalizeLabel(variant.sku),
+              variant,
+            ]),
+          );
+          const matchedCurrentVariantIds = new Set<string>();
+
+          for (const variant of generatedVariants) {
+            if (variant.id && !currentVariantById.has(variant.id)) {
+              throw new BadRequestException(
+                `La variante ${variant.id} no pertenece al producto ${id}.`,
+              );
+            }
+
+            const existingVariant = variant.id
+              ? currentVariantById.get(variant.id)
+              : currentVariantBySku.get(this.normalizeLabel(variant.sku));
+
+            if (existingVariant) {
+              matchedCurrentVariantIds.add(existingVariant.id);
+            }
+          }
+
+          const variantsToDeactivate = currentVariants.filter(
+            (variant) => !matchedCurrentVariantIds.has(variant.id),
+          );
+
+          if (variantsToDeactivate.length > 0) {
+            await tx.variant.updateMany({
+              where: {
+                id: { in: variantsToDeactivate.map((variant) => variant.id) },
               },
-            });
-          } else {
-            await prisma.variant.create({
-              data: {
-                sku: sku,
-                color: v.color,
-                imageUrl: v.imageUrl,
-                productId: id,
-              },
+              data: { isActive: false },
             });
           }
+
+          for (const variant of generatedVariants) {
+            const existingVariant = variant.id
+              ? currentVariantById.get(variant.id)
+              : currentVariantBySku.get(this.normalizeLabel(variant.sku));
+
+            if (existingVariant) {
+              await tx.variant.update({
+                where: { id: existingVariant.id },
+                data: {
+                  sku: variant.sku,
+                  size: variant.size,
+                  color: variant.color,
+                  imageUrl: variant.imageUrl,
+                  salePrice: variant.salePrice,
+                  minPrice: variant.minPrice,
+                  comparePrice: variant.comparePrice,
+                  costPrice: variant.costPrice,
+                  isActive: variant.isActive,
+                },
+              });
+            } else {
+              await tx.variant.create({
+                data: {
+                  productId: id,
+                  sku: variant.sku,
+                  size: variant.size,
+                  color: variant.color,
+                  imageUrl: variant.imageUrl,
+                  salePrice: variant.salePrice,
+                  minPrice: variant.minPrice,
+                  comparePrice: variant.comparePrice,
+                  costPrice: variant.costPrice,
+                  stock: 0,
+                  isActive: variant.isActive,
+                },
+              });
+            }
+          }
         }
-      }
 
-      // 2. Update Product (and images via nested write)
-      return prisma.product.update({
-        where: { id },
-        data: updateData,
-        include: {
-          variants: true,
-          images: true,
-          collection: true,
-          attributes: true,
-          pricingRules: true,
-        },
+        return tx.product.update({
+          where: { id },
+          data: updateData,
+          include: {
+            variants: true,
+            images: true,
+            collection: true,
+            attributes: true,
+            pricingRules: true,
+          },
+        });
       });
-    });
 
-    // Invalidate Cache
-    await this.cacheManager.del(this.CACHE_KEY);
-    return updatedProduct;
+      await this.cacheManager.del(this.CACHE_KEY);
+      return updatedProduct;
+    } catch (error: unknown) {
+      this.mapCatalogWriteError(error);
+    }
   }
 
   async remove(id: string): Promise<Product> {
-    // Check integrity
-    const ordersCount = await this.prisma.orderItem.count({
-      where: { productId: id },
-    });
+    const hasHistoricalReferences = await this.hasHistoricalReferences(id);
 
     let result: Product;
-    if (ordersCount > 0) {
-      // Soft Delete if it has history
+    if (hasHistoricalReferences) {
       result = await this.prisma.product.update({
         where: { id },
-        data: { isActive: false, status: 'BAJO_PEDIDO' }, // Or specific archived status
+        data: { isActive: false, status: 'BAJO_PEDIDO' },
       });
     } else {
       result = await this.prisma.product.delete({
@@ -214,33 +959,8 @@ export class CatalogService {
       });
     }
 
-    // Invalidate Cache
     await this.cacheManager.del(this.CACHE_KEY);
     return result;
-  }
-
-  private validateSku(
-    sku: string,
-    collectionName: string, // Name from DB
-    design: string,
-    color: string,
-  ): boolean {
-    // Format: TB-[COLECCIÓN]-[DISEÑO]-[COLOR]
-    const normalizedCollection = collectionName
-      .toUpperCase()
-      .replace(/\s+/g, '');
-    const normalizedDesign = design.toUpperCase().replace(/\s+/g, '');
-    const normalizedColor = color.toUpperCase().replace(/\s+/g, '');
-
-    const parts = sku.split('-');
-    if (parts.length !== 4) return false;
-
-    return (
-      parts[0] === 'TB' &&
-      parts[1] === normalizedCollection &&
-      parts[2] === normalizedDesign &&
-      parts[3] === normalizedColor
-    );
   }
 
   async create(
@@ -253,92 +973,85 @@ export class CatalogService {
       images,
       attributes,
       pricingRules,
+      basePrice,
+      minPrice,
+      comparePrice,
+      costPrice,
       ...productData
     } = createProductDto;
 
-    // 2. Fetch or Create Collection for SKU validation
-    let collection: { id: string; name: string } | null = null;
+    const activeCollection = await this.resolveCollection({
+      collectionId,
+      collectionName,
+    });
 
-    if (collectionId) {
-      collection = await this.prisma.collection.findUnique({
-        where: { id: collectionId },
-      });
-      if (!collection) {
-        throw new NotFoundException(
-          `Collection with ID ${collectionId} not found`,
-        );
-      }
-    } else if (collectionName) {
-      const slug = collectionName
-        .toLowerCase()
-        .replace(/ /g, '-')
-        .replace(/[^\w-]+/g, '');
-      collection = await this.prisma.collection.findFirst({
-        where: { OR: [{ name: collectionName }, { slug }] },
-      });
+    const preparedVariants = this.prepareVariants(variants);
+    const preparedPricingRules = this.preparePricingRules(pricingRules);
+    const sanitizedAttributes = this.sanitizeAttributes(
+      attributes,
+      preparedVariants,
+    );
+    this.validatePricingRules(preparedPricingRules);
 
-      if (!collection) {
-        collection = await this.prisma.collection.create({
-          data: { name: collectionName, slug },
-        });
-      }
-    } else {
-      throw new BadRequestException(
-        'Either collectionId or collectionName is required',
-      );
-    }
+    const commercialSnapshot = this.getProductCommercialSnapshot(
+      preparedVariants,
+      {
+        basePrice,
+        minPrice,
+        comparePrice,
+        costPrice,
+      },
+    );
 
-    // 3. Prepare Variants and Validate SKUs
-    const designName = productData.name;
-
-    for (const variant of variants) {
-      const isValid = this.validateSku(
-        variant.sku,
-        collection.name,
-        designName,
-        variant.color,
-      );
-
-      if (!isValid) {
-        throw new BadRequestException(
-          `Invalid SKU format: ${variant.sku}. Expected: TB-${collection.name.toUpperCase().replace(/\s+/g, '')}-${designName.toUpperCase().replace(/\s+/g, '')}-${variant.color.toUpperCase().replace(/\s+/g, '')}`,
-        );
-      }
-    }
-
-    // 4. Transactional Creation
     try {
-      const activeCollectionId = collection.id;
-      const product = await this.prisma.$transaction(async (prisma) => {
-        return prisma.product.create({
+      const product = await this.prisma.$transaction(async (tx) => {
+        const generatedVariants = await this.assignAutomaticSkus(
+          tx,
+          preparedVariants,
+          productData.name.trim(),
+          activeCollection.name,
+        );
+
+        this.validateVariants(generatedVariants, attributes);
+        await this.assertSkuAvailability(tx, generatedVariants);
+
+        return tx.product.create({
           data: {
             ...productData,
-            collectionId: activeCollectionId,
+            ...commercialSnapshot,
+            collectionId: activeCollection.id,
             images: {
-              create: images?.map((img) => ({
-                url: img.url,
-                alt: img.alt,
-                position: img.position,
+              create: images?.map((image) => ({
+                url: image.url,
+                alt: image.alt,
+                position: image.position,
               })),
             },
             variants: {
-              create: variants.map((v) => ({
-                sku: v.sku,
-                color: v.color,
-                imageUrl: v.imageUrl,
+              create: generatedVariants.map((variant) => ({
+                sku: variant.sku,
+                size: variant.size,
+                color: variant.color,
+                imageUrl: variant.imageUrl,
+                salePrice: variant.salePrice,
+                minPrice: variant.minPrice,
+                comparePrice: variant.comparePrice,
+                costPrice: variant.costPrice,
+                stock: 0,
+                isActive: variant.isActive,
               })),
             },
             attributes: {
-              create: attributes?.map((attr) => ({
-                type: attr.type,
-                value: attr.value,
-                priceModifier: attr.priceModifier,
-                sortOrder: attr.sortOrder || 0,
-                isActive: attr.isActive ?? true,
+              create: sanitizedAttributes.map((attribute) => ({
+                type: attribute.type,
+                value: attribute.value,
+                priceModifier: attribute.priceModifier,
+                sortOrder: attribute.sortOrder,
+                isActive: attribute.isActive,
               })),
             },
             pricingRules: {
-              create: pricingRules?.map((rule) => ({
+              create: preparedPricingRules.map((rule) => ({
                 scope: rule.scope,
                 minQty: rule.minQty,
                 maxQty: rule.maxQty,
@@ -358,19 +1071,22 @@ export class CatalogService {
         });
       });
 
-      // Invalidate Cache
       await this.cacheManager.del(this.CACHE_KEY);
       return product;
     } catch (error: unknown) {
       console.error('Error creating product:', error);
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        throw new BadRequestException(
-          'Unique constraint failed: SKU or ID already exists',
-        );
+      if (error instanceof InternalServerErrorException) {
+        throw error;
       }
+
+      try {
+        this.mapCatalogWriteError(error);
+      } catch (mappedError) {
+        if (mappedError instanceof BadRequestException) {
+          throw mappedError;
+        }
+      }
+
       throw new InternalServerErrorException('Failed to create product');
     }
   }
@@ -412,13 +1128,6 @@ export class CatalogService {
       where.status = status as ProductStatus;
     }
 
-    if (minPrice !== undefined || maxPrice !== undefined) {
-      where.basePrice = {
-        ...(minPrice !== undefined && { gte: minPrice }),
-        ...(maxPrice !== undefined && { lte: maxPrice }),
-      };
-    }
-
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
@@ -433,7 +1142,6 @@ export class CatalogService {
       ];
     }
 
-    // Additive Filters (AND): Product must match all provided attribute criteria
     const andFilters: Prisma.ProductWhereInput[] = [];
 
     if (line) {
@@ -444,14 +1152,24 @@ export class CatalogService {
         },
       });
     }
+
     if (size) {
       const values = size.split(',');
       andFilters.push({
-        attributes: {
-          some: { type: 'SIZE', value: { in: values, mode: 'insensitive' } },
-        },
+        OR: [
+          {
+            variants: {
+              some: {
+                isActive: true,
+                size: { in: values, mode: 'insensitive' },
+              },
+            },
+          },
+          this.buildLegacySizeFilter(values),
+        ],
       });
     }
+
     if (quality) {
       const values = quality.split(',');
       andFilters.push({
@@ -460,6 +1178,7 @@ export class CatalogService {
         },
       });
     }
+
     if (material) {
       const values = material.split(',');
       andFilters.push({
@@ -472,10 +1191,8 @@ export class CatalogService {
       });
     }
 
-    // isCustomizable logic: In this architecture, products with variants or specific attributes are customizable
     if (isCustomizable !== undefined) {
-      // Logic: if true, maybe check if it has personalization rules or just assume true for now
-      // as most products in this business are customizable.
+      // Reserved for future rule-based filtering.
     }
 
     if (andFilters.length > 0) {
@@ -494,7 +1211,16 @@ export class CatalogService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return products;
+    return products.filter((product) => {
+      const referencePrice = this.getReferencePrice(product);
+      if (minPrice !== undefined && referencePrice < minPrice) {
+        return false;
+      }
+      if (maxPrice !== undefined && referencePrice > maxPrice) {
+        return false;
+      }
+      return true;
+    });
   }
 
   async searchSuggestions(
@@ -535,6 +1261,12 @@ export class CatalogService {
             name: true,
           },
         },
+        variants: {
+          where: { isActive: true },
+          select: { salePrice: true },
+          orderBy: { salePrice: 'asc' },
+          take: 1,
+        },
         images: {
           select: {
             url: true,
@@ -546,7 +1278,14 @@ export class CatalogService {
       },
     });
 
-    return products;
+    return products.map((product) => ({
+      id: product.id,
+      slug: product.slug,
+      name: product.name,
+      basePrice: product.variants[0]?.salePrice ?? product.basePrice,
+      collection: product.collection,
+      images: product.images,
+    }));
   }
 
   async findOne(id: string): Promise<ProductWithRelations> {
@@ -587,6 +1326,10 @@ export class CatalogService {
     const product = await this.prisma.product.findUnique({
       where: { slug },
       include: {
+        variants: {
+          where: { isActive: true },
+          orderBy: { salePrice: 'asc' },
+        },
         attributes: { where: { isActive: true } },
         pricingRules: { where: { isActive: true } },
         personalizationRules: {
@@ -600,26 +1343,33 @@ export class CatalogService {
       throw new NotFoundException(`Product with slug ${slug} not found`);
     }
 
-    // Get all available personalization options if none are linked to product
     const personalizations = await this.prisma.personalizationOption.findMany({
       where: { isActive: true },
     });
 
-    const transformedGlobal = personalizations.map((p) => ({
-      ...p,
-      rule: { allowedMaterialValues: [] }, // Global options allow all materials by default
+    const transformedGlobal = personalizations.map((personalization) => ({
+      ...personalization,
+      rule: { allowedMaterialValues: [] },
     }));
+
+    const hasVariantSizes = product.variants.some((variant) => !!variant.size);
+    const filteredAttributes = hasVariantSizes
+      ? product.attributes.filter(
+          (attribute) => attribute.type !== AttributeType.SIZE,
+        )
+      : product.attributes;
 
     return {
       productId: product.id,
       slug: product.slug,
-      attributes: product.attributes,
+      variants: product.variants,
+      attributes: filteredAttributes,
       pricingRules: product.pricingRules,
       personalizationOptions:
         product.personalizationRules.length > 0
-          ? product.personalizationRules.map((r) => ({
-              ...r.personalization,
-              rule: r,
+          ? product.personalizationRules.map((rule) => ({
+              ...rule.personalization,
+              rule,
             }))
           : transformedGlobal,
     };

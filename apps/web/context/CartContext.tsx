@@ -96,7 +96,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
         (item) => item.id === itemId
       );
 
-      const price = unitPrice !== undefined ? unitPrice : product.basePrice;
+      const price =
+        unitPrice !== undefined
+          ? unitPrice
+          : variant.salePrice !== undefined
+            ? variant.salePrice
+            // Transitional fallback only for legacy records without hydrated variant pricing.
+            : product.basePrice;
 
       if (existingItemIndex > -1) {
         const newItems = [...currentItems];
