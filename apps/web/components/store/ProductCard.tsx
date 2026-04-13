@@ -11,9 +11,13 @@ import { useTranslation } from 'react-i18next';
 
 interface ProductCardProps {
   product: Product;
+  showVariantIndicator?: boolean;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({
+  product,
+  showVariantIndicator = true,
+}: ProductCardProps) {
   const { t } = useTranslation();
   const { addToCart } = useCart();
   const allVariants = product.variants || [];
@@ -115,6 +119,9 @@ export default function ProductCard({ product }: ProductCardProps) {
             <span className="font-semibold text-primary">
               ${variantSalePrice.toLocaleString('es-CO')}
             </span>
+            <span className="text-[10px] font-bold uppercase tracking-wide text-muted">
+              IVA incluido
+            </span>
             {variantComparePrice && (
               <span className="text-muted line-through text-xs">
                 ${variantComparePrice.toLocaleString('es-CO')}
@@ -124,7 +131,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
       </Link>
 
-      {activeVariants.length > 1 && (
+      {showVariantIndicator && activeVariants.length > 1 && (
         <div className="flex gap-1">
           {activeVariants.map((variant) => (
             <button

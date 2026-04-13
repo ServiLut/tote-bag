@@ -19,7 +19,7 @@ export default function ProductsDashboardPage() {
     <div className="p-8 md:p-12 max-w-7xl mx-auto space-y-8">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-primary">Gestión de Productos</h1>
+          <h1 className="text-3xl font-black tracking-tight text-primary">Gestión de productos</h1>
           <p className="mt-2 text-muted font-medium max-w-2xl">
             Administra el catálogo, precios y estados. Las alertas visuales indican márgenes reducidos.
           </p>
@@ -30,7 +30,7 @@ export default function ProductsDashboardPage() {
             className="inline-flex items-center justify-center gap-2 bg-primary text-base-color px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] hover:opacity-90 transition-all shadow-lg shadow-primary/10 active:scale-95"
           >
             <Plus className="w-4 h-4" />
-            Nuevo Producto
+            Nuevo producto
           </Link>
         )}
       </div>
@@ -39,8 +39,8 @@ export default function ProductsDashboardPage() {
         <TabsList className="mb-8">
           <TabsTrigger value="productos">Catálogo</TabsTrigger>
           <TabsTrigger value="colecciones">Colecciones</TabsTrigger>
-          <TabsTrigger value="configuracion">Configuración Técnica</TabsTrigger>
-          <TabsTrigger value="matriz">Matriz de Compatibilidad</TabsTrigger>
+          <TabsTrigger value="configuracion">Configuración técnica</TabsTrigger>
+          <TabsTrigger value="matriz">Matriz de compatibilidad</TabsTrigger>
         </TabsList>
 
         <TabsContent value="productos" className="bg-surface rounded-3xl border border-theme shadow-sm overflow-hidden">

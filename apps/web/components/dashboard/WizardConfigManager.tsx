@@ -55,11 +55,11 @@ const INITIAL_FORM: FormData = {
 };
 
 const CATEGORIES: { id: WizardCategory; label: string; icon: React.ElementType; desc: string }[] = [
-  { id: 'LINE', label: 'Líneas de Producción', icon: Box, desc: 'Define las categorías principales de fabricación (ECO, Premium, etc.)' },
-  { id: 'DIMENSION', label: 'Dimensiones / Tamaños', icon: Maximize, desc: 'Gestiona las medidas disponibles para las tote bags.' },
-  { id: 'MATERIAL', label: 'Materiales y Telas', icon: Layers, desc: 'Administra los tipos de tela y texturas base.' },
-  { id: 'QUALITY', label: 'Calidad de Confección', icon: Sparkles, desc: 'Niveles de refuerzo y acabados técnicos.' },
-  { id: 'TECHNIQUE', label: 'Técnicas de Marcado', icon: MousePointer2, desc: 'Métodos de personalización (Estampado, Bordado, etc.)' },
+  { id: 'LINE', label: 'Líneas de producción', icon: Box, desc: 'Define las categorías principales de fabricación (ECO, Premium, etc.)' },
+  { id: 'DIMENSION', label: 'Dimensiones / tamaños', icon: Maximize, desc: 'Gestiona las medidas disponibles para las tote bags.' },
+  { id: 'MATERIAL', label: 'Materiales y telas', icon: Layers, desc: 'Administra los tipos de tela y texturas base.' },
+  { id: 'QUALITY', label: 'Calidad de confección', icon: Sparkles, desc: 'Niveles de refuerzo y acabados técnicos.' },
+  { id: 'TECHNIQUE', label: 'Técnicas de marcado', icon: MousePointer2, desc: 'Métodos de personalización (estampado, bordado, etc.)' },
 ];
 
 export default function WizardConfigManager() {
@@ -264,7 +264,7 @@ export default function WizardConfigManager() {
     <div className="space-y-6">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-2xl font-black text-primary tracking-tight">Centro de Control Técnico</h2>
+          <h2 className="text-2xl font-black text-primary tracking-tight">Centro de control técnico</h2>
           <p className="text-sm text-muted font-medium">Gestiona dinámicamente todas las opciones que aparecen en el configurador del cliente.</p>
         </div>
       </div>
@@ -314,7 +314,7 @@ export default function WizardConfigManager() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {catOptions.length === 0 ? (
                       <div className="col-span-full py-12 text-center border-2 border-dashed border-theme rounded-3xl bg-base/20">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted italic">No hay opciones registradas en esta categoría</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted italic">No hay opciones registradas en esta categoría.</p>
                       </div>
                     ) : (
                       catOptions.map((opt) => (
@@ -376,7 +376,7 @@ export default function WizardConfigManager() {
               <div className="p-8 space-y-6">
                 <div className="flex items-center justify-between">
                   <h3 className="text-2xl font-black text-primary tracking-tight">
-                    {editingId ? 'Editar Opción' : 'Nueva Opción'}
+                    {editingId ? 'Editar opción' : 'Nueva opción'}
                   </h3>
                   <button type="button" onClick={() => setShowFormModal(false)} className="p-2 text-muted hover:text-primary"><X size={24}/></button>
                 </div>
@@ -394,7 +394,7 @@ export default function WizardConfigManager() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-muted">Precio Extra</label>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-muted">Precio extra</label>
                       <input
                         type="text"
                         inputMode="decimal"
@@ -406,7 +406,7 @@ export default function WizardConfigManager() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted">Descripción (Para el Wizard)</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted">Descripción para el configurador</label>
                     <textarea
                       value={formData.description}
                       onChange={e => setFormData({ ...formData, description: e.target.value })}
@@ -416,7 +416,7 @@ export default function WizardConfigManager() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted">Orden de Aparición</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted">Orden de aparición</label>
                     <input
                       type="text"
                       inputMode="numeric"
@@ -428,7 +428,7 @@ export default function WizardConfigManager() {
 
                   {formData.category === 'MATERIAL' && (
                     <div className="space-y-3">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-muted block">Imagen del Mockup (Lienzo)</label>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-muted block">Imagen del mockup (lienzo)</label>
                       <div className="flex items-center gap-4">
                         {formData.imageUrl && (
                           <div className="w-20 h-20 rounded-2xl bg-white border border-theme overflow-hidden relative group">
@@ -445,7 +445,7 @@ export default function WizardConfigManager() {
                         <label className="flex-1 cursor-pointer">
                           <div className="border-2 border-dashed border-theme rounded-2xl p-4 flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-all">
                             <Layers size={20} className="text-muted" />
-                            <span className="text-[10px] font-black uppercase text-primary">Subir Lienzo</span>
+                            <span className="text-[10px] font-black uppercase text-primary">Subir lienzo</span>
                             <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
                           </div>
                         </label>
@@ -455,7 +455,7 @@ export default function WizardConfigManager() {
 
                   {formData.category === 'TECHNIQUE' && (
                     <div className="space-y-3">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-muted block mb-2">Materiales Permitidos</label>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-muted block mb-2">Materiales permitidos</label>
                       <div className="grid grid-cols-2 gap-3">
                         {options
                           .filter(o => o.category === 'MATERIAL')
@@ -495,7 +495,7 @@ export default function WizardConfigManager() {
               <div className="p-8 bg-base/30 flex gap-3 border-t border-theme">
                 <button type="button" onClick={() => setShowFormModal(false)} className="flex-1 px-4 py-4 text-[10px] font-black uppercase tracking-widest text-primary border border-theme rounded-2xl hover:bg-base">Cancelar</button>
                 <button type="submit" disabled={isSubmitting} className="flex-1 px-4 py-4 text-[10px] font-black uppercase tracking-widest text-white bg-primary rounded-2xl hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2">
-                  {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : editingId ? 'Guardar Cambios' : 'Crear Opción'}
+                  {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : editingId ? 'Guardar cambios' : 'Crear opción'}
                 </button>
               </div>
             </form>
@@ -524,4 +524,3 @@ export default function WizardConfigManager() {
     </div>
   );
 }
-

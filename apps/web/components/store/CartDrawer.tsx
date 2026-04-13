@@ -116,6 +116,9 @@ export default function CartDrawer() {
                     <p className="text-sm font-semibold mt-1 text-primary">
                       ${item.unitPrice.toLocaleString('es-CO')}
                     </p>
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-muted">
+                      IVA incluido
+                    </p>
                   </div>
 
                   <div className="flex items-center gap-3">
@@ -147,7 +150,10 @@ export default function CartDrawer() {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted">{t('cart_subtotal')}</span>
-                <span className="font-semibold text-primary">${subtotal.toLocaleString('es-CO')}</span>
+                <span className="text-right">
+                  <span className="block font-semibold text-primary">${subtotal.toLocaleString('es-CO')}</span>
+                  <span className="block text-[10px] font-bold uppercase tracking-wide text-muted">IVA incluido</span>
+                </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted">{t('cart_shipping')}</span>

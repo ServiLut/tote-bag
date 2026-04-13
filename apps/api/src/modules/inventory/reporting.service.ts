@@ -6,9 +6,11 @@ import {
   TransactionCategory,
   BatchStatus,
 } from '../../generated/client/enums';
+import Decimal from 'decimal.js';
 import * as ExcelJS from 'exceljs';
 import PDFDocument from 'pdfkit';
 import { format } from 'date-fns';
+import { decimalToNumber, toDecimal } from '../../common/utils/sales-tax.util';
 
 @Injectable()
 export class ReportingService {
@@ -42,7 +44,7 @@ export class ReportingService {
       },
       _sum: { amount: true },
     });
-    const totalIncome = sales._sum.amount || 0;
+    const totalIncome = decimalToNumber(sales._sum.amount);
 
     // 2. OpEx (EXPENSE transactions grouped by OpexCategory)
     // We also include PURCHASE transactions that have an opexCategoryId (like Materia Prima)
@@ -72,7 +74,9 @@ export class ReportingService {
     opexTransactions.forEach((tx) => {
       const catName = tx.opexCategory?.name || 'Otros';
       const signedAmount =
-        tx.type === TransactionType.INCOME ? -tx.amount : tx.amount;
+        tx.type === TransactionType.INCOME
+          ? -decimalToNumber(tx.amount)
+          : decimalToNumber(tx.amount);
       opexByCategory[catName] = (opexByCategory[catName] || 0) + signedAmount;
     });
     const totalOpex = Object.values(opexByCategory).reduce(
@@ -468,12 +472,14 @@ export class ReportingService {
     opexTransactions.forEach((tx) => {
       const catName = tx.opexCategory?.name || 'Otros';
       const signedAmount =
-        tx.type === TransactionType.INCOME ? -tx.amount : tx.amount;
+        tx.type === TransactionType.INCOME
+          ? -decimalToNumber(tx.amount)
+          : decimalToNumber(tx.amount);
       opexByCategory[catName] = (opexByCategory[catName] || 0) + signedAmount;
     });
 
     // 4. Calculations
-    const grossSales = sales._sum.amount || 0;
+    const grossSales = decimalToNumber(sales._sum.amount);
     const grossProfit = grossSales - totalCOGS;
     const totalOpex = Object.values(opexByCategory).reduce(
       (sum, val) => sum + val,
@@ -518,9 +524,11 @@ export class ReportingService {
       },
     });
 
-    return activeBatches.reduce(
-      (sum, b) => sum + b.quantityRemaining * b.unitCost,
-      0,
+    const valuation = activeBatches.reduce(
+      (sum, b) => sum.plus(toDecimal(b.unitCost).mul(b.quantityRemaining)),
+      new Decimal(0),
     );
+
+    return decimalToNumber(valuation);
   }
 }

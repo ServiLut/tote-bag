@@ -1,0 +1,1360 @@
+
+> api@0.0.1 dev C:\Users\user\Desktop\deybis\tote-bag\apps\api
+> nest start --watch
+
+[2J[3J[H[[90m3:26:09 p. m.[0m] Starting compilation in watch mode...
+
+[[90m3:26:22 p. m.[0m] Found 0 errors. Watching for file changes.
+
+[Nest] 2026-04-13T20:26:26.475Z [32minfo[39m [NestFactory] Starting Nest application... +0ms
+[Nest] 2026-04-13T20:26:26.529Z [32minfo[39m [InstanceLoader] SentryModule dependencies initialized +54ms
+[Nest] 2026-04-13T20:26:26.530Z [32minfo[39m [InstanceLoader] DebugRoleContextModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:26:26.531Z [32minfo[39m [InstanceLoader] PrismaModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:26:26.533Z [32minfo[39m [InstanceLoader] CartModule dependencies initialized +2ms
+[Nest] 2026-04-13T20:26:26.534Z [32minfo[39m [InstanceLoader] AdminModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:26:26.536Z [32minfo[39m [InstanceLoader] ConfigHostModule dependencies initialized +2ms
+[Nest] 2026-04-13T20:26:26.537Z [32minfo[39m [InstanceLoader] ThrottlerModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:26:26.539Z [32minfo[39m [InstanceLoader] PrometheusModule dependencies initialized +2ms
+[Nest] 2026-04-13T20:26:26.540Z [32minfo[39m [InstanceLoader] RolesModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:26:26.543Z [32minfo[39m [InstanceLoader] ConfigModule dependencies initialized +3ms
+[Nest] 2026-04-13T20:26:26.544Z [32minfo[39m [InstanceLoader] ConfigModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:26:26.546Z [32minfo[39m [InstanceLoader] DashboardModule dependencies initialized +2ms
+[Nest] 2026-04-13T20:26:26.546Z [32minfo[39m [InstanceLoader] PricingModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:26:26.547Z [32minfo[39m [InstanceLoader] AuthModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:26:26.547Z [32minfo[39m [InstanceLoader] LocationsModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:26:26.548Z [32minfo[39m [InstanceLoader] AuditModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:26:26.548Z [32minfo[39m [InstanceLoader] ConfigurationModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:26:26.549Z [32minfo[39m [InstanceLoader] WizardModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:26:26.549Z [32minfo[39m [InstanceLoader] UsersModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:26:26.550Z [32minfo[39m [InstanceLoader] StorageModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:26:26.551Z [32minfo[39m [InstanceLoader] InventoryModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:26:26.552Z [32minfo[39m [InstanceLoader] CollectionsModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:26:26.552Z [32minfo[39m [InstanceLoader] PqrsModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:26:26.552Z [32minfo[39m [InstanceLoader] PurchasesModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:26:26.553Z [32minfo[39m [InstanceLoader] AddressesModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:26:26.554Z [32minfo[39m [InstanceLoader] ShippingModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:26:26.555Z [32minfo[39m [InstanceLoader] CacheModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:26:26.556Z [32minfo[39m [InstanceLoader] AppModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:26:26.556Z [32minfo[39m [InstanceLoader] OrdersModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:26:26.557Z [32minfo[39m [InstanceLoader] ProfilesModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:26:26.557Z [32minfo[39m [InstanceLoader] CatalogModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:26:26.558Z [32minfo[39m [InstanceLoader] B2BModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:26:26.559Z [32minfo[39m [InstanceLoader] PersonalizationsModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:26:26.559Z [32minfo[39m [InstanceLoader] PayrollModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:26:26.560Z [32minfo[39m [InstanceLoader] PaymentsModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:26:26.564Z [33mwarn[39m [HTTP] helmet package not installed; applying fallback security headers. +4ms
+[Nest] 2026-04-13T20:26:26.573Z [33mwarn[39m [LegacyRouteConverter] Unsupported route path: "/api/*". In previous versions, the symbols ?, *, and + were used to denote optional or repeating path parameters. The latest version of "path-to-regexp" now requires the use of named parameters. For example, instead of using a route like /users/* to capture all routes starting with "/users", you should use /users/*path. For more details, refer to the migration guide. Attempting to auto-convert... +9ms
+[Nest] 2026-04-13T20:26:26.575Z [32minfo[39m [RoutesResolver] AppController {/api} (version: 1): +2ms
+[Nest] 2026-04-13T20:26:26.578Z [32minfo[39m [RouterExplorer] Mapped {/api, GET} (version: 1) route +3ms
+[Nest] 2026-04-13T20:26:26.579Z [32minfo[39m [RouterExplorer] Mapped {/api/debug-sentry, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.580Z [32minfo[39m [RoutesResolver] PrometheusController {/api/metrics} (version: 1): +1ms
+[Nest] 2026-04-13T20:26:26.580Z [32minfo[39m [RouterExplorer] Mapped {/api/metrics, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.581Z [32minfo[39m [RoutesResolver] DashboardController {/api/dashboard} (version: 1): +1ms
+[Nest] 2026-04-13T20:26:26.582Z [32minfo[39m [RouterExplorer] Mapped {/api/dashboard/stats, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.582Z [32minfo[39m [RoutesResolver] B2bController {/api/b2b} (version: 1): +0ms
+[Nest] 2026-04-13T20:26:26.583Z [32minfo[39m [RouterExplorer] Mapped {/api/b2b/quote, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.584Z [32minfo[39m [RouterExplorer] Mapped {/api/b2b/quotes, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.585Z [32minfo[39m [RouterExplorer] Mapped {/api/b2b/quotes/:id/approve, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.585Z [32minfo[39m [RoutesResolver] PricingController {/api/pricing} (version: 1): +0ms
+[Nest] 2026-04-13T20:26:26.586Z [32minfo[39m [RouterExplorer] Mapped {/api/pricing/quote, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.587Z [32minfo[39m [RoutesResolver] AuthController {/api/auth} (version: 1): +1ms
+[Nest] 2026-04-13T20:26:26.587Z [32minfo[39m [RouterExplorer] Mapped {/api/auth/register, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.588Z [32minfo[39m [RouterExplorer] Mapped {/api/auth/login, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.589Z [32minfo[39m [RouterExplorer] Mapped {/api/auth/forgot-password, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.589Z [32minfo[39m [RouterExplorer] Mapped {/api/auth/debug/change-role, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.590Z [32minfo[39m [RoutesResolver] OrdersController {/api/orders} (version: 1): +1ms
+[Nest] 2026-04-13T20:26:26.590Z [32minfo[39m [RouterExplorer] Mapped {/api/orders, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.591Z [32minfo[39m [RouterExplorer] Mapped {/api/orders, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.591Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/accounts-receivable, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.592Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/user/:userId, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.593Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/:id, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.593Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.593Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/:id/payments, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.594Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/:id/receipt, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.594Z [32minfo[39m [RoutesResolver] InventoryController {/api/inventory} (version: 1): +0ms
+[Nest] 2026-04-13T20:26:26.595Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/detailed, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.596Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/movements, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.596Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/products/:productId/average-cost, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.597Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/batch, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.597Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/receive-batch, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.598Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/batches, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.598Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/batches, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.598Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/batches/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.599Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/batches/:id, DELETE} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.599Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/suppliers, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.600Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/suppliers, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.600Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/suppliers/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.601Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/suppliers/:id, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.601Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/suppliers/:id/payments, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.602Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/summary, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.602Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/cash-flow, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.603Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/tax-report, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.603Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/break-even-simulation, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.603Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/opex-categories, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.604Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/opex-categories, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.604Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/opex-transactions, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.604Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/opex, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.605Z [32minfo[39m [RoutesResolver] ReportingController {/api/inventory/reporting} (version: 1): +1ms
+[Nest] 2026-04-13T20:26:26.605Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/reporting/closing, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.606Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/reporting/valuation, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.606Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/reporting/accounting, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.606Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/reporting/accounting/export/excel, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.607Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/reporting/accounting/export/pdf, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.607Z [32minfo[39m [RoutesResolver] FinanceController {/api/finance} (version: 1): +0ms
+[Nest] 2026-04-13T20:26:26.607Z [32minfo[39m [RouterExplorer] Mapped {/api/finance/report-preview, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.608Z [32minfo[39m [RouterExplorer] Mapped {/api/finance/tax-report, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.608Z [32minfo[39m [RouterExplorer] Mapped {/api/finance/break-even-simulation, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.608Z [32minfo[39m [RouterExplorer] Mapped {/api/finance/export-report, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.609Z [32minfo[39m [RoutesResolver] ShippingController {/api/shipping} (version: 1): +1ms
+[Nest] 2026-04-13T20:26:26.609Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/providers, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.609Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/providers, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.610Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/providers/:id, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.610Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/providers/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.610Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/providers/:id, DELETE} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.611Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/shipments/pending, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.611Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/shipments, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.611Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/shipments/:orderId, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.612Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/shipments/:orderId/process-return, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.612Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/shipments/:orderId/label, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.612Z [32minfo[39m [RoutesResolver] ProfilesController {/api/profiles} (version: 1): +0ms
+[Nest] 2026-04-13T20:26:26.612Z [32minfo[39m [RouterExplorer] Mapped {/api/profiles/me, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.613Z [32minfo[39m [RouterExplorer] Mapped {/api/profiles/me, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.613Z [32minfo[39m [RouterExplorer] Mapped {/api/profiles, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.614Z [32minfo[39m [RouterExplorer] Mapped {/api/profiles/:id, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.614Z [32minfo[39m [RoutesResolver] PaymentsController {/api/payments} (version: 1): +0ms
+[Nest] 2026-04-13T20:26:26.614Z [32minfo[39m [RouterExplorer] Mapped {/api/payments/signature/:orderId, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.614Z [32minfo[39m [RouterExplorer] Mapped {/api/payments/wompi/signature/:orderId, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.615Z [32minfo[39m [RouterExplorer] Mapped {/api/payments/webhook/wompi, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.615Z [32minfo[39m [RouterExplorer] Mapped {/api/payments/wompi/webhook, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.615Z [32minfo[39m [RouterExplorer] Mapped {/api/payments/upload-receipt/:entityType/:entityId, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.616Z [32minfo[39m [RoutesResolver] LocationsController {/api/locations} (version: 1): +1ms
+[Nest] 2026-04-13T20:26:26.616Z [32minfo[39m [RouterExplorer] Mapped {/api/locations/departments, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.617Z [32minfo[39m [RouterExplorer] Mapped {/api/locations/municipalities/:departmentId, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.617Z [32minfo[39m [RoutesResolver] AddressesController {/api/addresses} (version: 1): +0ms
+[Nest] 2026-04-13T20:26:26.618Z [32minfo[39m [RouterExplorer] Mapped {/api/addresses, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.618Z [32minfo[39m [RouterExplorer] Mapped {/api/addresses, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.618Z [32minfo[39m [RouterExplorer] Mapped {/api/addresses/:id, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.619Z [32minfo[39m [RouterExplorer] Mapped {/api/addresses/:id, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.619Z [32minfo[39m [RouterExplorer] Mapped {/api/addresses/:id, DELETE} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.619Z [32minfo[39m [RoutesResolver] AuditController {/api/audit} (version: 1): +0ms
+[Nest] 2026-04-13T20:26:26.620Z [32minfo[39m [RouterExplorer] Mapped {/api/audit, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.620Z [32minfo[39m [RouterExplorer] Mapped {/api/audit/:id, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.620Z [32minfo[39m [RoutesResolver] ConfigurationController {/api/configuration} (version: 1): +0ms
+[Nest] 2026-04-13T20:26:26.621Z [32minfo[39m [RouterExplorer] Mapped {/api/configuration/products/:slug, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.621Z [32minfo[39m [RouterExplorer] Mapped {/api/configuration/options/:productId, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.621Z [32minfo[39m [RoutesResolver] CatalogController {/api/catalog} (version: 1): +0ms
+[Nest] 2026-04-13T20:26:26.622Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.622Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/admin/products, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.622Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/admin/:id, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.623Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/products, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.623Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/search, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.623Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/slug/:slug, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.624Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/products/:slug/config, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.624Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/:id, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.625Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/:id, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.625Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/:id, DELETE} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.625Z [32minfo[39m [RoutesResolver] PersonalizationsController {/api/personalizations} (version: 1): +0ms
+[Nest] 2026-04-13T20:26:26.626Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.626Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.627Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/signed-upload, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.627Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/upload-design, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.628Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/requests, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.628Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/requests, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.629Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/requests/:id, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.629Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/requests/:id/approve, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.629Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/:id, PUT} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.630Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/:id, DELETE} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.630Z [32minfo[39m [RoutesResolver] CollectionsController {/api/collections} (version: 1): +0ms
+[Nest] 2026-04-13T20:26:26.631Z [32minfo[39m [RouterExplorer] Mapped {/api/collections, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.631Z [32minfo[39m [RouterExplorer] Mapped {/api/collections, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.631Z [32minfo[39m [RouterExplorer] Mapped {/api/collections/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.632Z [32minfo[39m [RouterExplorer] Mapped {/api/collections/:id, DELETE} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.632Z [32minfo[39m [RoutesResolver] WizardController {/api/wizard-options} (version: 1): +0ms
+[Nest] 2026-04-13T20:26:26.632Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.633Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options/grouped, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.633Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options/:id, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.634Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.634Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.634Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options/:id, DELETE} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.635Z [32minfo[39m [RoutesResolver] UsersController {/api/users} (version: 1): +1ms
+[Nest] 2026-04-13T20:26:26.635Z [32minfo[39m [RouterExplorer] Mapped {/api/users, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.635Z [32minfo[39m [RouterExplorer] Mapped {/api/users/:id/role, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.636Z [32minfo[39m [RoutesResolver] PqrsController {/api/pqrs} (version: 1): +1ms
+[Nest] 2026-04-13T20:26:26.636Z [32minfo[39m [RouterExplorer] Mapped {/api/pqrs, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.636Z [32minfo[39m [RouterExplorer] Mapped {/api/pqrs, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.637Z [32minfo[39m [RouterExplorer] Mapped {/api/pqrs/:id, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.637Z [32minfo[39m [RoutesResolver] PayrollController {/api/payroll} (version: 1): +0ms
+[Nest] 2026-04-13T20:26:26.637Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/shifts, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.638Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/workers, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.638Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/workers/:id/history, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.638Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/statements, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.639Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/statements/:id, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.639Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/statements/:id/pdf, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.640Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/shifts, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.640Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/workers, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.640Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/shifts/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.641Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/workers/:id, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.641Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/shifts/:id, DELETE} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.642Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/statements/consolidate, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.642Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/statements/:id/status, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.643Z [32minfo[39m [RoutesResolver] PurchasesController {/api/purchase-invoices} (version: 1): +1ms
+[Nest] 2026-04-13T20:26:26.643Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.644Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.644Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.645Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices/:id/payments, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:26:26.645Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices/:invoiceId/payments/:paymentId, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.645Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices/:id, DELETE} (version: 1) route +0ms
+[Nest] 2026-04-13T20:26:26.730Z [32minfo[39m [NestApplication] Nest application successfully started +85ms
+🚀 Application is running on: http://localhost:4005
+[Nest] 2026-04-13T20:26:31.495Z [32minfo[39m [HTTP]  +5s
+[Nest] 2026-04-13T20:26:33.693Z [32minfo[39m [HTTP]  +2s
+[Nest] 2026-04-13T20:26:34.461Z [32minfo[39m [HTTP]  +768ms
+[Nest] 2026-04-13T20:26:45.064Z [32minfo[39m [HTTP]  +11s
+[Nest] 2026-04-13T20:26:45.076Z [32minfo[39m [HTTP]  +12ms
+[Nest] 2026-04-13T20:26:46.026Z [32minfo[39m [HTTP]  +950ms
+[Nest] 2026-04-13T20:27:03.838Z [32minfo[39m [HTTP]  +18s
+[Nest] 2026-04-13T20:27:04.415Z [32minfo[39m [HTTP]  +577ms
+[Nest] 2026-04-13T20:27:50.917Z [32minfo[39m [HTTP]  +47s
+[Nest] 2026-04-13T20:27:51.492Z [32minfo[39m [HTTP]  +575ms
+[Nest] 2026-04-13T20:28:51.065Z [32minfo[39m [HTTP]  +60s
+[Nest] 2026-04-13T20:28:51.778Z [32minfo[39m [HTTP]  +713ms
+[Nest] 2026-04-13T20:29:31.033Z [32minfo[39m [HTTP]  +39s
+[Nest] 2026-04-13T20:29:31.681Z [32minfo[39m [HTTP]  +648ms
+[Nest] 2026-04-13T20:29:32.430Z [32minfo[39m [HTTP]  +749ms
+[Nest] 2026-04-13T20:29:33.085Z [32minfo[39m [HTTP]  +655ms
+[Nest] 2026-04-13T20:29:33.591Z [32minfo[39m [HTTP]  +506ms
+[Nest] 2026-04-13T20:29:33.820Z [32minfo[39m [HTTP]  +229ms
+[Nest] 2026-04-13T20:29:34.431Z [32minfo[39m [HTTP]  +611ms
+[Nest] 2026-04-13T20:29:34.576Z [32minfo[39m [HTTP]  +145ms
+[Nest] 2026-04-13T20:29:35.301Z [32minfo[39m [HTTP]  +725ms
+[Nest] 2026-04-13T20:29:35.420Z [32minfo[39m [HTTP]  +119ms
+[Nest] 2026-04-13T20:29:36.196Z [32minfo[39m [HTTP]  +776ms
+[Nest] 2026-04-13T20:29:36.729Z [32minfo[39m [HTTP]  +533ms
+RolesService: resolving permissions for user=25390d0e-9744-4ec3-85f4-6e926f5d0a51 email=deybisasprilla@gmail.com storedRole=MANAGER effectiveRole=ADMIN debugRole=ADMIN
+[Nest] 2026-04-13T20:29:37.370Z [32minfo[39m [HTTP]  +641ms
+[Nest] 2026-04-13T20:29:37.767Z [32minfo[39m [HTTP]  +397ms
+[Nest] 2026-04-13T20:29:38.348Z [32minfo[39m [HTTP]  +581ms
+[Nest] 2026-04-13T20:29:38.484Z [32minfo[39m [HTTP]  +136ms
+[Nest] 2026-04-13T20:29:38.791Z [32minfo[39m [HTTP]  +307ms
+[Nest] 2026-04-13T20:29:38.965Z [32minfo[39m [HTTP]  +174ms
+[Nest] 2026-04-13T20:29:39.043Z [32minfo[39m [HTTP]  +78ms
+[Nest] 2026-04-13T20:29:39.506Z [32minfo[39m [HTTP]  +463ms
+[Nest] 2026-04-13T20:29:39.708Z [32minfo[39m [HTTP]  +202ms
+[Nest] 2026-04-13T20:29:39.849Z [32minfo[39m [HTTP]  +141ms
+[Nest] 2026-04-13T20:29:40.277Z [32minfo[39m [HTTP]  +428ms
+[Nest] 2026-04-13T20:29:40.457Z [32minfo[39m [HTTP]  +180ms
+[Nest] 2026-04-13T20:29:52.285Z [32minfo[39m [HTTP]  +12s
+[Nest] 2026-04-13T20:29:52.937Z [32minfo[39m [HTTP]  +652ms
+[Nest] 2026-04-13T20:30:07.471Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-13T20:30:08.219Z [32minfo[39m [HTTP]  +748ms
+[Nest] 2026-04-13T20:30:09.042Z [32minfo[39m [HTTP]  +823ms
+[Nest] 2026-04-13T20:30:09.776Z [32minfo[39m [HTTP]  +734ms
+[Nest] 2026-04-13T20:30:22.270Z [32minfo[39m [HTTP]  +12s
+[Nest] 2026-04-13T20:30:22.942Z [32minfo[39m [HTTP]  +672ms
+[Nest] 2026-04-13T20:30:37.380Z [32minfo[39m [HTTP]  +14s
+[Nest] 2026-04-13T20:30:38.104Z [32minfo[39m [HTTP]  +724ms
+[Nest] 2026-04-13T20:30:38.909Z [32minfo[39m [HTTP]  +805ms
+[Nest] 2026-04-13T20:30:39.631Z [32minfo[39m [HTTP]  +722ms
+[Nest] 2026-04-13T20:30:52.380Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:30:53.040Z [32minfo[39m [HTTP]  +660ms
+[Nest] 2026-04-13T20:31:07.327Z [32minfo[39m [HTTP]  +14s
+[Nest] 2026-04-13T20:31:07.982Z [32minfo[39m [HTTP]  +655ms
+[Nest] 2026-04-13T20:31:08.736Z [32minfo[39m [HTTP]  +754ms
+[Nest] 2026-04-13T20:31:09.385Z [32minfo[39m [HTTP]  +649ms
+[Nest] 2026-04-13T20:31:22.319Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:31:23.043Z [32minfo[39m [HTTP]  +724ms
+[Nest] 2026-04-13T20:31:37.357Z [32minfo[39m [HTTP]  +14s
+[Nest] 2026-04-13T20:31:38.080Z [32minfo[39m [HTTP]  +723ms
+[Nest] 2026-04-13T20:31:38.883Z [32minfo[39m [HTTP]  +803ms
+[Nest] 2026-04-13T20:31:39.626Z [32minfo[39m [HTTP]  +743ms
+[Nest] 2026-04-13T20:31:52.377Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:31:53.041Z [32minfo[39m [HTTP]  +664ms
+[Nest] 2026-04-13T20:32:07.399Z [32minfo[39m [HTTP]  +14s
+[Nest] 2026-04-13T20:32:08.123Z [32minfo[39m [HTTP]  +724ms
+[Nest] 2026-04-13T20:32:08.955Z [32minfo[39m [HTTP]  +832ms
+[Nest] 2026-04-13T20:32:09.680Z [32minfo[39m [HTTP]  +725ms
+[Nest] 2026-04-13T20:32:22.266Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:32:22.918Z [32minfo[39m [HTTP]  +652ms
+[Nest] 2026-04-13T20:32:23.003Z [32minfo[39m [HTTP]  +85ms
+[Nest] 2026-04-13T20:32:23.706Z [32minfo[39m [HTTP]  +703ms
+[Nest] 2026-04-13T20:32:24.334Z [32minfo[39m [HTTP]  +628ms
+[Nest] 2026-04-13T20:32:24.898Z [32minfo[39m [HTTP]  +564ms
+[Nest] 2026-04-13T20:32:25.192Z [32minfo[39m [HTTP]  +294ms
+RolesService: resolving permissions for user=25390d0e-9744-4ec3-85f4-6e926f5d0a51 email=deybisasprilla@gmail.com storedRole=MANAGER effectiveRole=ADMIN debugRole=ADMIN
+[Nest] 2026-04-13T20:32:25.850Z [32minfo[39m [HTTP]  +658ms
+[Nest] 2026-04-13T20:32:26.198Z [32minfo[39m [HTTP]  +348ms
+[Nest] 2026-04-13T20:32:26.606Z [32minfo[39m [HTTP]  +408ms
+[Nest] 2026-04-13T20:32:27.100Z [32minfo[39m [HTTP]  +494ms
+[Nest] 2026-04-13T20:32:27.255Z [32minfo[39m [HTTP]  +155ms
+[Nest] 2026-04-13T20:32:27.451Z [32minfo[39m [HTTP]  +196ms
+[Nest] 2026-04-13T20:32:27.716Z [32minfo[39m [HTTP]  +265ms
+[Nest] 2026-04-13T20:32:27.828Z [32minfo[39m [HTTP]  +112ms
+[Nest] 2026-04-13T20:32:28.472Z [32minfo[39m [HTTP]  +644ms
+[Nest] 2026-04-13T20:32:28.646Z [32minfo[39m [HTTP]  +174ms
+[Nest] 2026-04-13T20:32:29.043Z [32minfo[39m [HTTP]  +397ms
+[Nest] 2026-04-13T20:32:29.263Z [32minfo[39m [HTTP]  +220ms
+[Nest] 2026-04-13T20:32:40.722Z [32minfo[39m [HTTP]  +11s
+[Nest] 2026-04-13T20:32:41.308Z [32minfo[39m [HTTP]  +586ms
+[Nest] 2026-04-13T20:32:55.961Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-13T20:32:56.603Z [32minfo[39m [HTTP]  +642ms
+[Nest] 2026-04-13T20:32:57.330Z [32minfo[39m [HTTP]  +727ms
+[Nest] 2026-04-13T20:32:57.964Z [32minfo[39m [HTTP]  +634ms
+[Nest] 2026-04-13T20:33:11.062Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:33:11.788Z [32minfo[39m [HTTP]  +726ms
+[Nest] 2026-04-13T20:33:25.861Z [32minfo[39m [HTTP]  +14s
+[Nest] 2026-04-13T20:33:26.451Z [32minfo[39m [HTTP]  +590ms
+[Nest] 2026-04-13T20:33:27.123Z [32minfo[39m [HTTP]  +672ms
+[Nest] 2026-04-13T20:33:27.706Z [32minfo[39m [HTTP]  +583ms
+[Nest] 2026-04-13T20:33:40.668Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:33:41.242Z [32minfo[39m [HTTP]  +574ms
+[Nest] 2026-04-13T20:33:56.057Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-13T20:33:56.718Z [32minfo[39m [HTTP]  +661ms
+[Nest] 2026-04-13T20:33:57.459Z [32minfo[39m [HTTP]  +741ms
+[Nest] 2026-04-13T20:33:58.125Z [32minfo[39m [HTTP]  +666ms
+[Nest] 2026-04-13T20:34:10.996Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:34:11.717Z [32minfo[39m [HTTP]  +721ms
+[Nest] 2026-04-13T20:34:25.871Z [32minfo[39m [HTTP]  +14s
+[Nest] 2026-04-13T20:34:26.520Z [32minfo[39m [HTTP]  +649ms
+[Nest] 2026-04-13T20:34:27.249Z [32minfo[39m [HTTP]  +729ms
+[Nest] 2026-04-13T20:34:27.889Z [32minfo[39m [HTTP]  +640ms
+[Nest] 2026-04-13T20:34:41.097Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:34:41.826Z [32minfo[39m [HTTP]  +729ms
+[Nest] 2026-04-13T20:34:56.108Z [32minfo[39m [HTTP]  +14s
+[Nest] 2026-04-13T20:34:56.830Z [32minfo[39m [HTTP]  +722ms
+[Nest] 2026-04-13T20:34:57.666Z [32minfo[39m [HTTP]  +836ms
+[Nest] 2026-04-13T20:34:58.388Z [32minfo[39m [HTTP]  +722ms
+[Nest] 2026-04-13T20:35:10.892Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:35:11.560Z [32minfo[39m [HTTP]  +668ms
+[Nest] 2026-04-13T20:35:26.204Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-13T20:35:26.848Z [32minfo[39m [HTTP]  +644ms
+[Nest] 2026-04-13T20:35:27.590Z [32minfo[39m [HTTP]  +742ms
+[Nest] 2026-04-13T20:35:28.228Z [32minfo[39m [HTTP]  +638ms
+[Nest] 2026-04-13T20:35:40.890Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:35:41.555Z [32minfo[39m [HTTP]  +665ms
+[Nest] 2026-04-13T20:35:56.115Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-13T20:35:56.857Z [32minfo[39m [HTTP]  +742ms
+[Nest] 2026-04-13T20:35:57.680Z [32minfo[39m [HTTP]  +823ms
+[Nest] 2026-04-13T20:35:58.397Z [32minfo[39m [HTTP]  +717ms
+[Nest] 2026-04-13T20:36:11.051Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:36:11.730Z [32minfo[39m [HTTP]  +679ms
+[Nest] 2026-04-13T20:36:26.047Z [32minfo[39m [HTTP]  +14s
+[Nest] 2026-04-13T20:36:26.788Z [32minfo[39m [HTTP]  +741ms
+[Nest] 2026-04-13T20:36:27.601Z [32minfo[39m [HTTP]  +813ms
+[Nest] 2026-04-13T20:36:28.313Z [32minfo[39m [HTTP]  +712ms
+[Nest] 2026-04-13T20:36:40.865Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:36:41.516Z [32minfo[39m [HTTP]  +651ms
+[Nest] 2026-04-13T20:36:56.170Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-13T20:36:56.860Z [32minfo[39m [HTTP]  +690ms
+[Nest] 2026-04-13T20:36:57.621Z [32minfo[39m [HTTP]  +761ms
+[Nest] 2026-04-13T20:36:58.294Z [32minfo[39m [HTTP]  +673ms
+[Nest] 2026-04-13T20:37:10.837Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:37:11.518Z [32minfo[39m [HTTP]  +681ms
+[Nest] 2026-04-13T20:37:25.808Z [32minfo[39m [HTTP]  +14s
+[Nest] 2026-04-13T20:37:26.390Z [32minfo[39m [HTTP]  +582ms
+[Nest] 2026-04-13T20:37:27.034Z [32minfo[39m [HTTP]  +644ms
+[Nest] 2026-04-13T20:37:27.615Z [32minfo[39m [HTTP]  +581ms
+[Nest] 2026-04-13T20:37:41.023Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:37:41.684Z [32minfo[39m [HTTP]  +661ms
+[Nest] 2026-04-13T20:37:55.903Z [32minfo[39m [HTTP]  +14s
+[Nest] 2026-04-13T20:37:56.558Z [32minfo[39m [HTTP]  +655ms
+[Nest] 2026-04-13T20:37:57.289Z [32minfo[39m [HTTP]  +731ms
+[Nest] 2026-04-13T20:37:57.935Z [32minfo[39m [HTTP]  +646ms
+[Nest] 2026-04-13T20:38:11.065Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:38:11.801Z [32minfo[39m [HTTP]  +736ms
+[Nest] 2026-04-13T20:38:25.865Z [32minfo[39m [HTTP]  +14s
+[Nest] 2026-04-13T20:38:26.453Z [32minfo[39m [HTTP]  +588ms
+[Nest] 2026-04-13T20:38:27.131Z [32minfo[39m [HTTP]  +678ms
+[Nest] 2026-04-13T20:38:27.715Z [32minfo[39m [HTTP]  +584ms
+[Nest] 2026-04-13T20:38:40.895Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:38:41.553Z [32minfo[39m [HTTP]  +658ms
+[Nest] 2026-04-13T20:38:56.074Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-13T20:38:56.746Z [32minfo[39m [HTTP]  +672ms
+[Nest] 2026-04-13T20:38:57.508Z [32minfo[39m [HTTP]  +762ms
+[Nest] 2026-04-13T20:38:58.171Z [32minfo[39m [HTTP]  +663ms
+[Nest] 2026-04-13T20:39:10.812Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:39:11.462Z [32minfo[39m [HTTP]  +650ms
+[Nest] 2026-04-13T20:39:25.806Z [32minfo[39m [HTTP]  +14s
+[Nest] 2026-04-13T20:39:26.410Z [32minfo[39m [HTTP]  +604ms
+[Nest] 2026-04-13T20:39:27.074Z [32minfo[39m [HTTP]  +664ms
+[Nest] 2026-04-13T20:39:27.651Z [32minfo[39m [HTTP]  +577ms
+[Nest] 2026-04-13T20:39:40.910Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:39:41.581Z [32minfo[39m [HTTP]  +671ms
+[Nest] 2026-04-13T20:39:46.538Z [32minfo[39m [HTTP]  +5s
+[Nest] 2026-04-13T20:39:48.131Z [32minfo[39m [HTTP]  +2s
+[Nest] 2026-04-13T20:39:48.735Z [32minfo[39m [HTTP]  +604ms
+[Nest] 2026-04-13T20:39:49.182Z [32minfo[39m [HTTP]  +447ms
+[Nest] 2026-04-13T20:39:49.300Z [32minfo[39m [HTTP]  +118ms
+[Nest] 2026-04-13T20:39:49.922Z [32minfo[39m [HTTP]  +622ms
+[Nest] 2026-04-13T20:39:50.955Z [32minfo[39m [HTTP]  +1s
+[Nest] 2026-04-13T20:39:51.706Z [32minfo[39m [HTTP]  +751ms
+[Nest] 2026-04-13T20:39:52.709Z [32minfo[39m [HTTP]  +1s
+[Nest] 2026-04-13T20:39:53.467Z [32minfo[39m [HTTP]  +758ms
+[Nest] 2026-04-13T20:39:54.474Z [32minfo[39m [HTTP]  +1s
+[Nest] 2026-04-13T20:39:55.193Z [32minfo[39m [HTTP]  +719ms
+[Nest] 2026-04-13T20:39:55.846Z [32minfo[39m [HTTP]  +653ms
+[Nest] 2026-04-13T20:39:56.583Z [32minfo[39m [HTTP]  +737ms
+[Nest] 2026-04-13T20:39:57.233Z [32minfo[39m [HTTP]  +650ms
+[Nest] 2026-04-13T20:40:10.924Z [32minfo[39m [HTTP]  +14s
+[Nest] 2026-04-13T20:40:11.494Z [32minfo[39m [HTTP]  +570ms
+[Nest] 2026-04-13T20:40:26.022Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-13T20:40:26.681Z [32minfo[39m [HTTP]  +659ms
+[Nest] 2026-04-13T20:40:27.446Z [32minfo[39m [HTTP]  +765ms
+[Nest] 2026-04-13T20:40:28.106Z [32minfo[39m [HTTP]  +660ms
+[Nest] 2026-04-13T20:40:41.046Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:40:41.763Z [32minfo[39m [HTTP]  +717ms
+[Nest] 2026-04-13T20:40:55.901Z [32minfo[39m [HTTP]  +14s
+[Nest] 2026-04-13T20:40:56.490Z [32minfo[39m [HTTP]  +589ms
+[Nest] 2026-04-13T20:40:57.174Z [32minfo[39m [HTTP]  +684ms
+[Nest] 2026-04-13T20:40:57.763Z [32minfo[39m [HTTP]  +589ms
+[Nest] 2026-04-13T20:41:10.896Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:41:11.546Z [32minfo[39m [HTTP]  +650ms
+[Nest] 2026-04-13T20:41:26.110Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-13T20:41:26.840Z [32minfo[39m [HTTP]  +730ms
+[Nest] 2026-04-13T20:41:27.665Z [32minfo[39m [HTTP]  +825ms
+[Nest] 2026-04-13T20:41:28.397Z [32minfo[39m [HTTP]  +732ms
+[Nest] 2026-04-13T20:41:40.972Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:41:41.629Z [32minfo[39m [HTTP]  +657ms
+[Nest] 2026-04-13T20:41:56.065Z [32minfo[39m [HTTP]  +14s
+[Nest] 2026-04-13T20:41:56.740Z [32minfo[39m [HTTP]  +675ms
+[Nest] 2026-04-13T20:41:57.488Z [32minfo[39m [HTTP]  +748ms
+[Nest] 2026-04-13T20:41:58.176Z [32minfo[39m [HTTP]  +688ms
+[Nest] 2026-04-13T20:42:10.853Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:42:11.522Z [32minfo[39m [HTTP]  +669ms
+[Nest] 2026-04-13T20:42:25.879Z [32minfo[39m [HTTP]  +14s
+[Nest] 2026-04-13T20:42:26.518Z [32minfo[39m [HTTP]  +639ms
+[Nest] 2026-04-13T20:42:27.228Z [32minfo[39m [HTTP]  +710ms
+[Nest] 2026-04-13T20:42:27.860Z [32minfo[39m [HTTP]  +632ms
+[Nest] 2026-04-13T20:42:40.919Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:42:41.573Z [32minfo[39m [HTTP]  +654ms
+[Nest] 2026-04-13T20:42:47.005Z [32minfo[39m [HTTP]  +5s
+RolesService: resolving permissions for user=25390d0e-9744-4ec3-85f4-6e926f5d0a51 email=deybisasprilla@gmail.com storedRole=MANAGER effectiveRole=MANAGER debugRole=none
+[Nest] 2026-04-13T20:42:49.202Z [32minfo[39m [HTTP]  +2s
+[Nest] 2026-04-13T20:42:55.090Z [32minfo[39m [HTTP]  +6s
+[Nest] 2026-04-13T20:42:55.668Z [32minfo[39m [HTTP]  +578ms
+RolesService: resolving permissions for user=25390d0e-9744-4ec3-85f4-6e926f5d0a51 email=deybisasprilla@gmail.com storedRole=MANAGER effectiveRole=MANAGER debugRole=none
+[Nest] 2026-04-13T20:42:56.334Z [32minfo[39m [HTTP]  +666ms
+[Nest] 2026-04-13T20:42:56.455Z [32minfo[39m [HTTP]  +121ms
+[Nest] 2026-04-13T20:42:57.248Z [32minfo[39m [HTTP]  +793ms
+[Nest] 2026-04-13T20:42:57.267Z [32minfo[39m [HTTP]  +19ms
+[Nest] 2026-04-13T20:42:59.006Z [32minfo[39m [HTTP]  +2s
+[Nest] 2026-04-13T20:42:59.731Z [32minfo[39m [HTTP]  +725ms
+[Nest] 2026-04-13T20:43:00.538Z [32minfo[39m [HTTP]  +807ms
+[Nest] 2026-04-13T20:43:01.292Z [32minfo[39m [HTTP]  +754ms
+[Nest] 2026-04-13T20:43:05.118Z [32minfo[39m [HTTP]  +4s
+[Nest] 2026-04-13T20:43:05.825Z [32minfo[39m [HTTP]  +707ms
+[Nest] 2026-04-13T20:43:06.604Z [32minfo[39m [HTTP]  +779ms
+[Nest] 2026-04-13T20:43:07.314Z [32minfo[39m [HTTP]  +710ms
+[Nest] 2026-04-13T20:43:08.088Z [32minfo[39m [HTTP]  +774ms
+[Nest] 2026-04-13T20:43:08.800Z [32minfo[39m [HTTP]  +712ms
+[Nest] 2026-04-13T20:43:09.582Z [32minfo[39m [HTTP]  +782ms
+[Nest] 2026-04-13T20:43:10.303Z [32minfo[39m [HTTP]  +721ms
+[Nest] 2026-04-13T20:43:11.090Z [32minfo[39m [HTTP]  +787ms
+[Nest] 2026-04-13T20:43:11.790Z [32minfo[39m [HTTP]  +700ms
+[Nest] 2026-04-13T20:43:12.580Z [32minfo[39m [HTTP]  +790ms
+[Nest] 2026-04-13T20:43:13.280Z [32minfo[39m [HTTP]  +700ms
+[Nest] 2026-04-13T20:43:14.063Z [32minfo[39m [HTTP]  +783ms
+[Nest] 2026-04-13T20:43:14.808Z [32minfo[39m [HTTP]  +745ms
+[Nest] 2026-04-13T20:43:15.589Z [32minfo[39m [HTTP]  +781ms
+[Nest] 2026-04-13T20:43:16.293Z [32minfo[39m [HTTP]  +704ms
+[Nest] 2026-04-13T20:43:29.771Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:43:30.432Z [32minfo[39m [HTTP]  +661ms
+[Nest] 2026-04-13T20:43:31.164Z [32minfo[39m [HTTP]  +732ms
+[Nest] 2026-04-13T20:43:31.814Z [32minfo[39m [HTTP]  +650ms
+[Nest] 2026-04-13T20:43:44.575Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:43:45.224Z [32minfo[39m [HTTP]  +650ms
+[Nest] 2026-04-13T20:43:59.618Z [32minfo[39m [HTTP]  +14s
+[Nest] 2026-04-13T20:44:00.242Z [32minfo[39m [HTTP]  +624ms
+[Nest] 2026-04-13T20:44:00.917Z [32minfo[39m [HTTP]  +675ms
+[Nest] 2026-04-13T20:44:01.510Z [32minfo[39m [HTTP]  +593ms
+[Nest] 2026-04-13T20:44:14.624Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:44:15.279Z [32minfo[39m [HTTP]  +655ms
+[Nest] 2026-04-13T20:44:29.686Z [32minfo[39m [HTTP]  +14s
+[Nest] 2026-04-13T20:44:30.354Z [32minfo[39m [HTTP]  +668ms
+[Nest] 2026-04-13T20:44:31.078Z [32minfo[39m [HTTP]  +724ms
+[Nest] 2026-04-13T20:44:31.731Z [32minfo[39m [HTTP]  +653ms
+[Nest] 2026-04-13T20:44:44.546Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:44:45.147Z [32minfo[39m [HTTP]  +601ms
+[Nest] 2026-04-13T20:44:59.714Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-13T20:45:00.394Z [32minfo[39m [HTTP]  +680ms
+[Nest] 2026-04-13T20:45:01.316Z [32minfo[39m [HTTP]  +922ms
+[Nest] 2026-04-13T20:45:02.163Z [32minfo[39m [HTTP]  +847ms
+[Nest] 2026-04-13T20:45:14.718Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:45:15.432Z [32minfo[39m [HTTP]  +714ms
+[2J[3J[H[[90m3:45:22 p. m.[0m] File change detected. Starting incremental compilation...
+
+[Nest] 2026-04-13T20:45:23.263Z [32minfo[39m [HTTP]  +8s
+[Nest] 2026-04-13T20:45:23.592Z [32minfo[39m [HTTP]  +329ms
+[[90m3:45:23 p. m.[0m] Found 0 errors. Watching for file changes.
+
+[2J[3J[H[[90m3:45:27 p. m.[0m] File change detected. Starting incremental compilation...
+
+[Nest] 2026-04-13T20:45:27.966Z [32minfo[39m [NestFactory] Starting Nest application... +0ms
+[Nest] 2026-04-13T20:45:28.045Z [32minfo[39m [InstanceLoader] SentryModule dependencies initialized +79ms
+[Nest] 2026-04-13T20:45:28.046Z [32minfo[39m [InstanceLoader] DebugRoleContextModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:28.047Z [32minfo[39m [InstanceLoader] PrismaModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:28.048Z [32minfo[39m [InstanceLoader] CartModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:28.048Z [32minfo[39m [InstanceLoader] AdminModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:28.050Z [32minfo[39m [InstanceLoader] ConfigHostModule dependencies initialized +2ms
+[Nest] 2026-04-13T20:45:28.051Z [32minfo[39m [InstanceLoader] ThrottlerModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:28.052Z [32minfo[39m [InstanceLoader] PrometheusModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:28.052Z [32minfo[39m [InstanceLoader] RolesModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:28.055Z [32minfo[39m [InstanceLoader] ConfigModule dependencies initialized +3ms
+[Nest] 2026-04-13T20:45:28.056Z [32minfo[39m [InstanceLoader] ConfigModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:28.059Z [32minfo[39m [InstanceLoader] DashboardModule dependencies initialized +3ms
+[Nest] 2026-04-13T20:45:28.059Z [32minfo[39m [InstanceLoader] PricingModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:28.059Z [32minfo[39m [InstanceLoader] AuthModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:28.060Z [32minfo[39m [InstanceLoader] LocationsModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:28.060Z [32minfo[39m [InstanceLoader] AuditModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:28.061Z [32minfo[39m [InstanceLoader] ConfigurationModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:28.061Z [32minfo[39m [InstanceLoader] WizardModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:28.061Z [32minfo[39m [InstanceLoader] UsersModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:28.062Z [32minfo[39m [InstanceLoader] StorageModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:28.063Z [32minfo[39m [InstanceLoader] InventoryModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:28.063Z [32minfo[39m [InstanceLoader] CollectionsModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:28.064Z [32minfo[39m [InstanceLoader] PqrsModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:28.064Z [32minfo[39m [InstanceLoader] PurchasesModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:28.065Z [32minfo[39m [InstanceLoader] AddressesModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:28.066Z [32minfo[39m [InstanceLoader] ShippingModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:28.067Z [32minfo[39m [InstanceLoader] CacheModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:28.068Z [32minfo[39m [InstanceLoader] AppModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:28.069Z [32minfo[39m [InstanceLoader] OrdersModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:28.069Z [32minfo[39m [InstanceLoader] ProfilesModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:28.069Z [32minfo[39m [InstanceLoader] CatalogModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:28.070Z [32minfo[39m [InstanceLoader] B2BModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:28.070Z [32minfo[39m [InstanceLoader] PersonalizationsModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:28.070Z [32minfo[39m [InstanceLoader] PayrollModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:28.071Z [32minfo[39m [InstanceLoader] PaymentsModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:28.075Z [33mwarn[39m [HTTP] helmet package not installed; applying fallback security headers. +4ms
+[Nest] 2026-04-13T20:45:28.085Z [33mwarn[39m [LegacyRouteConverter] Unsupported route path: "/api/*". In previous versions, the symbols ?, *, and + were used to denote optional or repeating path parameters. The latest version of "path-to-regexp" now requires the use of named parameters. For example, instead of using a route like /users/* to capture all routes starting with "/users", you should use /users/*path. For more details, refer to the migration guide. Attempting to auto-convert... +10ms
+[Nest] 2026-04-13T20:45:28.086Z [32minfo[39m [RoutesResolver] AppController {/api} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:28.089Z [32minfo[39m [RouterExplorer] Mapped {/api, GET} (version: 1) route +3ms
+[Nest] 2026-04-13T20:45:28.090Z [32minfo[39m [RouterExplorer] Mapped {/api/debug-sentry, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.091Z [32minfo[39m [RoutesResolver] PrometheusController {/api/metrics} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:28.092Z [32minfo[39m [RouterExplorer] Mapped {/api/metrics, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.093Z [32minfo[39m [RoutesResolver] DashboardController {/api/dashboard} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:28.094Z [32minfo[39m [RouterExplorer] Mapped {/api/dashboard/stats, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.094Z [32minfo[39m [RoutesResolver] B2bController {/api/b2b} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:28.095Z [32minfo[39m [RouterExplorer] Mapped {/api/b2b/quote, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.095Z [32minfo[39m [RouterExplorer] Mapped {/api/b2b/quotes, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.096Z [32minfo[39m [RouterExplorer] Mapped {/api/b2b/quotes/:id/approve, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.096Z [32minfo[39m [RoutesResolver] PricingController {/api/pricing} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:28.097Z [32minfo[39m [RouterExplorer] Mapped {/api/pricing/quote, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.097Z [32minfo[39m [RoutesResolver] AuthController {/api/auth} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:28.098Z [32minfo[39m [RouterExplorer] Mapped {/api/auth/register, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.099Z [32minfo[39m [RouterExplorer] Mapped {/api/auth/login, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.099Z [32minfo[39m [RouterExplorer] Mapped {/api/auth/forgot-password, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.099Z [32minfo[39m [RouterExplorer] Mapped {/api/auth/debug/change-role, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.100Z [32minfo[39m [RoutesResolver] OrdersController {/api/orders} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:28.100Z [32minfo[39m [RouterExplorer] Mapped {/api/orders, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.101Z [32minfo[39m [RouterExplorer] Mapped {/api/orders, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.101Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/accounts-receivable, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.102Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/user/:userId, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.102Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/:id, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.103Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/:id, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.104Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/:id/payments, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.105Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/:id/receipt, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.106Z [32minfo[39m [RoutesResolver] InventoryController {/api/inventory} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:28.107Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/detailed, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.107Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/movements, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.108Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/products/:productId/average-cost, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.108Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/batch, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.109Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/receive-batch, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.109Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/batches, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.110Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/batches, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.110Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/batches/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.111Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/batches/:id, DELETE} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.111Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/suppliers, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.112Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/suppliers, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.112Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/suppliers/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.113Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/suppliers/:id, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.113Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/suppliers/:id/payments, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.114Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/summary, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.115Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/cash-flow, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.115Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/tax-report, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.115Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/break-even-simulation, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.116Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/opex-categories, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.116Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/opex-categories, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.117Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/opex-transactions, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.117Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/opex, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.118Z [32minfo[39m [RoutesResolver] ReportingController {/api/inventory/reporting} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:28.118Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/reporting/closing, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.118Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/reporting/valuation, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.119Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/reporting/accounting, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.119Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/reporting/accounting/export/excel, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.120Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/reporting/accounting/export/pdf, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.120Z [32minfo[39m [RoutesResolver] FinanceController {/api/finance} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:28.120Z [32minfo[39m [RouterExplorer] Mapped {/api/finance/report-preview, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.121Z [32minfo[39m [RouterExplorer] Mapped {/api/finance/tax-report, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.121Z [32minfo[39m [RouterExplorer] Mapped {/api/finance/break-even-simulation, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.121Z [32minfo[39m [RouterExplorer] Mapped {/api/finance/export-report, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.122Z [32minfo[39m [RoutesResolver] ShippingController {/api/shipping} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:28.122Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/providers, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.122Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/providers, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.123Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/providers/:id, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.123Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/providers/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.123Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/providers/:id, DELETE} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.124Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/shipments/pending, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.124Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/shipments, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.124Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/shipments/:orderId, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.125Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/shipments/:orderId/process-return, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.125Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/shipments/:orderId/label, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.125Z [32minfo[39m [RoutesResolver] ProfilesController {/api/profiles} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:28.126Z [32minfo[39m [RouterExplorer] Mapped {/api/profiles/me, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.126Z [32minfo[39m [RouterExplorer] Mapped {/api/profiles/me, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.127Z [32minfo[39m [RouterExplorer] Mapped {/api/profiles, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.127Z [32minfo[39m [RouterExplorer] Mapped {/api/profiles/:id, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.127Z [32minfo[39m [RoutesResolver] PaymentsController {/api/payments} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:28.128Z [32minfo[39m [RouterExplorer] Mapped {/api/payments/signature/:orderId, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.128Z [32minfo[39m [RouterExplorer] Mapped {/api/payments/wompi/signature/:orderId, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.129Z [32minfo[39m [RouterExplorer] Mapped {/api/payments/webhook/wompi, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.129Z [32minfo[39m [RouterExplorer] Mapped {/api/payments/wompi/webhook, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.130Z [32minfo[39m [RouterExplorer] Mapped {/api/payments/upload-receipt/:entityType/:entityId, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.130Z [32minfo[39m [RoutesResolver] LocationsController {/api/locations} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:28.131Z [32minfo[39m [RouterExplorer] Mapped {/api/locations/departments, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.131Z [32minfo[39m [RouterExplorer] Mapped {/api/locations/municipalities/:departmentId, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.131Z [32minfo[39m [RoutesResolver] AddressesController {/api/addresses} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:28.132Z [32minfo[39m [RouterExplorer] Mapped {/api/addresses, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.133Z [32minfo[39m [RouterExplorer] Mapped {/api/addresses, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.133Z [32minfo[39m [RouterExplorer] Mapped {/api/addresses/:id, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.134Z [32minfo[39m [RouterExplorer] Mapped {/api/addresses/:id, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.134Z [32minfo[39m [RouterExplorer] Mapped {/api/addresses/:id, DELETE} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.135Z [32minfo[39m [RoutesResolver] AuditController {/api/audit} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:28.136Z [32minfo[39m [RouterExplorer] Mapped {/api/audit, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.136Z [32minfo[39m [RouterExplorer] Mapped {/api/audit/:id, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.136Z [32minfo[39m [RoutesResolver] ConfigurationController {/api/configuration} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:28.137Z [32minfo[39m [RouterExplorer] Mapped {/api/configuration/products/:slug, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.137Z [32minfo[39m [RouterExplorer] Mapped {/api/configuration/options/:productId, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.138Z [32minfo[39m [RoutesResolver] CatalogController {/api/catalog} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:28.138Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.138Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/admin/products, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.139Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/admin/:id, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.139Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/products, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.140Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/search, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.140Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/slug/:slug, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.140Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/products/:slug/config, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.141Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/:id, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.141Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.142Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/:id, DELETE} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.142Z [32minfo[39m [RoutesResolver] PersonalizationsController {/api/personalizations} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:28.143Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.143Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.144Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/signed-upload, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.144Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/upload-design, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.144Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/requests, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.145Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/requests, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.146Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/requests/:id, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.146Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/requests/:id/approve, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.147Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/:id, PUT} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.147Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/:id, DELETE} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.148Z [32minfo[39m [RoutesResolver] CollectionsController {/api/collections} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:28.148Z [32minfo[39m [RouterExplorer] Mapped {/api/collections, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.148Z [32minfo[39m [RouterExplorer] Mapped {/api/collections, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.149Z [32minfo[39m [RouterExplorer] Mapped {/api/collections/:id, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.149Z [32minfo[39m [RouterExplorer] Mapped {/api/collections/:id, DELETE} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.149Z [32minfo[39m [RoutesResolver] WizardController {/api/wizard-options} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:28.150Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.150Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options/grouped, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.151Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options/:id, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.151Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.151Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.152Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options/:id, DELETE} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.152Z [32minfo[39m [RoutesResolver] UsersController {/api/users} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:28.152Z [32minfo[39m [RouterExplorer] Mapped {/api/users, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.153Z [32minfo[39m [RouterExplorer] Mapped {/api/users/:id/role, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.153Z [32minfo[39m [RoutesResolver] PqrsController {/api/pqrs} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:28.153Z [32minfo[39m [RouterExplorer] Mapped {/api/pqrs, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.154Z [32minfo[39m [RouterExplorer] Mapped {/api/pqrs, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.154Z [32minfo[39m [RouterExplorer] Mapped {/api/pqrs/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.155Z [32minfo[39m [RoutesResolver] PayrollController {/api/payroll} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:28.155Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/shifts, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.155Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/workers, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.156Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/workers/:id/history, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.156Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/statements, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.157Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/statements/:id, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.157Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/statements/:id/pdf, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.158Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/shifts, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.159Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/workers, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.159Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/shifts/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.160Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/workers/:id, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.160Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/shifts/:id, DELETE} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.161Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/statements/consolidate, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.162Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/statements/:id/status, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.162Z [32minfo[39m [RoutesResolver] PurchasesController {/api/purchase-invoices} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:28.163Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.163Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.163Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.164Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices/:id/payments, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:28.164Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices/:invoiceId/payments/:paymentId, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:28.165Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices/:id, DELETE} (version: 1) route +1ms
+[[90m3:45:28 p. m.[0m] Found 0 errors. Watching for file changes.
+
+[Nest] 2026-04-13T20:45:31.767Z [32minfo[39m [NestFactory] Starting Nest application... +0ms
+[Nest] 2026-04-13T20:45:31.864Z [32minfo[39m [InstanceLoader] SentryModule dependencies initialized +97ms
+[Nest] 2026-04-13T20:45:31.865Z [32minfo[39m [InstanceLoader] DebugRoleContextModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:31.865Z [32minfo[39m [InstanceLoader] PrismaModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:31.866Z [32minfo[39m [InstanceLoader] CartModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:31.866Z [32minfo[39m [InstanceLoader] AdminModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:31.869Z [32minfo[39m [InstanceLoader] ConfigHostModule dependencies initialized +3ms
+[Nest] 2026-04-13T20:45:31.869Z [32minfo[39m [InstanceLoader] ThrottlerModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:31.870Z [32minfo[39m [InstanceLoader] PrometheusModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:31.871Z [32minfo[39m [InstanceLoader] RolesModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:31.876Z [32minfo[39m [InstanceLoader] ConfigModule dependencies initialized +5ms
+[Nest] 2026-04-13T20:45:31.877Z [32minfo[39m [InstanceLoader] ConfigModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:31.880Z [32minfo[39m [InstanceLoader] DashboardModule dependencies initialized +3ms
+[Nest] 2026-04-13T20:45:31.881Z [32minfo[39m [InstanceLoader] PricingModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:31.881Z [32minfo[39m [InstanceLoader] AuthModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:31.882Z [32minfo[39m [InstanceLoader] LocationsModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:31.882Z [32minfo[39m [InstanceLoader] AuditModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:31.882Z [32minfo[39m [InstanceLoader] ConfigurationModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:31.883Z [32minfo[39m [InstanceLoader] WizardModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:31.883Z [32minfo[39m [InstanceLoader] UsersModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:31.884Z [32minfo[39m [InstanceLoader] StorageModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:31.885Z [32minfo[39m [InstanceLoader] InventoryModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:31.885Z [32minfo[39m [InstanceLoader] CollectionsModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:31.886Z [32minfo[39m [InstanceLoader] PqrsModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:31.886Z [32minfo[39m [InstanceLoader] PurchasesModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:31.886Z [32minfo[39m [InstanceLoader] AddressesModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:31.888Z [32minfo[39m [InstanceLoader] ShippingModule dependencies initialized +2ms
+[Nest] 2026-04-13T20:45:31.888Z [32minfo[39m [InstanceLoader] CacheModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:31.889Z [32minfo[39m [InstanceLoader] AppModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:31.890Z [32minfo[39m [InstanceLoader] OrdersModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:31.890Z [32minfo[39m [InstanceLoader] ProfilesModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:31.891Z [32minfo[39m [InstanceLoader] CatalogModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:31.892Z [32minfo[39m [InstanceLoader] B2BModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:31.893Z [32minfo[39m [InstanceLoader] PersonalizationsModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:31.893Z [32minfo[39m [InstanceLoader] PayrollModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:31.894Z [32minfo[39m [InstanceLoader] PaymentsModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:31.899Z [33mwarn[39m [HTTP] helmet package not installed; applying fallback security headers. +5ms
+[Nest] 2026-04-13T20:45:31.912Z [33mwarn[39m [LegacyRouteConverter] Unsupported route path: "/api/*". In previous versions, the symbols ?, *, and + were used to denote optional or repeating path parameters. The latest version of "path-to-regexp" now requires the use of named parameters. For example, instead of using a route like /users/* to capture all routes starting with "/users", you should use /users/*path. For more details, refer to the migration guide. Attempting to auto-convert... +13ms
+[Nest] 2026-04-13T20:45:31.914Z [32minfo[39m [RoutesResolver] AppController {/api} (version: 1): +2ms
+[Nest] 2026-04-13T20:45:31.921Z [32minfo[39m [RouterExplorer] Mapped {/api, GET} (version: 1) route +7ms
+[Nest] 2026-04-13T20:45:31.922Z [32minfo[39m [RouterExplorer] Mapped {/api/debug-sentry, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.923Z [32minfo[39m [RoutesResolver] PrometheusController {/api/metrics} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:31.924Z [32minfo[39m [RouterExplorer] Mapped {/api/metrics, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.925Z [32minfo[39m [RoutesResolver] DashboardController {/api/dashboard} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:31.925Z [32minfo[39m [RouterExplorer] Mapped {/api/dashboard/stats, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:31.926Z [32minfo[39m [RoutesResolver] B2bController {/api/b2b} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:31.927Z [32minfo[39m [RouterExplorer] Mapped {/api/b2b/quote, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.928Z [32minfo[39m [RouterExplorer] Mapped {/api/b2b/quotes, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.929Z [32minfo[39m [RouterExplorer] Mapped {/api/b2b/quotes/:id/approve, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.930Z [32minfo[39m [RoutesResolver] PricingController {/api/pricing} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:31.930Z [32minfo[39m [RouterExplorer] Mapped {/api/pricing/quote, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:31.931Z [32minfo[39m [RoutesResolver] AuthController {/api/auth} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:31.932Z [32minfo[39m [RouterExplorer] Mapped {/api/auth/register, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.933Z [32minfo[39m [RouterExplorer] Mapped {/api/auth/login, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.933Z [32minfo[39m [RouterExplorer] Mapped {/api/auth/forgot-password, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:31.934Z [32minfo[39m [RouterExplorer] Mapped {/api/auth/debug/change-role, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.934Z [32minfo[39m [RoutesResolver] OrdersController {/api/orders} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:31.935Z [32minfo[39m [RouterExplorer] Mapped {/api/orders, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.936Z [32minfo[39m [RouterExplorer] Mapped {/api/orders, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.936Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/accounts-receivable, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:31.937Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/user/:userId, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.938Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/:id, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.939Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/:id, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.939Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/:id/payments, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:31.940Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/:id/receipt, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.941Z [32minfo[39m [RoutesResolver] InventoryController {/api/inventory} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:31.942Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/detailed, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.943Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/movements, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.944Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/products/:productId/average-cost, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.945Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/batch, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.946Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/receive-batch, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.946Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/batches, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:31.947Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/batches, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.948Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/batches/:id, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.949Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/batches/:id, DELETE} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.950Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/suppliers, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.950Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/suppliers, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:31.951Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/suppliers/:id, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.952Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/suppliers/:id, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.953Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/suppliers/:id/payments, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.954Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/summary, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.955Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/cash-flow, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.956Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/tax-report, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.957Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/break-even-simulation, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.958Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/opex-categories, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.959Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/opex-categories, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.959Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/opex-transactions, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:31.960Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/opex, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.961Z [32minfo[39m [RoutesResolver] ReportingController {/api/inventory/reporting} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:31.961Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/reporting/closing, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:31.963Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/reporting/valuation, GET} (version: 1) route +2ms
+[Nest] 2026-04-13T20:45:31.964Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/reporting/accounting, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.964Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/reporting/accounting/export/excel, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:31.965Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/reporting/accounting/export/pdf, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.966Z [32minfo[39m [RoutesResolver] FinanceController {/api/finance} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:31.966Z [32minfo[39m [RouterExplorer] Mapped {/api/finance/report-preview, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:31.967Z [32minfo[39m [RouterExplorer] Mapped {/api/finance/tax-report, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.968Z [32minfo[39m [RouterExplorer] Mapped {/api/finance/break-even-simulation, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.968Z [32minfo[39m [RouterExplorer] Mapped {/api/finance/export-report, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:31.969Z [32minfo[39m [RoutesResolver] ShippingController {/api/shipping} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:31.969Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/providers, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:31.970Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/providers, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.972Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/providers/:id, GET} (version: 1) route +2ms
+[Nest] 2026-04-13T20:45:31.972Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/providers/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:31.975Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/providers/:id, DELETE} (version: 1) route +3ms
+[Nest] 2026-04-13T20:45:31.977Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/shipments/pending, GET} (version: 1) route +2ms
+[Nest] 2026-04-13T20:45:31.978Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/shipments, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.978Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/shipments/:orderId, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:31.979Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/shipments/:orderId/process-return, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.981Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/shipments/:orderId/label, GET} (version: 1) route +2ms
+[Nest] 2026-04-13T20:45:31.981Z [32minfo[39m [RoutesResolver] ProfilesController {/api/profiles} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:31.982Z [32minfo[39m [RouterExplorer] Mapped {/api/profiles/me, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.983Z [32minfo[39m [RouterExplorer] Mapped {/api/profiles/me, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.984Z [32minfo[39m [RouterExplorer] Mapped {/api/profiles, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.985Z [32minfo[39m [RouterExplorer] Mapped {/api/profiles/:id, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.985Z [32minfo[39m [RoutesResolver] PaymentsController {/api/payments} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:31.986Z [32minfo[39m [RouterExplorer] Mapped {/api/payments/signature/:orderId, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.986Z [32minfo[39m [RouterExplorer] Mapped {/api/payments/wompi/signature/:orderId, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:31.987Z [32minfo[39m [RouterExplorer] Mapped {/api/payments/webhook/wompi, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.989Z [32minfo[39m [RouterExplorer] Mapped {/api/payments/wompi/webhook, POST} (version: 1) route +2ms
+[Nest] 2026-04-13T20:45:31.990Z [32minfo[39m [RouterExplorer] Mapped {/api/payments/upload-receipt/:entityType/:entityId, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.992Z [32minfo[39m [RoutesResolver] LocationsController {/api/locations} (version: 1): +2ms
+[Nest] 2026-04-13T20:45:31.992Z [32minfo[39m [RouterExplorer] Mapped {/api/locations/departments, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:31.993Z [32minfo[39m [RouterExplorer] Mapped {/api/locations/municipalities/:departmentId, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.994Z [32minfo[39m [RoutesResolver] AddressesController {/api/addresses} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:31.995Z [32minfo[39m [RouterExplorer] Mapped {/api/addresses, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.996Z [32minfo[39m [RouterExplorer] Mapped {/api/addresses, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.996Z [32minfo[39m [RouterExplorer] Mapped {/api/addresses/:id, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:31.997Z [32minfo[39m [RouterExplorer] Mapped {/api/addresses/:id, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.998Z [32minfo[39m [RouterExplorer] Mapped {/api/addresses/:id, DELETE} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:31.998Z [32minfo[39m [RoutesResolver] AuditController {/api/audit} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:31.999Z [32minfo[39m [RouterExplorer] Mapped {/api/audit, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.000Z [32minfo[39m [RouterExplorer] Mapped {/api/audit/:id, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.000Z [32minfo[39m [RoutesResolver] ConfigurationController {/api/configuration} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:32.001Z [32minfo[39m [RouterExplorer] Mapped {/api/configuration/products/:slug, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.002Z [32minfo[39m [RouterExplorer] Mapped {/api/configuration/options/:productId, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.002Z [32minfo[39m [RoutesResolver] CatalogController {/api/catalog} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:32.003Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.004Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/admin/products, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.004Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/admin/:id, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:32.005Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/products, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.005Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/search, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:32.005Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/slug/:slug, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:32.006Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/products/:slug/config, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.006Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/:id, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:32.007Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/:id, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.008Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/:id, DELETE} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.008Z [32minfo[39m [RoutesResolver] PersonalizationsController {/api/personalizations} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:32.009Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.009Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:32.010Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/signed-upload, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.010Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/upload-design, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:32.011Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/requests, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.012Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/requests, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.012Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/requests/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:32.013Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/requests/:id/approve, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.014Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/:id, PUT} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.014Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/:id, DELETE} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:32.014Z [32minfo[39m [RoutesResolver] CollectionsController {/api/collections} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:32.015Z [32minfo[39m [RouterExplorer] Mapped {/api/collections, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.015Z [32minfo[39m [RouterExplorer] Mapped {/api/collections, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:32.016Z [32minfo[39m [RouterExplorer] Mapped {/api/collections/:id, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.016Z [32minfo[39m [RouterExplorer] Mapped {/api/collections/:id, DELETE} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:32.017Z [32minfo[39m [RoutesResolver] WizardController {/api/wizard-options} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:32.017Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:32.018Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options/grouped, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.018Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options/:id, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:32.019Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.019Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:32.020Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options/:id, DELETE} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.020Z [32minfo[39m [RoutesResolver] UsersController {/api/users} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:32.021Z [32minfo[39m [RouterExplorer] Mapped {/api/users, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.021Z [32minfo[39m [RouterExplorer] Mapped {/api/users/:id/role, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.022Z [32minfo[39m [RoutesResolver] PqrsController {/api/pqrs} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:32.022Z [32minfo[39m [RouterExplorer] Mapped {/api/pqrs, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:32.023Z [32minfo[39m [RouterExplorer] Mapped {/api/pqrs, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.024Z [32minfo[39m [RouterExplorer] Mapped {/api/pqrs/:id, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.025Z [32minfo[39m [RoutesResolver] PayrollController {/api/payroll} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:32.026Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/shifts, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.026Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/workers, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:32.027Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/workers/:id/history, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.028Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/statements, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.028Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/statements/:id, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:32.029Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/statements/:id/pdf, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.029Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/shifts, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:32.030Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/workers, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.031Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/shifts/:id, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.031Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/workers/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:32.032Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/shifts/:id, DELETE} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.033Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/statements/consolidate, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.033Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/statements/:id/status, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:32.034Z [32minfo[39m [RoutesResolver] PurchasesController {/api/purchase-invoices} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:32.034Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:32.035Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.035Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:32.036Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices/:id/payments, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:32.036Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices/:invoiceId/payments/:paymentId, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:32.036Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices/:id, DELETE} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:32.158Z [32minfo[39m [NestApplication] Nest application successfully started +122ms
+🚀 Application is running on: http://localhost:4005
+[2J[3J[H[[90m3:45:35 p. m.[0m] File change detected. Starting incremental compilation...
+
+[[90m3:45:36 p. m.[0m] Found 0 errors. Watching for file changes.
+
+[2J[3J[H[[90m3:45:38 p. m.[0m] File change detected. Starting incremental compilation...
+
+[[90m3:45:38 p. m.[0m] Found 0 errors. Watching for file changes.
+
+[2J[3J[H[[90m3:45:40 p. m.[0m] File change detected. Starting incremental compilation...
+
+[[90m3:45:41 p. m.[0m] Found 0 errors. Watching for file changes.
+
+[Nest] 2026-04-13T20:45:46.354Z [32minfo[39m [NestFactory] Starting Nest application... +0ms
+[Nest] 2026-04-13T20:45:46.434Z [32minfo[39m [InstanceLoader] SentryModule dependencies initialized +79ms
+[Nest] 2026-04-13T20:45:46.436Z [32minfo[39m [InstanceLoader] DebugRoleContextModule dependencies initialized +2ms
+[Nest] 2026-04-13T20:45:46.436Z [32minfo[39m [InstanceLoader] PrismaModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:46.437Z [32minfo[39m [InstanceLoader] CartModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:46.437Z [32minfo[39m [InstanceLoader] AdminModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:46.440Z [32minfo[39m [InstanceLoader] ConfigHostModule dependencies initialized +3ms
+[Nest] 2026-04-13T20:45:46.440Z [32minfo[39m [InstanceLoader] ThrottlerModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:46.441Z [32minfo[39m [InstanceLoader] PrometheusModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:46.442Z [32minfo[39m [InstanceLoader] RolesModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:46.446Z [32minfo[39m [InstanceLoader] ConfigModule dependencies initialized +4ms
+[Nest] 2026-04-13T20:45:46.446Z [32minfo[39m [InstanceLoader] ConfigModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:46.449Z [32minfo[39m [InstanceLoader] DashboardModule dependencies initialized +3ms
+[Nest] 2026-04-13T20:45:46.450Z [32minfo[39m [InstanceLoader] PricingModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:46.450Z [32minfo[39m [InstanceLoader] AuthModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:46.450Z [32minfo[39m [InstanceLoader] LocationsModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:46.451Z [32minfo[39m [InstanceLoader] AuditModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:46.451Z [32minfo[39m [InstanceLoader] ConfigurationModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:46.451Z [32minfo[39m [InstanceLoader] WizardModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:46.452Z [32minfo[39m [InstanceLoader] UsersModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:46.452Z [32minfo[39m [InstanceLoader] StorageModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:46.453Z [32minfo[39m [InstanceLoader] InventoryModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:46.453Z [32minfo[39m [InstanceLoader] CollectionsModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:46.454Z [32minfo[39m [InstanceLoader] PqrsModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:46.454Z [32minfo[39m [InstanceLoader] PurchasesModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:46.455Z [32minfo[39m [InstanceLoader] AddressesModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:46.456Z [32minfo[39m [InstanceLoader] ShippingModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:46.457Z [32minfo[39m [InstanceLoader] CacheModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:46.458Z [32minfo[39m [InstanceLoader] AppModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:46.459Z [32minfo[39m [InstanceLoader] OrdersModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:46.460Z [32minfo[39m [InstanceLoader] ProfilesModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:46.461Z [32minfo[39m [InstanceLoader] CatalogModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:46.461Z [32minfo[39m [InstanceLoader] B2BModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:46.462Z [32minfo[39m [InstanceLoader] PersonalizationsModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:45:46.462Z [32minfo[39m [InstanceLoader] PayrollModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:46.462Z [32minfo[39m [InstanceLoader] PaymentsModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:45:46.467Z [33mwarn[39m [HTTP] helmet package not installed; applying fallback security headers. +5ms
+[Nest] 2026-04-13T20:45:46.477Z [33mwarn[39m [LegacyRouteConverter] Unsupported route path: "/api/*". In previous versions, the symbols ?, *, and + were used to denote optional or repeating path parameters. The latest version of "path-to-regexp" now requires the use of named parameters. For example, instead of using a route like /users/* to capture all routes starting with "/users", you should use /users/*path. For more details, refer to the migration guide. Attempting to auto-convert... +10ms
+[Nest] 2026-04-13T20:45:46.479Z [32minfo[39m [RoutesResolver] AppController {/api} (version: 1): +2ms
+[Nest] 2026-04-13T20:45:46.482Z [32minfo[39m [RouterExplorer] Mapped {/api, GET} (version: 1) route +3ms
+[Nest] 2026-04-13T20:45:46.483Z [32minfo[39m [RouterExplorer] Mapped {/api/debug-sentry, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.484Z [32minfo[39m [RoutesResolver] PrometheusController {/api/metrics} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:46.485Z [32minfo[39m [RouterExplorer] Mapped {/api/metrics, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.485Z [32minfo[39m [RoutesResolver] DashboardController {/api/dashboard} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:46.486Z [32minfo[39m [RouterExplorer] Mapped {/api/dashboard/stats, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.486Z [32minfo[39m [RoutesResolver] B2bController {/api/b2b} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:46.487Z [32minfo[39m [RouterExplorer] Mapped {/api/b2b/quote, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.488Z [32minfo[39m [RouterExplorer] Mapped {/api/b2b/quotes, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.489Z [32minfo[39m [RouterExplorer] Mapped {/api/b2b/quotes/:id/approve, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.489Z [32minfo[39m [RoutesResolver] PricingController {/api/pricing} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:46.490Z [32minfo[39m [RouterExplorer] Mapped {/api/pricing/quote, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.490Z [32minfo[39m [RoutesResolver] AuthController {/api/auth} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:46.492Z [32minfo[39m [RouterExplorer] Mapped {/api/auth/register, POST} (version: 1) route +2ms
+[Nest] 2026-04-13T20:45:46.493Z [32minfo[39m [RouterExplorer] Mapped {/api/auth/login, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.494Z [32minfo[39m [RouterExplorer] Mapped {/api/auth/forgot-password, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.495Z [32minfo[39m [RouterExplorer] Mapped {/api/auth/debug/change-role, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.495Z [32minfo[39m [RoutesResolver] OrdersController {/api/orders} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:46.496Z [32minfo[39m [RouterExplorer] Mapped {/api/orders, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.496Z [32minfo[39m [RouterExplorer] Mapped {/api/orders, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.497Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/accounts-receivable, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.497Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/user/:userId, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.498Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/:id, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.498Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.499Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/:id/payments, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.499Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/:id/receipt, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.499Z [32minfo[39m [RoutesResolver] InventoryController {/api/inventory} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:46.500Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/detailed, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.500Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/movements, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.500Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/products/:productId/average-cost, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.501Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/batch, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.501Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/receive-batch, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.501Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/batches, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.502Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/batches, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.502Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/batches/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.502Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/batches/:id, DELETE} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.503Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/suppliers, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.503Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/suppliers, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.504Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/suppliers/:id, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.504Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/suppliers/:id, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.504Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/suppliers/:id/payments, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.505Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/summary, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.505Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/cash-flow, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.506Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/tax-report, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.506Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/break-even-simulation, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.507Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/opex-categories, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.507Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/opex-categories, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.508Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/opex-transactions, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.508Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/opex, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.508Z [32minfo[39m [RoutesResolver] ReportingController {/api/inventory/reporting} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:46.509Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/reporting/closing, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.510Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/reporting/valuation, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.510Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/reporting/accounting, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.511Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/reporting/accounting/export/excel, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.511Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/reporting/accounting/export/pdf, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.512Z [32minfo[39m [RoutesResolver] FinanceController {/api/finance} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:46.512Z [32minfo[39m [RouterExplorer] Mapped {/api/finance/report-preview, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.512Z [32minfo[39m [RouterExplorer] Mapped {/api/finance/tax-report, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.513Z [32minfo[39m [RouterExplorer] Mapped {/api/finance/break-even-simulation, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.513Z [32minfo[39m [RouterExplorer] Mapped {/api/finance/export-report, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.513Z [32minfo[39m [RoutesResolver] ShippingController {/api/shipping} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:46.514Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/providers, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.514Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/providers, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.515Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/providers/:id, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.515Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/providers/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.516Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/providers/:id, DELETE} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.516Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/shipments/pending, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.516Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/shipments, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.517Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/shipments/:orderId, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.517Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/shipments/:orderId/process-return, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.517Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/shipments/:orderId/label, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.518Z [32minfo[39m [RoutesResolver] ProfilesController {/api/profiles} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:46.518Z [32minfo[39m [RouterExplorer] Mapped {/api/profiles/me, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.518Z [32minfo[39m [RouterExplorer] Mapped {/api/profiles/me, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.519Z [32minfo[39m [RouterExplorer] Mapped {/api/profiles, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.519Z [32minfo[39m [RouterExplorer] Mapped {/api/profiles/:id, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.519Z [32minfo[39m [RoutesResolver] PaymentsController {/api/payments} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:46.520Z [32minfo[39m [RouterExplorer] Mapped {/api/payments/signature/:orderId, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.520Z [32minfo[39m [RouterExplorer] Mapped {/api/payments/wompi/signature/:orderId, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.521Z [32minfo[39m [RouterExplorer] Mapped {/api/payments/webhook/wompi, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.521Z [32minfo[39m [RouterExplorer] Mapped {/api/payments/wompi/webhook, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.521Z [32minfo[39m [RouterExplorer] Mapped {/api/payments/upload-receipt/:entityType/:entityId, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.522Z [32minfo[39m [RoutesResolver] LocationsController {/api/locations} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:46.522Z [32minfo[39m [RouterExplorer] Mapped {/api/locations/departments, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.523Z [32minfo[39m [RouterExplorer] Mapped {/api/locations/municipalities/:departmentId, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.523Z [32minfo[39m [RoutesResolver] AddressesController {/api/addresses} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:46.524Z [32minfo[39m [RouterExplorer] Mapped {/api/addresses, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.524Z [32minfo[39m [RouterExplorer] Mapped {/api/addresses, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.525Z [32minfo[39m [RouterExplorer] Mapped {/api/addresses/:id, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.525Z [32minfo[39m [RouterExplorer] Mapped {/api/addresses/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.525Z [32minfo[39m [RouterExplorer] Mapped {/api/addresses/:id, DELETE} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.526Z [32minfo[39m [RoutesResolver] AuditController {/api/audit} (version: 1): +1ms
+[Nest] 2026-04-13T20:45:46.526Z [32minfo[39m [RouterExplorer] Mapped {/api/audit, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.527Z [32minfo[39m [RouterExplorer] Mapped {/api/audit/:id, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.527Z [32minfo[39m [RoutesResolver] ConfigurationController {/api/configuration} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:46.527Z [32minfo[39m [RouterExplorer] Mapped {/api/configuration/products/:slug, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.528Z [32minfo[39m [RouterExplorer] Mapped {/api/configuration/options/:productId, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.528Z [32minfo[39m [RoutesResolver] CatalogController {/api/catalog} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:46.528Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.529Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/admin/products, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.530Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/admin/:id, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.530Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/products, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.530Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/search, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.531Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/slug/:slug, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.531Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/products/:slug/config, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.531Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/:id, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.532Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/:id, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.532Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/:id, DELETE} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.532Z [32minfo[39m [RoutesResolver] PersonalizationsController {/api/personalizations} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:46.533Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.533Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.533Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/signed-upload, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.534Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/upload-design, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.534Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/requests, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.535Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/requests, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.535Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/requests/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.536Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/requests/:id/approve, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.536Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/:id, PUT} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.537Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/:id, DELETE} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.537Z [32minfo[39m [RoutesResolver] CollectionsController {/api/collections} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:46.537Z [32minfo[39m [RouterExplorer] Mapped {/api/collections, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.538Z [32minfo[39m [RouterExplorer] Mapped {/api/collections, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.538Z [32minfo[39m [RouterExplorer] Mapped {/api/collections/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.539Z [32minfo[39m [RouterExplorer] Mapped {/api/collections/:id, DELETE} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.539Z [32minfo[39m [RoutesResolver] WizardController {/api/wizard-options} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:46.540Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.540Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options/grouped, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.540Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options/:id, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.541Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.541Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.542Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options/:id, DELETE} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.542Z [32minfo[39m [RoutesResolver] UsersController {/api/users} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:46.543Z [32minfo[39m [RouterExplorer] Mapped {/api/users, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.544Z [32minfo[39m [RouterExplorer] Mapped {/api/users/:id/role, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.544Z [32minfo[39m [RoutesResolver] PqrsController {/api/pqrs} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:46.545Z [32minfo[39m [RouterExplorer] Mapped {/api/pqrs, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.546Z [32minfo[39m [RouterExplorer] Mapped {/api/pqrs, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.546Z [32minfo[39m [RouterExplorer] Mapped {/api/pqrs/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.546Z [32minfo[39m [RoutesResolver] PayrollController {/api/payroll} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:46.547Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/shifts, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.548Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/workers, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.548Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/workers/:id/history, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.549Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/statements, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.549Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/statements/:id, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.550Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/statements/:id/pdf, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.550Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/shifts, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.550Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/workers, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.551Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/shifts/:id, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.551Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/workers/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.552Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/shifts/:id, DELETE} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.552Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/statements/consolidate, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.553Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/statements/:id/status, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.553Z [32minfo[39m [RoutesResolver] PurchasesController {/api/purchase-invoices} (version: 1): +0ms
+[Nest] 2026-04-13T20:45:46.553Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.554Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.554Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.555Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices/:id/payments, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.555Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices/:invoiceId/payments/:paymentId, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:45:46.555Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices/:id, DELETE} (version: 1) route +1ms
+[Nest] 2026-04-13T20:45:46.684Z [32minfo[39m [NestApplication] Nest application successfully started +128ms
+🚀 Application is running on: http://localhost:4005
+[Nest] 2026-04-13T20:45:59.900Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:46:00.576Z [32minfo[39m [HTTP]  +676ms
+[Nest] 2026-04-13T20:46:01.358Z [32minfo[39m [HTTP]  +782ms
+[Nest] 2026-04-13T20:46:02.021Z [32minfo[39m [HTTP]  +664ms
+[2J[3J[H[[90m3:46:12 p. m.[0m] File change detected. Starting incremental compilation...
+
+[[90m3:46:13 p. m.[0m] Found 0 errors. Watching for file changes.
+
+[Nest] 2026-04-13T20:46:16.912Z [32minfo[39m [NestFactory] Starting Nest application... +0ms
+[Nest] 2026-04-13T20:46:16.981Z [32minfo[39m [InstanceLoader] SentryModule dependencies initialized +69ms
+[Nest] 2026-04-13T20:46:16.983Z [32minfo[39m [InstanceLoader] DebugRoleContextModule dependencies initialized +2ms
+[Nest] 2026-04-13T20:46:16.983Z [32minfo[39m [InstanceLoader] PrismaModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:46:16.984Z [32minfo[39m [InstanceLoader] CartModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:46:16.985Z [32minfo[39m [InstanceLoader] AdminModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:46:16.987Z [32minfo[39m [InstanceLoader] ConfigHostModule dependencies initialized +2ms
+[Nest] 2026-04-13T20:46:16.988Z [32minfo[39m [InstanceLoader] ThrottlerModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:46:16.988Z [32minfo[39m [InstanceLoader] PrometheusModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:46:16.989Z [32minfo[39m [InstanceLoader] RolesModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:46:16.992Z [32minfo[39m [InstanceLoader] ConfigModule dependencies initialized +3ms
+[Nest] 2026-04-13T20:46:16.992Z [32minfo[39m [InstanceLoader] ConfigModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:46:16.995Z [32minfo[39m [InstanceLoader] DashboardModule dependencies initialized +3ms
+[Nest] 2026-04-13T20:46:16.995Z [32minfo[39m [InstanceLoader] PricingModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:46:16.996Z [32minfo[39m [InstanceLoader] AuthModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:46:16.996Z [32minfo[39m [InstanceLoader] LocationsModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:46:16.997Z [32minfo[39m [InstanceLoader] AuditModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:46:16.997Z [32minfo[39m [InstanceLoader] ConfigurationModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:46:16.998Z [32minfo[39m [InstanceLoader] WizardModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:46:16.998Z [32minfo[39m [InstanceLoader] UsersModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:46:16.999Z [32minfo[39m [InstanceLoader] StorageModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:46:17.000Z [32minfo[39m [InstanceLoader] InventoryModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:46:17.000Z [32minfo[39m [InstanceLoader] CollectionsModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:46:17.000Z [32minfo[39m [InstanceLoader] PqrsModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:46:17.001Z [32minfo[39m [InstanceLoader] PurchasesModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:46:17.001Z [32minfo[39m [InstanceLoader] AddressesModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:46:17.002Z [32minfo[39m [InstanceLoader] ShippingModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:46:17.003Z [32minfo[39m [InstanceLoader] CacheModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:46:17.004Z [32minfo[39m [InstanceLoader] AppModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:46:17.004Z [32minfo[39m [InstanceLoader] OrdersModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:46:17.004Z [32minfo[39m [InstanceLoader] ProfilesModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:46:17.005Z [32minfo[39m [InstanceLoader] CatalogModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:46:17.006Z [32minfo[39m [InstanceLoader] B2BModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:46:17.006Z [32minfo[39m [InstanceLoader] PersonalizationsModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:46:17.006Z [32minfo[39m [InstanceLoader] PayrollModule dependencies initialized +0ms
+[Nest] 2026-04-13T20:46:17.007Z [32minfo[39m [InstanceLoader] PaymentsModule dependencies initialized +1ms
+[Nest] 2026-04-13T20:46:17.011Z [33mwarn[39m [HTTP] helmet package not installed; applying fallback security headers. +4ms
+[Nest] 2026-04-13T20:46:17.019Z [33mwarn[39m [LegacyRouteConverter] Unsupported route path: "/api/*". In previous versions, the symbols ?, *, and + were used to denote optional or repeating path parameters. The latest version of "path-to-regexp" now requires the use of named parameters. For example, instead of using a route like /users/* to capture all routes starting with "/users", you should use /users/*path. For more details, refer to the migration guide. Attempting to auto-convert... +8ms
+[Nest] 2026-04-13T20:46:17.021Z [32minfo[39m [RoutesResolver] AppController {/api} (version: 1): +2ms
+[Nest] 2026-04-13T20:46:17.025Z [32minfo[39m [RouterExplorer] Mapped {/api, GET} (version: 1) route +4ms
+[Nest] 2026-04-13T20:46:17.025Z [32minfo[39m [RouterExplorer] Mapped {/api/debug-sentry, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.026Z [32minfo[39m [RoutesResolver] PrometheusController {/api/metrics} (version: 1): +1ms
+[Nest] 2026-04-13T20:46:17.027Z [32minfo[39m [RouterExplorer] Mapped {/api/metrics, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.027Z [32minfo[39m [RoutesResolver] DashboardController {/api/dashboard} (version: 1): +0ms
+[Nest] 2026-04-13T20:46:17.027Z [32minfo[39m [RouterExplorer] Mapped {/api/dashboard/stats, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.028Z [32minfo[39m [RoutesResolver] B2bController {/api/b2b} (version: 1): +0ms
+[Nest] 2026-04-13T20:46:17.029Z [32minfo[39m [RouterExplorer] Mapped {/api/b2b/quote, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.029Z [32minfo[39m [RouterExplorer] Mapped {/api/b2b/quotes, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.030Z [32minfo[39m [RouterExplorer] Mapped {/api/b2b/quotes/:id/approve, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.030Z [32minfo[39m [RoutesResolver] PricingController {/api/pricing} (version: 1): +0ms
+[Nest] 2026-04-13T20:46:17.031Z [32minfo[39m [RouterExplorer] Mapped {/api/pricing/quote, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.031Z [32minfo[39m [RoutesResolver] AuthController {/api/auth} (version: 1): +0ms
+[Nest] 2026-04-13T20:46:17.032Z [32minfo[39m [RouterExplorer] Mapped {/api/auth/register, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.032Z [32minfo[39m [RouterExplorer] Mapped {/api/auth/login, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.033Z [32minfo[39m [RouterExplorer] Mapped {/api/auth/forgot-password, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.033Z [32minfo[39m [RouterExplorer] Mapped {/api/auth/debug/change-role, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.034Z [32minfo[39m [RoutesResolver] OrdersController {/api/orders} (version: 1): +1ms
+[Nest] 2026-04-13T20:46:17.034Z [32minfo[39m [RouterExplorer] Mapped {/api/orders, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.035Z [32minfo[39m [RouterExplorer] Mapped {/api/orders, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.036Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/accounts-receivable, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.036Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/user/:userId, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.037Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/:id, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.037Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.038Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/:id/payments, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.038Z [32minfo[39m [RouterExplorer] Mapped {/api/orders/:id/receipt, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.039Z [32minfo[39m [RoutesResolver] InventoryController {/api/inventory} (version: 1): +1ms
+[Nest] 2026-04-13T20:46:17.039Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/detailed, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.040Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/movements, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.040Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/products/:productId/average-cost, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.040Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/batch, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.041Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/receive-batch, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.041Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/batches, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.042Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/batches, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.042Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/batches/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.043Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/batches/:id, DELETE} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.043Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/suppliers, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.044Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/suppliers, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.044Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/suppliers/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.045Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/suppliers/:id, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.045Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/suppliers/:id/payments, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.046Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/summary, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.046Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/cash-flow, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.046Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/tax-report, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.047Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/break-even-simulation, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.047Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/opex-categories, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.048Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/opex-categories, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.048Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/opex-transactions, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.049Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/finance/opex, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.049Z [32minfo[39m [RoutesResolver] ReportingController {/api/inventory/reporting} (version: 1): +0ms
+[Nest] 2026-04-13T20:46:17.050Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/reporting/closing, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.050Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/reporting/valuation, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.051Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/reporting/accounting, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.052Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/reporting/accounting/export/excel, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.052Z [32minfo[39m [RouterExplorer] Mapped {/api/inventory/reporting/accounting/export/pdf, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.052Z [32minfo[39m [RoutesResolver] FinanceController {/api/finance} (version: 1): +0ms
+[Nest] 2026-04-13T20:46:17.053Z [32minfo[39m [RouterExplorer] Mapped {/api/finance/report-preview, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.053Z [32minfo[39m [RouterExplorer] Mapped {/api/finance/tax-report, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.053Z [32minfo[39m [RouterExplorer] Mapped {/api/finance/break-even-simulation, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.054Z [32minfo[39m [RouterExplorer] Mapped {/api/finance/export-report, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.054Z [32minfo[39m [RoutesResolver] ShippingController {/api/shipping} (version: 1): +0ms
+[Nest] 2026-04-13T20:46:17.054Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/providers, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.055Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/providers, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.055Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/providers/:id, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.055Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/providers/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.056Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/providers/:id, DELETE} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.056Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/shipments/pending, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.056Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/shipments, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.057Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/shipments/:orderId, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.057Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/shipments/:orderId/process-return, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.058Z [32minfo[39m [RouterExplorer] Mapped {/api/shipping/shipments/:orderId/label, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.058Z [32minfo[39m [RoutesResolver] ProfilesController {/api/profiles} (version: 1): +0ms
+[Nest] 2026-04-13T20:46:17.059Z [32minfo[39m [RouterExplorer] Mapped {/api/profiles/me, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.060Z [32minfo[39m [RouterExplorer] Mapped {/api/profiles/me, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.061Z [32minfo[39m [RouterExplorer] Mapped {/api/profiles, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.061Z [32minfo[39m [RouterExplorer] Mapped {/api/profiles/:id, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.062Z [32minfo[39m [RoutesResolver] PaymentsController {/api/payments} (version: 1): +1ms
+[Nest] 2026-04-13T20:46:17.062Z [32minfo[39m [RouterExplorer] Mapped {/api/payments/signature/:orderId, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.063Z [32minfo[39m [RouterExplorer] Mapped {/api/payments/wompi/signature/:orderId, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.063Z [32minfo[39m [RouterExplorer] Mapped {/api/payments/webhook/wompi, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.064Z [32minfo[39m [RouterExplorer] Mapped {/api/payments/wompi/webhook, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.065Z [32minfo[39m [RouterExplorer] Mapped {/api/payments/upload-receipt/:entityType/:entityId, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.065Z [32minfo[39m [RoutesResolver] LocationsController {/api/locations} (version: 1): +0ms
+[Nest] 2026-04-13T20:46:17.066Z [32minfo[39m [RouterExplorer] Mapped {/api/locations/departments, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.067Z [32minfo[39m [RouterExplorer] Mapped {/api/locations/municipalities/:departmentId, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.067Z [32minfo[39m [RoutesResolver] AddressesController {/api/addresses} (version: 1): +0ms
+[Nest] 2026-04-13T20:46:17.068Z [32minfo[39m [RouterExplorer] Mapped {/api/addresses, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.068Z [32minfo[39m [RouterExplorer] Mapped {/api/addresses, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.069Z [32minfo[39m [RouterExplorer] Mapped {/api/addresses/:id, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.069Z [32minfo[39m [RouterExplorer] Mapped {/api/addresses/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.070Z [32minfo[39m [RouterExplorer] Mapped {/api/addresses/:id, DELETE} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.070Z [32minfo[39m [RoutesResolver] AuditController {/api/audit} (version: 1): +0ms
+[Nest] 2026-04-13T20:46:17.070Z [32minfo[39m [RouterExplorer] Mapped {/api/audit, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.071Z [32minfo[39m [RouterExplorer] Mapped {/api/audit/:id, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.071Z [32minfo[39m [RoutesResolver] ConfigurationController {/api/configuration} (version: 1): +0ms
+[Nest] 2026-04-13T20:46:17.071Z [32minfo[39m [RouterExplorer] Mapped {/api/configuration/products/:slug, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.072Z [32minfo[39m [RouterExplorer] Mapped {/api/configuration/options/:productId, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.072Z [32minfo[39m [RoutesResolver] CatalogController {/api/catalog} (version: 1): +0ms
+[Nest] 2026-04-13T20:46:17.073Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.073Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/admin/products, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.073Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/admin/:id, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.074Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/products, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.074Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/search, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.074Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/slug/:slug, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.075Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/products/:slug/config, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.075Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/:id, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.075Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.076Z [32minfo[39m [RouterExplorer] Mapped {/api/catalog/:id, DELETE} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.076Z [32minfo[39m [RoutesResolver] PersonalizationsController {/api/personalizations} (version: 1): +0ms
+[Nest] 2026-04-13T20:46:17.076Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.076Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.077Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/signed-upload, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.077Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/upload-design, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.077Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/requests, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.078Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/requests, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.078Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/requests/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.078Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/requests/:id/approve, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.079Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/:id, PUT} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.079Z [32minfo[39m [RouterExplorer] Mapped {/api/personalizations/:id, DELETE} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.079Z [32minfo[39m [RoutesResolver] CollectionsController {/api/collections} (version: 1): +0ms
+[Nest] 2026-04-13T20:46:17.080Z [32minfo[39m [RouterExplorer] Mapped {/api/collections, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.080Z [32minfo[39m [RouterExplorer] Mapped {/api/collections, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.080Z [32minfo[39m [RouterExplorer] Mapped {/api/collections/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.081Z [32minfo[39m [RouterExplorer] Mapped {/api/collections/:id, DELETE} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.081Z [32minfo[39m [RoutesResolver] WizardController {/api/wizard-options} (version: 1): +0ms
+[Nest] 2026-04-13T20:46:17.081Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.082Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options/grouped, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.082Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options/:id, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.082Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.083Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options/:id, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.083Z [32minfo[39m [RouterExplorer] Mapped {/api/wizard-options/:id, DELETE} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.083Z [32minfo[39m [RoutesResolver] UsersController {/api/users} (version: 1): +0ms
+[Nest] 2026-04-13T20:46:17.084Z [32minfo[39m [RouterExplorer] Mapped {/api/users, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.084Z [32minfo[39m [RouterExplorer] Mapped {/api/users/:id/role, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.084Z [32minfo[39m [RoutesResolver] PqrsController {/api/pqrs} (version: 1): +0ms
+[Nest] 2026-04-13T20:46:17.085Z [32minfo[39m [RouterExplorer] Mapped {/api/pqrs, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.085Z [32minfo[39m [RouterExplorer] Mapped {/api/pqrs, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.086Z [32minfo[39m [RouterExplorer] Mapped {/api/pqrs/:id, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.086Z [32minfo[39m [RoutesResolver] PayrollController {/api/payroll} (version: 1): +0ms
+[Nest] 2026-04-13T20:46:17.086Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/shifts, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.087Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/workers, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.088Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/workers/:id/history, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.088Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/statements, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.088Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/statements/:id, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.089Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/statements/:id/pdf, GET} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.089Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/shifts, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.089Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/workers, POST} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.090Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/shifts/:id, PATCH} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.090Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/workers/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.090Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/shifts/:id, DELETE} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.091Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/statements/consolidate, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.091Z [32minfo[39m [RouterExplorer] Mapped {/api/payroll/statements/:id/status, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.091Z [32minfo[39m [RoutesResolver] PurchasesController {/api/purchase-invoices} (version: 1): +0ms
+[Nest] 2026-04-13T20:46:17.092Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.092Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices, GET} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.092Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices/:id, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.093Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices/:id/payments, POST} (version: 1) route +1ms
+[Nest] 2026-04-13T20:46:17.093Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices/:invoiceId/payments/:paymentId, PATCH} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.093Z [32minfo[39m [RouterExplorer] Mapped {/api/purchase-invoices/:id, DELETE} (version: 1) route +0ms
+[Nest] 2026-04-13T20:46:17.180Z [32minfo[39m [NestApplication] Nest application successfully started +87ms
+🚀 Application is running on: http://localhost:4005
+[Nest] 2026-04-13T20:46:29.687Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:46:30.291Z [32minfo[39m [HTTP]  +604ms
+[Nest] 2026-04-13T20:46:30.949Z [32minfo[39m [HTTP]  +658ms
+[Nest] 2026-04-13T20:46:31.540Z [32minfo[39m [HTTP]  +591ms
+[Nest] 2026-04-13T20:46:44.727Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:46:45.459Z [32minfo[39m [HTTP]  +732ms
+[Nest] 2026-04-13T20:46:59.603Z [32minfo[39m [HTTP]  +14s
+[Nest] 2026-04-13T20:47:00.198Z [32minfo[39m [HTTP]  +595ms
+[Nest] 2026-04-13T20:47:00.869Z [32minfo[39m [HTTP]  +671ms
+[Nest] 2026-04-13T20:47:01.453Z [32minfo[39m [HTTP]  +584ms
+[Nest] 2026-04-13T20:47:14.736Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:47:15.404Z [32minfo[39m [HTTP]  +669ms
+[Nest] 2026-04-13T20:47:29.716Z [32minfo[39m [HTTP]  +14s
+[Nest] 2026-04-13T20:47:30.390Z [32minfo[39m [HTTP]  +674ms
+[Nest] 2026-04-13T20:47:31.140Z [32minfo[39m [HTTP]  +750ms
+[Nest] 2026-04-13T20:47:31.799Z [32minfo[39m [HTTP]  +659ms
+[Nest] 2026-04-13T20:47:44.513Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:47:45.100Z [32minfo[39m [HTTP]  +587ms
+[Nest] 2026-04-13T20:47:59.788Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-13T20:48:00.529Z [32minfo[39m [HTTP]  +741ms
+[Nest] 2026-04-13T20:48:01.368Z [32minfo[39m [HTTP]  +839ms
+[Nest] 2026-04-13T20:48:02.096Z [32minfo[39m [HTTP]  +728ms
+[Nest] 2026-04-13T20:48:14.658Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:48:15.328Z [32minfo[39m [HTTP]  +670ms
+[Nest] 2026-04-13T20:48:29.673Z [32minfo[39m [HTTP]  +14s
+[Nest] 2026-04-13T20:48:30.317Z [32minfo[39m [HTTP]  +644ms
+[Nest] 2026-04-13T20:48:31.047Z [32minfo[39m [HTTP]  +730ms
+[Nest] 2026-04-13T20:48:31.688Z [32minfo[39m [HTTP]  +641ms
+[Nest] 2026-04-13T20:48:44.691Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:48:45.402Z [32minfo[39m [HTTP]  +711ms
+[Nest] 2026-04-13T20:48:59.752Z [32minfo[39m [HTTP]  +14s
+[Nest] 2026-04-13T20:49:00.437Z [32minfo[39m [HTTP]  +685ms
+[Nest] 2026-04-13T20:49:01.191Z [32minfo[39m [HTTP]  +754ms
+[Nest] 2026-04-13T20:49:01.869Z [32minfo[39m [HTTP]  +678ms
+[Nest] 2026-04-13T20:49:14.491Z [32minfo[39m [HTTP]  +13s
+[Nest] 2026-04-13T20:49:15.082Z [32minfo[39m [HTTP]  +591ms
+[Nest] 2026-04-13T20:49:20.217Z [32minfo[39m [HTTP]  +5s
+[Nest] 2026-04-13T20:49:20.792Z [32minfo[39m [HTTP]  +575ms
+[Nest] 2026-04-13T20:49:21.467Z [32minfo[39m [HTTP]  +675ms
+[Nest] 2026-04-13T20:49:22.043Z [32minfo[39m [HTTP]  +576ms
+[Nest] 2026-04-13T20:49:25.864Z [32minfo[39m [HTTP]  +4s
+RolesService: resolving permissions for user=25390d0e-9744-4ec3-85f4-6e926f5d0a51 email=deybisasprilla@gmail.com storedRole=MANAGER effectiveRole=MANAGER debugRole=none
+[Nest] 2026-04-13T20:49:27.071Z [32minfo[39m [HTTP]  +1s
+[Nest] 2026-04-13T20:49:27.830Z [32minfo[39m [HTTP]  +759ms
+[Nest] 2026-04-13T20:49:29.443Z [32minfo[39m [HTTP]  +2s
+[Nest] 2026-04-13T20:49:30.020Z [32minfo[39m [HTTP]  +577ms
+[Nest] 2026-04-13T20:49:30.697Z [32minfo[39m [HTTP]  +677ms
+[Nest] 2026-04-13T20:49:31.277Z [32minfo[39m [HTTP]  +580ms
+[Nest] 2026-04-13T20:49:45.403Z [32minfo[39m [HTTP]  +14s
+[Nest] 2026-04-13T20:49:46.123Z [32minfo[39m [HTTP]  +720ms

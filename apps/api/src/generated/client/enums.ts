@@ -53,8 +53,12 @@ export type PersonalizationRequestStatus = (typeof PersonalizationRequestStatus)
 
 export const OrderStatus = {
   PENDIENTE_PAGO: 'PENDIENTE_PAGO',
+  PENDING_DEPOSIT: 'PENDING_DEPOSIT',
   PAGADA: 'PAGADA',
+  IN_PRODUCTION: 'IN_PRODUCTION',
   EN_PRODUCCION: 'EN_PRODUCCION',
+  PENDING_FINAL_PAYMENT: 'PENDING_FINAL_PAYMENT',
+  READY_FOR_DISPATCH: 'READY_FOR_DISPATCH',
   ENVIADA: 'ENVIADA',
   ENTREGADA: 'ENTREGADA',
   RETURNED_TO_STOCK: 'RETURNED_TO_STOCK',
@@ -154,6 +158,14 @@ export const PurchaseInvoiceStatus = {
 } as const
 
 export type PurchaseInvoiceStatus = (typeof PurchaseInvoiceStatus)[keyof typeof PurchaseInvoiceStatus]
+
+
+export const PurchaseDocumentType = {
+  INVOICE: 'INVOICE',
+  DELIVERY_NOTE: 'DELIVERY_NOTE'
+} as const
+
+export type PurchaseDocumentType = (typeof PurchaseDocumentType)[keyof typeof PurchaseDocumentType]
 
 
 export const TransactionType = {

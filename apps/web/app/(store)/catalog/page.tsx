@@ -188,7 +188,7 @@ function CatalogPageContent() {
             <div className="text-center py-20 text-accent font-medium">{error}</div>
           ) : (
             <>
-              <ProductGrid products={paginatedProducts} />
+              <ProductGrid products={paginatedProducts} showVariantIndicator={false} />
 
               {totalPages > 1 && (
                 <div className="mt-12 flex justify-center items-center gap-2">

@@ -1,7 +1,6 @@
 generator client {
-  provider        = "prisma-client"
-  output          = "../src/generated/client"
-  previewFeatures = ["multiSchema"]
+  provider = "prisma-client"
+  output   = "../src/generated/client"
 }
 
 datasource db {
@@ -10,37 +9,37 @@ datasource db {
 }
 
 model Product {
-  id                   String                @id @default(uuid()) @map("id")
-  name                 String                @map("name")
-  description          String                @map("description")
-  basePrice            Float                 @map("base_price")
-  minPrice             Float                 @map("min_price")
-  comparePrice         Float?                @map("compare_price")
-  costPrice            Float?                @map("cost_price")
-  status               ProductStatus         @default(BAJO_PEDIDO) @map("status")
-  collectionId         String                @map("collection_id")
-  slug                 String                @unique @map("slug")
-  seoTitle             String?               @map("seo_title")
-  seoDescription       String?               @map("seo_description")
-  tags                 String[]              @default([]) @map("tags")
-  deliveryTime         String                @map("delivery_time")
-  material             String                @default("Algodón resistente") @map("material")
-  dimensions           String?               @map("dimensions")
-  careInstructions     String?               @map("care_instructions")
-  printType            PrintType             @default(DTF) @map("print_type")
-  isActive             Boolean               @default(true) @map("is_active")
-  createdAt            DateTime              @default(now()) @map("created_at")
-  updatedAt            DateTime              @updatedAt @map("updated_at")
-  quoteItems           B2BQuoteItem[]
-  orderItems           OrderItem[]
+  id                      String                   @id @default(uuid()) @map("id")
+  name                    String                   @map("name")
+  description             String                   @map("description")
+  basePrice               Float                    @map("base_price")
+  minPrice                Float                    @map("min_price")
+  comparePrice            Float?                   @map("compare_price")
+  costPrice               Float?                   @map("cost_price")
+  status                  ProductStatus            @default(BAJO_PEDIDO) @map("status")
+  collectionId            String                   @map("collection_id")
+  slug                    String                   @unique @map("slug")
+  seoTitle                String?                  @map("seo_title")
+  seoDescription          String?                  @map("seo_description")
+  tags                    String[]                 @default([]) @map("tags")
+  deliveryTime            String                   @map("delivery_time")
+  material                String                   @default("Algodón resistente") @map("material")
+  dimensions              String?                  @map("dimensions")
+  careInstructions        String?                  @map("care_instructions")
+  printType               PrintType                @default(DTF) @map("print_type")
+  isActive                Boolean                  @default(true) @map("is_active")
+  createdAt               DateTime                 @default(now()) @map("created_at")
+  updatedAt               DateTime                 @updatedAt @map("updated_at")
+  quoteItems              B2BQuoteItem[]
+  orderItems              OrderItem[]
   personalizationRequests PersonalizationRequest[]
-  personalizationRules PersonalizationRule[]
-  pricingRules         PricingRule[]
-  attributes           ProductAttribute[]
-  images               ProductImage[]
-  collection           Collection            @relation(fields: [collectionId], references: [id])
-  purchaseBatches      PurchaseBatch[]
-  variants             Variant[]
+  personalizationRules    PersonalizationRule[]
+  pricingRules            PricingRule[]
+  attributes              ProductAttribute[]
+  images                  ProductImage[]
+  collection              Collection               @relation(fields: [collectionId], references: [id])
+  purchaseBatches         PurchaseBatch[]
+  variants                Variant[]
 
   @@map("products")
   @@schema("tote-bag")
@@ -72,22 +71,23 @@ model Collection {
 }
 
 model Variant {
-  id              String          @id @default(uuid()) @map("id")
-  sku             String          @unique @map("sku")
-  size            String?         @map("size")
-  color           String          @map("color")
-  imageUrl        String          @map("image_url")
-  salePrice       Float?          @map("sale_price")
-  minPrice        Float?          @map("min_price")
-  comparePrice    Float?          @map("compare_price")
-  costPrice       Float?          @map("cost_price")
-  stock           Int             @default(0) @map("stock")
-  isActive        Boolean         @default(true) @map("is_active")
-  productId       String          @map("product_id")
-  orderItems      OrderItem[]
+  id                      String                   @id @default(uuid()) @map("id")
+  sku                     String                   @unique @map("sku")
+  size                    String?                  @map("size")
+  color                   String                   @map("color")
+  imageUrl                String                   @map("image_url")
+  salePrice               Float?                   @map("sale_price")
+  minPrice                Float?                   @map("min_price")
+  comparePrice            Float?                   @map("compare_price")
+  costPrice               Float?                   @map("cost_price")
+  taxRate                 Decimal                  @default(0.19) @map("tax_rate") @db.Decimal(4, 2)
+  stock                   Int                      @default(0) @map("stock")
+  isActive                Boolean                  @default(true) @map("is_active")
+  productId               String                   @map("product_id")
+  orderItems              OrderItem[]
   personalizationRequests PersonalizationRequest[]
-  product         Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
-  purchaseBatches PurchaseBatch[]
+  product                 Product                  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  purchaseBatches         PurchaseBatch[]
 
   @@index([productId, size])
   @@index([productId, isActive])
@@ -103,6 +103,10 @@ model Order {
   shippingAddress   Json                 @map("shipping_address")
   city              String               @map("city")
   totalAmount       Float                @map("total_amount")
+  netAmount         Decimal              @map("net_amount") @db.Decimal(10, 2)
+  taxTotal          Decimal              @map("tax_total") @db.Decimal(10, 2)
+  amountPaid        Decimal              @default(0) @map("amount_paid") @db.Decimal(18, 2)
+  balanceDue        Decimal              @default(0) @map("balance_due") @db.Decimal(18, 2)
   currency          String               @default("COP") @map("currency")
   status            OrderStatus          @default(PENDIENTE_PAGO) @map("status")
   source            OrderSource          @default(ECOMMERCE) @map("source")
@@ -114,6 +118,7 @@ model Order {
   createdAt         DateTime             @default(now()) @map("created_at")
   profileId         String?              @map("profile_id")
   items             OrderItem[]
+  payments          OrderPayment[]
   idempotencyRecord OrderIdempotencyKey?
   statusHistory     OrderStatusHistory[]
   profile           Profile?             @relation(fields: [profileId], references: [id])
@@ -138,19 +143,19 @@ model ShippingProvider {
 }
 
 model Shipment {
-  id                String         @id @default(uuid()) @map("id")
-  orderId           String         @unique @map("order_id")
-  providerId        String?        @map("provider_id")
-  trackingNumber    String?        @map("tracking_number")
-  status            ShipmentStatus @default(PENDING) @map("status")
-  weight            Float?         @map("weight")
-  dimensions        String?        @map("dimensions")
-  estimatedDelivery DateTime?      @map("estimated_delivery")
-  shippedAt         DateTime?      @map("shipped_at")
-  deliveredAt       DateTime?      @map("delivered_at")
-  createdAt         DateTime       @default(now()) @map("created_at")
-  updatedAt         DateTime       @updatedAt @map("updated_at")
-  order             Order          @relation(fields: [orderId], references: [id])
+  id                String            @id @default(uuid()) @map("id")
+  orderId           String            @unique @map("order_id")
+  providerId        String?           @map("provider_id")
+  trackingNumber    String?           @map("tracking_number")
+  status            ShipmentStatus    @default(PENDING) @map("status")
+  weight            Float?            @map("weight")
+  dimensions        String?           @map("dimensions")
+  estimatedDelivery DateTime?         @map("estimated_delivery")
+  shippedAt         DateTime?         @map("shipped_at")
+  deliveredAt       DateTime?         @map("delivered_at")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+  order             Order             @relation(fields: [orderId], references: [id])
   provider          ShippingProvider? @relation(fields: [providerId], references: [id])
 
   @@map("shipments")
@@ -158,14 +163,14 @@ model Shipment {
 }
 
 model OrderStatusHistory {
-  id        String      @id @default(uuid()) @map("id")
-  orderId   String      @map("order_id")
-  status    OrderStatus @map("status")
+  id        String       @id @default(uuid()) @map("id")
+  orderId   String       @map("order_id")
+  status    OrderStatus  @map("status")
   oldStatus OrderStatus? @map("old_status")
   newStatus OrderStatus? @map("new_status")
   userId    String?      @map("user_id")
-  createdAt DateTime    @default(now()) @map("created_at")
-  order     Order       @relation(fields: [orderId], references: [id])
+  createdAt DateTime     @default(now()) @map("created_at")
+  order     Order        @relation(fields: [orderId], references: [id])
 
   @@map("order_status_history")
   @@schema("tote-bag")
@@ -184,6 +189,21 @@ model OrderIdempotencyKey {
   @@schema("tote-bag")
 }
 
+model OrderPayment {
+  id          String   @id @default(uuid()) @map("id")
+  orderId     String   @map("order_id")
+  amount      Decimal  @map("amount") @db.Decimal(18, 2)
+  paymentDate DateTime @map("payment_date")
+  proofUrl    String?  @map("proof_url")
+  notes       String?  @map("notes")
+  createdAt   DateTime @default(now()) @map("created_at")
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, paymentDate])
+  @@map("order_payments")
+  @@schema("tote-bag")
+}
+
 model OrderItem {
   id                String   @id @default(uuid()) @map("id")
   quantity          Int      @map("quantity")
@@ -196,6 +216,9 @@ model OrderItem {
   productId         String   @map("product_id")
   variantId         String?  @map("variant_id")
   unitPrice         Float    @default(0) @map("unit_price")
+  netUnitPrice      Decimal  @map("net_unit_price") @db.Decimal(10, 2)
+  /// IVA total de la linea, calculado como total bruto de linea menos total neto de linea.
+  taxAmount         Decimal  @map("tax_amount") @db.Decimal(10, 2)
   order             Order    @relation(fields: [orderId], references: [id])
   product           Product  @relation(fields: [productId], references: [id])
   variant           Variant? @relation(fields: [variantId], references: [id])
@@ -205,18 +228,18 @@ model OrderItem {
 }
 
 model User {
-  id                    String                 @id @map("id")
-  email                 String                 @unique @map("email")
-  role                  Role                   @default(CUSTOMER) @map("role")
-  isActive              Boolean                @default(true) @map("is_active")
-  createdAt             DateTime               @default(now()) @map("created_at")
-  updatedAt             DateTime               @updatedAt @map("updated_at")
-  auditLogs             AuditLog[]
-  financialTransactions FinancialTransaction[]
-  profile               Profile?
-  personalizationRequests PersonalizationRequest[] @relation("PersonalizationRequestUser")
+  id                              String                   @id @map("id")
+  email                           String                   @unique @map("email")
+  role                            Role                     @default(CUSTOMER) @map("role")
+  isActive                        Boolean                  @default(true) @map("is_active")
+  createdAt                       DateTime                 @default(now()) @map("created_at")
+  updatedAt                       DateTime                 @updatedAt @map("updated_at")
+  auditLogs                       AuditLog[]
+  financialTransactions           FinancialTransaction[]
+  profile                         Profile?
+  personalizationRequests         PersonalizationRequest[] @relation("PersonalizationRequestUser")
   reviewedPersonalizationRequests PersonalizationRequest[] @relation("PersonalizationRequestReviewedBy")
-  roles                 UserRole[]
+  roles                           UserRole[]
 
   @@map("users")
   @@schema("tote-bag")
@@ -272,24 +295,24 @@ model UserRole {
 }
 
 model WebhookEvent {
-  id                 String                  @id @default(uuid()) @map("id")
-  provider           String                  @map("provider")
-  eventId            String                  @unique @map("event_id")
-  eventType          String                  @map("event_type")
-  payload            Json                    @map("payload")
-  processed          Boolean                 @default(false) @map("processed")
-  processedAt        DateTime?               @map("processed_at")
-  error              String?                 @map("error")
-  status             WebhookProcessingStatus @default(RECEIVED) @map("status")
-  attempts           Int                     @default(0) @map("attempts")
-  signatureChecksum  String?                 @map("signature_checksum")
-  transactionId      String?                 @map("transaction_id")
-  referenceId        String?                 @map("reference_id")
-  receivedAt         DateTime                @default(now()) @map("received_at")
-  validatedAt        DateTime?               @map("validated_at")
-  appliedAt          DateTime?               @map("applied_at")
-  failedAt           DateTime?               @map("failed_at")
-  createdAt          DateTime                @default(now()) @map("created_at")
+  id                String                  @id @default(uuid()) @map("id")
+  provider          String                  @map("provider")
+  eventId           String                  @unique @map("event_id")
+  eventType         String                  @map("event_type")
+  payload           Json                    @map("payload")
+  processed         Boolean                 @default(false) @map("processed")
+  processedAt       DateTime?               @map("processed_at")
+  error             String?                 @map("error")
+  status            WebhookProcessingStatus @default(RECEIVED) @map("status")
+  attempts          Int                     @default(0) @map("attempts")
+  signatureChecksum String?                 @map("signature_checksum")
+  transactionId     String?                 @map("transaction_id")
+  referenceId       String?                 @map("reference_id")
+  receivedAt        DateTime                @default(now()) @map("received_at")
+  validatedAt       DateTime?               @map("validated_at")
+  appliedAt         DateTime?               @map("applied_at")
+  failedAt          DateTime?               @map("failed_at")
+  createdAt         DateTime                @default(now()) @map("created_at")
 
   @@unique([provider, eventId])
   @@map("webhook_events")
@@ -318,30 +341,30 @@ model PqrsTicket {
 }
 
 model Profile {
-  id                   String        @id @default(uuid()) @map("id")
-  email                String        @unique @map("email")
-  firstName            String?       @map("first_name")
-  lastName             String?       @map("last_name")
-  phone                String?       @map("phone")
-  department           String?       @map("department")
-  municipality         String?       @map("municipality")
-  neighborhood         String?       @map("neighborhood")
-  address              String?       @map("address")
-  createdAt            DateTime      @default(now()) @map("created_at")
-  updatedAt            DateTime      @updatedAt @map("updated_at")
-  userId               String        @unique @map("user_id")
-  metadata             Json?         @map("metadata")
-  departmentId         String?       @map("department_id")
-  municipalityId       String?       @map("municipality_id")
-  dataPolicyAccepted   Boolean       @default(false) @map("data_policy_accepted")
-  dataPolicyAcceptedAt DateTime?     @map("data_policy_accepted_at")
-  dataPolicyAcceptedIp String?       @map("data_policy_accepted_ip")
-  addresses            Address[]
-  orders               Order[]
+  id                      String                   @id @default(uuid()) @map("id")
+  email                   String                   @unique @map("email")
+  firstName               String?                  @map("first_name")
+  lastName                String?                  @map("last_name")
+  phone                   String?                  @map("phone")
+  department              String?                  @map("department")
+  municipality            String?                  @map("municipality")
+  neighborhood            String?                  @map("neighborhood")
+  address                 String?                  @map("address")
+  createdAt               DateTime                 @default(now()) @map("created_at")
+  updatedAt               DateTime                 @updatedAt @map("updated_at")
+  userId                  String                   @unique @map("user_id")
+  metadata                Json?                    @map("metadata")
+  departmentId            String?                  @map("department_id")
+  municipalityId          String?                  @map("municipality_id")
+  dataPolicyAccepted      Boolean                  @default(false) @map("data_policy_accepted")
+  dataPolicyAcceptedAt    DateTime?                @map("data_policy_accepted_at")
+  dataPolicyAcceptedIp    String?                  @map("data_policy_accepted_ip")
+  addresses               Address[]
+  orders                  Order[]
   personalizationRequests PersonalizationRequest[]
-  locationDepartment   Department?   @relation(fields: [departmentId], references: [id])
-  locationMunicipality Municipality? @relation(fields: [municipalityId], references: [id])
-  user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  locationDepartment      Department?              @relation(fields: [departmentId], references: [id])
+  locationMunicipality    Municipality?            @relation(fields: [municipalityId], references: [id])
+  user                    User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("profiles")
   @@schema("tote-bag")
@@ -486,36 +509,36 @@ model PersonalizationRule {
 }
 
 model PersonalizationRequest {
-  id                 String                     @id @default(uuid()) @map("id")
-  userId             String                     @map("user_id")
-  profileId          String?                    @map("profile_id")
-  productId          String                     @map("product_id")
-  variantId          String?                    @map("variant_id")
-  quantity           Int                        @map("quantity")
-  line               String                     @map("line")
-  size               String                     @map("size")
-  material           String                     @map("material")
-  quality            String?                    @map("quality")
-  configCode         String                     @map("config_code")
-  unitPrice          Float                      @map("unit_price")
-  totalPrice         Float                      @map("total_price")
-  currency           String                     @default("COP") @map("currency")
-  status             PersonalizationRequestStatus @default(PENDING) @map("status")
-  notes              String?                    @map("notes")
-  reviewNotes        String?                    @map("review_notes")
-  reviewedAt         DateTime?                  @map("reviewed_at")
-  reviewedByUserId   String?                    @map("reviewed_by_user_id")
-  designUrl          String?                    @map("design_url")
-  personalizations   Json                       @map("personalizations")
-  configurationJson  Json                       @map("configuration_json")
-  pricingJson        Json?                      @map("pricing_json")
-  createdAt          DateTime                   @default(now()) @map("created_at")
-  updatedAt          DateTime                   @updatedAt @map("updated_at")
-  approvedBy         User?                      @relation("PersonalizationRequestReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
-  profile            Profile?                   @relation(fields: [profileId], references: [id], onDelete: SetNull)
-  product            Product                    @relation(fields: [productId], references: [id])
-  user               User                       @relation("PersonalizationRequestUser", fields: [userId], references: [id])
-  variant            Variant?                   @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  id                String                       @id @default(uuid()) @map("id")
+  userId            String                       @map("user_id")
+  profileId         String?                      @map("profile_id")
+  productId         String                       @map("product_id")
+  variantId         String?                      @map("variant_id")
+  quantity          Int                          @map("quantity")
+  line              String                       @map("line")
+  size              String                       @map("size")
+  material          String                       @map("material")
+  quality           String?                      @map("quality")
+  configCode        String                       @map("config_code")
+  unitPrice         Float                        @map("unit_price")
+  totalPrice        Float                        @map("total_price")
+  currency          String                       @default("COP") @map("currency")
+  status            PersonalizationRequestStatus @default(PENDING) @map("status")
+  notes             String?                      @map("notes")
+  reviewNotes       String?                      @map("review_notes")
+  reviewedAt        DateTime?                    @map("reviewed_at")
+  reviewedByUserId  String?                      @map("reviewed_by_user_id")
+  designUrl         String?                      @map("design_url")
+  personalizations  Json                         @map("personalizations")
+  configurationJson Json                         @map("configuration_json")
+  pricingJson       Json?                        @map("pricing_json")
+  createdAt         DateTime                     @default(now()) @map("created_at")
+  updatedAt         DateTime                     @updatedAt @map("updated_at")
+  approvedBy        User?                        @relation("PersonalizationRequestReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  profile           Profile?                     @relation(fields: [profileId], references: [id], onDelete: SetNull)
+  product           Product                      @relation(fields: [productId], references: [id])
+  user              User                         @relation("PersonalizationRequestUser", fields: [userId], references: [id])
+  variant           Variant?                     @relation(fields: [variantId], references: [id], onDelete: SetNull)
 
   @@index([status, createdAt])
   @@index([userId, createdAt])
@@ -585,7 +608,7 @@ model Supplier {
   email        String?                @map("email")
   phone        String?                @map("phone")
   address      String?                @map("address")
-  balance      Float                  @default(0) @map("balance")
+  balance      Decimal                @default(0) @map("balance") @db.Decimal(18, 2)
   createdAt    DateTime               @default(now()) @map("created_at")
   updatedAt    DateTime               @updatedAt @map("updated_at")
   transactions FinancialTransaction[]
@@ -603,8 +626,8 @@ model PurchaseBatch {
   supplierId        String                 @map("supplier_id")
   quantityReceived  Int                    @map("quantity_received")
   quantityRemaining Int                    @map("quantity_remaining")
-  unitCost          Float                  @map("unit_cost")
-  totalCost         Float                  @map("total_cost")
+  unitCost          Decimal                @map("unit_cost") @db.Decimal(18, 2)
+  totalCost         Decimal                @map("total_cost") @db.Decimal(18, 2)
   status            BatchStatus            @default(IN_STOCK) @map("status")
   paymentReceiptUrl String?                @map("payment_receipt_url")
   createdAt         DateTime               @default(now()) @map("created_at")
@@ -621,9 +644,10 @@ model PurchaseBatch {
 
 model PurchaseInvoice {
   id              String                @id @default(uuid()) @map("id")
-  totalAmount     Decimal               @db.Decimal(18, 2) @map("total_amount")
-  paidAmount      Decimal               @default(0) @db.Decimal(18, 2) @map("paid_amount")
-  balanceDue      Decimal               @db.Decimal(18, 2) @map("balance_due")
+  totalAmount     Decimal               @map("total_amount") @db.Decimal(18, 2)
+  paidAmount      Decimal               @default(0) @map("paid_amount") @db.Decimal(18, 2)
+  balanceDue      Decimal               @map("balance_due") @db.Decimal(18, 2)
+  documentType    PurchaseDocumentType  @default(INVOICE) @map("document_type")
   status          PurchaseInvoiceStatus @default(PENDING) @map("status")
   issueDate       DateTime              @map("issue_date")
   supplierId      String?               @map("supplier_id")
@@ -643,7 +667,7 @@ model PurchaseInvoice {
 model PurchasePayment {
   id          String          @id @default(uuid()) @map("id")
   invoiceId   String          @map("invoice_id")
-  amount      Decimal         @db.Decimal(18, 2) @map("amount")
+  amount      Decimal         @map("amount") @db.Decimal(18, 2)
   paymentDate DateTime        @map("payment_date")
   proofUrl    String?         @map("proof_url")
   createdAt   DateTime        @default(now()) @map("created_at")
@@ -659,7 +683,7 @@ model FinancialTransaction {
   id              String              @id @default(uuid()) @map("id")
   type            TransactionType     @map("type")
   category        TransactionCategory @map("category")
-  amount          Float               @map("amount")
+  amount          Decimal             @map("amount") @db.Decimal(18, 2)
   description     String              @map("description")
   status          TransactionStatus   @default(COMPLETED) @map("status")
   userId          String              @map("user_id")
@@ -678,22 +702,22 @@ model FinancialTransaction {
 }
 
 model PayrollWorker {
-  id                 Int                      @id @default(autoincrement()) @map("id")
-  displayName        String                   @map("display_name")
-  documentNumber     String                   @unique @map("document_number")
-  phone              String?                  @map("phone")
-  email              String?                  @map("email")
-  workerType         PayrollWorkerType        @default(CONTRACTOR) @map("worker_type")
-  roleName           String?                  @map("role_name")
-  hourlyRate         Float                    @default(0) @map("hourly_rate")
-  isActive           Boolean                  @default(true) @map("is_active")
-  notes              String                   @default("") @map("notes")
-  createdByUserId    String?                  @map("created_by_user_id")
-  updatedByUserId    String?                  @map("updated_by_user_id")
-  createdAt          DateTime                 @default(now()) @map("created_at")
-  updatedAt          DateTime                 @updatedAt @map("updated_at")
-  billingStatements  PayrollBillingStatement[]
-  shifts             PayrollShift[]
+  id                Int                       @id @default(autoincrement()) @map("id")
+  displayName       String                    @map("display_name")
+  documentNumber    String                    @unique @map("document_number")
+  phone             String?                   @map("phone")
+  email             String?                   @map("email")
+  workerType        PayrollWorkerType         @default(CONTRACTOR) @map("worker_type")
+  roleName          String?                   @map("role_name")
+  hourlyRate        Float                     @default(0) @map("hourly_rate")
+  isActive          Boolean                   @default(true) @map("is_active")
+  notes             String                    @default("") @map("notes")
+  createdByUserId   String?                   @map("created_by_user_id")
+  updatedByUserId   String?                   @map("updated_by_user_id")
+  createdAt         DateTime                  @default(now()) @map("created_at")
+  updatedAt         DateTime                  @updatedAt @map("updated_at")
+  billingStatements PayrollBillingStatement[]
+  shifts            PayrollShift[]
 
   @@index([isActive, displayName])
   @@map("payroll_workers")
@@ -809,8 +833,12 @@ enum PersonalizationRequestStatus {
 
 enum OrderStatus {
   PENDIENTE_PAGO
+  PENDING_DEPOSIT
   PAGADA
+  IN_PRODUCTION
   EN_PRODUCCION
+  PENDING_FINAL_PAYMENT
+  READY_FOR_DISPATCH
   ENVIADA
   ENTREGADA
   RETURNED_TO_STOCK
@@ -897,6 +925,13 @@ enum PurchaseInvoiceStatus {
   PENDING
   PARTIAL
   PAID
+
+  @@schema("tote-bag")
+}
+
+enum PurchaseDocumentType {
+  INVOICE
+  DELIVERY_NOTE
 
   @@schema("tote-bag")
 }

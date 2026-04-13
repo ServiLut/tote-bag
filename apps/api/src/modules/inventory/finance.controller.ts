@@ -1,7 +1,9 @@
 import {
+  Body,
   Controller,
   ForbiddenException,
   Get,
+  Post,
   Query,
   Req,
   Res,
@@ -11,6 +13,7 @@ import { Response } from 'express';
 import { Role } from '../../generated/client/client';
 import { FinanceService } from './finance.service';
 import { RolesService } from '../roles/roles.service';
+import { BreakEvenSimulationDto } from './dto/break-even-simulation.dto';
 
 interface RequestWithUser {
   user?: {
@@ -54,6 +57,25 @@ export class FinanceController {
       month,
       year,
     });
+  }
+
+  @Get('tax-report')
+  async getTaxReport(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Req() req?: RequestWithUser,
+  ) {
+    await this.ensureAdmin(req?.user?.id);
+    return this.financeService.getSalesTaxReport({ startDate, endDate });
+  }
+
+  @Post('break-even-simulation')
+  async simulateBreakEven(
+    @Body() body: BreakEvenSimulationDto,
+    @Req() req?: RequestWithUser,
+  ) {
+    await this.ensureAdmin(req?.user?.id);
+    return this.financeService.simulateBreakEven(body);
   }
 
   @Get('export-report')

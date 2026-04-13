@@ -24,6 +24,11 @@ interface Variant {
   color: string;
   stock: number;
   salePrice?: number | null;
+  netSalePrice?: number | null;
+  netPrice?: number | null;
+  taxAmount?: number | null;
+  marginPercentage?: number | null;
+  taxRate?: number | string | null;
   minPrice?: number | null;
   costPrice?: number | null;
   comparePrice?: number | null;
@@ -92,6 +97,16 @@ function getReferenceVariant(variants: Variant[]) {
     || null;
 }
 
+function formatProductStatus(status: Product['status']) {
+  const labels: Record<Product['status'], string> = {
+    DISPONIBLE: 'Disponible',
+    BAJO_PEDIDO: 'Bajo pedido',
+    PREVENTA: 'Preventa',
+  };
+
+  return labels[status] ?? status;
+}
+
 export default function ProductsTable() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -112,7 +127,7 @@ export default function ProductsTable() {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
 
-      const res = await apiFetch('/catalog/products', {
+      const res = await apiFetch('/catalog/admin/products', {
         headers: token
           ? {
               Authorization: `Bearer ${token}`,
@@ -131,7 +146,7 @@ export default function ProductsTable() {
       setProducts(responseBody.data);
     } catch (err) {
       console.error('Error fetching products:', err);
-      setError('Error cargando productos');
+      setError('Error al cargar productos');
     } finally {
       setLoading(false);
     }
@@ -190,7 +205,7 @@ export default function ProductsTable() {
       );
     } catch (err) {
       console.error('Error updating product status:', err);
-      alert('Error actualizando estado');
+      alert('Error al actualizar el estado');
     } finally {
       setUpdatingId(null);
     }
@@ -242,25 +257,25 @@ export default function ProductsTable() {
     } catch (err) {
       console.error('Error deleting product:', err);
       const message =
-        err instanceof Error ? err.message : 'Error eliminando producto';
+        err instanceof Error ? err.message : 'Error al eliminar el producto';
       alert(message);
     }
   };
 
-  const calculateMarginStatus = (base: number, cost?: number | null, min?: number | null) => {
-    // 1. Profit Margin Risk (Priority)
-    if (cost && base > 0) {
-      const margin = ((base - cost) / base) * 100;
-      if (margin < 20) return { type: 'danger', label: 'Bajo Margen', value: margin }; // < 20%
-      if (margin < 35) return { type: 'warning', label: 'Margen Medio', value: margin }; // 20-35%
+  const getMarginStatus = (marginPercentage?: number | null) => {
+    if (marginPercentage === null || marginPercentage === undefined) {
+      return { type: 'muted', label: 'Pendiente', value: null };
     }
 
-    // 2. MAP Risk (Price too close to minimum)
-    if (min && base < min * 1.05) {
-      return { type: 'warning', label: 'Cerca del Min', value: null };
+    if (marginPercentage < 20) {
+      return { type: 'danger', label: 'Bajo margen', value: marginPercentage };
     }
 
-    return { type: 'success', label: 'Saludable', value: null };
+    if (marginPercentage < 35) {
+      return { type: 'warning', label: 'Margen medio', value: marginPercentage };
+    }
+
+    return { type: 'success', label: 'Saludable', value: marginPercentage };
   };
 
   const formatCurrency = (val: number) => {
@@ -270,6 +285,21 @@ export default function ProductsTable() {
       minimumFractionDigits: 0,
     }).format(val);
   };
+
+  const formatOptionalCurrency = (val?: number | null) => {
+    return typeof val === 'number' && Number.isFinite(val)
+      ? formatCurrency(val)
+      : 'Pendiente';
+  };
+
+  const formatOptionalPercentage = (val?: number | null) => {
+    return typeof val === 'number' && Number.isFinite(val)
+      ? `${val.toFixed(2)}%`
+      : 'Pendiente';
+  };
+
+  const formatTaxRate = (val?: number | string | null) =>
+    val === null || val === undefined ? '0.19' : String(val);
 
   if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-zinc-400" /></div>;
   if (error) return <div className="text-red-500 p-4 font-medium">{error}</div>;
@@ -282,9 +312,11 @@ export default function ProductsTable() {
             <tr className="bg-base/50">
               <th className="px-6 py-4 text-left font-bold text-primary uppercase text-[10px] tracking-widest">Producto</th>
               <th className="px-6 py-4 text-left font-bold text-primary uppercase text-[10px] tracking-widest">Estado</th>
-              <th className="px-6 py-4 text-left font-bold text-primary uppercase text-[10px] tracking-widest">Precio (PL)</th>
+              <th className="px-6 py-4 text-right font-bold text-primary uppercase text-[10px] tracking-widest">Costo unitario</th>
+              <th className="px-6 py-4 text-right font-bold text-primary uppercase text-[10px] tracking-widest">PVP con IVA</th>
+              <th className="px-6 py-4 text-right font-bold text-primary uppercase text-[10px] tracking-widest">Venta neta</th>
               <th className="px-6 py-4 text-left font-bold text-primary uppercase text-[10px] tracking-widest">Variantes</th>
-              <th className="px-6 py-4 text-left font-bold text-primary uppercase text-[10px] tracking-widest text-right">Margen</th>
+              <th className="px-6 py-4 text-right font-bold text-primary uppercase text-[10px] tracking-widest">Margen bruto</th>
               <th className="px-6 py-4 text-right font-bold text-primary uppercase text-[10px] tracking-widest">Acciones</th>
             </tr>
           </thead>
@@ -295,15 +327,14 @@ export default function ProductsTable() {
               const referenceVariant = getReferenceVariant(productVariants);
               const referenceSalePrice =
                 referenceVariant?.salePrice ?? product.basePrice;
-              const referenceMinPrice =
-                referenceVariant?.minPrice ?? product.minPrice;
               const referenceCostPrice =
                 referenceVariant?.costPrice ?? product.costPrice;
-              const status = calculateMarginStatus(
-                referenceSalePrice,
-                referenceCostPrice,
-                referenceMinPrice,
-              );
+              const referenceNetPrice = referenceVariant?.netPrice ?? null;
+              const referenceTaxAmount = referenceVariant?.taxAmount ?? null;
+              const referenceTaxRate = referenceVariant?.taxRate;
+              const referenceMarginPercentage =
+                referenceVariant?.marginPercentage ?? null;
+              const status = getMarginStatus(referenceMarginPercentage);
               const firstImage = productImages[0]?.url;
               const mainImage = (firstImage && firstImage.trim().length > 0) ? firstImage : '/placeholder.svg';
 
@@ -346,16 +377,26 @@ export default function ProductsTable() {
                           product.status === 'BAJO_PEDIDO' ? "text-primary" : "text-amber-700 dark:text-amber-400"
                         )}
                       >
-                        <option value="DISPONIBLE">DISPONIBLE</option>
-                        <option value="BAJO_PEDIDO">BAJO PEDIDO</option>
-                        <option value="PREVENTA">PREVENTA</option>
+                        <option value="DISPONIBLE">Disponible</option>
+                        <option value="BAJO_PEDIDO">Bajo pedido</option>
+                        <option value="PREVENTA">Preventa</option>
                       </select>
                       {updatingId === product.id && <Loader2 className="w-3 h-3 animate-spin text-muted" />}
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="font-bold text-primary">{formatCurrency(referenceSalePrice)}</div>
-                    <div className="text-[10px] text-muted font-bold">MIN: {formatCurrency(referenceMinPrice)}</div>
+                  <td className="px-6 py-4 text-right">
+                    <div className="font-black text-primary">{formatOptionalCurrency(referenceCostPrice)}</div>
+                    <div className="text-[10px] text-muted font-bold">Costo inventario</div>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="font-black text-primary">{formatCurrency(referenceSalePrice)}</div>
+                    <div className="text-[10px] text-muted font-bold">IVA incluido</div>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="font-black text-secondary">{formatOptionalCurrency(referenceNetPrice)}</div>
+                    <div className="text-[10px] text-muted font-bold">
+                      IVA: {formatOptionalCurrency(referenceTaxAmount)} / tarifa {formatTaxRate(referenceTaxRate)}
+                    </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex -space-x-2">
@@ -376,13 +417,14 @@ export default function ProductsTable() {
                       "inline-flex items-center gap-1 px-2.5 py-1 rounded-md border text-[9px] font-black uppercase tracking-widest",
                       status.type === 'danger' ? "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-100 dark:border-red-900/30" :
                       status.type === 'warning' ? "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-100 dark:border-amber-900/30" :
+                      status.type === 'muted' ? "bg-base text-muted border-theme" :
                       "bg-secondary/10 text-secondary border-secondary/20"
                     )} title={status.label}>
                       {status.type === 'danger' ? <AlertTriangle className="w-3 h-3" /> :
                        status.type === 'warning' ? <DollarSign className="w-3 h-3" /> :
                        <Check className="w-3 h-3" />}
                       <span>
-                        {status.value ? `${status.value.toFixed(0)}%` : status.label}
+                        {status.value !== null ? formatOptionalPercentage(status.value) : status.label}
                       </span>
                     </div>
                   </td>
@@ -432,8 +474,11 @@ export default function ProductsTable() {
           const selectedReferenceVariant = getReferenceVariant(selectedVariants);
           const selectedReferenceSalePrice =
             selectedReferenceVariant?.salePrice ?? selectedProduct.basePrice;
-          const selectedReferenceMinPrice =
-            selectedReferenceVariant?.minPrice ?? selectedProduct.minPrice;
+          const selectedReferenceCostPrice =
+            selectedReferenceVariant?.costPrice ?? selectedProduct.costPrice;
+          const selectedReferenceNetPrice = selectedReferenceVariant?.netPrice ?? null;
+          const selectedReferenceMarginPercentage =
+            selectedReferenceVariant?.marginPercentage ?? null;
 
           return (
         <div
@@ -441,7 +486,7 @@ export default function ProductsTable() {
           onClick={() => setSelectedProduct(null)}
         >
           <div
-            className="bg-surface rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300 relative border border-theme"
+            className="bg-surface rounded-3xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300 relative border border-theme"
             onClick={(event) => event.stopPropagation()}
           >
 
@@ -469,7 +514,7 @@ export default function ProductsTable() {
                   <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
                     {selectedImages.slice(1).map((img, i) => (
                       <div key={i} className="w-16 h-16 rounded-xl overflow-hidden border border-theme flex-shrink-0 relative shadow-sm">
-                        <Image src={img.url || '/placeholder.svg'} alt="thumbnail" width={64} height={64} className="w-full h-full object-cover" />
+                        <Image src={img.url || '/placeholder.svg'} alt="Miniatura del producto" width={64} height={64} className="w-full h-full object-cover" />
                       </div>
                     ))}
                   </div>
@@ -488,7 +533,7 @@ export default function ProductsTable() {
                       selectedProduct.status === 'DISPONIBLE' ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-100 dark:border-green-900/30" :
                       selectedProduct.status === 'BAJO_PEDIDO' ? "bg-base text-primary border-theme" : "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:border-amber-900/30"
                     )}>
-                      {selectedProduct.status}
+                      {formatProductStatus(selectedProduct.status)}
                     </span>
                   </div>
                   <h2 className="text-3xl font-black text-primary leading-tight tracking-tighter">{selectedProduct.name}</h2>
@@ -499,15 +544,27 @@ export default function ProductsTable() {
                 <div className="grid grid-cols-2 gap-4 mb-8">
                   <div className="p-4 bg-surface rounded-2xl border border-theme shadow-sm">
                     <p className="text-[10px] text-muted font-black uppercase tracking-widest mb-1 flex items-center gap-1.5">
-                      <DollarSign className="w-3 h-3" /> Público
+                      <DollarSign className="w-3 h-3" /> Precio público
                     </p>
                     <p className="text-xl font-black text-primary">{formatCurrency(selectedReferenceSalePrice)}</p>
                   </div>
                   <div className="p-4 bg-surface rounded-2xl border border-theme shadow-sm">
                     <p className="text-[10px] text-muted font-black uppercase tracking-widest mb-1 flex items-center gap-1.5">
-                      <AlertTriangle className="w-3 h-3" /> Mínimo
+                      <DollarSign className="w-3 h-3" /> Venta neta
                     </p>
-                    <p className="text-xl font-black text-secondary">{formatCurrency(selectedReferenceMinPrice)}</p>
+                    <p className="text-xl font-black text-secondary">{formatOptionalCurrency(selectedReferenceNetPrice)}</p>
+                  </div>
+                  <div className="p-4 bg-surface rounded-2xl border border-theme shadow-sm">
+                    <p className="text-[10px] text-muted font-black uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                      <Package className="w-3 h-3" /> Costo
+                    </p>
+                    <p className="text-xl font-black text-primary">{formatOptionalCurrency(selectedReferenceCostPrice)}</p>
+                  </div>
+                  <div className="p-4 bg-surface rounded-2xl border border-theme shadow-sm">
+                    <p className="text-[10px] text-muted font-black uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                      <AlertTriangle className="w-3 h-3" /> Margen bruto
+                    </p>
+                    <p className="text-xl font-black text-secondary">{formatOptionalPercentage(selectedReferenceMarginPercentage)}</p>
                   </div>
                 </div>
 
@@ -517,43 +574,57 @@ export default function ProductsTable() {
                       <Package className="w-4 h-4" /> Variantes & Stock
                     </h3>
                     <div className="bg-surface border border-theme rounded-2xl overflow-hidden">
-                      <table className="w-full text-xs text-left">
-                        <thead className="bg-base/50 text-muted border-b border-theme">
-                          <tr>
-                            <th className="px-4 py-2.5 font-bold uppercase tracking-widest text-[9px]">SKU</th>
-                            <th className="px-4 py-2.5 font-bold uppercase tracking-widest text-[9px]">Talla</th>
-                            <th className="px-4 py-2.5 font-bold uppercase tracking-widest text-[9px]">Color</th>
-                            <th className="px-4 py-2.5 font-bold uppercase tracking-widest text-[9px] text-right">Venta</th>
-                            <th className="px-4 py-2.5 font-bold uppercase tracking-widest text-[9px] text-right">Stock</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-theme/50">
-                          {selectedVariants.map((v) => (
-                            <tr key={v.id} className="group/row hover:bg-base/30 transition-colors">
-                              <td className="px-4 py-2.5 font-mono text-muted text-[10px]">{v.sku}</td>
-                              <td className="px-4 py-2.5 font-bold text-primary">{v.size || 'Sin talla'}</td>
-                              <td className="px-4 py-2.5 font-bold text-primary">{v.color}</td>
-                              <td className="px-4 py-2.5 text-right font-black text-primary">
-                                {formatCurrency(v.salePrice ?? selectedReferenceSalePrice)}
-                              </td>
-                              <td className="px-4 py-2.5 text-right">
-                                <div className="flex items-center justify-end gap-3">
-                                  <span className="font-black text-primary bg-base/50 px-2 py-0.5 rounded-md border border-theme/30" title="Stock actual (solo lectura)">
-                                    {v.stock}
-                                  </span>
-                                  <Link
-                                    href={`/dashboard/compras/recepcion?search=${v.sku}`}
-                                    className="p-1.5 text-muted hover:text-primary hover:bg-primary/10 rounded-lg transition-all opacity-0 group-hover/row:opacity-100"
-                                    title="Ver historial de lotes"
-                                  >
-                                    <Database className="w-3.5 h-3.5" />
-                                  </Link>
-                                </div>
-                              </td>
+                      <div className="max-w-full overflow-x-auto overflow-y-hidden pb-2 custom-scrollbar">
+                        <table className="min-w-[920px] w-full text-xs text-left">
+                          <thead className="bg-base/50 text-muted border-b border-theme">
+                            <tr>
+                              <th className="px-4 py-2.5 font-bold uppercase tracking-widest text-[9px] whitespace-nowrap">SKU</th>
+                              <th className="px-4 py-2.5 font-bold uppercase tracking-widest text-[9px] whitespace-nowrap">Talla</th>
+                              <th className="px-4 py-2.5 font-bold uppercase tracking-widest text-[9px] whitespace-nowrap">Color</th>
+                              <th className="px-4 py-2.5 font-bold uppercase tracking-widest text-[9px] text-right whitespace-nowrap">Costo adquisición</th>
+                              <th className="px-4 py-2.5 font-bold uppercase tracking-widest text-[9px] text-right whitespace-nowrap">PVP con IVA</th>
+                              <th className="px-4 py-2.5 font-bold uppercase tracking-widest text-[9px] text-right whitespace-nowrap">Venta neta</th>
+                              <th className="px-4 py-2.5 font-bold uppercase tracking-widest text-[9px] text-right whitespace-nowrap">Margen bruto</th>
+                              <th className="px-4 py-2.5 font-bold uppercase tracking-widest text-[9px] text-right whitespace-nowrap">Stock</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody className="divide-y divide-theme/50">
+                            {selectedVariants.map((v) => (
+                              <tr key={v.id} className="group/row hover:bg-base/30 transition-colors">
+                                <td className="px-4 py-2.5 font-mono text-muted text-[10px]">{v.sku}</td>
+                                <td className="px-4 py-2.5 font-bold text-primary">{v.size || 'Sin talla'}</td>
+                                <td className="px-4 py-2.5 font-bold text-primary">{v.color}</td>
+                                <td className="px-4 py-2.5 text-right font-black text-primary">
+                                  {formatOptionalCurrency(v.costPrice)}
+                                </td>
+                                <td className="px-4 py-2.5 text-right font-black text-primary">
+                                  {formatCurrency(v.salePrice ?? selectedReferenceSalePrice)}
+                                </td>
+                                <td className="px-4 py-2.5 text-right font-black text-secondary">
+                                  {formatOptionalCurrency(v.netPrice)}
+                                </td>
+                                <td className="px-4 py-2.5 text-right font-black text-primary">
+                                  {formatOptionalPercentage(v.marginPercentage)}
+                                </td>
+                                <td className="px-4 py-2.5 text-right">
+                                  <div className="flex items-center justify-end gap-3">
+                                    <span className="font-black text-primary bg-base/50 px-2 py-0.5 rounded-md border border-theme/30" title="Stock actual (solo lectura)">
+                                      {v.stock}
+                                    </span>
+                                    <Link
+                                      href={`/dashboard/compras/recepcion?search=${v.sku}`}
+                                      className="p-1.5 text-muted hover:text-primary hover:bg-primary/10 rounded-lg transition-all opacity-0 group-hover/row:opacity-100"
+                                      title="Ver historial de lotes"
+                                    >
+                                      <Database className="w-3.5 h-3.5" />
+                                    </Link>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
 
@@ -580,7 +651,7 @@ export default function ProductsTable() {
                   {/* Pricing Rules Section */}
                   {selectedPricingRules.length > 0 && (
                     <div>
-                      <h3 className="text-xs font-black text-primary uppercase tracking-widest mb-3">REGLAS DE PRECIO</h3>
+                      <h3 className="text-xs font-black text-primary uppercase tracking-widest mb-3">Reglas de precio</h3>
                       <div className="space-y-2">
                         {selectedPricingRules.map((rule) => (
                           <div key={rule.id} className="px-4 py-3 bg-secondary/5 rounded-xl border border-secondary/20 flex items-center justify-between text-[11px]">
@@ -589,7 +660,7 @@ export default function ProductsTable() {
                               <span className="text-muted">Min. {rule.minQty} unidades</span>
                             </div>
                             <div className="font-black text-primary">
-                              {rule.discountPct ? `${rule.discountPct}% dto.` : rule.fixedUnitPrice ? formatCurrency(rule.fixedUnitPrice) : 'N/A'}
+                              {rule.discountPct ? `${rule.discountPct}% dto.` : rule.fixedUnitPrice ? formatCurrency(rule.fixedUnitPrice) : 'No aplica'}
                             </div>
                           </div>
                         ))}

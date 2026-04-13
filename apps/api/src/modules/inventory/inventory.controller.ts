@@ -18,6 +18,7 @@ import { InventoryService } from './inventory.service';
 import { FinanceService } from './finance.service';
 import { CreatePurchaseBatchDto } from './dto/create-purchase-batch.dto';
 import { UpdatePurchaseBatchDto } from './dto/update-purchase-batch.dto';
+import { BreakEvenSimulationDto } from './dto/break-even-simulation.dto';
 import {
   CreateOpexDto,
   CreateOpexCategoryDto,
@@ -250,6 +251,25 @@ export class InventoryController {
       parseDateQuery(startDate),
       parseDateQuery(endDate, true),
     );
+  }
+
+  @Get('finance/tax-report')
+  async getSalesTaxReport(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Request() req?: RequestWithUser,
+  ) {
+    await this.ensureAdmin(req?.user?.id);
+    return this.financeService.getSalesTaxReport({ startDate, endDate });
+  }
+
+  @Post('finance/break-even-simulation')
+  async simulateBreakEven(
+    @Body() body: BreakEvenSimulationDto,
+    @Request() req?: RequestWithUser,
+  ) {
+    await this.ensureAdmin(req?.user?.id);
+    return this.financeService.simulateBreakEven(body);
   }
 
   @Get('finance/opex-categories')

@@ -2,9 +2,12 @@ import {
   Injectable,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
+import Decimal from 'decimal.js';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { CreateOrderPaymentDto } from './dto/create-order-payment.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { Prisma } from '../../generated/client/client';
 import { PricingService } from '../pricing/pricing.service';
@@ -20,6 +23,14 @@ import {
   normalizeSnapshotPersonalizations,
 } from '../../common/interfaces/snapshots.interface';
 import { generateDeterministicHash } from '../../common/utils/hash.util';
+import {
+  calculateGrossTaxBreakdown,
+  calculateSalesTaxBreakdown,
+  decimalToNumber,
+  DecimalInput,
+  roundMoney,
+  toDecimal,
+} from '../../common/utils/sales-tax.util';
 
 type InventoryConsumptionReduction = {
   batchId: string;
@@ -37,6 +48,7 @@ type ResolvedCommercialVariant = {
   minPrice: number | null;
   comparePrice: number | null;
   costPrice: number | null;
+  taxRate: DecimalInput;
   size: string | null;
   isActive: boolean;
 };
@@ -69,6 +81,7 @@ export class OrdersService {
         minPrice: true,
         comparePrice: true,
         costPrice: true,
+        taxRate: true,
         size: true,
         isActive: true,
       },
@@ -96,6 +109,55 @@ export class OrdersService {
       !Array.isArray(pricingJson) &&
       'inventoryConsumption' in pricingJson
     );
+  }
+
+  private isPendingPaymentStatus(status: OrderStatus) {
+    const pendingPaymentStatuses: OrderStatus[] = [
+      OrderStatus.PENDIENTE_PAGO,
+      OrderStatus.PENDING_DEPOSIT,
+      OrderStatus.PENDING_FINAL_PAYMENT,
+    ];
+
+    return pendingPaymentStatuses.includes(status);
+  }
+
+  private isFullyPaidOperationalStatus(status: OrderStatus) {
+    const fullyPaidOperationalStatuses: OrderStatus[] = [
+      OrderStatus.PAGADA,
+      OrderStatus.EN_PRODUCCION,
+      OrderStatus.IN_PRODUCTION,
+      OrderStatus.READY_FOR_DISPATCH,
+      OrderStatus.ENVIADA,
+      OrderStatus.ENTREGADA,
+    ];
+
+    return fullyPaidOperationalStatuses.includes(status);
+  }
+
+  private parsePositiveMoney(value: DecimalInput, errorMessage: string) {
+    let parsed: Decimal;
+
+    try {
+      parsed = roundMoney(value);
+    } catch {
+      throw new BadRequestException('Monto decimal invalido');
+    }
+
+    if (!parsed.isFinite() || parsed.lessThanOrEqualTo(0)) {
+      throw new BadRequestException(errorMessage);
+    }
+
+    return parsed;
+  }
+
+  private parseDateOrThrow(value: string, errorMessage: string) {
+    const parsed = new Date(value);
+
+    if (Number.isNaN(parsed.getTime())) {
+      throw new BadRequestException(errorMessage);
+    }
+
+    return parsed;
   }
 
   private async buildInventoryConsumption(
@@ -159,6 +221,78 @@ export class OrdersService {
     };
   }
 
+  private serializeOrderMoney<T extends Record<string, unknown> | null>(
+    order: T,
+  ): T {
+    if (!order) {
+      return order;
+    }
+
+    const result: Record<string, unknown> = { ...order };
+
+    if ('netAmount' in result) {
+      result.netAmount = decimalToNumber(result.netAmount as DecimalInput);
+    }
+
+    if ('taxTotal' in result) {
+      result.taxTotal = decimalToNumber(result.taxTotal as DecimalInput);
+    }
+
+    if ('amountPaid' in result) {
+      result.amountPaid = decimalToNumber(result.amountPaid as DecimalInput);
+    }
+
+    if ('balanceDue' in result) {
+      result.balanceDue = decimalToNumber(result.balanceDue as DecimalInput);
+    }
+
+    if (Array.isArray(result.payments)) {
+      const payments = result.payments as unknown[];
+      result.payments = payments.map((payment): unknown => {
+        if (!payment || typeof payment !== 'object') {
+          return payment;
+        }
+
+        const paymentRecord = { ...(payment as Record<string, unknown>) };
+
+        if ('amount' in paymentRecord) {
+          paymentRecord.amount = decimalToNumber(
+            paymentRecord.amount as DecimalInput,
+          );
+        }
+
+        return paymentRecord;
+      });
+    }
+
+    if (Array.isArray(result.items)) {
+      const items = result.items as unknown[];
+      result.items = items.map((item): unknown => {
+        if (!item || typeof item !== 'object') {
+          return item;
+        }
+
+        const itemRecord = { ...(item as Record<string, unknown>) };
+
+        if ('netUnitPrice' in itemRecord) {
+          itemRecord.netUnitPrice = decimalToNumber(
+            itemRecord.netUnitPrice as DecimalInput,
+          );
+        }
+
+        if ('taxAmount' in itemRecord) {
+          itemRecord.taxAmount = decimalToNumber(
+            itemRecord.taxAmount as DecimalInput,
+          );
+        }
+
+        return itemRecord;
+      });
+    }
+
+    return result as T;
+  }
+
   async create(
     createOrderDto: CreateOrderDto,
     userId?: string,
@@ -184,7 +318,7 @@ export class OrdersService {
         }
 
         if (existingOrderRequest.order) {
-          return existingOrderRequest.order;
+          return this.serializeOrderMoney(existingOrderRequest.order);
         }
 
         throw new ConflictException(
@@ -281,11 +415,12 @@ export class OrdersService {
               );
             }
 
-            let unitPrice = Math.max(
-              resolvedVariant.salePrice ?? 0,
-              resolvedVariant.minPrice ?? 0,
-            );
-            let totalPrice = unitPrice * item.quantity;
+            const salePrice = toDecimal(resolvedVariant.salePrice ?? 0);
+            const minPrice = toDecimal(resolvedVariant.minPrice ?? 0);
+            let unitPrice = salePrice.greaterThan(minPrice)
+              ? salePrice
+              : minPrice;
+            let totalPrice = roundMoney(unitPrice.mul(item.quantity));
             let configurationJson: Prisma.InputJsonValue | undefined =
               undefined;
             let pricingJsonPayload: Record<string, unknown> = {};
@@ -306,8 +441,8 @@ export class OrdersService {
                 },
                 scope,
               );
-              unitPrice = quote.unitPrice;
-              totalPrice = quote.total;
+              unitPrice = toDecimal(quote.unitPrice);
+              totalPrice = roundMoney(unitPrice.mul(item.quantity));
 
               // Generate Configuration Snapshot
               const configSnapshot: ConfigurationSnapshot = {
@@ -371,6 +506,12 @@ export class OrdersService {
                   } as Prisma.InputJsonValue)
                 : (null as unknown as Prisma.InputJsonValue);
 
+            const taxBreakdown = calculateSalesTaxBreakdown({
+              grossUnitPrice: unitPrice,
+              quantity: item.quantity,
+              taxRate: resolvedVariant.taxRate,
+            });
+
             return {
               ...item,
               variantId: resolvedVariant.id,
@@ -380,8 +521,13 @@ export class OrdersService {
                 resolvedVariant.imageUrl ??
                 baseProduct.images[0]?.url ??
                 null,
-              unitPrice,
-              totalPrice,
+              unitPrice: decimalToNumber(unitPrice),
+              totalPrice: decimalToNumber(totalPrice),
+              taxRate: resolvedVariant.taxRate,
+              grossLineTotal: totalPrice,
+              netUnitPrice: taxBreakdown.netUnitPrice,
+              netLineTotal: taxBreakdown.netLineTotal,
+              taxAmount: taxBreakdown.taxAmount,
               configurationJson:
                 configurationJson ?? (null as unknown as Prisma.InputJsonValue),
               pricingJson,
@@ -390,16 +536,75 @@ export class OrdersService {
         );
 
         const subtotalAmount = processedItems.reduce(
-          (sum, item) => sum + item.totalPrice,
-          0,
+          (sum, item) => sum.plus(toDecimal(item.totalPrice)),
+          new Decimal(0),
         );
 
-        const normalizedDiscountValue = Math.max(0, manualDiscountValue ?? 0);
-        const discountAmount =
+        const normalizedDiscountValue = Decimal.max(
+          0,
+          toDecimal(manualDiscountValue ?? 0),
+        );
+        const rawDiscountAmount =
           manualDiscountType === 'percent'
-            ? (subtotalAmount * normalizedDiscountValue) / 100
+            ? roundMoney(subtotalAmount.mul(normalizedDiscountValue).div(100))
             : normalizedDiscountValue;
-        const totalAmount = Math.max(0, subtotalAmount - discountAmount);
+        const discountAmount = Decimal.min(rawDiscountAmount, subtotalAmount);
+        const totalAmount = roundMoney(subtotalAmount.minus(discountAmount));
+
+        let taxAdjustedItems = processedItems;
+        let netAmount = processedItems.reduce(
+          (sum, item) => sum.plus(item.netLineTotal),
+          new Decimal(0),
+        );
+        let taxTotal = processedItems.reduce(
+          (sum, item) => sum.plus(item.taxAmount),
+          new Decimal(0),
+        );
+
+        if (discountAmount.greaterThan(0) && subtotalAmount.greaterThan(0)) {
+          let accumulatedGross = new Decimal(0);
+          taxAdjustedItems = processedItems.map((item, index) => {
+            const isLast = index === processedItems.length - 1;
+            const discountedGrossLine = isLast
+              ? roundMoney(totalAmount.minus(accumulatedGross))
+              : roundMoney(
+                  toDecimal(item.totalPrice).minus(
+                    discountAmount
+                      .mul(toDecimal(item.totalPrice))
+                      .div(subtotalAmount),
+                  ),
+                );
+
+            accumulatedGross = accumulatedGross.plus(discountedGrossLine);
+
+            const lineTax = calculateGrossTaxBreakdown({
+              grossAmount: discountedGrossLine,
+              taxRate: item.taxRate,
+            });
+
+            return {
+              ...item,
+              discountedGrossLine,
+              netLineTotal: lineTax.netAmount,
+              taxAmount: lineTax.taxAmount,
+            };
+          });
+
+          netAmount = taxAdjustedItems.reduce(
+            (sum, item) => sum.plus(item.netLineTotal),
+            new Decimal(0),
+          );
+          taxTotal = roundMoney(totalAmount.minus(netAmount));
+        }
+
+        netAmount = roundMoney(netAmount);
+        taxTotal = roundMoney(taxTotal);
+        const initialAmountPaid = this.isFullyPaidOperationalStatus(statusToSet)
+          ? totalAmount
+          : new Decimal(0);
+        const initialBalanceDue = roundMoney(
+          totalAmount.minus(initialAmountPaid),
+        );
 
         let provider: {
           id: string;
@@ -427,15 +632,14 @@ export class OrdersService {
           department,
           shippingProviderId: provider?.id ?? null,
           shippingProviderName: resolvedCarrier,
-          manualDiscount:
-            normalizedDiscountValue > 0
-              ? {
-                  type: manualDiscountType ?? 'amount',
-                  value: normalizedDiscountValue,
-                  amount: discountAmount,
-                  subtotal: subtotalAmount,
-                }
-              : null,
+          manualDiscount: normalizedDiscountValue.greaterThan(0)
+            ? {
+                type: manualDiscountType ?? 'amount',
+                value: decimalToNumber(normalizedDiscountValue),
+                amount: decimalToNumber(discountAmount),
+                subtotal: decimalToNumber(subtotalAmount),
+              }
+            : null,
         } as Prisma.InputJsonValue;
 
         const createdOrder = await tx.order.create({
@@ -448,7 +652,11 @@ export class OrdersService {
             source: sourceToSet,
             status: statusToSet,
             shippingAddress: shippingAddressJson,
-            totalAmount,
+            totalAmount: decimalToNumber(totalAmount),
+            netAmount,
+            taxTotal,
+            amountPaid: initialAmountPaid,
+            balanceDue: initialBalanceDue,
             statusHistory: {
               create: {
                 status: statusToSet,
@@ -458,11 +666,13 @@ export class OrdersService {
               },
             },
             items: {
-              create: processedItems.map((item) => ({
+              create: taxAdjustedItems.map((item) => ({
                 productId: item.productId,
                 quantity: item.quantity,
                 unitPrice: item.unitPrice,
                 totalPrice: item.totalPrice,
+                netUnitPrice: item.netUnitPrice,
+                taxAmount: item.taxAmount,
                 sku: item.sku,
                 imageUrl: item.imageUrl,
                 variantId: item.variantId,
@@ -497,7 +707,7 @@ export class OrdersService {
           );
         }
 
-        return createdOrder;
+        return this.serializeOrderMoney(createdOrder);
       });
     } catch (error) {
       if (
@@ -515,7 +725,7 @@ export class OrdersService {
         }
 
         if (existingOrderRequest?.order) {
-          return existingOrderRequest.order;
+          return this.serializeOrderMoney(existingOrderRequest.order);
         }
 
         throw new ConflictException(
@@ -553,12 +763,30 @@ export class OrdersService {
         throw new BadRequestException('Orden no encontrada');
       }
 
-      if (order.status === OrderStatus.PAGADA) {
+      if (this.isFullyPaidOperationalStatus(order.status)) {
         return order;
       }
 
-      if (order.status !== OrderStatus.PENDIENTE_PAGO) {
+      if (!this.isPendingPaymentStatus(order.status)) {
         return order;
+      }
+
+      const totalAmount = roundMoney(order.totalAmount);
+      const amountPaid = roundMoney(order.amountPaid);
+      const balanceDue = roundMoney(order.balanceDue);
+      const paymentDelta = balanceDue.greaterThan(0)
+        ? balanceDue
+        : Decimal.max(totalAmount.minus(amountPaid), 0);
+
+      if (paymentDelta.greaterThan(0)) {
+        await tx.orderPayment.create({
+          data: {
+            orderId,
+            amount: paymentDelta,
+            paymentDate: new Date(),
+            notes: 'Pago completo confirmado por integracion de pagos',
+          },
+        });
       }
 
       for (const item of order.items) {
@@ -603,6 +831,8 @@ export class OrdersService {
         where: { id: orderId },
         data: {
           status: OrderStatus.PAGADA,
+          amountPaid: totalAmount,
+          balanceDue: new Decimal(0),
           statusHistory: {
             create: {
               status: OrderStatus.PAGADA,
@@ -715,44 +945,63 @@ export class OrdersService {
       ];
     }
 
-    return this.prisma.order.findMany({
-      where,
-      select: {
-        id: true,
-        orderNumber: true,
-        customerEmail: true,
-        city: true,
-        totalAmount: true,
-        status: true,
-        source: true,
-        trackingNumber: true,
-        createdAt: true,
-        items: {
-          select: {
-            id: true,
-            sku: true,
-            quantity: true,
-            product: {
-              select: {
-                name: true,
-                images: {
-                  select: { url: true },
-                  orderBy: { position: 'asc' },
-                  take: 1,
+    return this.prisma.order
+      .findMany({
+        where,
+        select: {
+          id: true,
+          orderNumber: true,
+          customerEmail: true,
+          city: true,
+          totalAmount: true,
+          netAmount: true,
+          taxTotal: true,
+          amountPaid: true,
+          balanceDue: true,
+          status: true,
+          source: true,
+          trackingNumber: true,
+          createdAt: true,
+          items: {
+            select: {
+              id: true,
+              sku: true,
+              quantity: true,
+              netUnitPrice: true,
+              taxAmount: true,
+              product: {
+                select: {
+                  name: true,
+                  images: {
+                    select: { url: true },
+                    orderBy: { position: 'asc' },
+                    take: 1,
+                  },
                 },
               },
             },
           },
+          payments: {
+            select: {
+              id: true,
+              amount: true,
+              paymentDate: true,
+              proofUrl: true,
+              notes: true,
+              createdAt: true,
+            },
+            orderBy: [{ paymentDate: 'desc' }, { createdAt: 'desc' }],
+          },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        orderBy: {
+          createdAt: 'desc',
+        },
+      })
+      .then((orders) => orders.map((order) => this.serializeOrderMoney(order)));
   }
 
   async findOne(id: string) {
-    return this.prisma.order.findUnique({
+    const order = await this.prisma.order.findUnique({
       where: { id },
       include: {
         items: {
@@ -768,12 +1017,17 @@ export class OrdersService {
           orderBy: { createdAt: 'desc' },
         },
         profile: true,
+        payments: {
+          orderBy: [{ paymentDate: 'desc' }, { createdAt: 'desc' }],
+        },
       },
     });
+
+    return this.serializeOrderMoney(order);
   }
 
   async findOneWithDetails(id: string) {
-    return this.prisma.order.findUnique({
+    const order = await this.prisma.order.findUnique({
       where: { id },
       include: {
         items: {
@@ -784,6 +1038,8 @@ export class OrdersService {
         profile: true,
       },
     });
+
+    return this.serializeOrderMoney(order);
   }
 
   async findByUser(userId: string) {
@@ -796,7 +1052,7 @@ export class OrdersService {
       return [];
     }
 
-    return this.prisma.order.findMany({
+    const orders = await this.prisma.order.findMany({
       where: {
         OR: [
           {
@@ -827,48 +1083,239 @@ export class OrdersService {
         statusHistory: {
           orderBy: { createdAt: 'desc' },
         },
+        payments: {
+          orderBy: [{ paymentDate: 'desc' }, { createdAt: 'desc' }],
+        },
       },
       orderBy: {
         createdAt: 'desc',
       },
     });
+
+    return orders.map((order) => this.serializeOrderMoney(order));
+  }
+
+  async registerOrderPayment(
+    orderId: string,
+    data: CreateOrderPaymentDto,
+    userId?: string,
+  ) {
+    const amount = this.parsePositiveMoney(
+      data.amount,
+      'El abono debe ser mayor a cero',
+    );
+    const paymentDate = this.parseDateOrThrow(
+      data.paymentDate,
+      'La fecha del abono es invalida',
+    );
+    const proofUrl = data.proofUrl?.trim() || null;
+    const notes = data.notes?.trim() || null;
+
+    return this.prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id: orderId },
+        select: {
+          id: true,
+          status: true,
+          totalAmount: true,
+          amountPaid: true,
+          balanceDue: true,
+        },
+      });
+
+      if (!order) {
+        throw new BadRequestException('Orden no encontrada');
+      }
+
+      const totalAmount = roundMoney(order.totalAmount);
+      const currentPaid = roundMoney(order.amountPaid);
+      const currentBalanceDue = roundMoney(order.balanceDue);
+
+      if (amount.greaterThan(currentBalanceDue)) {
+        throw new BadRequestException(
+          'El abono no puede superar el saldo pendiente de la orden',
+        );
+      }
+
+      const nextPaid = roundMoney(currentPaid.plus(amount));
+      const nextBalanceDue = roundMoney(totalAmount.minus(nextPaid));
+
+      if (nextPaid.greaterThan(totalAmount)) {
+        throw new BadRequestException(
+          'El total abonado no puede superar el total de la orden',
+        );
+      }
+
+      if (nextBalanceDue.lessThan(0)) {
+        throw new BadRequestException(
+          'El saldo pendiente no puede quedar negativo',
+        );
+      }
+
+      const payment = await tx.orderPayment.create({
+        data: {
+          orderId,
+          amount,
+          paymentDate,
+          proofUrl,
+          notes,
+        },
+      });
+
+      const nextStatus =
+        nextBalanceDue.isZero() || !this.isPendingPaymentStatus(order.status)
+          ? order.status
+          : OrderStatus.PENDING_FINAL_PAYMENT;
+
+      await tx.order.update({
+        where: { id: orderId },
+        data: {
+          amountPaid: nextPaid,
+          balanceDue: nextBalanceDue,
+          status: nextStatus,
+          statusHistory:
+            nextStatus !== order.status
+              ? {
+                  create: {
+                    status: nextStatus,
+                    oldStatus: order.status,
+                    newStatus: nextStatus,
+                    userId: userId ?? null,
+                  },
+                }
+              : undefined,
+        },
+      });
+
+      const updatedOrder = nextBalanceDue.isZero()
+        ? await this.confirmPendingOrderPayment(orderId, userId, tx)
+        : await tx.order.findUnique({
+            where: { id: orderId },
+            include: {
+              items: true,
+              payments: {
+                orderBy: [{ paymentDate: 'desc' }, { createdAt: 'desc' }],
+              },
+              statusHistory: { orderBy: { createdAt: 'desc' } },
+              shipment: true,
+            },
+          });
+
+      return {
+        payment: {
+          ...payment,
+          amount: decimalToNumber(payment.amount),
+        },
+        order: this.serializeOrderMoney(updatedOrder),
+      };
+    });
+  }
+
+  async getAccountsReceivable() {
+    const orders = await this.prisma.order.findMany({
+      where: {
+        balanceDue: { gt: 0 },
+        status: {
+          notIn: [OrderStatus.CANCELADA, OrderStatus.RETURNED_TO_STOCK],
+        },
+      },
+      select: {
+        id: true,
+        orderNumber: true,
+        customerEmail: true,
+        customerPhone: true,
+        city: true,
+        totalAmount: true,
+        amountPaid: true,
+        balanceDue: true,
+        status: true,
+        source: true,
+        createdAt: true,
+        profile: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        payments: {
+          select: {
+            id: true,
+            amount: true,
+            paymentDate: true,
+            proofUrl: true,
+            notes: true,
+            createdAt: true,
+          },
+          orderBy: [{ paymentDate: 'desc' }, { createdAt: 'desc' }],
+        },
+      },
+      orderBy: [{ createdAt: 'asc' }],
+    });
+
+    const totalBalanceDue = orders.reduce(
+      (sum, order) => sum.plus(toDecimal(order.balanceDue)),
+      new Decimal(0),
+    );
+    const totalAmountPaid = orders.reduce(
+      (sum, order) => sum.plus(toDecimal(order.amountPaid)),
+      new Decimal(0),
+    );
+
+    return {
+      summary: {
+        orderCount: orders.length,
+        totalBalanceDue: decimalToNumber(totalBalanceDue),
+        totalAmountPaid: decimalToNumber(totalAmountPaid),
+      },
+      orders: orders.map((order) => this.serializeOrderMoney(order)),
+    };
   }
 
   async update(id: string, updateOrderDto: UpdateOrderDto) {
     const { status, ...data } = updateOrderDto;
 
     if (status) {
-      const currentOrder = await this.prisma.order.findUnique({
-        where: { id },
-        select: { status: true },
-      });
+      return this.prisma.$transaction(async (tx) => {
+        const currentOrder = await tx.order.findUnique({
+          where: { id },
+          select: { status: true, balanceDue: true },
+        });
 
-      if (!currentOrder) {
-        throw new BadRequestException('Orden no encontrada');
-      }
+        if (!currentOrder) {
+          throw new BadRequestException('Orden no encontrada');
+        }
 
-      const updatedOrder = await this.prisma.order.update({
-        where: { id },
-        data: {
-          status,
-          ...data,
-          statusHistory:
-            currentOrder.status === status
-              ? undefined
-              : {
-                  create: {
-                    status,
-                    oldStatus: currentOrder.status,
-                    newStatus: status,
-                    userId: null,
+        const balanceDue = roundMoney(currentOrder.balanceDue);
+        if (status === OrderStatus.READY_FOR_DISPATCH && balanceDue.gt(0)) {
+          throw new ForbiddenException(
+            'La orden no puede quedar lista para despacho con saldo pendiente',
+          );
+        }
+
+        const updatedOrder = await tx.order.update({
+          where: { id },
+          data: {
+            status,
+            ...data,
+            statusHistory:
+              currentOrder.status === status
+                ? undefined
+                : {
+                    create: {
+                      status,
+                      oldStatus: currentOrder.status,
+                      newStatus: status,
+                      userId: null,
+                    },
                   },
-                },
-        },
+          },
+        });
+
+        await this.shippingSyncService.ensureShipmentForOrder(id, tx);
+
+        return this.serializeOrderMoney(updatedOrder);
       });
-
-      await this.shippingSyncService.ensureShipmentForOrder(id);
-
-      return updatedOrder;
     }
 
     const updatedOrder = await this.prisma.order.update({

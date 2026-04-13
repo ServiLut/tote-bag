@@ -66,9 +66,71 @@ interface ReportPreview {
   netBalance: number;
 }
 
+interface AccountsReceivableReport {
+  summary: {
+    orderCount: number;
+    totalBalanceDue: number;
+    totalAmountPaid: number;
+  };
+  orders: Array<{
+    id: string;
+    orderNumber: number;
+    customerEmail: string;
+    customerPhone?: string;
+    totalAmount: number;
+    amountPaid: number;
+    balanceDue: number;
+    status: string;
+    createdAt: string;
+  }>;
+}
+
+interface SalesTaxReport {
+  orderCount: number;
+  taxableBase: number;
+  taxTotal: number;
+  grossTotal: number;
+  reconciliationDifference: number;
+  orders: Array<{
+    id: string;
+    orderNumber: number;
+    customerEmail: string;
+    status: string;
+    createdAt: string;
+    totalAmount: number;
+    netAmount: number;
+    taxTotal: number;
+  }>;
+}
+
+interface BreakEvenSimulation {
+  formula: string;
+  orderCount: number;
+  fixedExpensesTotal: number;
+  fixedExpenses: Array<{ label: string; amount: number }>;
+  grossSales: number;
+  taxTotal: number;
+  netSales: number;
+  variableCosts: number;
+  contributionMargin: number;
+  contributionMarginRatio: number;
+  breakEvenSales: number | null;
+  isBreakEvenReachable: boolean;
+}
+
 type Granularity = 'day' | 'month' | 'year' | 'custom';
+type ApiEnvelope<T> = { data?: T | null };
 
 const supabase = createClient();
+
+const EMPTY_ACCOUNTS_RECEIVABLE_REPORT: AccountsReceivableReport = {
+  summary: {
+    orderCount: 0,
+    totalBalanceDue: 0,
+    totalAmountPaid: 0,
+  },
+  orders: [],
+};
 
 function toDateInputValue(date: Date) {
   return date.toISOString().slice(0, 10);
@@ -136,22 +198,77 @@ function parseRequestErrorMessage(rawText: string, fallback: string) {
   return fallback;
 }
 
+function buildTaxReportFromPreview(preview: ReportPreview): SalesTaxReport {
+  return {
+    orderCount: preview.orderCount,
+    taxableBase: preview.subtotal,
+    taxTotal: preview.estimatedTaxes,
+    grossTotal: preview.grossSales,
+    reconciliationDifference: 0,
+    orders: [],
+  };
+}
+
+function unwrapApiData<T>(result: T | ApiEnvelope<T> | null | undefined) {
+  if (!result) {
+    return null;
+  }
+
+  if (typeof result === 'object' && 'data' in result) {
+    return (result as ApiEnvelope<T>).data ?? null;
+  }
+
+  return result as T;
+}
+
+function normalizeAccountsReceivableReport(
+  report: AccountsReceivableReport | null,
+): AccountsReceivableReport {
+  return {
+    summary: {
+      orderCount: report?.summary?.orderCount ?? 0,
+      totalBalanceDue: report?.summary?.totalBalanceDue ?? 0,
+      totalAmountPaid: report?.summary?.totalAmountPaid ?? 0,
+    },
+    orders: Array.isArray(report?.orders) ? report.orders : [],
+  };
+}
+
 export default function FinanceDashboardPage() {
   const currentDate = useMemo(() => new Date(), []);
   const currentYear = currentDate.getFullYear();
   const [summary, setSummary] = useState<FinancialSummary | null>(null);
   const [preview, setPreview] = useState<ReportPreview | null>(null);
+  const [receivables, setReceivables] =
+    useState<AccountsReceivableReport | null>(null);
+  const [taxReport, setTaxReport] = useState<SalesTaxReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [breakEven, setBreakEven] = useState<BreakEvenSimulation | null>(null);
+  const [breakEvenLoading, setBreakEvenLoading] = useState(false);
+  const [breakEvenError, setBreakEvenError] = useState<string | null>(null);
+  const [fixedExpenseInputs, setFixedExpenseInputs] = useState([
+    { id: 'payroll', label: 'Nomina', amount: '' },
+    { id: 'rent', label: 'Arriendo', amount: '' },
+    { id: 'services', label: 'Servicios', amount: '' },
+  ]);
   const [filterCategory, setFilterCategory] = useState('ALL');
   const [granularity, setGranularity] = useState<Granularity>('month');
-  const [selectedDate, setSelectedDate] = useState(toDateInputValue(currentDate));
-  const [selectedMonth, setSelectedMonth] = useState(`${currentYear}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`);
+  const [selectedDate, setSelectedDate] = useState(
+    toDateInputValue(currentDate),
+  );
+  const [selectedMonth, setSelectedMonth] = useState(
+    `${currentYear}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`,
+  );
   const [selectedYear, setSelectedYear] = useState(String(currentYear));
-  const [customStartDate, setCustomStartDate] = useState(toDateInputValue(new Date(currentYear, currentDate.getMonth(), 1)));
-  const [customEndDate, setCustomEndDate] = useState(toDateInputValue(currentDate));
+  const [customStartDate, setCustomStartDate] = useState(
+    toDateInputValue(new Date(currentYear, currentDate.getMonth(), 1)),
+  );
+  const [customEndDate, setCustomEndDate] = useState(
+    toDateInputValue(currentDate),
+  );
 
   const queryParams = useMemo(() => {
     const params = new URLSearchParams();
@@ -164,7 +281,11 @@ export default function FinanceDashboardPage() {
       params.set('month', month);
       params.set('year', year);
       params.set('startDate', `${selectedMonth}-01`);
-      const endOfMonth = new Date(Number.parseInt(year, 10), Number.parseInt(month, 10), 0);
+      const endOfMonth = new Date(
+        Number.parseInt(year, 10),
+        Number.parseInt(month, 10),
+        0,
+      );
       params.set('endDate', toDateInputValue(endOfMonth));
     } else if (granularity === 'year') {
       params.set('year', selectedYear);
@@ -176,7 +297,14 @@ export default function FinanceDashboardPage() {
     }
 
     return params;
-  }, [customEndDate, customStartDate, granularity, selectedDate, selectedMonth, selectedYear]);
+  }, [
+    customEndDate,
+    customStartDate,
+    granularity,
+    selectedDate,
+    selectedMonth,
+    selectedYear,
+  ]);
 
   const getAuthHeaders = async (): Promise<Record<string, string>> => {
     const {
@@ -200,33 +328,40 @@ export default function FinanceDashboardPage() {
       setLoadError(null);
       setSummary(null);
       setPreview(null);
+      setReceivables(null);
+      setTaxReport(null);
 
       if (
         granularity === 'custom' &&
         isStartDateAfterEndDate(customStartDate, customEndDate)
       ) {
-        setLoadError(
-          'La fecha inicial no puede ser mayor que la fecha final.',
-        );
+        setLoadError('La fecha inicial no puede ser mayor que la fecha final.');
         setLoading(false);
         return;
       }
 
       try {
         const authHeaders = await getAuthHeaders();
-        const [summaryRes, previewRes] = await Promise.all([
+        const [summaryRes, previewRes, receivablesRes] = await Promise.all([
           apiFetch(`/inventory/finance/summary?${queryParams.toString()}`, {
             headers: authHeaders,
           }),
           apiFetch(`/finance/report-preview?${queryParams.toString()}`, {
             headers: authHeaders,
           }),
+          apiFetch('/orders/accounts-receivable', {
+            headers: authHeaders,
+          }),
         ]);
 
         if (!active) return;
 
-        if (!summaryRes.ok || !previewRes.ok) {
-          const firstErrorResponse = !summaryRes.ok ? summaryRes : previewRes;
+        if (!summaryRes.ok || !previewRes.ok || !receivablesRes.ok) {
+          const firstErrorResponse = [
+            summaryRes,
+            previewRes,
+            receivablesRes,
+          ].find((response) => !response.ok)!;
           const errorText = await firstErrorResponse.text();
           throw new Error(
             parseRequestErrorMessage(
@@ -236,13 +371,24 @@ export default function FinanceDashboardPage() {
           );
         }
 
-        const [summaryResult, previewResult] = await Promise.all([
-          summaryRes.json(),
-          previewRes.json(),
-        ]);
+        const [summaryResult, previewResult, receivablesResult] =
+          await Promise.all([
+            summaryRes.json(),
+            previewRes.json(),
+            receivablesRes.json(),
+          ]);
+        const resolvedSummary = unwrapApiData<FinancialSummary>(summaryResult);
+        const resolvedPreview = unwrapApiData<ReportPreview>(previewResult);
+        const resolvedReceivables = normalizeAccountsReceivableReport(
+          unwrapApiData<AccountsReceivableReport>(receivablesResult),
+        );
 
-        setSummary(summaryResult.data || summaryResult || null);
-        setPreview(previewResult.data || previewResult || null);
+        setSummary(resolvedSummary);
+        setPreview(resolvedPreview);
+        setReceivables(resolvedReceivables);
+        setTaxReport(
+          resolvedPreview ? buildTaxReportFromPreview(resolvedPreview) : null,
+        );
       } catch (error) {
         console.error('Error fetching financial dashboard:', error);
         if (active) {
@@ -269,13 +415,18 @@ export default function FinanceDashboardPage() {
   }, [currentYear]);
 
   const netProfit = summary
-    ? summary.kpis.totalIncome - (summary.kpis.totalCOGS ?? 0) - summary.kpis.totalOpex
+    ? summary.kpis.totalIncome -
+      (summary.kpis.totalCOGS ?? 0) -
+      summary.kpis.totalOpex
     : 0;
 
   const filteredTransactions =
     summary?.recentTransactions.filter(
       (tx) => filterCategory === 'ALL' || tx.category === filterCategory,
     ) || [];
+  const receivablesSummary =
+    receivables?.summary ?? EMPTY_ACCOUNTS_RECEIVABLE_REPORT.summary;
+  const receivablesOrders = receivables?.orders ?? [];
 
   const handleExport = async () => {
     setExporting(true);
@@ -292,9 +443,12 @@ export default function FinanceDashboardPage() {
 
     try {
       const authHeaders = await getAuthHeaders();
-      const response = await apiFetch(`/finance/export-report?${queryParams.toString()}`, {
-        headers: authHeaders,
-      });
+      const response = await apiFetch(
+        `/finance/export-report?${queryParams.toString()}`,
+        {
+          headers: authHeaders,
+        },
+      );
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(
@@ -314,10 +468,93 @@ export default function FinanceDashboardPage() {
     } catch (error) {
       console.error(error);
       setExportError(
-        error instanceof Error ? error.message : 'No fue posible generar el PDF',
+        error instanceof Error
+          ? error.message
+          : 'No fue posible generar el PDF',
       );
     } finally {
       setExporting(false);
+    }
+  };
+
+  const handleFixedExpenseChange = (
+    id: string,
+    field: 'label' | 'amount',
+    value: string,
+  ) => {
+    setFixedExpenseInputs((current) =>
+      current.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              [field]:
+                field === 'amount'
+                  ? value.replace(/[^\d.,]/g, '').replace(',', '.')
+                  : value,
+            }
+          : item,
+      ),
+    );
+  };
+
+  const handleBreakEvenSimulation = async () => {
+    setBreakEvenLoading(true);
+    setBreakEvenError(null);
+
+    const fixedExpenses = fixedExpenseInputs
+      .map((item) => ({
+        label: item.label.trim() || 'Gasto fijo',
+        amount: item.amount.trim(),
+      }))
+      .filter((item) => item.amount.length > 0);
+
+    if (fixedExpenses.length === 0) {
+      setBreakEven(null);
+      setBreakEvenError('Registra al menos un gasto fijo para simular.');
+      setBreakEvenLoading(false);
+      return;
+    }
+
+    try {
+      const authHeaders = await getAuthHeaders();
+      const response = await apiFetch(
+        '/inventory/finance/break-even-simulation',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...authHeaders,
+          },
+          body: JSON.stringify({
+            startDate: queryParams.get('startDate') || undefined,
+            endDate: queryParams.get('endDate') || undefined,
+            fixedExpenses,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          parseRequestErrorMessage(
+            errorText,
+            'No fue posible simular el punto de equilibrio.',
+          ),
+        );
+      }
+
+      const result = await response.json();
+      setBreakEven(unwrapApiData<BreakEvenSimulation>(result));
+    } catch (error) {
+      console.error('Error simulating break-even:', error);
+      setBreakEven(null);
+      setBreakEvenError(
+        error instanceof Error
+          ? error.message
+          : 'No fue posible simular el punto de equilibrio.',
+      );
+    } finally {
+      setBreakEvenLoading(false);
     }
   };
 
@@ -326,7 +563,9 @@ export default function FinanceDashboardPage() {
       <div className="mx-auto flex min-h-[60vh] max-w-7xl items-center justify-center p-8 md:p-12">
         <div className="flex animate-pulse flex-col items-center gap-4">
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="font-bold text-muted">Calculando estados financieros...</p>
+          <p className="font-bold text-muted">
+            Calculando estados financieros...
+          </p>
         </div>
       </div>
     );
@@ -354,7 +593,8 @@ export default function FinanceDashboardPage() {
             Dashboard Financiero
           </h1>
           <p className="font-medium text-muted">
-            Analisis de rentabilidad, flujo de caja y exportacion de reportes PDF.
+            Analisis de rentabilidad, flujo de caja y exportacion de reportes
+            PDF.
           </p>
         </div>
         <div className="flex flex-col gap-3 rounded-2xl border border-theme bg-surface p-4 shadow-sm md:min-w-[420px]">
@@ -365,7 +605,9 @@ export default function FinanceDashboardPage() {
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <select
               value={granularity}
-              onChange={(event) => setGranularity(event.target.value as Granularity)}
+              onChange={(event) =>
+                setGranularity(event.target.value as Granularity)
+              }
               className="rounded-xl border border-theme bg-base px-4 py-2.5 text-xs font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20"
             >
               <option value="day">Dia</option>
@@ -429,7 +671,11 @@ export default function FinanceDashboardPage() {
             disabled={exporting}
             className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-xs font-black text-base-color shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            {exporting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
             {exporting ? 'Generando PDF...' : 'Exportar Reporte'}
           </button>
           {exportError ? (
@@ -441,11 +687,31 @@ export default function FinanceDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-5">
-        <PreviewCard label="Periodo exportable" value={preview?.period?.label || 'N/A'} tone="slate" />
-        <PreviewCard label="Ordenes pagadas" value={String(preview?.orderCount || 0)} tone="emerald" />
-        <PreviewCard label="Ventas brutas" value={formatCurrency(preview?.grossSales || 0)} tone="blue" />
-        <PreviewCard label="Devoluciones" value={formatCurrency(preview?.returnsTotal || 0)} tone="rose" />
-        <PreviewCard label="Balance final" value={formatCurrency(preview?.netBalance || 0)} tone="amber" />
+        <PreviewCard
+          label="Periodo exportable"
+          value={preview?.period?.label || 'N/A'}
+          tone="slate"
+        />
+        <PreviewCard
+          label="Ordenes pagadas"
+          value={String(preview?.orderCount || 0)}
+          tone="emerald"
+        />
+        <PreviewCard
+          label="Ventas brutas"
+          value={formatCurrency(preview?.grossSales || 0)}
+          tone="blue"
+        />
+        <PreviewCard
+          label="Devoluciones"
+          value={formatCurrency(preview?.returnsTotal || 0)}
+          tone="rose"
+        />
+        <PreviewCard
+          label="Balance final"
+          value={formatCurrency(preview?.netBalance || 0)}
+          tone="amber"
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
@@ -479,8 +745,239 @@ export default function FinanceDashboardPage() {
           value={formatCurrency(netProfit)}
           caption={`Devoluciones: ${preview?.returnedOrderCount || 0}`}
           accent={netProfit >= 0 ? 'emerald' : 'rose'}
-          icon={netProfit >= 0 ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}
+          icon={
+            netProfit >= 0 ? (
+              <ArrowUpRight className="h-5 w-5" />
+            ) : (
+              <ArrowDownRight className="h-5 w-5" />
+            )
+          }
         />
+      </div>
+
+      <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
+        <div className="overflow-hidden rounded-3xl border border-theme bg-surface shadow-sm xl:col-span-2">
+          <div className="border-b border-theme bg-base/30 p-6">
+            <h2 className="text-xl font-bold text-primary">Cartera</h2>
+            <p className="text-xs font-medium text-muted">
+              Ordenes con saldo pendiente registradas por backend.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 border-b border-theme p-6 md:grid-cols-3">
+            <PreviewCard
+              label="Ordenes abiertas"
+              value={String(receivablesSummary.orderCount)}
+              tone="slate"
+            />
+            <PreviewCard
+              label="Saldo pendiente"
+              value={formatCurrency(receivablesSummary.totalBalanceDue)}
+              tone="rose"
+            />
+            <PreviewCard
+              label="Abonos recibidos"
+              value={formatCurrency(receivablesSummary.totalAmountPaid)}
+              tone="emerald"
+            />
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-left">
+              <thead>
+                <tr className="border-b border-theme bg-base/20 text-[10px] font-black uppercase tracking-widest text-muted/60">
+                  <th className="px-6 py-4">Orden</th>
+                  <th className="px-6 py-4">Cliente</th>
+                  <th className="px-6 py-4">Total</th>
+                  <th className="px-6 py-4">Abonado</th>
+                  <th className="px-6 py-4">Saldo</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-theme">
+                {receivablesOrders.slice(0, 6).map((order) => (
+                  <tr
+                    key={order.id}
+                    className="text-sm transition-colors hover:bg-primary/5"
+                  >
+                    <td className="px-6 py-4 font-black text-primary">
+                      #{order.orderNumber}
+                    </td>
+                    <td className="px-6 py-4 font-bold text-muted">
+                      {order.customerEmail}
+                    </td>
+                    <td className="px-6 py-4 font-bold text-primary">
+                      {formatCurrency(order.totalAmount)}
+                    </td>
+                    <td className="px-6 py-4 font-bold text-emerald-600">
+                      {formatCurrency(order.amountPaid)}
+                    </td>
+                    <td className="px-6 py-4 font-black text-rose-600">
+                      {formatCurrency(order.balanceDue)}
+                    </td>
+                  </tr>
+                ))}
+                {receivablesOrders.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="px-6 py-10 text-center text-sm font-bold text-muted"
+                    >
+                      No hay cartera pendiente.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-theme bg-surface p-6 shadow-sm">
+          <h2 className="text-xl font-bold text-primary">Reporte IVA</h2>
+          <p className="mt-1 text-xs font-medium text-muted">
+            Base gravable, IVA y venta total del periodo filtrado.
+          </p>
+          <div className="mt-6 space-y-3">
+            <SummaryLine
+              label="Base gravable"
+              value={formatCurrency(taxReport?.taxableBase || 0)}
+            />
+            <SummaryLine
+              label="IVA a pagar"
+              value={formatCurrency(taxReport?.taxTotal || 0)}
+            />
+            <SummaryLine
+              label="Venta total"
+              value={formatCurrency(taxReport?.grossTotal || 0)}
+              strong
+            />
+            <SummaryLine
+              label="Diferencia"
+              value={formatCurrency(taxReport?.reconciliationDifference || 0)}
+            />
+          </div>
+          <div className="mt-6 overflow-hidden rounded-2xl border border-theme">
+            <table className="w-full border-collapse text-left">
+              <thead>
+                <tr className="border-b border-theme bg-base/30 text-[10px] font-black uppercase tracking-widest text-muted/60">
+                  <th className="px-4 py-3">Orden</th>
+                  <th className="px-4 py-3 text-right">IVA</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-theme">
+                {(taxReport?.orders || []).slice(0, 5).map((order) => (
+                  <tr key={order.id} className="text-xs">
+                    <td className="px-4 py-3 font-bold text-primary">
+                      #{order.orderNumber}
+                    </td>
+                    <td className="px-4 py-3 text-right font-black text-primary">
+                      {formatCurrency(order.taxTotal)}
+                    </td>
+                  </tr>
+                ))}
+                {!taxReport?.orders || taxReport.orders.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={2}
+                      className="px-4 py-8 text-center text-xs font-bold text-muted"
+                    >
+                      Sin ordenes en el periodo.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-3xl border border-theme bg-surface p-8 shadow-sm">
+        <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-start">
+          <div>
+            <h2 className="text-xl font-bold text-primary">
+              Simulador de Punto de Equilibrio
+            </h2>
+            <p className="mt-1 text-xs font-medium text-muted">
+              Los gastos fijos se envian a NestJS y el backend devuelve el
+              resultado.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleBreakEvenSimulation}
+            disabled={breakEvenLoading}
+            className="flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs font-black text-base-color shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] disabled:opacity-70"
+          >
+            {breakEvenLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <PieChart className="h-4 w-4" />
+            )}
+            Simular
+          </button>
+        </div>
+
+        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+          {fixedExpenseInputs.map((item) => (
+            <div
+              key={item.id}
+              className="rounded-2xl border border-theme bg-base/30 p-4"
+            >
+              <input
+                value={item.label}
+                onChange={(event) =>
+                  handleFixedExpenseChange(item.id, 'label', event.target.value)
+                }
+                className="w-full bg-transparent text-[10px] font-black uppercase tracking-widest text-muted outline-none"
+              />
+              <input
+                value={item.amount}
+                inputMode="decimal"
+                onChange={(event) =>
+                  handleFixedExpenseChange(
+                    item.id,
+                    'amount',
+                    event.target.value,
+                  )
+                }
+                placeholder="0"
+                className="mt-2 w-full bg-transparent text-2xl font-black text-primary outline-none"
+              />
+            </div>
+          ))}
+        </div>
+
+        {breakEvenError ? (
+          <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700">
+            {breakEvenError}
+          </p>
+        ) : null}
+
+        {breakEven ? (
+          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-4">
+            <PreviewCard
+              label="Gastos fijos"
+              value={formatCurrency(breakEven.fixedExpensesTotal)}
+              tone="slate"
+            />
+            <PreviewCard
+              label="Ventas netas"
+              value={formatCurrency(breakEven.netSales)}
+              tone="blue"
+            />
+            <PreviewCard
+              label="Margen contribucion"
+              value={formatCurrency(breakEven.contributionMargin)}
+              tone={breakEven.contributionMargin >= 0 ? 'emerald' : 'rose'}
+            />
+            <PreviewCard
+              label="Punto equilibrio"
+              value={
+                breakEven.breakEvenSales === null
+                  ? 'No alcanzable'
+                  : formatCurrency(breakEven.breakEvenSales)
+              }
+              tone={breakEven.isBreakEvenReachable ? 'amber' : 'rose'}
+            />
+          </div>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
@@ -496,8 +993,15 @@ export default function FinanceDashboardPage() {
 
           <div className="h-[350px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={summary?.cashFlowChart || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+              <BarChart
+                data={summary?.cashFlowChart || []}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="#E2E8F0"
+                />
                 <XAxis
                   dataKey="month"
                   axisLine={false}
@@ -513,35 +1017,78 @@ export default function FinanceDashboardPage() {
                 />
                 <Tooltip
                   cursor={{ fill: 'rgba(0,0,0,0.02)' }}
-                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                  formatter={(value: number | undefined) => [formatCurrency(value || 0), '']}
+                  contentStyle={{
+                    borderRadius: '16px',
+                    border: 'none',
+                    boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
+                  }}
+                  formatter={(value: number | undefined) => [
+                    formatCurrency(value || 0),
+                    '',
+                  ]}
                 />
-                <Bar dataKey="income" name="Entradas" fill="#000000" radius={[6, 6, 0, 0]} barSize={24} />
-                <Bar dataKey="expense" name="Salidas" fill="#00000033" radius={[6, 6, 0, 0]} barSize={24} />
+                <Bar
+                  dataKey="income"
+                  name="Entradas"
+                  fill="#000000"
+                  radius={[6, 6, 0, 0]}
+                  barSize={24}
+                />
+                <Bar
+                  dataKey="expense"
+                  name="Salidas"
+                  fill="#00000033"
+                  radius={[6, 6, 0, 0]}
+                  barSize={24}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         <div className="flex flex-col rounded-3xl border border-theme bg-surface p-8 shadow-sm">
-          <h2 className="mb-2 text-xl font-bold text-primary">Lo que llevara el PDF</h2>
+          <h2 className="mb-2 text-xl font-bold text-primary">
+            Lo que llevara el PDF
+          </h2>
           <p className="mb-8 text-xs font-medium text-muted">
             Vista previa del documento que descargara el super-admin.
           </p>
 
           <div className="flex-1 space-y-4">
-            <SummaryLine label="Ventas brutas" value={formatCurrency(preview?.grossSales || 0)} />
-            <SummaryLine label="Devoluciones" value={formatCurrency(preview?.returnsTotal || 0)} negative />
-            <SummaryLine label="Subtotal" value={formatCurrency(preview?.subtotal || 0)} />
-            <SummaryLine label="Impuestos" value={formatCurrency(preview?.estimatedTaxes || 0)} />
-            <SummaryLine label="Balance final" value={formatCurrency(preview?.netBalance || 0)} strong />
+            <SummaryLine
+              label="Ventas brutas"
+              value={formatCurrency(preview?.grossSales || 0)}
+            />
+            <SummaryLine
+              label="Devoluciones"
+              value={formatCurrency(preview?.returnsTotal || 0)}
+              negative
+            />
+            <SummaryLine
+              label="Subtotal"
+              value={formatCurrency(preview?.subtotal || 0)}
+            />
+            <SummaryLine
+              label="Impuestos"
+              value={formatCurrency(preview?.estimatedTaxes || 0)}
+            />
+            <SummaryLine
+              label="Balance final"
+              value={formatCurrency(preview?.netBalance || 0)}
+              strong
+            />
           </div>
 
           <div className="mt-8 rounded-2xl border border-primary/10 bg-primary/5 p-6">
-            <h4 className="mb-1 text-xs font-black uppercase tracking-widest text-primary">Cobertura del reporte</h4>
-            <p className="text-2xl font-black text-primary">{preview?.orderCount || 0} ordenes</p>
+            <h4 className="mb-1 text-xs font-black uppercase tracking-widest text-primary">
+              Cobertura del reporte
+            </h4>
+            <p className="text-2xl font-black text-primary">
+              {preview?.orderCount || 0} ordenes
+            </p>
             <p className="mt-1 text-[10px] font-medium text-muted">
-              {preview?.returnedOrderCount || 0} devoluciones y {preview?.returnItems || 0} items retornados.
+              {preview?.returnedOrderCount || 0} devoluciones y{' '}
+              {preview?.returnItems || 0} items retornados.
             </p>
           </div>
         </div>
@@ -551,7 +1098,9 @@ export default function FinanceDashboardPage() {
         <div className="flex flex-col justify-between gap-4 border-b border-theme bg-base/30 p-8 md:flex-row md:items-center">
           <div className="flex items-center gap-3">
             <Receipt className="h-6 w-6 text-primary" />
-            <h2 className="text-xl font-bold text-primary">Transacciones Recientes</h2>
+            <h2 className="text-xl font-bold text-primary">
+              Transacciones Recientes
+            </h2>
           </div>
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-muted" />
@@ -583,9 +1132,14 @@ export default function FinanceDashboardPage() {
             </thead>
             <tbody className="divide-y divide-theme">
               {filteredTransactions.map((tx) => (
-                <tr key={tx.id} className="group text-sm transition-colors hover:bg-primary/5">
+                <tr
+                  key={tx.id}
+                  className="group text-sm transition-colors hover:bg-primary/5"
+                >
                   <td className="px-8 py-5 font-medium text-muted">
-                    {format(new Date(tx.createdAt), 'dd MMM, yyyy', { locale: es })}
+                    {format(new Date(tx.createdAt), 'dd MMM, yyyy', {
+                      locale: es,
+                    })}
                   </td>
                   <td className="max-w-xs truncate px-8 py-5 font-bold text-primary">
                     {tx.description}
@@ -602,12 +1156,16 @@ export default function FinanceDashboardPage() {
                       ) : (
                         <ArrowDownRight className="h-4 w-4 text-rose-500" />
                       )}
-                      <span className={`text-[10px] font-black uppercase tracking-widest ${tx.type === 'INCOME' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      <span
+                        className={`text-[10px] font-black uppercase tracking-widest ${tx.type === 'INCOME' ? 'text-emerald-600' : 'text-rose-600'}`}
+                      >
                         {tx.type === 'INCOME' ? 'Entrada' : 'Salida'}
                       </span>
                     </div>
                   </td>
-                  <td className={`px-8 py-5 font-black ${tx.type === 'INCOME' ? 'text-emerald-600' : 'text-primary'}`}>
+                  <td
+                    className={`px-8 py-5 font-black ${tx.type === 'INCOME' ? 'text-emerald-600' : 'text-primary'}`}
+                  >
                     {tx.type === 'INCOME' ? '+' : '-'}
                     {formatCurrency(tx.amount)}
                   </td>
@@ -652,7 +1210,9 @@ function MetricCard({
       <div className="mb-4 flex items-center justify-between">
         <div className={`rounded-lg p-2 ${accents[accent]}`}>{icon}</div>
       </div>
-      <p className="text-xs font-bold uppercase tracking-widest text-muted">{label}</p>
+      <p className="text-xs font-bold uppercase tracking-widest text-muted">
+        {label}
+      </p>
       <h3 className="mt-1 text-2xl font-black text-primary">{value}</h3>
       <p className="mt-2 text-[11px] font-medium text-muted">{caption}</p>
     </div>
@@ -678,7 +1238,9 @@ function PreviewCard({
 
   return (
     <div className={`rounded-2xl border p-5 shadow-sm ${tones[tone]}`}>
-      <p className="text-[10px] font-black uppercase tracking-widest">{label}</p>
+      <p className="text-[10px] font-black uppercase tracking-widest">
+        {label}
+      </p>
       <p className="mt-2 text-lg font-black">{value}</p>
     </div>
   );
@@ -697,8 +1259,17 @@ function SummaryLine({
 }) {
   return (
     <div className="flex items-center justify-between rounded-xl bg-base/40 px-4 py-3">
-      <span className={`text-sm ${strong ? 'font-black text-primary' : 'font-bold text-muted'}`}>{label}</span>
-      <span className={`text-sm font-black ${negative ? 'text-rose-600' : 'text-primary'}`}>{negative ? '-' : ''}{value}</span>
+      <span
+        className={`text-sm ${strong ? 'font-black text-primary' : 'font-bold text-muted'}`}
+      >
+        {label}
+      </span>
+      <span
+        className={`text-sm font-black ${negative ? 'text-rose-600' : 'text-primary'}`}
+      >
+        {negative ? '-' : ''}
+        {value}
+      </span>
     </div>
   );
 }
@@ -722,4 +1293,3 @@ function CheckCircleIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
-

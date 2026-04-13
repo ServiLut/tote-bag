@@ -3,9 +3,13 @@ import ProductCard from './ProductCard';
 
 interface ProductGridProps {
   products: Product[];
+  showVariantIndicator?: boolean;
 }
 
-export default function ProductGrid({ products }: ProductGridProps) {
+export default function ProductGrid({
+  products,
+  showVariantIndicator = true,
+}: ProductGridProps) {
   if (products.length === 0) {
     return (
       <div className="w-full h-64 flex flex-col items-center justify-center text-muted border border-dashed border-theme rounded-lg">
@@ -23,7 +27,11 @@ export default function ProductGrid({ products }: ProductGridProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-12 gap-x-8">
       {products.map((product) => (
-        <ProductCard key={product.id} product={product} />
+        <ProductCard
+          key={product.id}
+          product={product}
+          showVariantIndicator={showVariantIndicator}
+        />
       ))}
     </div>
   );

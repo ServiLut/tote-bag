@@ -96,7 +96,8 @@ export default function BatchReceptionPage() {
 
   const getBatchInputStatus = (
     batch: PurchaseBatch,
-  ): EditBatchFormData['status'] => (batch.status === 'PENDING' ? 'PENDIENTE' : 'RECIBIDO');
+  ): EditBatchFormData['status'] =>
+    batch.status === 'PENDING' ? 'PENDIENTE' : 'RECIBIDO';
 
   const createEditFormFromBatch = (batch: PurchaseBatch): EditBatchFormData => {
     const costState = createCurrencyInputState(batch.unitCost);
@@ -114,7 +115,8 @@ export default function BatchReceptionPage() {
   };
 
   const canModifyBatch = (batch: PurchaseBatch) =>
-    batch.status === 'PENDING' || batch.quantityRemaining === batch.quantityReceived;
+    batch.status === 'PENDING' ||
+    batch.quantityRemaining === batch.quantityReceived;
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -131,15 +133,22 @@ export default function BatchReceptionPage() {
   const [deletingBatchId, setDeletingBatchId] = useState<string | null>(null);
   const [activeActionMenu, setActiveActionMenu] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'IN_STOCK' | 'PENDING' | 'DEPLETED'>('all');
-  const [stockFilter, setStockFilter] = useState<'all' | 'available' | 'partial' | 'empty'>('all');
+  const [statusFilter, setStatusFilter] = useState<
+    'all' | 'IN_STOCK' | 'PENDING' | 'DEPLETED'
+  >('all');
+  const [stockFilter, setStockFilter] = useState<
+    'all' | 'available' | 'partial' | 'empty'
+  >('all');
   const [entryDateFilter, setEntryDateFilter] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     supplierId: '',
     totalCost: 0,
+    freightCostInput: '',
+    freightCost: 0,
     status: 'RECIBIDO',
+    documentType: 'INVOICE',
     purchaseDate: new Date().toISOString().split('T')[0],
     items: [createEmptyItem()] as BatchItem[],
   });
@@ -154,7 +163,9 @@ export default function BatchReceptionPage() {
     purchaseDate: new Date().toISOString().split('T')[0],
   });
 
-  const getAuthHeaders = useCallback(async (): Promise<Record<string, string>> => {
+  const getAuthHeaders = useCallback(async (): Promise<
+    Record<string, string>
+  > => {
     // We call getUser() to ensure the session is refreshed if needed
     await supabase.auth.getUser();
 
@@ -164,7 +175,9 @@ export default function BatchReceptionPage() {
     } = await supabase.auth.getSession();
 
     if (sessionError || !session?.access_token) {
-      throw new Error('Tu sesion expiro o no esta disponible. Inicia sesion nuevamente.');
+      throw new Error(
+        'Tu sesion expiro o no esta disponible. Inicia sesion nuevamente.',
+      );
     }
 
     return {
@@ -179,7 +192,7 @@ export default function BatchReceptionPage() {
       const authHeaders = await getAuthHeaders();
       const [batchesRes, productsRes, suppliersRes] = await Promise.all([
         apiFetch('/inventory/batches', { headers: authHeaders }),
-        apiFetch('/catalog/products'),
+        apiFetch('/catalog/admin/products', { headers: authHeaders }),
         apiFetch('/inventory/suppliers', { headers: authHeaders }),
       ]);
 
@@ -188,7 +201,9 @@ export default function BatchReceptionPage() {
       }
 
       if (batchesRes.status === 403 || suppliersRes.status === 403) {
-        throw new Error('No tienes permisos para gestionar recepcion de lotes.');
+        throw new Error(
+          'No tienes permisos para gestionar recepcion de lotes.',
+        );
       }
 
       if (batchesRes.ok) {
@@ -213,7 +228,9 @@ export default function BatchReceptionPage() {
       }
 
       if (!batchesRes.ok || !productsRes.ok || !suppliersRes.ok) {
-        setError('La vista cargo parcialmente. Algunos datos no estuvieron disponibles.');
+        setError(
+          'La vista cargo parcialmente. Algunos datos no estuvieron disponibles.',
+        );
       }
     } catch (fetchError) {
       console.error('Error fetching data:', fetchError);
@@ -231,7 +248,9 @@ export default function BatchReceptionPage() {
         errorMessage.includes('sesion expiro') ||
         errorMessage.includes('no esta disponible')
       ) {
-        router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+        router.push(
+          `/login?redirect=${encodeURIComponent(window.location.pathname)}`,
+        );
       }
     } finally {
       setLoading(false);
@@ -304,8 +323,8 @@ export default function BatchReceptionPage() {
     if (field === 'productId') {
       const product = products.find((item) => item.id === value);
       const fallbackVariant =
-        product?.variants.find((variant) => variant.isActive !== false)
-        || product?.variants[0];
+        product?.variants.find((variant) => variant.isActive !== false) ||
+        product?.variants[0];
       const costState = createCurrencyInputState(
         fallbackVariant?.costPrice || newItems[index].costoUnitario || 0,
       );
@@ -321,7 +340,9 @@ export default function BatchReceptionPage() {
         costoUnitario: costState.numericValue,
       };
     } else if (field === 'variantId') {
-      const product = products.find((item) => item.id === newItems[index].productId);
+      const product = products.find(
+        (item) => item.id === newItems[index].productId,
+      );
       const variant = product?.variants.find((item) => item.id === value);
       const costState = createCurrencyInputState(
         variant?.costPrice || newItems[index].costoUnitario || 0,
@@ -358,8 +379,14 @@ export default function BatchReceptionPage() {
       return;
     }
 
-    if (formData.items.some((item) => !item.productId || !item.variantId || item.cantidad <= 0)) {
-      alert('Por favor completa todos los items con producto, variante y cantidades validas.');
+    if (
+      formData.items.some(
+        (item) => !item.productId || !item.variantId || item.cantidad <= 0,
+      )
+    ) {
+      alert(
+        'Por favor completa todos los items con producto, variante y cantidades validas.',
+      );
       return;
     }
 
@@ -377,6 +404,8 @@ export default function BatchReceptionPage() {
         body: JSON.stringify({
           ...formData,
           totalCost: formData.totalCost,
+          freightCost: formData.freightCost,
+          documentType: formData.documentType,
           items: formData.items.map((item) => ({
             productId: item.productId,
             variantId: item.variantId,
@@ -408,7 +437,10 @@ export default function BatchReceptionPage() {
       setFormData({
         supplierId: '',
         totalCost: 0,
+        freightCostInput: '',
+        freightCost: 0,
         status: 'RECIBIDO',
+        documentType: 'INVOICE',
         purchaseDate: new Date().toISOString().split('T')[0],
         items: [createEmptyItem()],
       });
@@ -448,8 +480,8 @@ export default function BatchReceptionPage() {
       if (field === 'productId') {
         const product = products.find((item) => item.id === value);
         const fallbackVariant =
-          product?.variants.find((variant) => variant.isActive !== false)
-          || product?.variants[0];
+          product?.variants.find((variant) => variant.isActive !== false) ||
+          product?.variants[0];
         const costState = createCurrencyInputState(
           fallbackVariant?.costPrice || current.unitCost || 0,
         );
@@ -493,12 +525,14 @@ export default function BatchReceptionPage() {
     }
 
     if (
-      !editFormData.supplierId
-      || !editFormData.productId
-      || !editFormData.variantId
-      || editFormData.quantityReceived <= 0
+      !editFormData.supplierId ||
+      !editFormData.productId ||
+      !editFormData.variantId ||
+      editFormData.quantityReceived <= 0
     ) {
-      setError('Completa proveedor, producto, variante y cantidad valida para editar el lote.');
+      setError(
+        'Completa proveedor, producto, variante y cantidad valida para editar el lote.',
+      );
       return;
     }
 
@@ -647,7 +681,8 @@ export default function BatchReceptionPage() {
             </h1>
           </div>
           <p className="text-muted font-medium">
-            Alimenta el inventario FIFO y registra las facturas de compra automaticamente.
+            Alimenta el inventario FIFO y registra las facturas de compra
+            automaticamente.
           </p>
         </div>
         <Button
@@ -686,7 +721,9 @@ export default function BatchReceptionPage() {
             />
             <Select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+              onChange={(e) =>
+                setStatusFilter(e.target.value as typeof statusFilter)
+              }
               className="bg-base border border-theme rounded-lg text-xs font-bold"
             >
               <option value="all">Todos los estados</option>
@@ -696,7 +733,9 @@ export default function BatchReceptionPage() {
             </Select>
             <Select
               value={stockFilter}
-              onChange={(e) => setStockFilter(e.target.value as typeof stockFilter)}
+              onChange={(e) =>
+                setStockFilter(e.target.value as typeof stockFilter)
+              }
               className="bg-base border border-theme rounded-lg text-xs font-bold"
             >
               <option value="all">Todo el stock</option>
@@ -735,7 +774,10 @@ export default function BatchReceptionPage() {
                 </tr>
               ) : filteredBatches.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-muted font-medium">
+                  <td
+                    colSpan={7}
+                    className="px-6 py-12 text-center text-muted font-medium"
+                  >
                     {batches.length === 0
                       ? 'No hay lotes registrados todavia.'
                       : 'No se encontraron lotes con ese filtro.'}
@@ -743,7 +785,10 @@ export default function BatchReceptionPage() {
                 </tr>
               ) : (
                 filteredBatches.map((batch) => (
-                  <tr key={batch.id} className="hover:bg-primary/5 transition-colors group">
+                  <tr
+                    key={batch.id}
+                    className="hover:bg-primary/5 transition-colors group"
+                  >
                     <td className="px-6 py-4 font-bold text-primary text-sm">
                       <div className="flex flex-col">
                         <span>{batch.product?.name}</span>
@@ -771,7 +816,9 @@ export default function BatchReceptionPage() {
                         <div className="w-24 h-1.5 bg-theme rounded-full overflow-hidden">
                           <div
                             className={`h-full transition-all duration-1000 ${
-                              batch.quantityRemaining === 0 ? 'bg-red-500' : 'bg-emerald-500'
+                              batch.quantityRemaining === 0
+                                ? 'bg-red-500'
+                                : 'bg-emerald-500'
                             }`}
                             style={{
                               width: `${(batch.quantityRemaining / batch.quantityReceived) * 100}%`,
@@ -846,7 +893,10 @@ export default function BatchReceptionPage() {
                                 setActiveActionMenu(null);
                                 openEditModal(batch);
                               }}
-                              disabled={!canModifyBatch(batch) || deletingBatchId === batch.id}
+                              disabled={
+                                !canModifyBatch(batch) ||
+                                deletingBatchId === batch.id
+                              }
                               title={
                                 canModifyBatch(batch)
                                   ? 'Editar lote'
@@ -865,7 +915,10 @@ export default function BatchReceptionPage() {
                                 setActiveActionMenu(null);
                                 void handleDeleteBatch(batch);
                               }}
-                              disabled={!canModifyBatch(batch) || deletingBatchId === batch.id}
+                              disabled={
+                                !canModifyBatch(batch) ||
+                                deletingBatchId === batch.id
+                              }
                               title={
                                 canModifyBatch(batch)
                                   ? 'Borrar lote'
@@ -907,7 +960,8 @@ export default function BatchReceptionPage() {
                 <div>
                   <h2 className="text-2xl font-black">Editar Lote</h2>
                   <p className="mt-1 text-sm font-medium text-primary-foreground/70">
-                    Corrige un lote registrado con errores antes de que tenga movimientos.
+                    Corrige un lote registrado con errores antes de que tenga
+                    movimientos.
                   </p>
                 </div>
                 <button
@@ -930,7 +984,9 @@ export default function BatchReceptionPage() {
                   <Select
                     required
                     value={editFormData.supplierId}
-                    onChange={(e) => handleEditFieldChange('supplierId', e.target.value)}
+                    onChange={(e) =>
+                      handleEditFieldChange('supplierId', e.target.value)
+                    }
                     className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-primary/20"
                   >
                     <option value="">Seleccionar...</option>
@@ -949,7 +1005,9 @@ export default function BatchReceptionPage() {
                   <Select
                     required
                     value={editFormData.status}
-                    onChange={(e) => handleEditFieldChange('status', e.target.value)}
+                    onChange={(e) =>
+                      handleEditFieldChange('status', e.target.value)
+                    }
                     className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-primary/20"
                   >
                     <option value="RECIBIDO">RECIBIDO (Suma al stock)</option>
@@ -964,7 +1022,9 @@ export default function BatchReceptionPage() {
                   <Select
                     required
                     value={editFormData.productId}
-                    onChange={(e) => handleEditFieldChange('productId', e.target.value)}
+                    onChange={(e) =>
+                      handleEditFieldChange('productId', e.target.value)
+                    }
                     className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-primary/20"
                   >
                     <option value="">Seleccionar producto...</option>
@@ -983,16 +1043,25 @@ export default function BatchReceptionPage() {
                   <Select
                     required
                     value={editFormData.variantId}
-                    onChange={(e) => handleEditFieldChange('variantId', e.target.value)}
+                    onChange={(e) =>
+                      handleEditFieldChange('variantId', e.target.value)
+                    }
                     disabled={!editFormData.productId}
                     className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
                   >
                     <option value="">Seleccionar variante...</option>
-                    {getVariantsForProduct(editFormData.productId).map((variant) => (
-                      <option key={variant.id || variant.sku} value={variant.id || ''}>
-                        {[variant.size, variant.color, variant.sku].filter(Boolean).join(' - ')}
-                      </option>
-                    ))}
+                    {getVariantsForProduct(editFormData.productId).map(
+                      (variant) => (
+                        <option
+                          key={variant.id || variant.sku}
+                          value={variant.id || ''}
+                        >
+                          {[variant.size, variant.color, variant.sku]
+                            .filter(Boolean)
+                            .join(' - ')}
+                        </option>
+                      ),
+                    )}
                   </Select>
                 </div>
 
@@ -1055,7 +1124,9 @@ export default function BatchReceptionPage() {
                     type="date"
                     required
                     value={editFormData.purchaseDate}
-                    onChange={(e) => handleEditFieldChange('purchaseDate', e.target.value)}
+                    onChange={(e) =>
+                      handleEditFieldChange('purchaseDate', e.target.value)
+                    }
                     className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
@@ -1067,11 +1138,15 @@ export default function BatchReceptionPage() {
                     Total corregido
                   </div>
                   <div className="text-xl font-black text-primary">
-                    ${(editFormData.quantityReceived * editFormData.unitCost).toLocaleString('es-CO')}
+                    $
+                    {(
+                      editFormData.quantityReceived * editFormData.unitCost
+                    ).toLocaleString('es-CO')}
                   </div>
                 </div>
                 <div className="text-right text-xs font-medium text-muted">
-                  Solo se permiten lotes sin movimientos de stock ni facturas asociadas.
+                  Solo se permiten lotes sin movimientos de stock ni facturas
+                  asociadas.
                 </div>
               </div>
 
@@ -1128,8 +1203,11 @@ export default function BatchReceptionPage() {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <form
+              onSubmit={handleSubmit}
+              className="p-6 space-y-6 max-h-[80vh] overflow-y-auto"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-muted">
                     Proveedor
@@ -1148,6 +1226,23 @@ export default function BatchReceptionPage() {
                         {supplier.name}
                       </option>
                     ))}
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted">
+                    Documento
+                  </label>
+                  <Select
+                    required
+                    value={formData.documentType}
+                    onChange={(e) =>
+                      setFormData({ ...formData, documentType: e.target.value })
+                    }
+                    className="w-full bg-base border border-theme rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                  >
+                    <option value="INVOICE">Factura</option>
+                    <option value="DELIVERY_NOTE">Remision</option>
                   </Select>
                 </div>
 
@@ -1182,6 +1277,32 @@ export default function BatchReceptionPage() {
                     className="w-full bg-base border border-theme rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                   />
                 </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted">
+                    Fletes
+                  </label>
+                  <InputGroup
+                    prefix={<span className="text-xs text-muted">$</span>}
+                    className="flex items-center gap-1"
+                  >
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      value={formData.freightCostInput}
+                      onChange={(e) =>
+                        handleCurrencyInputChangeWithState(e, (nextValue) =>
+                          setFormData((current) => ({
+                            ...current,
+                            freightCostInput: nextValue.formattedValue,
+                            freightCost: nextValue.numericValue,
+                          })),
+                        )
+                      }
+                      className="w-full bg-base border border-theme rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                    />
+                  </InputGroup>
+                </div>
               </div>
 
               <div className="space-y-4">
@@ -1204,13 +1325,25 @@ export default function BatchReceptionPage() {
                   <table className="w-full table-fixed text-left border-collapse">
                     <thead className="bg-base/50 text-[10px] uppercase font-black text-muted/60 border-b border-theme">
                       <tr>
-                        <th className="w-[22%] px-5 py-3.5">Insumo / Producto</th>
-                        <th className="w-[16%] px-4 py-3.5 text-center">Variante</th>
+                        <th className="w-[22%] px-5 py-3.5">
+                          Insumo / Producto
+                        </th>
+                        <th className="w-[16%] px-4 py-3.5 text-center">
+                          Variante
+                        </th>
                         <th className="px-4 py-3">Tamaño</th>
-                        <th className="w-[14%] px-4 py-3.5 text-center">Tela</th>
-                        <th className="w-[10%] px-4 py-3.5 text-center">Cantidad</th>
-                        <th className="w-[12%] px-4 py-3.5 text-center">Costo Unit.</th>
-                        <th className="w-[10%] px-4 py-3.5 text-center">Subtotal</th>
+                        <th className="w-[14%] px-4 py-3.5 text-center">
+                          Tela
+                        </th>
+                        <th className="w-[10%] px-4 py-3.5 text-center">
+                          Cantidad
+                        </th>
+                        <th className="w-[12%] px-4 py-3.5 text-center">
+                          Costo Unit.
+                        </th>
+                        <th className="w-[10%] px-4 py-3.5 text-center">
+                          Subtotal
+                        </th>
                         <th className="w-[2%] px-4 py-3.5" />
                       </tr>
                     </thead>
@@ -1245,11 +1378,18 @@ export default function BatchReceptionPage() {
                               className="w-full bg-transparent border-none text-sm font-bold focus:ring-0 outline-none disabled:opacity-50"
                             >
                               <option value="">Seleccionar variante...</option>
-                              {getVariantsForProduct(item.productId).map((variant) => (
-                                <option key={variant.id || variant.sku} value={variant.id || ''}>
-                                  {[variant.size, variant.color, variant.sku].filter(Boolean).join(' - ')}
-                                </option>
-                              ))}
+                              {getVariantsForProduct(item.productId).map(
+                                (variant) => (
+                                  <option
+                                    key={variant.id || variant.sku}
+                                    value={variant.id || ''}
+                                  >
+                                    {[variant.size, variant.color, variant.sku]
+                                      .filter(Boolean)
+                                      .join(' - ')}
+                                  </option>
+                                ),
+                              )}
                             </Select>
                           </td>
                           <td className="px-4 py-3.5">
@@ -1267,8 +1407,14 @@ export default function BatchReceptionPage() {
                               className="w-full bg-transparent border-none text-sm font-bold focus:ring-0 outline-none disabled:opacity-50"
                             >
                               <option value="">Seleccionar tela...</option>
-                              {getAttributeOptionsForProduct(item.productId, 'MATERIAL').map((attribute) => (
-                                <option key={attribute.id} value={attribute.value}>
+                              {getAttributeOptionsForProduct(
+                                item.productId,
+                                'MATERIAL',
+                              ).map((attribute) => (
+                                <option
+                                  key={attribute.id}
+                                  value={attribute.value}
+                                >
                                   {attribute.value}
                                 </option>
                               ))}
@@ -1278,9 +1424,13 @@ export default function BatchReceptionPage() {
                             <Input
                               type="text"
                               inputMode="numeric"
-                              value={item.cantidad === 0 ? '' : String(item.cantidad)}
+                              value={
+                                item.cantidad === 0 ? '' : String(item.cantidad)
+                              }
                               onChange={(e) => {
-                                const nextValue = sanitizeIntegerInput(e.target.value);
+                                const nextValue = sanitizeIntegerInput(
+                                  e.target.value,
+                                );
                                 if (nextValue !== null) {
                                   updateItem(
                                     index,
@@ -1294,7 +1444,9 @@ export default function BatchReceptionPage() {
                           </td>
                           <td className="px-4 py-3.5">
                             <InputGroup
-                              prefix={<span className="text-xs text-muted">$</span>}
+                              prefix={
+                                <span className="text-xs text-muted">$</span>
+                              }
                               className="flex items-center gap-1"
                             >
                               <Input
@@ -1302,27 +1454,30 @@ export default function BatchReceptionPage() {
                                 inputMode="decimal"
                                 value={item.costoUnitarioInput}
                                 onChange={(e) =>
-                                  handleCurrencyInputChangeWithState(e, (nextValue) =>
-                                    setFormData((current) => {
-                                      const nextItems = [...current.items];
-                                      nextItems[index] = {
-                                        ...nextItems[index],
-                                        costoUnitarioInput: nextValue.formattedValue,
-                                        costoUnitario: nextValue.numericValue,
-                                      };
+                                  handleCurrencyInputChangeWithState(
+                                    e,
+                                    (nextValue) =>
+                                      setFormData((current) => {
+                                        const nextItems = [...current.items];
+                                        nextItems[index] = {
+                                          ...nextItems[index],
+                                          costoUnitarioInput:
+                                            nextValue.formattedValue,
+                                          costoUnitario: nextValue.numericValue,
+                                        };
 
-                                      return {
-                                        ...current,
-                                        items: nextItems,
-                                        totalCost: nextItems.reduce(
-                                          (sum, currentItem) =>
-                                            sum +
-                                            currentItem.cantidad *
-                                              currentItem.costoUnitario,
-                                          0,
-                                        ),
-                                      };
-                                    }),
+                                        return {
+                                          ...current,
+                                          items: nextItems,
+                                          totalCost: nextItems.reduce(
+                                            (sum, currentItem) =>
+                                              sum +
+                                              currentItem.cantidad *
+                                                currentItem.costoUnitario,
+                                            0,
+                                          ),
+                                        };
+                                      }),
                                   )
                                 }
                                 className="w-full bg-transparent border-none text-sm font-bold focus:ring-0 outline-none"
@@ -1330,7 +1485,10 @@ export default function BatchReceptionPage() {
                             </InputGroup>
                           </td>
                           <td className="px-4 py-3.5 text-center text-sm font-black text-primary/70">
-                            ${(item.cantidad * item.costoUnitario).toLocaleString('es-CO')}
+                            $
+                            {(
+                              item.cantidad * item.costoUnitario
+                            ).toLocaleString('es-CO')}
                           </td>
                           <td className="px-4 py-3.5 text-right">
                             <button
@@ -1361,10 +1519,23 @@ export default function BatchReceptionPage() {
                   <div className="h-10 w-[1px] bg-theme hidden md:block" />
                   <div className="flex flex-col">
                     <span className="text-[10px] font-black uppercase tracking-widest text-muted">
+                      Fletes
+                    </span>
+                    <span className="text-lg font-bold text-primary">
+                      ${formData.freightCost.toLocaleString('es-CO')}
+                    </span>
+                  </div>
+                  <div className="h-10 w-[1px] bg-theme hidden md:block" />
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted">
                       Items Totales
                     </span>
                     <span className="text-lg font-bold text-primary">
-                      {formData.items.reduce((sum, item) => sum + (item.cantidad || 0), 0)} und.
+                      {formData.items.reduce(
+                        (sum, item) => sum + (item.cantidad || 0),
+                        0,
+                      )}{' '}
+                      und.
                     </span>
                   </div>
                 </div>
@@ -1379,7 +1550,12 @@ export default function BatchReceptionPage() {
                   </Button>
                   <Button
                     type="submit"
-                    disabled={submitting || formData.items.some((item) => !item.productId || !item.variantId)}
+                    disabled={
+                      submitting ||
+                      formData.items.some(
+                        (item) => !item.productId || !item.variantId,
+                      )
+                    }
                     className="px-8 py-3 bg-primary text-base-color font-black rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                   >
                     {submitting ? (

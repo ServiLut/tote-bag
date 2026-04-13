@@ -179,7 +179,7 @@ export default function CollectionsManager() {
       }
 
       if (res.ok) {
-        toast.success('Colección eliminada exitosamente');
+        toast.success('Colección eliminada correctamente');
         setCollections(prev => prev.filter(c => c.id !== id));
       } else {
         const errData = await res.json();
@@ -212,7 +212,7 @@ export default function CollectionsManager() {
           className="flex items-center gap-2 bg-primary text-base-color px-6 py-2.5 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] hover:opacity-90 transition-all shadow-lg shadow-primary/10 active:scale-95"
         >
           <Plus className="w-4 h-4" />
-          Nueva Colección
+          Nueva colección
         </button>
       </div>
 
@@ -292,7 +292,7 @@ export default function CollectionsManager() {
               <div className="p-8 space-y-6">
                 <div className="flex items-center justify-between">
                   <h3 className="text-2xl font-black text-primary tracking-tight">
-                    {editingId ? 'Editar Colección' : 'Nueva Colección'}
+                    {editingId ? 'Editar colección' : 'Nueva colección'}
                   </h3>
                   <button
                     type="button"
@@ -347,7 +347,7 @@ export default function CollectionsManager() {
                   {isSubmitting ? (
                     <Loader2 size={16} className="animate-spin" />
                   ) : (
-                    editingId ? 'Guardar Cambios' : 'Crear Colección'
+                    editingId ? 'Guardar cambios' : 'Crear colección'
                   )}
                 </button>
               </div>
@@ -418,4 +418,3 @@ export default function CollectionsManager() {
     </div>
   );
 }
-

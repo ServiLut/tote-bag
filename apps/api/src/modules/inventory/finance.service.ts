@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import Decimal from 'decimal.js';
 import PDFDocument from 'pdfkit';
 import { format } from 'date-fns';
 import {
@@ -16,6 +17,13 @@ import {
   TransactionType,
   TransactionCategory,
 } from '../../generated/client/enums';
+import {
+  decimalToNumber,
+  DecimalInput,
+  roundMoney,
+  toDecimal,
+} from '../../common/utils/sales-tax.util';
+import { BreakEvenSimulationDto } from './dto/break-even-simulation.dto';
 
 type FinancialReportQuery = {
   startDate?: string;
@@ -29,6 +37,8 @@ type FinancialReportOrder = {
   orderNumber: number;
   customerEmail: string | null;
   totalAmount: number;
+  netAmount: DecimalInput;
+  taxTotal: DecimalInput;
   createdAt: Date;
   status: OrderStatus;
   items: Array<{
@@ -48,6 +58,15 @@ type FinancialReportOrder = {
 @Injectable()
 export class FinanceService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private readonly revenueOrderStatuses: OrderStatus[] = [
+    OrderStatus.PAGADA,
+    OrderStatus.EN_PRODUCCION,
+    OrderStatus.IN_PRODUCTION,
+    OrderStatus.READY_FOR_DISPATCH,
+    OrderStatus.ENVIADA,
+    OrderStatus.ENTREGADA,
+  ];
 
   private getCashFlowDateKey(date: Date, period: 'daily' | 'monthly') {
     const formatter = new Intl.DateTimeFormat('en-CA', {
@@ -86,6 +105,29 @@ export class FinanceService {
     return Object.keys(createdAt).length > 0 ? createdAt : undefined;
   }
 
+  private parseDateBoundary(value: string | undefined, isEndDate: boolean) {
+    if (!value) {
+      return undefined;
+    }
+
+    const parsed = /^\d{4}-\d{2}-\d{2}$/.test(value)
+      ? new Date(`${value}T${isEndDate ? '23:59:59.999' : '00:00:00.000'}`)
+      : new Date(value);
+
+    if (Number.isNaN(parsed.getTime())) {
+      throw new BadRequestException('Rango de fechas invalido');
+    }
+
+    return parsed;
+  }
+
+  private buildDateRangeFilter(startDate?: string, endDate?: string) {
+    return this.buildCreatedAtFilter(
+      this.parseDateBoundary(startDate, false),
+      this.parseDateBoundary(endDate, true),
+    );
+  }
+
   private formatCurrency(amount: number) {
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
@@ -96,6 +138,69 @@ export class FinanceService {
 
   private sanitizeCurrencyAmount(amount: number | null | undefined) {
     return typeof amount === 'number' && Number.isFinite(amount) ? amount : 0;
+  }
+
+  private toMoneyNumber(value: DecimalInput) {
+    return decimalToNumber(value);
+  }
+
+  private serializeTransactionMoney<T extends Record<string, unknown> | null>(
+    transaction: T,
+  ): T {
+    if (!transaction) {
+      return transaction;
+    }
+
+    const result: Record<string, unknown> = { ...transaction };
+
+    if ('amount' in result) {
+      result.amount = this.toMoneyNumber(result.amount as DecimalInput);
+    }
+
+    return result as T;
+  }
+
+  private serializeSupplierMoney<T extends Record<string, unknown> | null>(
+    supplier: T,
+  ): T {
+    if (!supplier) {
+      return supplier;
+    }
+
+    const result: Record<string, unknown> = { ...supplier };
+
+    if ('balance' in result) {
+      result.balance = this.toMoneyNumber(result.balance as DecimalInput);
+    }
+
+    if (Array.isArray(result.transactions)) {
+      result.transactions = result.transactions.map((transaction) =>
+        this.serializeTransactionMoney(transaction as Record<string, unknown>),
+      );
+    }
+
+    if (Array.isArray(result.batches)) {
+      result.batches = result.batches.map((batch) => {
+        if (!batch || typeof batch !== 'object') {
+          return batch;
+        }
+
+        const batchRecord = { ...(batch as Record<string, unknown>) };
+        if ('unitCost' in batchRecord) {
+          batchRecord.unitCost = this.toMoneyNumber(
+            batchRecord.unitCost as DecimalInput,
+          );
+        }
+        if ('totalCost' in batchRecord) {
+          batchRecord.totalCost = this.toMoneyNumber(
+            batchRecord.totalCost as DecimalInput,
+          );
+        }
+        return batchRecord;
+      });
+    }
+
+    return result as T;
   }
 
   private sanitizeText(value: unknown, fallback = 'N/D') {
@@ -139,6 +244,46 @@ export class FinanceService {
     }
 
     return quantityReduced * unitCost;
+  }
+
+  private extractCogsDecimalFromPayload(payload: Prisma.JsonValue | null) {
+    return roundMoney(this.extractCogsFromPayload(payload));
+  }
+
+  private parseFixedExpenses(dto: BreakEvenSimulationDto) {
+    const fixedExpenses = dto.fixedExpenses ?? [];
+    const listedExpenses = fixedExpenses.reduce(
+      (sum, item) => sum.plus(roundMoney(item.amount)),
+      new Decimal(0),
+    );
+    const totalExpense = dto.fixedExpensesTotal
+      ? roundMoney(dto.fixedExpensesTotal)
+      : new Decimal(0);
+    const total = roundMoney(totalExpense.plus(listedExpenses));
+
+    if (total.lessThanOrEqualTo(0)) {
+      throw new BadRequestException(
+        'Los gastos fijos simulados deben ser mayores a cero',
+      );
+    }
+
+    return {
+      total,
+      breakdown: [
+        ...(dto.fixedExpensesTotal
+          ? [
+              {
+                label: 'Total ingresado',
+                amount: decimalToNumber(totalExpense),
+              },
+            ]
+          : []),
+        ...fixedExpenses.map((item) => ({
+          label: item.label?.trim() || 'Gasto fijo',
+          amount: decimalToNumber(item.amount),
+        })),
+      ],
+    };
   }
 
   private resolveDateRange({
@@ -290,16 +435,36 @@ export class FinanceService {
     );
 
     const grossSales = paidOrders.reduce(
-      (sum, order) => sum + order.totalAmount,
-      0,
+      (sum, order) => sum.plus(toDecimal(order.totalAmount)),
+      new Decimal(0),
     );
     const returnsTotal = returnedOrders.reduce(
-      (sum, order) => sum + order.totalAmount,
-      0,
+      (sum, order) => sum.plus(toDecimal(order.totalAmount)),
+      new Decimal(0),
     );
-    const netSales = grossSales - returnsTotal;
-    const subtotal = netSales / 1.19;
-    const estimatedTaxes = Math.max(0, netSales - subtotal);
+    const subtotal = paidOrders
+      .reduce(
+        (sum, order) => sum.plus(toDecimal(order.netAmount)),
+        new Decimal(0),
+      )
+      .minus(
+        returnedOrders.reduce(
+          (sum, order) => sum.plus(toDecimal(order.netAmount)),
+          new Decimal(0),
+        ),
+      );
+    const estimatedTaxes = paidOrders
+      .reduce(
+        (sum, order) => sum.plus(toDecimal(order.taxTotal)),
+        new Decimal(0),
+      )
+      .minus(
+        returnedOrders.reduce(
+          (sum, order) => sum.plus(toDecimal(order.taxTotal)),
+          new Decimal(0),
+        ),
+      );
+    const netSales = grossSales.minus(returnsTotal);
     const totalItems = paidOrders.reduce(
       (sum, order) =>
         sum +
@@ -322,11 +487,11 @@ export class FinanceService {
         returnedOrderCount: returnedOrders.length,
         totalItems,
         returnItems,
-        grossSales,
-        returnsTotal,
-        subtotal,
-        estimatedTaxes,
-        netBalance: netSales,
+        grossSales: decimalToNumber(grossSales),
+        returnsTotal: decimalToNumber(returnsTotal),
+        subtotal: decimalToNumber(subtotal),
+        estimatedTaxes: decimalToNumber(estimatedTaxes),
+        netBalance: decimalToNumber(netSales),
       },
     };
   }
@@ -698,9 +863,138 @@ export class FinanceService {
     userId: string;
     purchaseBatchId?: string;
   }) {
-    return this.prisma.financialTransaction.create({
+    const transaction = await this.prisma.financialTransaction.create({
       data,
     });
+
+    return this.serializeTransactionMoney(transaction);
+  }
+
+  async getSalesTaxReport(query: { startDate?: string; endDate?: string }) {
+    const createdAtFilter = this.buildDateRangeFilter(
+      query.startDate,
+      query.endDate,
+    );
+    const orders = await this.prisma.order.findMany({
+      where: {
+        status: { in: this.revenueOrderStatuses },
+        ...(createdAtFilter ? { createdAt: createdAtFilter } : {}),
+      },
+      select: {
+        id: true,
+        orderNumber: true,
+        customerEmail: true,
+        status: true,
+        createdAt: true,
+        totalAmount: true,
+        netAmount: true,
+        taxTotal: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const taxableBase = orders.reduce(
+      (sum, order) => sum.plus(toDecimal(order.netAmount)),
+      new Decimal(0),
+    );
+    const taxTotal = orders.reduce(
+      (sum, order) => sum.plus(toDecimal(order.taxTotal)),
+      new Decimal(0),
+    );
+    const grossTotal = orders.reduce(
+      (sum, order) => sum.plus(toDecimal(order.totalAmount)),
+      new Decimal(0),
+    );
+
+    return {
+      orderCount: orders.length,
+      taxableBase: decimalToNumber(taxableBase),
+      taxTotal: decimalToNumber(taxTotal),
+      grossTotal: decimalToNumber(grossTotal),
+      reconciliationDifference: decimalToNumber(
+        grossTotal.minus(taxableBase.plus(taxTotal)),
+      ),
+      orders: orders.map((order) => ({
+        ...order,
+        totalAmount: decimalToNumber(order.totalAmount),
+        netAmount: decimalToNumber(order.netAmount),
+        taxTotal: decimalToNumber(order.taxTotal),
+      })),
+    };
+  }
+
+  async simulateBreakEven(dto: BreakEvenSimulationDto) {
+    const { total: fixedExpensesTotal, breakdown } =
+      this.parseFixedExpenses(dto);
+    const createdAtFilter = this.buildDateRangeFilter(
+      dto.startDate,
+      dto.endDate,
+    );
+
+    const [orders, cogsLogs] = await Promise.all([
+      this.prisma.order.findMany({
+        where: {
+          status: { in: this.revenueOrderStatuses },
+          ...(createdAtFilter ? { createdAt: createdAtFilter } : {}),
+        },
+        select: {
+          id: true,
+          totalAmount: true,
+          netAmount: true,
+          taxTotal: true,
+        },
+      }),
+      this.prisma.auditLog.findMany({
+        where: {
+          action: 'REDUCE_STOCK_FIFO',
+          ...(createdAtFilter ? { createdAt: createdAtFilter } : {}),
+        },
+        select: { payload: true },
+      }),
+    ]);
+
+    const netSales = orders.reduce(
+      (sum, order) => sum.plus(toDecimal(order.netAmount)),
+      new Decimal(0),
+    );
+    const grossSales = orders.reduce(
+      (sum, order) => sum.plus(toDecimal(order.totalAmount)),
+      new Decimal(0),
+    );
+    const taxTotal = orders.reduce(
+      (sum, order) => sum.plus(toDecimal(order.taxTotal)),
+      new Decimal(0),
+    );
+    const variableCosts = cogsLogs.reduce(
+      (sum, log) => sum.plus(this.extractCogsDecimalFromPayload(log.payload)),
+      new Decimal(0),
+    );
+    const contributionMargin = roundMoney(netSales.minus(variableCosts));
+    const contributionMarginRatio = netSales.greaterThan(0)
+      ? contributionMargin.div(netSales)
+      : new Decimal(0);
+    const breakEvenSales = contributionMarginRatio.greaterThan(0)
+      ? roundMoney(fixedExpensesTotal.div(contributionMarginRatio))
+      : null;
+
+    return {
+      formula:
+        'puntoEquilibrioVentas = gastosFijos / (margenContribucion / ventasNetas)',
+      orderCount: orders.length,
+      fixedExpensesTotal: decimalToNumber(fixedExpensesTotal),
+      fixedExpenses: breakdown,
+      grossSales: decimalToNumber(grossSales),
+      taxTotal: decimalToNumber(taxTotal),
+      netSales: decimalToNumber(netSales),
+      variableCosts: decimalToNumber(variableCosts),
+      contributionMargin: decimalToNumber(contributionMargin),
+      contributionMarginRatio: contributionMarginRatio
+        .toDecimalPlaces(6, Decimal.ROUND_HALF_UP)
+        .toNumber(),
+      breakEvenSales:
+        breakEvenSales === null ? null : decimalToNumber(breakEvenSales),
+      isBreakEvenReachable: breakEvenSales !== null,
+    };
   }
 
   async getSupplierBalance(supplierId: string) {
@@ -709,7 +1003,7 @@ export class FinanceService {
       select: { balance: true },
     });
 
-    return supplier?.balance || 0;
+    return supplier ? this.toMoneyNumber(supplier.balance) : 0;
   }
 
   async createSupplier(data: {
@@ -828,7 +1122,7 @@ export class FinanceService {
     // Enhance with current balance
     return Promise.all(
       suppliers.map(async (s) => ({
-        ...s,
+        ...this.serializeSupplierMoney(s),
         currentBalance: await this.getSupplierBalance(s.id),
       })),
     );
@@ -851,7 +1145,7 @@ export class FinanceService {
     if (!supplier) return null;
 
     return {
-      ...supplier,
+      ...this.serializeSupplierMoney(supplier),
       currentBalance: await this.getSupplierBalance(id),
     };
   }
@@ -876,7 +1170,10 @@ export class FinanceService {
         throw new BadRequestException('Proveedor no encontrado');
       }
 
-      if (data.amount > supplier.balance) {
+      const paymentAmount = roundMoney(data.amount);
+      const supplierBalance = roundMoney(supplier.balance);
+
+      if (paymentAmount.greaterThan(supplierBalance)) {
         throw new BadRequestException(
           'El pago no puede superar el saldo pendiente del proveedor',
         );
@@ -886,7 +1183,7 @@ export class FinanceService {
         data: {
           type: TransactionType.EXPENSE,
           category: TransactionCategory.PURCHASE,
-          amount: data.amount,
+          amount: paymentAmount,
           description: data.description,
           supplierId: data.supplierId,
           userId: data.userId,
@@ -897,12 +1194,12 @@ export class FinanceService {
         where: { id: data.supplierId },
         data: {
           balance: {
-            decrement: data.amount,
+            decrement: paymentAmount,
           },
         },
       });
 
-      return transaction;
+      return this.serializeTransactionMoney(transaction);
     });
   }
 
@@ -967,7 +1264,7 @@ export class FinanceService {
       where: { id: data.opexCategoryId },
     });
 
-    return this.prisma.financialTransaction.create({
+    const transaction = await this.prisma.financialTransaction.create({
       data: {
         type: TransactionType.EXPENSE,
         category: category?.name.toLowerCase().includes('nómina')
@@ -981,10 +1278,12 @@ export class FinanceService {
       },
       include: { opexCategory: true, user: true },
     });
+
+    return this.serializeTransactionMoney(transaction);
   }
 
   async getOpexTransactions() {
-    return this.prisma.financialTransaction.findMany({
+    const transactions = await this.prisma.financialTransaction.findMany({
       where: {
         category: {
           in: [TransactionCategory.OPEX, TransactionCategory.PAYROLL],
@@ -993,6 +1292,10 @@ export class FinanceService {
       include: { opexCategory: true, user: true },
       orderBy: { createdAt: 'desc' },
     });
+
+    return transactions.map((transaction) =>
+      this.serializeTransactionMoney(transaction),
+    );
   }
 
   async getCashFlowData(
@@ -1023,10 +1326,12 @@ export class FinanceService {
         flowMap[dateKey] = { income: 0, expense: 0, date: tx.createdAt };
       }
 
+      const amount = this.toMoneyNumber(tx.amount);
+
       if (tx.type === TransactionType.INCOME) {
-        flowMap[dateKey].income += tx.amount;
+        flowMap[dateKey].income += amount;
       } else {
-        flowMap[dateKey].expense += tx.amount;
+        flowMap[dateKey].expense += amount;
       }
     });
 
@@ -1068,52 +1373,51 @@ export class FinanceService {
       purchaseReversals,
       transactions,
       recentTransactions,
-    ] =
-      await Promise.all([
-        this.prisma.financialTransaction.aggregate({
-          where: {
-            ...whereClause,
-            type: TransactionType.INCOME,
-            category: TransactionCategory.SALE,
+    ] = await Promise.all([
+      this.prisma.financialTransaction.aggregate({
+        where: {
+          ...whereClause,
+          type: TransactionType.INCOME,
+          category: TransactionCategory.SALE,
+        },
+        _sum: { amount: true },
+      }),
+      this.prisma.financialTransaction.aggregate({
+        where: {
+          ...whereClause,
+          type: TransactionType.EXPENSE,
+          category: {
+            in: [TransactionCategory.OPEX, TransactionCategory.PAYROLL],
           },
-          _sum: { amount: true },
-        }),
-        this.prisma.financialTransaction.aggregate({
-          where: {
-            ...whereClause,
-            type: TransactionType.EXPENSE,
-            category: {
-              in: [TransactionCategory.OPEX, TransactionCategory.PAYROLL],
-            },
-          },
-          _sum: { amount: true },
-        }),
-        this.prisma.financialTransaction.aggregate({
-          where: {
-            ...whereClause,
-            type: TransactionType.EXPENSE,
-            category: TransactionCategory.PURCHASE,
-          },
-          _sum: { amount: true },
-        }),
-        this.prisma.financialTransaction.aggregate({
-          where: {
-            ...whereClause,
-            type: TransactionType.INCOME,
-            category: TransactionCategory.PURCHASE,
-          },
-          _sum: { amount: true },
-        }),
-        this.prisma.financialTransaction.findMany({
-          where: whereClause,
-          orderBy: { createdAt: 'asc' },
-        }),
-        this.prisma.financialTransaction.findMany({
-          where: whereClause,
-          orderBy: { createdAt: 'desc' },
-          take: 10,
-        }),
-      ]);
+        },
+        _sum: { amount: true },
+      }),
+      this.prisma.financialTransaction.aggregate({
+        where: {
+          ...whereClause,
+          type: TransactionType.EXPENSE,
+          category: TransactionCategory.PURCHASE,
+        },
+        _sum: { amount: true },
+      }),
+      this.prisma.financialTransaction.aggregate({
+        where: {
+          ...whereClause,
+          type: TransactionType.INCOME,
+          category: TransactionCategory.PURCHASE,
+        },
+        _sum: { amount: true },
+      }),
+      this.prisma.financialTransaction.findMany({
+        where: whereClause,
+        orderBy: { createdAt: 'asc' },
+      }),
+      this.prisma.financialTransaction.findMany({
+        where: whereClause,
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      }),
+    ]);
 
     let totalCOGS: number | null = null;
 
@@ -1139,10 +1443,12 @@ export class FinanceService {
       const month = tx.createdAt.toISOString().substring(0, 7); // YYYY-MM
       if (!monthlyData[month]) monthlyData[month] = { income: 0, expense: 0 };
 
+      const amount = this.toMoneyNumber(tx.amount);
+
       if (tx.type === TransactionType.INCOME) {
-        monthlyData[month].income += tx.amount;
+        monthlyData[month].income += amount;
       } else {
-        monthlyData[month].expense += tx.amount;
+        monthlyData[month].expense += amount;
       }
     });
 
@@ -1153,15 +1459,17 @@ export class FinanceService {
 
     return {
       kpis: {
-        totalIncome: income._sum.amount || 0,
-        totalOpex: opex._sum.amount || 0,
+        totalIncome: this.toMoneyNumber(income._sum.amount),
+        totalOpex: this.toMoneyNumber(opex._sum.amount),
         totalPurchases:
-          (purchases._sum.amount || 0)
-          - (purchaseReversals?._sum?.amount || 0),
+          this.toMoneyNumber(purchases._sum.amount) -
+          this.toMoneyNumber(purchaseReversals?._sum?.amount),
         totalCOGS,
       },
       cashFlowChart,
-      recentTransactions,
+      recentTransactions: recentTransactions.map((transaction) =>
+        this.serializeTransactionMoney(transaction),
+      ),
     };
   }
 
@@ -1227,7 +1535,7 @@ export class FinanceService {
       normalizedCategoryName.includes('nomina') ||
       normalizedCategoryName.includes('na3mina');
 
-    return this.prisma.financialTransaction.create({
+    const transaction = await this.prisma.financialTransaction.create({
       data: {
         type: TransactionType.EXPENSE,
         category: isPayrollCategory
@@ -1241,6 +1549,8 @@ export class FinanceService {
       },
       include: { opexCategory: true, user: true },
     });
+
+    return this.serializeTransactionMoney(transaction);
   }
 
   async getFinancialSummaryLocalized(startDate?: Date, endDate?: Date) {
@@ -1257,52 +1567,51 @@ export class FinanceService {
       purchaseReversals,
       transactions,
       recentTransactions,
-    ] =
-      await Promise.all([
-        this.prisma.financialTransaction.aggregate({
-          where: {
-            ...whereClause,
-            type: TransactionType.INCOME,
-            category: TransactionCategory.SALE,
+    ] = await Promise.all([
+      this.prisma.financialTransaction.aggregate({
+        where: {
+          ...whereClause,
+          type: TransactionType.INCOME,
+          category: TransactionCategory.SALE,
+        },
+        _sum: { amount: true },
+      }),
+      this.prisma.financialTransaction.aggregate({
+        where: {
+          ...whereClause,
+          type: TransactionType.EXPENSE,
+          category: {
+            in: [TransactionCategory.OPEX, TransactionCategory.PAYROLL],
           },
-          _sum: { amount: true },
-        }),
-        this.prisma.financialTransaction.aggregate({
-          where: {
-            ...whereClause,
-            type: TransactionType.EXPENSE,
-            category: {
-              in: [TransactionCategory.OPEX, TransactionCategory.PAYROLL],
-            },
-          },
-          _sum: { amount: true },
-        }),
-        this.prisma.financialTransaction.aggregate({
-          where: {
-            ...whereClause,
-            type: TransactionType.EXPENSE,
-            category: TransactionCategory.PURCHASE,
-          },
-          _sum: { amount: true },
-        }),
-        this.prisma.financialTransaction.aggregate({
-          where: {
-            ...whereClause,
-            type: TransactionType.INCOME,
-            category: TransactionCategory.PURCHASE,
-          },
-          _sum: { amount: true },
-        }),
-        this.prisma.financialTransaction.findMany({
-          where: whereClause,
-          orderBy: { createdAt: 'asc' },
-        }),
-        this.prisma.financialTransaction.findMany({
-          where: whereClause,
-          orderBy: { createdAt: 'desc' },
-          take: 10,
-        }),
-      ]);
+        },
+        _sum: { amount: true },
+      }),
+      this.prisma.financialTransaction.aggregate({
+        where: {
+          ...whereClause,
+          type: TransactionType.EXPENSE,
+          category: TransactionCategory.PURCHASE,
+        },
+        _sum: { amount: true },
+      }),
+      this.prisma.financialTransaction.aggregate({
+        where: {
+          ...whereClause,
+          type: TransactionType.INCOME,
+          category: TransactionCategory.PURCHASE,
+        },
+        _sum: { amount: true },
+      }),
+      this.prisma.financialTransaction.findMany({
+        where: whereClause,
+        orderBy: { createdAt: 'asc' },
+      }),
+      this.prisma.financialTransaction.findMany({
+        where: whereClause,
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      }),
+    ]);
 
     let totalCOGS: number | null = null;
 
@@ -1330,10 +1639,12 @@ export class FinanceService {
         monthlyData[month] = { income: 0, expense: 0 };
       }
 
+      const amount = this.toMoneyNumber(tx.amount);
+
       if (tx.type === TransactionType.INCOME) {
-        monthlyData[month].income += tx.amount;
+        monthlyData[month].income += amount;
       } else {
-        monthlyData[month].expense += tx.amount;
+        monthlyData[month].expense += amount;
       }
     });
 
@@ -1344,15 +1655,17 @@ export class FinanceService {
 
     return {
       kpis: {
-        totalIncome: income._sum.amount || 0,
-        totalOpex: opex._sum.amount || 0,
+        totalIncome: this.toMoneyNumber(income._sum.amount),
+        totalOpex: this.toMoneyNumber(opex._sum.amount),
         totalPurchases:
-          (purchases._sum.amount || 0)
-          - (purchaseReversals?._sum?.amount || 0),
+          this.toMoneyNumber(purchases._sum.amount) -
+          this.toMoneyNumber(purchaseReversals?._sum?.amount),
         totalCOGS,
       },
       cashFlowChart,
-      recentTransactions,
+      recentTransactions: recentTransactions.map((transaction) =>
+        this.serializeTransactionMoney(transaction),
+      ),
     };
   }
 }

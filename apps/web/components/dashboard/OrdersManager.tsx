@@ -75,6 +75,8 @@ interface OrderSummary {
   customerEmail: string;
   city: string;
   totalAmount: number;
+  netAmount?: number;
+  taxTotal?: number;
   status: OrderStatus;
   source: OrderSource;
   trackingNumber?: string;
@@ -410,6 +412,11 @@ export default function OrdersManager() {
       </span>
     );
   };
+
+  const formatCurrency = (amount?: number | null) =>
+    typeof amount === 'number' && Number.isFinite(amount)
+      ? `$${amount.toLocaleString('es-CO')}`
+      : 'Pendiente';
 
   const sendWhatsApp = (phone: string, orderNumber: number) => {
     const cleanPhone = phone.replace(/\D/g, '');
@@ -824,8 +831,14 @@ export default function OrdersManager() {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 font-black text-primary">
-                      ${order.totalAmount.toLocaleString('es-CO')}
+                    <td className="px-6 py-4">
+                      <div className="font-black text-primary">
+                        {formatCurrency(order.totalAmount)}
+                      </div>
+                      <div className="mt-1 space-y-0.5 text-[10px] font-bold uppercase tracking-wide text-muted">
+                        <p>IVA: {formatCurrency(order.taxTotal)}</p>
+                        <p>Neto: {formatCurrency(order.netAmount)}</p>
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
@@ -1066,12 +1079,21 @@ export default function OrdersManager() {
                     </div>
                     <div className="pt-4 border-t border-theme flex justify-between items-center">
                       <span className="text-[10px] font-black text-muted uppercase tracking-[0.2em]">
-                        Total
+                        Venta total
                       </span>
                       <span className="text-2xl font-black text-primary tracking-tighter">
-                        $
-                        {selectedOrder.totalAmount.toLocaleString('es-CO')}
+                        {formatCurrency(selectedOrder.totalAmount)}
                       </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="rounded-xl border border-theme bg-base/40 p-3">
+                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">IVA a pagar</p>
+                        <p className="mt-1 text-sm font-black text-primary">{formatCurrency(selectedOrder.taxTotal)}</p>
+                      </div>
+                      <div className="rounded-xl border border-theme bg-base/40 p-3">
+                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Venta neta</p>
+                        <p className="mt-1 text-sm font-black text-primary">{formatCurrency(selectedOrder.netAmount)}</p>
+                      </div>
                     </div>
                   </div>
                 </div>

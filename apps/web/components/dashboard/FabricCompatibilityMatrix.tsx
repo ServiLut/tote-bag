@@ -143,7 +143,7 @@ export default function FabricCompatibilityMatrix() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-black text-primary tracking-tight uppercase">Matriz de Compatibilidad</h2>
+        <h2 className="text-2xl font-black text-primary tracking-tight uppercase">Matriz de compatibilidad</h2>
         <p className="text-sm text-muted font-medium mt-1">Habilita o deshabilita qué técnicas de marcado son posibles según el material base de la tote bag.</p>
       </div>
 
@@ -191,7 +191,7 @@ export default function FabricCompatibilityMatrix() {
                             isCompatible ? "bg-secondary" : "bg-theme"
                           )}
                         >
-                          <span className="sr-only">Toggle compatibility</span>
+                          <span className="sr-only">Cambiar compatibilidad</span>
                           <span
                             className={cn(
                               "inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm",
@@ -220,7 +220,7 @@ export default function FabricCompatibilityMatrix() {
       <div className="flex items-start gap-3 p-5 bg-secondary/5 border border-secondary/20 rounded-2xl">
         <Check size={18} className="text-secondary shrink-0 mt-0.5" />
         <p className="text-xs text-muted leading-relaxed">
-          <strong className="text-primary font-black uppercase tracking-widest text-[10px] block mb-1">Nota de Sincronización:</strong>
+          <strong className="text-primary font-black uppercase tracking-widest text-[10px] block mb-1">Nota de sincronización:</strong>
           Los cambios realizados en esta matriz se reflejan en tiempo real en el configurador que ven los clientes.
           Si una técnica está bloqueada para un material, no aparecerá como opción cuando el cliente seleccione dicho material.
         </p>
@@ -228,4 +228,3 @@ export default function FabricCompatibilityMatrix() {
     </div>
   );
 }
-

@@ -1,4 +1,5 @@
 import { CatalogService } from './catalog.service';
+import { BadRequestException } from '@nestjs/common';
 
 describe('CatalogService', () => {
   const tx = {
@@ -30,6 +31,9 @@ describe('CatalogService', () => {
     purchaseBatch: {
       count: jest.fn(),
     },
+    variant: {
+      count: jest.fn(),
+    },
     personalizationRequest: {
       count: jest.fn(),
     },
@@ -43,6 +47,8 @@ describe('CatalogService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.purchaseBatch.count.mockResolvedValue(0);
+    prisma.variant.count.mockResolvedValue(0);
     service = new CatalogService(prisma as never, cacheManager as never);
   });
 
@@ -120,6 +126,7 @@ describe('CatalogService', () => {
         minPrice: 90,
         comparePrice: undefined,
         costPrice: 50,
+        taxRate: undefined,
         isActive: true,
       },
     });
@@ -146,6 +153,18 @@ describe('CatalogService', () => {
       isActive: false,
       status: 'BAJO_PEDIDO',
     });
+  });
+
+  it('rejects deleting products with active inventory', async () => {
+    prisma.purchaseBatch.count.mockResolvedValueOnce(1);
+
+    await expect(service.remove('product-1')).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+
+    expect(prisma.product.update).not.toHaveBeenCalled();
+    expect(prisma.product.delete).not.toHaveBeenCalled();
+    expect(cacheManager.del).not.toHaveBeenCalled();
   });
 
   it('hard-deletes products that have no historical references', async () => {

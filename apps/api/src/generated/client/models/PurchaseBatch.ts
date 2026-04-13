@@ -28,15 +28,15 @@ export type AggregatePurchaseBatch = {
 export type PurchaseBatchAvgAggregateOutputType = {
   quantityReceived: number | null
   quantityRemaining: number | null
-  unitCost: number | null
-  totalCost: number | null
+  unitCost: runtime.Decimal | null
+  totalCost: runtime.Decimal | null
 }
 
 export type PurchaseBatchSumAggregateOutputType = {
   quantityReceived: number | null
   quantityRemaining: number | null
-  unitCost: number | null
-  totalCost: number | null
+  unitCost: runtime.Decimal | null
+  totalCost: runtime.Decimal | null
 }
 
 export type PurchaseBatchMinAggregateOutputType = {
@@ -46,8 +46,8 @@ export type PurchaseBatchMinAggregateOutputType = {
   supplierId: string | null
   quantityReceived: number | null
   quantityRemaining: number | null
-  unitCost: number | null
-  totalCost: number | null
+  unitCost: runtime.Decimal | null
+  totalCost: runtime.Decimal | null
   status: $Enums.BatchStatus | null
   paymentReceiptUrl: string | null
   createdAt: Date | null
@@ -61,8 +61,8 @@ export type PurchaseBatchMaxAggregateOutputType = {
   supplierId: string | null
   quantityReceived: number | null
   quantityRemaining: number | null
-  unitCost: number | null
-  totalCost: number | null
+  unitCost: runtime.Decimal | null
+  totalCost: runtime.Decimal | null
   status: $Enums.BatchStatus | null
   paymentReceiptUrl: string | null
   createdAt: Date | null
@@ -239,8 +239,8 @@ export type PurchaseBatchGroupByOutputType = {
   supplierId: string
   quantityReceived: number
   quantityRemaining: number
-  unitCost: number
-  totalCost: number
+  unitCost: runtime.Decimal
+  totalCost: runtime.Decimal
   status: $Enums.BatchStatus
   paymentReceiptUrl: string | null
   createdAt: Date
@@ -277,8 +277,8 @@ export type PurchaseBatchWhereInput = {
   supplierId?: Prisma.StringFilter<"PurchaseBatch"> | string
   quantityReceived?: Prisma.IntFilter<"PurchaseBatch"> | number
   quantityRemaining?: Prisma.IntFilter<"PurchaseBatch"> | number
-  unitCost?: Prisma.FloatFilter<"PurchaseBatch"> | number
-  totalCost?: Prisma.FloatFilter<"PurchaseBatch"> | number
+  unitCost?: Prisma.DecimalFilter<"PurchaseBatch"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost?: Prisma.DecimalFilter<"PurchaseBatch"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumBatchStatusFilter<"PurchaseBatch"> | $Enums.BatchStatus
   paymentReceiptUrl?: Prisma.StringNullableFilter<"PurchaseBatch"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PurchaseBatch"> | Date | string
@@ -320,8 +320,8 @@ export type PurchaseBatchWhereUniqueInput = Prisma.AtLeast<{
   supplierId?: Prisma.StringFilter<"PurchaseBatch"> | string
   quantityReceived?: Prisma.IntFilter<"PurchaseBatch"> | number
   quantityRemaining?: Prisma.IntFilter<"PurchaseBatch"> | number
-  unitCost?: Prisma.FloatFilter<"PurchaseBatch"> | number
-  totalCost?: Prisma.FloatFilter<"PurchaseBatch"> | number
+  unitCost?: Prisma.DecimalFilter<"PurchaseBatch"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost?: Prisma.DecimalFilter<"PurchaseBatch"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumBatchStatusFilter<"PurchaseBatch"> | $Enums.BatchStatus
   paymentReceiptUrl?: Prisma.StringNullableFilter<"PurchaseBatch"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PurchaseBatch"> | Date | string
@@ -363,8 +363,8 @@ export type PurchaseBatchScalarWhereWithAggregatesInput = {
   supplierId?: Prisma.StringWithAggregatesFilter<"PurchaseBatch"> | string
   quantityReceived?: Prisma.IntWithAggregatesFilter<"PurchaseBatch"> | number
   quantityRemaining?: Prisma.IntWithAggregatesFilter<"PurchaseBatch"> | number
-  unitCost?: Prisma.FloatWithAggregatesFilter<"PurchaseBatch"> | number
-  totalCost?: Prisma.FloatWithAggregatesFilter<"PurchaseBatch"> | number
+  unitCost?: Prisma.DecimalWithAggregatesFilter<"PurchaseBatch"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost?: Prisma.DecimalWithAggregatesFilter<"PurchaseBatch"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumBatchStatusWithAggregatesFilter<"PurchaseBatch"> | $Enums.BatchStatus
   paymentReceiptUrl?: Prisma.StringNullableWithAggregatesFilter<"PurchaseBatch"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"PurchaseBatch"> | Date | string
@@ -375,8 +375,8 @@ export type PurchaseBatchCreateInput = {
   id?: string
   quantityReceived: number
   quantityRemaining: number
-  unitCost: number
-  totalCost: number
+  unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.BatchStatus
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
@@ -395,8 +395,8 @@ export type PurchaseBatchUncheckedCreateInput = {
   supplierId: string
   quantityReceived: number
   quantityRemaining: number
-  unitCost: number
-  totalCost: number
+  unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.BatchStatus
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
@@ -409,8 +409,8 @@ export type PurchaseBatchUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
   quantityRemaining?: Prisma.IntFieldUpdateOperationsInput | number
-  unitCost?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalCost?: Prisma.FloatFieldUpdateOperationsInput | number
+  unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumBatchStatusFieldUpdateOperationsInput | $Enums.BatchStatus
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -429,8 +429,8 @@ export type PurchaseBatchUncheckedUpdateInput = {
   supplierId?: Prisma.StringFieldUpdateOperationsInput | string
   quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
   quantityRemaining?: Prisma.IntFieldUpdateOperationsInput | number
-  unitCost?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalCost?: Prisma.FloatFieldUpdateOperationsInput | number
+  unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumBatchStatusFieldUpdateOperationsInput | $Enums.BatchStatus
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -446,8 +446,8 @@ export type PurchaseBatchCreateManyInput = {
   supplierId: string
   quantityReceived: number
   quantityRemaining: number
-  unitCost: number
-  totalCost: number
+  unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.BatchStatus
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
@@ -458,8 +458,8 @@ export type PurchaseBatchUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
   quantityRemaining?: Prisma.IntFieldUpdateOperationsInput | number
-  unitCost?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalCost?: Prisma.FloatFieldUpdateOperationsInput | number
+  unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumBatchStatusFieldUpdateOperationsInput | $Enums.BatchStatus
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -473,8 +473,8 @@ export type PurchaseBatchUncheckedUpdateManyInput = {
   supplierId?: Prisma.StringFieldUpdateOperationsInput | string
   quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
   quantityRemaining?: Prisma.IntFieldUpdateOperationsInput | number
-  unitCost?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalCost?: Prisma.FloatFieldUpdateOperationsInput | number
+  unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumBatchStatusFieldUpdateOperationsInput | $Enums.BatchStatus
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -721,8 +721,8 @@ export type PurchaseBatchCreateWithoutProductInput = {
   id?: string
   quantityReceived: number
   quantityRemaining: number
-  unitCost: number
-  totalCost: number
+  unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.BatchStatus
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
@@ -739,8 +739,8 @@ export type PurchaseBatchUncheckedCreateWithoutProductInput = {
   supplierId: string
   quantityReceived: number
   quantityRemaining: number
-  unitCost: number
-  totalCost: number
+  unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.BatchStatus
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
@@ -785,8 +785,8 @@ export type PurchaseBatchScalarWhereInput = {
   supplierId?: Prisma.StringFilter<"PurchaseBatch"> | string
   quantityReceived?: Prisma.IntFilter<"PurchaseBatch"> | number
   quantityRemaining?: Prisma.IntFilter<"PurchaseBatch"> | number
-  unitCost?: Prisma.FloatFilter<"PurchaseBatch"> | number
-  totalCost?: Prisma.FloatFilter<"PurchaseBatch"> | number
+  unitCost?: Prisma.DecimalFilter<"PurchaseBatch"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost?: Prisma.DecimalFilter<"PurchaseBatch"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumBatchStatusFilter<"PurchaseBatch"> | $Enums.BatchStatus
   paymentReceiptUrl?: Prisma.StringNullableFilter<"PurchaseBatch"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PurchaseBatch"> | Date | string
@@ -797,8 +797,8 @@ export type PurchaseBatchCreateWithoutVariantInput = {
   id?: string
   quantityReceived: number
   quantityRemaining: number
-  unitCost: number
-  totalCost: number
+  unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.BatchStatus
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
@@ -815,8 +815,8 @@ export type PurchaseBatchUncheckedCreateWithoutVariantInput = {
   supplierId: string
   quantityReceived: number
   quantityRemaining: number
-  unitCost: number
-  totalCost: number
+  unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.BatchStatus
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
@@ -855,8 +855,8 @@ export type PurchaseBatchCreateWithoutSupplierInput = {
   id?: string
   quantityReceived: number
   quantityRemaining: number
-  unitCost: number
-  totalCost: number
+  unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.BatchStatus
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
@@ -873,8 +873,8 @@ export type PurchaseBatchUncheckedCreateWithoutSupplierInput = {
   variantId?: string | null
   quantityReceived: number
   quantityRemaining: number
-  unitCost: number
-  totalCost: number
+  unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.BatchStatus
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
@@ -913,8 +913,8 @@ export type PurchaseBatchCreateWithoutInvoicesInput = {
   id?: string
   quantityReceived: number
   quantityRemaining: number
-  unitCost: number
-  totalCost: number
+  unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.BatchStatus
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
@@ -932,8 +932,8 @@ export type PurchaseBatchUncheckedCreateWithoutInvoicesInput = {
   supplierId: string
   quantityReceived: number
   quantityRemaining: number
-  unitCost: number
-  totalCost: number
+  unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.BatchStatus
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
@@ -961,8 +961,8 @@ export type PurchaseBatchUpdateWithoutInvoicesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
   quantityRemaining?: Prisma.IntFieldUpdateOperationsInput | number
-  unitCost?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalCost?: Prisma.FloatFieldUpdateOperationsInput | number
+  unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumBatchStatusFieldUpdateOperationsInput | $Enums.BatchStatus
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -980,8 +980,8 @@ export type PurchaseBatchUncheckedUpdateWithoutInvoicesInput = {
   supplierId?: Prisma.StringFieldUpdateOperationsInput | string
   quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
   quantityRemaining?: Prisma.IntFieldUpdateOperationsInput | number
-  unitCost?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalCost?: Prisma.FloatFieldUpdateOperationsInput | number
+  unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumBatchStatusFieldUpdateOperationsInput | $Enums.BatchStatus
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -993,8 +993,8 @@ export type PurchaseBatchCreateWithoutTransactionsInput = {
   id?: string
   quantityReceived: number
   quantityRemaining: number
-  unitCost: number
-  totalCost: number
+  unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.BatchStatus
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
@@ -1012,8 +1012,8 @@ export type PurchaseBatchUncheckedCreateWithoutTransactionsInput = {
   supplierId: string
   quantityReceived: number
   quantityRemaining: number
-  unitCost: number
-  totalCost: number
+  unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.BatchStatus
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
@@ -1041,8 +1041,8 @@ export type PurchaseBatchUpdateWithoutTransactionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
   quantityRemaining?: Prisma.IntFieldUpdateOperationsInput | number
-  unitCost?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalCost?: Prisma.FloatFieldUpdateOperationsInput | number
+  unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumBatchStatusFieldUpdateOperationsInput | $Enums.BatchStatus
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1060,8 +1060,8 @@ export type PurchaseBatchUncheckedUpdateWithoutTransactionsInput = {
   supplierId?: Prisma.StringFieldUpdateOperationsInput | string
   quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
   quantityRemaining?: Prisma.IntFieldUpdateOperationsInput | number
-  unitCost?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalCost?: Prisma.FloatFieldUpdateOperationsInput | number
+  unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumBatchStatusFieldUpdateOperationsInput | $Enums.BatchStatus
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1075,8 +1075,8 @@ export type PurchaseBatchCreateManyProductInput = {
   supplierId: string
   quantityReceived: number
   quantityRemaining: number
-  unitCost: number
-  totalCost: number
+  unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.BatchStatus
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
@@ -1087,8 +1087,8 @@ export type PurchaseBatchUpdateWithoutProductInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
   quantityRemaining?: Prisma.IntFieldUpdateOperationsInput | number
-  unitCost?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalCost?: Prisma.FloatFieldUpdateOperationsInput | number
+  unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumBatchStatusFieldUpdateOperationsInput | $Enums.BatchStatus
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1105,8 +1105,8 @@ export type PurchaseBatchUncheckedUpdateWithoutProductInput = {
   supplierId?: Prisma.StringFieldUpdateOperationsInput | string
   quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
   quantityRemaining?: Prisma.IntFieldUpdateOperationsInput | number
-  unitCost?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalCost?: Prisma.FloatFieldUpdateOperationsInput | number
+  unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumBatchStatusFieldUpdateOperationsInput | $Enums.BatchStatus
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1121,8 +1121,8 @@ export type PurchaseBatchUncheckedUpdateManyWithoutProductInput = {
   supplierId?: Prisma.StringFieldUpdateOperationsInput | string
   quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
   quantityRemaining?: Prisma.IntFieldUpdateOperationsInput | number
-  unitCost?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalCost?: Prisma.FloatFieldUpdateOperationsInput | number
+  unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumBatchStatusFieldUpdateOperationsInput | $Enums.BatchStatus
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1135,8 +1135,8 @@ export type PurchaseBatchCreateManyVariantInput = {
   supplierId: string
   quantityReceived: number
   quantityRemaining: number
-  unitCost: number
-  totalCost: number
+  unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.BatchStatus
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
@@ -1147,8 +1147,8 @@ export type PurchaseBatchUpdateWithoutVariantInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
   quantityRemaining?: Prisma.IntFieldUpdateOperationsInput | number
-  unitCost?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalCost?: Prisma.FloatFieldUpdateOperationsInput | number
+  unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumBatchStatusFieldUpdateOperationsInput | $Enums.BatchStatus
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1165,8 +1165,8 @@ export type PurchaseBatchUncheckedUpdateWithoutVariantInput = {
   supplierId?: Prisma.StringFieldUpdateOperationsInput | string
   quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
   quantityRemaining?: Prisma.IntFieldUpdateOperationsInput | number
-  unitCost?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalCost?: Prisma.FloatFieldUpdateOperationsInput | number
+  unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumBatchStatusFieldUpdateOperationsInput | $Enums.BatchStatus
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1181,8 +1181,8 @@ export type PurchaseBatchUncheckedUpdateManyWithoutVariantInput = {
   supplierId?: Prisma.StringFieldUpdateOperationsInput | string
   quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
   quantityRemaining?: Prisma.IntFieldUpdateOperationsInput | number
-  unitCost?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalCost?: Prisma.FloatFieldUpdateOperationsInput | number
+  unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumBatchStatusFieldUpdateOperationsInput | $Enums.BatchStatus
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1195,8 +1195,8 @@ export type PurchaseBatchCreateManySupplierInput = {
   variantId?: string | null
   quantityReceived: number
   quantityRemaining: number
-  unitCost: number
-  totalCost: number
+  unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.BatchStatus
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
@@ -1207,8 +1207,8 @@ export type PurchaseBatchUpdateWithoutSupplierInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
   quantityRemaining?: Prisma.IntFieldUpdateOperationsInput | number
-  unitCost?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalCost?: Prisma.FloatFieldUpdateOperationsInput | number
+  unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumBatchStatusFieldUpdateOperationsInput | $Enums.BatchStatus
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1225,8 +1225,8 @@ export type PurchaseBatchUncheckedUpdateWithoutSupplierInput = {
   variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
   quantityRemaining?: Prisma.IntFieldUpdateOperationsInput | number
-  unitCost?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalCost?: Prisma.FloatFieldUpdateOperationsInput | number
+  unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumBatchStatusFieldUpdateOperationsInput | $Enums.BatchStatus
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1241,8 +1241,8 @@ export type PurchaseBatchUncheckedUpdateManyWithoutSupplierInput = {
   variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
   quantityRemaining?: Prisma.IntFieldUpdateOperationsInput | number
-  unitCost?: Prisma.FloatFieldUpdateOperationsInput | number
-  totalCost?: Prisma.FloatFieldUpdateOperationsInput | number
+  unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumBatchStatusFieldUpdateOperationsInput | $Enums.BatchStatus
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1397,8 +1397,8 @@ export type $PurchaseBatchPayload<ExtArgs extends runtime.Types.Extensions.Inter
     supplierId: string
     quantityReceived: number
     quantityRemaining: number
-    unitCost: number
-    totalCost: number
+    unitCost: runtime.Decimal
+    totalCost: runtime.Decimal
     status: $Enums.BatchStatus
     paymentReceiptUrl: string | null
     createdAt: Date
@@ -1837,8 +1837,8 @@ export interface PurchaseBatchFieldRefs {
   readonly supplierId: Prisma.FieldRef<"PurchaseBatch", 'String'>
   readonly quantityReceived: Prisma.FieldRef<"PurchaseBatch", 'Int'>
   readonly quantityRemaining: Prisma.FieldRef<"PurchaseBatch", 'Int'>
-  readonly unitCost: Prisma.FieldRef<"PurchaseBatch", 'Float'>
-  readonly totalCost: Prisma.FieldRef<"PurchaseBatch", 'Float'>
+  readonly unitCost: Prisma.FieldRef<"PurchaseBatch", 'Decimal'>
+  readonly totalCost: Prisma.FieldRef<"PurchaseBatch", 'Decimal'>
   readonly status: Prisma.FieldRef<"PurchaseBatch", 'BatchStatus'>
   readonly paymentReceiptUrl: Prisma.FieldRef<"PurchaseBatch", 'String'>
   readonly createdAt: Prisma.FieldRef<"PurchaseBatch", 'DateTime'>

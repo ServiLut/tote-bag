@@ -11,6 +11,8 @@ export interface Variant {
   color: string;
   imageUrl: string;
   salePrice?: number;
+  netSalePrice?: number | null;
+  taxRate?: number | string;
   minPrice?: number;
   comparePrice?: number;
   costPrice?: number;

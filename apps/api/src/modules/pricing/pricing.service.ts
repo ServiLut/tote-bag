@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import Decimal from 'decimal.js';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProductConfigInputDto } from '../../common/dto/product-config.dto';
 import {
@@ -12,6 +13,13 @@ import {
 } from '../../generated/client/enums';
 import { PricingSnapshot } from '../../common/interfaces/snapshots.interface';
 import { generateConfigCode } from '../../common/utils/hash.util';
+import {
+  calculateSalesTaxBreakdown,
+  decimalToNumber,
+  DecimalInput,
+  roundMoney,
+  toDecimal,
+} from '../../common/utils/sales-tax.util';
 
 @Injectable()
 export class PricingService {
@@ -40,6 +48,7 @@ export class PricingService {
     variant: {
       salePrice: number | null;
       minPrice: number | null;
+      taxRate?: DecimalInput;
     } | null,
     product: {
       basePrice: number;
@@ -50,12 +59,14 @@ export class PricingService {
       return {
         baseUnitPrice: product.basePrice,
         baseMinPrice: product.minPrice,
+        taxRate: undefined,
       };
     }
 
     return {
       baseUnitPrice: variant.salePrice ?? product.basePrice,
       baseMinPrice: variant.minPrice ?? product.minPrice,
+      taxRate: variant.taxRate,
     };
   }
 
@@ -148,10 +159,10 @@ export class PricingService {
 
     const variant = await this.resolveCommercialVariant(input);
     const effectiveSize = variant?.size ?? input.size ?? '';
-    const { baseUnitPrice, baseMinPrice } = this.getVariantCommercialPricing(
-      variant,
-      product,
-    );
+    const { baseUnitPrice, baseMinPrice, taxRate } =
+      this.getVariantCommercialPricing(variant, product);
+    const baseUnitPriceDecimal = toDecimal(baseUnitPrice);
+    const baseMinPriceDecimal = toDecimal(baseMinPrice);
 
     const configCode = generateConfigCode({
       productId: input.productId,
@@ -168,7 +179,7 @@ export class PricingService {
       configCode,
       variantId: variant?.id ?? input.variantId ?? undefined,
       size: effectiveSize || undefined,
-      basePrice: baseUnitPrice,
+      basePrice: decimalToNumber(baseUnitPriceDecimal),
       attributeModifiers: [],
       personalizationSurcharges: [],
       minPriceGuardApplied: false,
@@ -179,7 +190,7 @@ export class PricingService {
       timestamp: new Date().toISOString(),
     };
 
-    let unitPrice = baseUnitPrice;
+    let unitPrice = baseUnitPriceDecimal;
 
     const wizardOptions = await this.prisma.wizardOption.findMany({
       where: {
@@ -210,7 +221,7 @@ export class PricingService {
       );
 
       if (matchingAttr) {
-        unitPrice += matchingAttr.priceModifier;
+        unitPrice = unitPrice.plus(toDecimal(matchingAttr.priceModifier));
         snapshot.attributeModifiers.push({
           type: inputAttribute.type,
           name: inputAttribute.value,
@@ -230,7 +241,7 @@ export class PricingService {
       );
 
       if (globalOption && globalOption.basePriceModifier !== 0) {
-        unitPrice += globalOption.basePriceModifier;
+        unitPrice = unitPrice.plus(toDecimal(globalOption.basePriceModifier));
         snapshot.attributeModifiers.push({
           type: inputAttribute.type,
           name: inputAttribute.value,
@@ -308,11 +319,13 @@ export class PricingService {
             );
           }
 
-          const surcharge = option.basePrice + rule.extraPrice;
-          unitPrice += surcharge;
+          const surcharge = toDecimal(option.basePrice).plus(
+            toDecimal(rule.extraPrice),
+          );
+          unitPrice = unitPrice.plus(surcharge);
           snapshot.personalizationSurcharges.push({
             code: personalization.code,
-            surcharge,
+            surcharge: decimalToNumber(surcharge),
           });
           continue;
         }
@@ -334,7 +347,7 @@ export class PricingService {
           );
         }
 
-        unitPrice += wizardOption.basePriceModifier;
+        unitPrice = unitPrice.plus(toDecimal(wizardOption.basePriceModifier));
         snapshot.personalizationSurcharges.push({
           code: personalization.code,
           surcharge: wizardOption.basePriceModifier,
@@ -357,12 +370,14 @@ export class PricingService {
         applicableRule.fixedUnitPrice !== null &&
         applicableRule.fixedUnitPrice !== undefined
       ) {
-        unitPrice = applicableRule.fixedUnitPrice;
+        unitPrice = toDecimal(applicableRule.fixedUnitPrice);
       } else if (
         applicableRule.discountPct !== null &&
         applicableRule.discountPct !== undefined
       ) {
-        unitPrice = unitPrice * (1 - applicableRule.discountPct / 100);
+        unitPrice = unitPrice.mul(
+          new Decimal(1).minus(toDecimal(applicableRule.discountPct).div(100)),
+        );
       }
 
       snapshot.volumeDiscount = {
@@ -372,19 +387,28 @@ export class PricingService {
       };
     }
 
-    if (unitPrice < baseMinPrice) {
-      unitPrice = baseMinPrice;
+    if (unitPrice.lessThan(baseMinPriceDecimal)) {
+      unitPrice = baseMinPriceDecimal;
       snapshot.minPriceGuardApplied = true;
     }
 
-    const total = unitPrice * input.quantity;
-    snapshot.finalUnitPrice = unitPrice;
-    snapshot.totalPrice = total;
+    const finalUnitPrice = roundMoney(unitPrice);
+    const total = roundMoney(finalUnitPrice.mul(input.quantity));
+    const taxBreakdown = calculateSalesTaxBreakdown({
+      grossUnitPrice: finalUnitPrice,
+      quantity: input.quantity,
+      taxRate,
+    });
+    snapshot.finalUnitPrice = decimalToNumber(finalUnitPrice);
+    snapshot.totalPrice = decimalToNumber(total);
 
     return {
-      unitPrice,
+      unitPrice: decimalToNumber(finalUnitPrice),
       quantity: input.quantity,
-      total,
+      total: decimalToNumber(total),
+      taxRate: toDecimal(taxBreakdown.taxRate).toNumber(),
+      netUnitPrice: decimalToNumber(taxBreakdown.netUnitPrice),
+      taxAmount: decimalToNumber(taxBreakdown.taxAmount),
       currency: 'COP',
       snapshot: {
         ...snapshot,

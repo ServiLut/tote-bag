@@ -78,6 +78,12 @@ export class CreateVariantDto {
 
   @IsNumber()
   @Min(0)
+  @Max(1)
+  @IsOptional()
+  taxRate?: number;
+
+  @IsNumber()
+  @Min(0)
   @IsOptional()
   stock?: number;
 

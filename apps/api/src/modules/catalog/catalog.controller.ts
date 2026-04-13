@@ -26,6 +26,40 @@ export class CatalogController {
     return this.catalogService.create(createProductDto);
   }
 
+  @Get('admin/products')
+  @RequirePermissions({ resource: 'products', action: 'update' })
+  findAllAdmin(
+    @Query('collection') collection?: string,
+    @Query('lines') lines?: string,
+    @Query('sizes') sizes?: string,
+    @Query('qualities') qualities?: string,
+    @Query('materials') materials?: string,
+    @Query('status') status?: string,
+    @Query('isCustomizable') isCustomizable?: string,
+    @Query('minPrice') minPrice?: string,
+    @Query('maxPrice') maxPrice?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.catalogService.findAllAdmin({
+      collectionId: collection,
+      line: lines,
+      size: sizes,
+      quality: qualities,
+      material: materials,
+      status,
+      isCustomizable: isCustomizable === 'true',
+      minPrice: minPrice ? Number(minPrice) : undefined,
+      maxPrice: maxPrice ? Number(maxPrice) : undefined,
+      search,
+    });
+  }
+
+  @Get('admin/:id')
+  @RequirePermissions({ resource: 'products', action: 'update' })
+  findOneAdmin(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
+    return this.catalogService.findOneAdmin(id);
+  }
+
   @Get('products')
   findAll(
     @Query('collection') collection?: string,

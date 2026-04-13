@@ -353,6 +353,9 @@ function ProfilePageContent() {
                         <span className="font-medium text-primary">
                           ${order.totalAmount.toLocaleString('es-CO')}
                         </span>
+                        <span className="block text-[10px] font-bold uppercase tracking-wide text-muted">
+                          IVA incluido
+                        </span>
                       </div>
                     </div>
                     <div>
@@ -392,6 +395,7 @@ function ProfilePageContent() {
                           </div>
                           <div className="text-right">
                             <p className="font-medium text-primary">${item.totalPrice.toLocaleString('es-CO')}</p>
+                            <p className="text-[10px] font-bold uppercase tracking-wide text-muted">IVA incluido</p>
                           </div>
                         </div>
                       ))}
@@ -602,4 +606,3 @@ function ProfileSettingsModal({
     </div>
   );
 }
-

@@ -1,13 +1,17 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import Decimal from 'decimal.js';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ShippingNotifierService } from './shipping-notifier.service';
 import { ShippingSyncService } from './shipping-sync.service';
+import { InventoryService } from '../inventory/inventory.service';
+import { decimalToNumber, toDecimal } from '../../common/utils/sales-tax.util';
 import { CreateShippingProviderDto } from './dto/create-provider.dto';
 import {
   ProcessReturnDto,
@@ -89,6 +93,7 @@ export class ShippingService {
     private readonly prisma: PrismaService,
     private readonly shippingNotifier: ShippingNotifierService,
     private readonly shippingSyncService: ShippingSyncService,
+    private readonly inventoryService: InventoryService,
   ) {}
 
   private isReturnedToStockEnumMismatch(error: unknown) {
@@ -119,6 +124,93 @@ export class ShippingService {
     return (
       status === ShipmentStatus.SHIPPED || status === ShipmentStatus.IN_TRANSIT
     );
+  }
+
+  private toMoney(value: unknown) {
+    return new Decimal(
+      value && typeof value === 'object' && 'toString' in value
+        ? value.toString()
+        : String(value ?? 0),
+    ).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+  }
+
+  private async consumeDispatchSupplyIfConfigured(
+    tx: Prisma.TransactionClient,
+    orderId: string,
+    userId?: string,
+  ) {
+    const securityBagVariantId =
+      process.env.SECURITY_BAG_VARIANT_ID?.trim() || '';
+    const securityBagSku = process.env.SECURITY_BAG_VARIANT_SKU?.trim();
+
+    if (!securityBagVariantId && !securityBagSku) {
+      await tx.auditLog.create({
+        data: {
+          action: 'DISPATCH_SUPPLY_NOT_CONFIGURED',
+          entity: 'Order',
+          entityId: orderId,
+          userId: userId ?? null,
+          payload: {
+            reason: 'SECURITY_BAG_VARIANT_ID_OR_SKU_NOT_CONFIGURED',
+            expectedEnvVars: [
+              'SECURITY_BAG_VARIANT_ID',
+              'SECURITY_BAG_VARIANT_SKU',
+            ],
+          },
+        },
+      });
+      return;
+    }
+
+    const variant = securityBagVariantId
+      ? await tx.variant.findUnique({
+          where: { id: securityBagVariantId },
+          select: { id: true, sku: true },
+        })
+      : await tx.variant.findUnique({
+          where: { sku: securityBagSku },
+          select: { id: true, sku: true },
+        });
+
+    if (!variant) {
+      await tx.auditLog.create({
+        data: {
+          action: 'DISPATCH_SUPPLY_MISSING',
+          entity: 'Order',
+          entityId: orderId,
+          userId: userId ?? null,
+          payload: {
+            reason: securityBagVariantId
+              ? 'SECURITY_BAG_VARIANT_ID_NOT_FOUND'
+              : 'SECURITY_BAG_VARIANT_SKU_NOT_FOUND',
+            variantId: securityBagVariantId || null,
+            sku: securityBagSku || null,
+          },
+        },
+      });
+      return;
+    }
+
+    const reduction = await this.inventoryService.reduceStockFIFO(
+      variant.id,
+      1,
+      userId,
+      tx,
+    );
+
+    await tx.auditLog.create({
+      data: {
+        action: 'CONSUME_DISPATCH_SUPPLY',
+        entity: 'Order',
+        entityId: orderId,
+        userId: userId ?? null,
+        payload: {
+          sku: variant.sku,
+          quantity: 1,
+          inventoryConsumption: reduction,
+        },
+      },
+    });
   }
 
   // --- Shipping Providers CRUD ---
@@ -334,10 +426,17 @@ export class ShippingService {
     );
     const weightedUnitCost =
       totalUnits > 0
-        ? historicalBatches.reduce(
-            (sum, batch) => sum + batch.quantityReceived * batch.unitCost,
-            0,
-          ) / totalUnits
+        ? decimalToNumber(
+            historicalBatches
+              .reduce(
+                (sum, batch) =>
+                  sum.plus(
+                    toDecimal(batch.unitCost).mul(batch.quantityReceived),
+                  ),
+                new Decimal(0),
+              )
+              .div(totalUnits),
+          )
         : 0;
 
     return {
@@ -530,20 +629,39 @@ export class ShippingService {
     );
   }
 
-  async updateShipment(orderId: string, dto: UpdateShipmentDto) {
+  async updateShipment(
+    orderId: string,
+    dto: UpdateShipmentDto,
+    userId?: string,
+  ) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
-      select: { status: true, trackingNumber: true, carrier: true },
+      select: {
+        status: true,
+        trackingNumber: true,
+        carrier: true,
+        balanceDue: true,
+      },
     });
 
     if (!order) {
       throw new NotFoundException('Orden no encontrada');
     }
 
+    if (
+      this.isDispatchedStatus(dto.status) &&
+      this.toMoney(order.balanceDue).greaterThan(0)
+    ) {
+      throw new ForbiddenException(
+        'La orden no puede despacharse con saldo pendiente',
+      );
+    }
+
     // Buscar si existe el envío para esta orden
     let shipment = await this.prisma.shipment.findUnique({
       where: { orderId },
     });
+    const wasDispatched = this.isDispatchedStatus(shipment?.status);
 
     let carrierName: string | null = order.carrier;
 
@@ -599,6 +717,12 @@ export class ShippingService {
 
     // Si el estado cambia a SHIPPED, enviar notificación (placeholder)
     if (this.isDispatchedStatus(dto.status)) {
+      if (!wasDispatched) {
+        await this.prisma.$transaction((tx) =>
+          this.consumeDispatchSupplyIfConfigured(tx, orderId, userId),
+        );
+      }
+
       await this.shippingNotifier.notifyShipmentDispatched(
         orderId,
         shipment.trackingNumber ?? undefined,

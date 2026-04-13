@@ -38,6 +38,11 @@ export interface VariantData {
   imageUrl: string;
   costPrice: number;
   salePrice: number;
+  netSalePrice?: number | null;
+  netPrice?: number | null;
+  taxAmount?: number | null;
+  marginPercentage?: number | null;
+  taxRate: number;
   minPrice: number;
   comparePrice: number;
   stock: number;
@@ -90,7 +95,7 @@ interface AdminProductFormProps {
   initialData?: Omit<Partial<ProductFormData>, 'tags' | 'images' | 'collection' | 'attributes' | 'pricingRules'> & {
     id?: string;
     tags?: string | string[];
-    images?: ProductImage[] | string[];
+    images?: ProductImage[] | string[] | Array<ProductImage | string>;
     collection?: string | { id: string, name: string };
     attributes?: Array<Omit<AttributeData, 'type'> & { type: 'SIZE' | AttributeType }>;
     pricingRules?: PricingRuleData[];
@@ -101,8 +106,6 @@ interface AdminProductFormProps {
 const DEFAULT_PRODUCT_ATTRIBUTES: AttributeData[] = [];
 
 const DEFAULT_PRICING_RULES: PricingRuleData[] = [];
-
-const SKU_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._/-]*$/;
 
 const normalizeVariantField = (value: string) => value.trim().toLowerCase();
 
@@ -173,6 +176,7 @@ const INITIAL_STATE: ProductFormData = {
       imageUrl: '',
       costPrice: 0,
       salePrice: 0,
+      taxRate: 0.19,
       minPrice: 0,
       comparePrice: 0,
       stock: 0,
@@ -220,6 +224,11 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
                 imageUrl: variant.imageUrl || '',
                 costPrice: variant.costPrice ?? 0,
                 salePrice: variant.salePrice ?? 0,
+                netSalePrice: variant.netSalePrice ?? null,
+                netPrice: variant.netPrice ?? null,
+                taxAmount: variant.taxAmount ?? null,
+                marginPercentage: variant.marginPercentage ?? null,
+                taxRate: variant.taxRate ?? 0.19,
                 minPrice: variant.minPrice ?? 0,
                 comparePrice: variant.comparePrice ?? 0,
                 stock: variant.stock ?? 0,
@@ -251,6 +260,16 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
   const supabase = createClient();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [isLoadingCollections, setIsLoadingCollections] = useState(false);
+
+  const formatBackendCurrency = (value?: number | null) =>
+    typeof value === 'number' && Number.isFinite(value)
+      ? `$${value.toLocaleString('es-CO')}`
+      : 'Se calcula al guardar';
+
+  const formatBackendPercentage = (value?: number | null) =>
+    typeof value === 'number' && Number.isFinite(value)
+      ? `${value.toFixed(2)}%`
+      : 'Se calcula al guardar';
 
   useEffect(() => {
     const fetchCollections = async () => {
@@ -537,6 +556,7 @@ const addVariant = () => {
         imageUrl: '',
         costPrice: 0,
         salePrice: 0,
+        taxRate: 0.19,
         minPrice: 0,
         comparePrice: 0,
         stock: 0,
@@ -563,6 +583,12 @@ const addVariant = () => {
     (event: ChangeEvent<HTMLInputElement>) => {
       const sanitizedValue = sanitizeDecimalInput(event.target.value);
       updateVariant(index, field, sanitizedValue ? parseLocalizedNumber(sanitizedValue) : 0);
+    };
+
+  const handleVariantTaxRateChange =
+    (index: number) => (event: ChangeEvent<HTMLInputElement>) => {
+      const sanitizedValue = sanitizeDecimalInput(event.target.value);
+      updateVariant(index, 'taxRate', sanitizedValue ? parseLocalizedNumber(sanitizedValue) : 0);
     };
 
   // Attributes Logic
@@ -610,232 +636,6 @@ const addVariant = () => {
 
   const removePricingRule = (index: number) => {
     setFormData(prev => ({ ...prev, pricingRules: prev.pricingRules.filter((_, i) => i !== index) }));
-  };
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    const skuSet = new Set<string>();
-    const combinationSet = new Set<string>();
-    const normalizedCollectionId = formData.collectionId.trim();
-    const normalizedCollectionName = formData.collection.trim();
-    const normalizedAttributes = formData.attributes.map((attr) => ({
-      ...attr,
-      value: attr.value.trim(),
-    }));
-    const requiresVariantSizing = formData.variants.some((variant) => !!variant.size.trim());
-    void requiresVariantSizing;
-
-    if (!normalizedCollectionId && !normalizedCollectionName) {
-      toast.error('Selecciona o crea una colección antes de guardar.');
-      return;
-    }
-
-    if (normalizedAttributes.some((attr) => !attr.value)) {
-      toast.error('Cada atributo adicional debe tener un valor o eliminarse.');
-      return;
-    }
-
-    for (const variant of formData.variants) {
-      if (!variant.size.trim()) {
-        toast.error('Cada variante debe tener un tamaño.');
-        return;
-      }
-
-      if (!variant.sku.trim()) {
-        toast.error('Cada variante debe tener un SKU.');
-        return;
-      }
-
-      if (!SKU_PATTERN.test(variant.sku.trim())) {
-        toast.error(`El SKU ${variant.sku} contiene caracteres no permitidos.`);
-        return;
-      }
-
-      if (!variant.color.trim()) {
-        toast.error('Cada variante debe tener un color.');
-        return;
-      }
-
-      if (!variant.imageUrl.trim()) {
-        toast.error('Todas las variantes deben tener una imagen asignada.');
-        return;
-      }
-
-      if (variant.salePrice <= 0) {
-        toast.error(`La variante ${variant.size || variant.sku} debe tener precio de venta mayor a 0.`);
-        return;
-      }
-
-      if (variant.minPrice > variant.salePrice) {
-        toast.error(`La variante ${variant.size} no puede tener un precio mínimo mayor al precio de venta.`);
-        return;
-      }
-
-      if (variant.comparePrice > 0 && variant.comparePrice < variant.salePrice) {
-        toast.error(`La variante ${variant.size} no puede tener precio tachado menor al precio de venta.`);
-        return;
-      }
-
-      const normalizedSku = variant.sku.trim().toLowerCase();
-      if (skuSet.has(normalizedSku)) {
-        toast.error(`SKU duplicado: ${variant.sku}`);
-        return;
-      }
-      skuSet.add(normalizedSku);
-
-      if (variant.isActive) {
-        const combinationKey = `${normalizeVariantField(variant.size)}::${normalizeVariantField(variant.color)}`;
-        if (combinationSet.has(combinationKey)) {
-          toast.error(`Hay variantes activas duplicadas para ${variant.size} / ${variant.color || 'sin color'}.`);
-          return;
-        }
-        combinationSet.add(combinationKey);
-      }
-    }
-
-    const pricingRuleSet = new Set<string>();
-    for (const rule of formData.pricingRules) {
-      if (rule.maxQty !== undefined && rule.maxQty < rule.minQty) {
-        toast.error(`La regla ${rule.scope} no puede tener cantidad mÃ¡xima menor a la mÃ­nima.`);
-        return;
-      }
-
-      if (
-        (rule.discountPct === undefined || rule.discountPct === 0) &&
-        rule.fixedUnitPrice === undefined
-      ) {
-        toast.error(`La regla ${rule.scope} debe definir descuento o precio fijo.`);
-        return;
-      }
-
-      if (
-        rule.discountPct !== undefined &&
-        rule.discountPct > 0 &&
-        rule.fixedUnitPrice !== undefined
-      ) {
-        toast.error(`La regla ${rule.scope} no puede mezclar descuento y precio fijo.`);
-        return;
-      }
-
-      const ruleKey = `${rule.scope}::${rule.minQty}::${rule.maxQty ?? 'open'}`;
-      if (pricingRuleSet.has(ruleKey)) {
-        toast.error(`Hay reglas duplicadas para ${rule.scope} con cantidad mÃ­nima ${rule.minQty}.`);
-        return;
-      }
-
-      pricingRuleSet.add(ruleKey);
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      // 1. Clean variants while preserving existing variant IDs in edit mode.
-      const cleanVariants = formData.variants.map(v => ({
-        ...(v.id ? { id: v.id } : {}),
-        size: v.size.trim(),
-        sku: v.sku.trim(),
-        color: v.color.trim(),
-        imageUrl: v.imageUrl.trim(),
-        costPrice: v.costPrice,
-        salePrice: v.salePrice,
-        minPrice: v.minPrice,
-        comparePrice: v.comparePrice || undefined,
-        isActive: v.isActive,
-      }));
-
-      // 2. Construct clean payload with only fields accepted by the API.
-      const payload = {
-        name: formData.name.trim(),
-        slug: formData.slug.trim(),
-        description: formData.description.trim(),
-        collectionId: normalizedCollectionId,
-        collectionName: normalizedCollectionName,
-        deliveryTime: formData.deliveryTime.trim(),
-        status: formData.status,
-        images: formData.images.map((img, index) => ({ url: img.url.trim(), position: index })),
-        variants: cleanVariants,
-        attributes: normalizedAttributes.map(attr => ({
-          type: attr.type,
-          value: attr.value,
-          priceModifier: attr.priceModifier,
-          sortOrder: attr.sortOrder,
-        })),
-        pricingRules: formData.pricingRules.map(rule => ({
-          scope: rule.scope,
-          minQty: rule.minQty,
-          maxQty: rule.maxQty,
-          discountPct: rule.discountPct,
-          fixedUnitPrice: rule.fixedUnitPrice,
-        })),
-        tags: typeof formData.tags === 'string'
-          ? formData.tags.split(',').map(t => t.trim()).filter(Boolean)
-          : formData.tags,
-      };
-
-      const path = isEditMode
-        ? `/catalog/${initialData.id}`
-        : '/catalog';
-
-      const method = isEditMode ? 'PATCH' : 'POST';
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      if (!token) {
-        throw new Error('Tu sesión expiró. Inicia sesión de nuevo.');
-      }
-
-      const response = await apiFetch(path, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.status === 401 || response.status === 403) {
-        toast.error('No tienes permisos para guardar productos');
-        return;
-      }
-
-      if (!response.ok) {
-        let errorMsg = 'Error al guardar el producto';
-
-        try {
-          const errorData = await response.json();
-          const responseMessage =
-            typeof errorData?.message === 'string' || Array.isArray(errorData?.message)
-              ? errorData.message
-              : typeof errorData?.error === 'string'
-                ? errorData.error
-                : undefined;
-
-          if (Array.isArray(responseMessage)) {
-            errorMsg = responseMessage.join(', ');
-          } else if (responseMessage) {
-            errorMsg = responseMessage;
-          }
-        } catch {
-          // Ignore invalid JSON responses and keep the fallback message.
-        }
-
-        toast.error(errorMsg);
-        return;
-      }
-
-      const responseBody: ApiResponse<{ name: string }> = await response.json();
-      const result = responseBody.data;
-      toast.success(`Producto "${result.name}" ${isEditMode ? 'actualizado' : 'creado'} correctamente.`);
-
-      if (!isEditMode) {
-        setFormData(INITIAL_STATE); // Reset form only on create
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Hubo un problema al guardar el producto.';
-      console.error('Unexpected error saving product:', error);
-      toast.error(errorMessage);
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   const submitProductForm = async (e: FormEvent) => {
@@ -887,6 +687,11 @@ const addVariant = () => {
 
       if (variant.comparePrice > 0 && variant.comparePrice < variant.salePrice) {
         toast.error(`La variante ${variant.size || variant.color} no puede tener precio tachado menor al precio de venta.`);
+        return;
+      }
+
+      if (variant.taxRate < 0 || variant.taxRate > 1) {
+        toast.error(`La tarifa IVA de la variante ${variant.size || variant.color} debe estar entre 0 y 1.`);
         return;
       }
 
@@ -952,6 +757,7 @@ const addVariant = () => {
         imageUrl: variant.imageUrl.trim(),
         costPrice: variant.costPrice,
         salePrice: variant.salePrice,
+        taxRate: variant.taxRate,
         minPrice: variant.minPrice,
         comparePrice: variant.comparePrice || undefined,
         isActive: variant.isActive,
@@ -1056,8 +862,6 @@ const addVariant = () => {
       setIsSubmitting(false);
     }
   };
-
-  void handleSubmit;
 
   return (
     <div className="w-full max-w-4xl mx-auto p-8 bg-surface text-primary rounded-lg shadow-sm font-sans transition-colors">
@@ -1456,12 +1260,7 @@ const addVariant = () => {
             )}
 
             {formData.variants.map((variant, index) => {
-              const unitMargin = variant.salePrice - (variant.costPrice || 0);
-              const variantMargin = variant.salePrice > 0
-                ? (unitMargin / variant.salePrice) * 100
-                : 0;
               const hasVariantPriceWarning = variant.minPrice > variant.salePrice && variant.salePrice > 0;
-              const hasBelowCostWarning = variant.salePrice > 0 && variant.salePrice < (variant.costPrice || 0);
 
               return (
                 <div key={variant.id ?? index} className="space-y-4 p-5 border border-theme rounded-2xl bg-base/40 shadow-sm transition-all hover:bg-base/60">
@@ -1481,14 +1280,6 @@ const addVariant = () => {
                       )}>
                         {variant.isActive ? 'Activa' : 'Inactiva'}
                       </span>
-                      {variant.salePrice > 0 && (
-                        <span className={cn(
-                          "text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-widest border",
-                          variantMargin < 30 ? "bg-red-50 text-red-700 border-red-100" : "bg-primary/5 text-primary border-primary/10"
-                        )}>
-                          Margen: {variantMargin.toFixed(1)}%
-                        </span>
-                      )}
                       <button
                         type="button"
                         onClick={() => removeVariant(index)}
@@ -1531,7 +1322,7 @@ const addVariant = () => {
                         className="w-full p-2.5 border border-theme rounded-xl bg-base text-muted text-[10px] font-mono cursor-not-allowed outline-none"
                       />
                       <p className="text-[10px] font-medium text-muted">
-                        Sugerencia editable. Formato permitido: letras, nÃºmeros, punto, guion, slash o underscore.
+                        Sugerencia editable. Formato permitido: letras, números, punto, guion, slash o underscore.
                       </p>
                     </div>
                     <div className="space-y-1">
@@ -1547,7 +1338,7 @@ const addVariant = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
                     <div className="space-y-1">
                       <label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Costo unitario</label>
                       <input
@@ -1578,6 +1369,19 @@ const addVariant = () => {
                       />
                     </div>
                     <div className="space-y-1">
+                      <label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Tarifa IVA</label>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="0.19"
+                        value={String(variant.taxRate)}
+                        onChange={handleVariantTaxRateChange(index)}
+                        required
+                        className="w-full p-2.5 border border-theme rounded-xl bg-surface text-sm font-black focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                      />
+                      <p className="text-[10px] font-medium text-muted">Decimal entre 0 y 1.</p>
+                    </div>
+                    <div className="space-y-1">
                       <label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Precio mínimo</label>
                       <input
                         type="text"
@@ -1602,17 +1406,23 @@ const addVariant = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-2xl border border-theme bg-base/20 p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 rounded-2xl border border-theme bg-base/20 p-4">
                     <div className="space-y-1">
-                      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Margen unitario</p>
-                      <p className={cn("text-lg font-black", unitMargin < 0 ? "text-amber-700" : "text-primary")}>
-                        ${unitMargin.toFixed(2)}
+                      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Venta neta</p>
+                      <p className="text-lg font-black text-secondary">
+                        {formatBackendCurrency(variant.netPrice ?? variant.netSalePrice)}
                       </p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Margen porcentual</p>
-                      <p className={cn("text-lg font-black", variantMargin < 0 ? "text-amber-700" : "text-primary")}>
-                        {variant.salePrice > 0 ? `${variantMargin.toFixed(1)}%` : '0.0%'}
+                      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">IVA incluido</p>
+                      <p className="text-lg font-black text-primary">
+                        {formatBackendCurrency(variant.taxAmount)}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Margen bruto</p>
+                      <p className="text-lg font-black text-primary">
+                        {formatBackendPercentage(variant.marginPercentage)}
                       </p>
                     </div>
                   </div>
@@ -1621,13 +1431,6 @@ const addVariant = () => {
                     <div className="flex items-start gap-2 p-4 bg-red-50 text-red-700 rounded-xl border border-red-100 text-xs font-bold">
                       <AlertCircle size={16} className="mt-0.5 shrink-0" />
                       <span>El precio de venta no puede quedar por debajo del precio mínimo de esta variante.</span>
-                    </div>
-                  )}
-
-                  {hasBelowCostWarning && (
-                    <div className="flex items-start gap-2 p-4 bg-amber-50 text-amber-800 rounded-xl border border-amber-200 text-xs font-bold">
-                      <AlertCircle size={16} className="mt-0.5 shrink-0" />
-                      <span>Esta variante queda con margen negativo porque el precio de venta estÃ¡ por debajo del costo. Se permite, pero revÃ­sala antes de guardar.</span>
                     </div>
                   )}
 
@@ -1797,7 +1600,7 @@ const addVariant = () => {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Cantidad mÃ¡xima</label>
+                    <label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Cantidad máxima</label>
                     <input
                       type="text"
                       inputMode="numeric"
@@ -1840,7 +1643,7 @@ const addVariant = () => {
                   </div>
                 </div>
                 <p className="text-[10px] font-medium text-muted">
-                  Usa descuento o precio fijo, no ambos. Si defines cantidad mÃ¡xima, debe ser mayor o igual a la mÃ­nima.
+                  Usa descuento o precio fijo, no ambos. Si defines cantidad máxima, debe ser mayor o igual a la mínima.
                 </p>
               </div>
             ))}

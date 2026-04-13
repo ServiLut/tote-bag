@@ -30,6 +30,7 @@ export type VariantAvgAggregateOutputType = {
   minPrice: number | null
   comparePrice: number | null
   costPrice: number | null
+  taxRate: runtime.Decimal | null
   stock: number | null
 }
 
@@ -38,6 +39,7 @@ export type VariantSumAggregateOutputType = {
   minPrice: number | null
   comparePrice: number | null
   costPrice: number | null
+  taxRate: runtime.Decimal | null
   stock: number | null
 }
 
@@ -51,6 +53,7 @@ export type VariantMinAggregateOutputType = {
   minPrice: number | null
   comparePrice: number | null
   costPrice: number | null
+  taxRate: runtime.Decimal | null
   stock: number | null
   isActive: boolean | null
   productId: string | null
@@ -66,6 +69,7 @@ export type VariantMaxAggregateOutputType = {
   minPrice: number | null
   comparePrice: number | null
   costPrice: number | null
+  taxRate: runtime.Decimal | null
   stock: number | null
   isActive: boolean | null
   productId: string | null
@@ -81,6 +85,7 @@ export type VariantCountAggregateOutputType = {
   minPrice: number
   comparePrice: number
   costPrice: number
+  taxRate: number
   stock: number
   isActive: number
   productId: number
@@ -93,6 +98,7 @@ export type VariantAvgAggregateInputType = {
   minPrice?: true
   comparePrice?: true
   costPrice?: true
+  taxRate?: true
   stock?: true
 }
 
@@ -101,6 +107,7 @@ export type VariantSumAggregateInputType = {
   minPrice?: true
   comparePrice?: true
   costPrice?: true
+  taxRate?: true
   stock?: true
 }
 
@@ -114,6 +121,7 @@ export type VariantMinAggregateInputType = {
   minPrice?: true
   comparePrice?: true
   costPrice?: true
+  taxRate?: true
   stock?: true
   isActive?: true
   productId?: true
@@ -129,6 +137,7 @@ export type VariantMaxAggregateInputType = {
   minPrice?: true
   comparePrice?: true
   costPrice?: true
+  taxRate?: true
   stock?: true
   isActive?: true
   productId?: true
@@ -144,6 +153,7 @@ export type VariantCountAggregateInputType = {
   minPrice?: true
   comparePrice?: true
   costPrice?: true
+  taxRate?: true
   stock?: true
   isActive?: true
   productId?: true
@@ -246,6 +256,7 @@ export type VariantGroupByOutputType = {
   minPrice: number | null
   comparePrice: number | null
   costPrice: number | null
+  taxRate: runtime.Decimal
   stock: number
   isActive: boolean
   productId: string
@@ -284,6 +295,7 @@ export type VariantWhereInput = {
   minPrice?: Prisma.FloatNullableFilter<"Variant"> | number | null
   comparePrice?: Prisma.FloatNullableFilter<"Variant"> | number | null
   costPrice?: Prisma.FloatNullableFilter<"Variant"> | number | null
+  taxRate?: Prisma.DecimalFilter<"Variant"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFilter<"Variant"> | number
   isActive?: Prisma.BoolFilter<"Variant"> | boolean
   productId?: Prisma.StringFilter<"Variant"> | string
@@ -303,6 +315,7 @@ export type VariantOrderByWithRelationInput = {
   minPrice?: Prisma.SortOrderInput | Prisma.SortOrder
   comparePrice?: Prisma.SortOrderInput | Prisma.SortOrder
   costPrice?: Prisma.SortOrderInput | Prisma.SortOrder
+  taxRate?: Prisma.SortOrder
   stock?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   productId?: Prisma.SortOrder
@@ -325,6 +338,7 @@ export type VariantWhereUniqueInput = Prisma.AtLeast<{
   minPrice?: Prisma.FloatNullableFilter<"Variant"> | number | null
   comparePrice?: Prisma.FloatNullableFilter<"Variant"> | number | null
   costPrice?: Prisma.FloatNullableFilter<"Variant"> | number | null
+  taxRate?: Prisma.DecimalFilter<"Variant"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFilter<"Variant"> | number
   isActive?: Prisma.BoolFilter<"Variant"> | boolean
   productId?: Prisma.StringFilter<"Variant"> | string
@@ -344,6 +358,7 @@ export type VariantOrderByWithAggregationInput = {
   minPrice?: Prisma.SortOrderInput | Prisma.SortOrder
   comparePrice?: Prisma.SortOrderInput | Prisma.SortOrder
   costPrice?: Prisma.SortOrderInput | Prisma.SortOrder
+  taxRate?: Prisma.SortOrder
   stock?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   productId?: Prisma.SortOrder
@@ -367,6 +382,7 @@ export type VariantScalarWhereWithAggregatesInput = {
   minPrice?: Prisma.FloatNullableWithAggregatesFilter<"Variant"> | number | null
   comparePrice?: Prisma.FloatNullableWithAggregatesFilter<"Variant"> | number | null
   costPrice?: Prisma.FloatNullableWithAggregatesFilter<"Variant"> | number | null
+  taxRate?: Prisma.DecimalWithAggregatesFilter<"Variant"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntWithAggregatesFilter<"Variant"> | number
   isActive?: Prisma.BoolWithAggregatesFilter<"Variant"> | boolean
   productId?: Prisma.StringWithAggregatesFilter<"Variant"> | string
@@ -382,6 +398,7 @@ export type VariantCreateInput = {
   minPrice?: number | null
   comparePrice?: number | null
   costPrice?: number | null
+  taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: number
   isActive?: boolean
   orderItems?: Prisma.OrderItemCreateNestedManyWithoutVariantInput
@@ -400,6 +417,7 @@ export type VariantUncheckedCreateInput = {
   minPrice?: number | null
   comparePrice?: number | null
   costPrice?: number | null
+  taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: number
   isActive?: boolean
   productId: string
@@ -418,6 +436,7 @@ export type VariantUpdateInput = {
   minPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   comparePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   costPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   orderItems?: Prisma.OrderItemUpdateManyWithoutVariantNestedInput
@@ -436,6 +455,7 @@ export type VariantUncheckedUpdateInput = {
   minPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   comparePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   costPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   productId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -454,6 +474,7 @@ export type VariantCreateManyInput = {
   minPrice?: number | null
   comparePrice?: number | null
   costPrice?: number | null
+  taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: number
   isActive?: boolean
   productId: string
@@ -469,6 +490,7 @@ export type VariantUpdateManyMutationInput = {
   minPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   comparePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   costPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
@@ -483,6 +505,7 @@ export type VariantUncheckedUpdateManyInput = {
   minPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   comparePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   costPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   productId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -508,6 +531,7 @@ export type VariantCountOrderByAggregateInput = {
   minPrice?: Prisma.SortOrder
   comparePrice?: Prisma.SortOrder
   costPrice?: Prisma.SortOrder
+  taxRate?: Prisma.SortOrder
   stock?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   productId?: Prisma.SortOrder
@@ -518,6 +542,7 @@ export type VariantAvgOrderByAggregateInput = {
   minPrice?: Prisma.SortOrder
   comparePrice?: Prisma.SortOrder
   costPrice?: Prisma.SortOrder
+  taxRate?: Prisma.SortOrder
   stock?: Prisma.SortOrder
 }
 
@@ -531,6 +556,7 @@ export type VariantMaxOrderByAggregateInput = {
   minPrice?: Prisma.SortOrder
   comparePrice?: Prisma.SortOrder
   costPrice?: Prisma.SortOrder
+  taxRate?: Prisma.SortOrder
   stock?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   productId?: Prisma.SortOrder
@@ -546,6 +572,7 @@ export type VariantMinOrderByAggregateInput = {
   minPrice?: Prisma.SortOrder
   comparePrice?: Prisma.SortOrder
   costPrice?: Prisma.SortOrder
+  taxRate?: Prisma.SortOrder
   stock?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   productId?: Prisma.SortOrder
@@ -556,6 +583,7 @@ export type VariantSumOrderByAggregateInput = {
   minPrice?: Prisma.SortOrder
   comparePrice?: Prisma.SortOrder
   costPrice?: Prisma.SortOrder
+  taxRate?: Prisma.SortOrder
   stock?: Prisma.SortOrder
 }
 
@@ -604,6 +632,14 @@ export type VariantUncheckedUpdateManyWithoutProductNestedInput = {
   update?: Prisma.VariantUpdateWithWhereUniqueWithoutProductInput | Prisma.VariantUpdateWithWhereUniqueWithoutProductInput[]
   updateMany?: Prisma.VariantUpdateManyWithWhereWithoutProductInput | Prisma.VariantUpdateManyWithWhereWithoutProductInput[]
   deleteMany?: Prisma.VariantScalarWhereInput | Prisma.VariantScalarWhereInput[]
+}
+
+export type DecimalFieldUpdateOperationsInput = {
+  set?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  increment?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  decrement?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  multiply?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  divide?: runtime.Decimal | runtime.DecimalJsLike | number | string
 }
 
 export type VariantCreateNestedOneWithoutOrderItemsInput = {
@@ -664,6 +700,7 @@ export type VariantCreateWithoutProductInput = {
   minPrice?: number | null
   comparePrice?: number | null
   costPrice?: number | null
+  taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: number
   isActive?: boolean
   orderItems?: Prisma.OrderItemCreateNestedManyWithoutVariantInput
@@ -681,6 +718,7 @@ export type VariantUncheckedCreateWithoutProductInput = {
   minPrice?: number | null
   comparePrice?: number | null
   costPrice?: number | null
+  taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: number
   isActive?: boolean
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutVariantInput
@@ -727,6 +765,7 @@ export type VariantScalarWhereInput = {
   minPrice?: Prisma.FloatNullableFilter<"Variant"> | number | null
   comparePrice?: Prisma.FloatNullableFilter<"Variant"> | number | null
   costPrice?: Prisma.FloatNullableFilter<"Variant"> | number | null
+  taxRate?: Prisma.DecimalFilter<"Variant"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFilter<"Variant"> | number
   isActive?: Prisma.BoolFilter<"Variant"> | boolean
   productId?: Prisma.StringFilter<"Variant"> | string
@@ -742,6 +781,7 @@ export type VariantCreateWithoutOrderItemsInput = {
   minPrice?: number | null
   comparePrice?: number | null
   costPrice?: number | null
+  taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: number
   isActive?: boolean
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutVariantInput
@@ -759,6 +799,7 @@ export type VariantUncheckedCreateWithoutOrderItemsInput = {
   minPrice?: number | null
   comparePrice?: number | null
   costPrice?: number | null
+  taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: number
   isActive?: boolean
   productId: string
@@ -792,6 +833,7 @@ export type VariantUpdateWithoutOrderItemsInput = {
   minPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   comparePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   costPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutVariantNestedInput
@@ -809,6 +851,7 @@ export type VariantUncheckedUpdateWithoutOrderItemsInput = {
   minPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   comparePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   costPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   productId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -826,6 +869,7 @@ export type VariantCreateWithoutPersonalizationRequestsInput = {
   minPrice?: number | null
   comparePrice?: number | null
   costPrice?: number | null
+  taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: number
   isActive?: boolean
   orderItems?: Prisma.OrderItemCreateNestedManyWithoutVariantInput
@@ -843,6 +887,7 @@ export type VariantUncheckedCreateWithoutPersonalizationRequestsInput = {
   minPrice?: number | null
   comparePrice?: number | null
   costPrice?: number | null
+  taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: number
   isActive?: boolean
   productId: string
@@ -876,6 +921,7 @@ export type VariantUpdateWithoutPersonalizationRequestsInput = {
   minPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   comparePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   costPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   orderItems?: Prisma.OrderItemUpdateManyWithoutVariantNestedInput
@@ -893,6 +939,7 @@ export type VariantUncheckedUpdateWithoutPersonalizationRequestsInput = {
   minPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   comparePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   costPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   productId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -910,6 +957,7 @@ export type VariantCreateWithoutPurchaseBatchesInput = {
   minPrice?: number | null
   comparePrice?: number | null
   costPrice?: number | null
+  taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: number
   isActive?: boolean
   orderItems?: Prisma.OrderItemCreateNestedManyWithoutVariantInput
@@ -927,6 +975,7 @@ export type VariantUncheckedCreateWithoutPurchaseBatchesInput = {
   minPrice?: number | null
   comparePrice?: number | null
   costPrice?: number | null
+  taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: number
   isActive?: boolean
   productId: string
@@ -960,6 +1009,7 @@ export type VariantUpdateWithoutPurchaseBatchesInput = {
   minPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   comparePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   costPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   orderItems?: Prisma.OrderItemUpdateManyWithoutVariantNestedInput
@@ -977,6 +1027,7 @@ export type VariantUncheckedUpdateWithoutPurchaseBatchesInput = {
   minPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   comparePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   costPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   productId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -994,6 +1045,7 @@ export type VariantCreateManyProductInput = {
   minPrice?: number | null
   comparePrice?: number | null
   costPrice?: number | null
+  taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: number
   isActive?: boolean
 }
@@ -1008,6 +1060,7 @@ export type VariantUpdateWithoutProductInput = {
   minPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   comparePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   costPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   orderItems?: Prisma.OrderItemUpdateManyWithoutVariantNestedInput
@@ -1025,6 +1078,7 @@ export type VariantUncheckedUpdateWithoutProductInput = {
   minPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   comparePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   costPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutVariantNestedInput
@@ -1042,6 +1096,7 @@ export type VariantUncheckedUpdateManyWithoutProductInput = {
   minPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   comparePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   costPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
@@ -1105,6 +1160,7 @@ export type VariantSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   minPrice?: boolean
   comparePrice?: boolean
   costPrice?: boolean
+  taxRate?: boolean
   stock?: boolean
   isActive?: boolean
   productId?: boolean
@@ -1125,6 +1181,7 @@ export type VariantSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   minPrice?: boolean
   comparePrice?: boolean
   costPrice?: boolean
+  taxRate?: boolean
   stock?: boolean
   isActive?: boolean
   productId?: boolean
@@ -1141,6 +1198,7 @@ export type VariantSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   minPrice?: boolean
   comparePrice?: boolean
   costPrice?: boolean
+  taxRate?: boolean
   stock?: boolean
   isActive?: boolean
   productId?: boolean
@@ -1157,12 +1215,13 @@ export type VariantSelectScalar = {
   minPrice?: boolean
   comparePrice?: boolean
   costPrice?: boolean
+  taxRate?: boolean
   stock?: boolean
   isActive?: boolean
   productId?: boolean
 }
 
-export type VariantOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sku" | "size" | "color" | "imageUrl" | "salePrice" | "minPrice" | "comparePrice" | "costPrice" | "stock" | "isActive" | "productId", ExtArgs["result"]["variant"]>
+export type VariantOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sku" | "size" | "color" | "imageUrl" | "salePrice" | "minPrice" | "comparePrice" | "costPrice" | "taxRate" | "stock" | "isActive" | "productId", ExtArgs["result"]["variant"]>
 export type VariantInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   orderItems?: boolean | Prisma.Variant$orderItemsArgs<ExtArgs>
   personalizationRequests?: boolean | Prisma.Variant$personalizationRequestsArgs<ExtArgs>
@@ -1195,6 +1254,7 @@ export type $VariantPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     minPrice: number | null
     comparePrice: number | null
     costPrice: number | null
+    taxRate: runtime.Decimal
     stock: number
     isActive: boolean
     productId: string
@@ -1634,6 +1694,7 @@ export interface VariantFieldRefs {
   readonly minPrice: Prisma.FieldRef<"Variant", 'Float'>
   readonly comparePrice: Prisma.FieldRef<"Variant", 'Float'>
   readonly costPrice: Prisma.FieldRef<"Variant", 'Float'>
+  readonly taxRate: Prisma.FieldRef<"Variant", 'Decimal'>
   readonly stock: Prisma.FieldRef<"Variant", 'Int'>
   readonly isActive: Prisma.FieldRef<"Variant", 'Boolean'>
   readonly productId: Prisma.FieldRef<"Variant", 'String'>

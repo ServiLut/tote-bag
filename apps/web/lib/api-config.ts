@@ -1,4 +1,6 @@
 const LOCAL_API_CANDIDATES = [
+  'http://localhost:4005/api/v1',
+  'http://127.0.0.1:4005/api/v1',
   'http://localhost:4003/api/v1',
   'http://127.0.0.1:4003/api/v1',
   'http://localhost:4004/api/v1',

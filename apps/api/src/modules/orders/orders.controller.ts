@@ -16,6 +16,7 @@ import {
 import { Request, Response } from 'express';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { CreateOrderPaymentDto } from './dto/create-order-payment.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { RolesService } from '../roles/roles.service';
@@ -134,6 +135,12 @@ export class OrdersController {
     });
   }
 
+  @Get('accounts-receivable')
+  @RequirePermissions({ resource: 'orders', action: 'read' })
+  getAccountsReceivable() {
+    return this.ordersService.getAccountsReceivable();
+  }
+
   @Get('user/:userId')
   async findByUser(
     @Param('userId') userId: string,
@@ -170,6 +177,16 @@ export class OrdersController {
   @RequirePermissions({ resource: 'orders', action: 'update' })
   update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
     return this.ordersService.update(id, updateOrderDto);
+  }
+
+  @Post(':id/payments')
+  @RequirePermissions({ resource: 'orders', action: 'update' })
+  registerOrderPayment(
+    @Param('id') id: string,
+    @Body() body: CreateOrderPaymentDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.ordersService.registerOrderPayment(id, body, req.user?.id);
   }
 
   @Get(':id/receipt')

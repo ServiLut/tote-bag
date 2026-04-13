@@ -57,63 +57,94 @@ function isProductSalesBadge(
   return (
     typeof candidate.productId === 'string' &&
     typeof candidate.productName === 'string' &&
-    typeof candidate.unitsSold === 'number' &&
+    toFiniteNumber(candidate.unitsSold) !== null &&
     (candidate.imageUrl === null || typeof candidate.imageUrl === 'string')
   );
 }
 
-function isDashboardStats(value: unknown): value is DashboardStats {
-  if (!value || typeof value !== 'object') {
-    return false;
+function toFiniteNumber(value: unknown) {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
   }
 
-  const candidate = value as Record<string, unknown>;
-  return (
-    typeof candidate.dailyProduction === 'number' &&
-    typeof candidate.lowStockCount === 'number' &&
-    typeof candidate.pendingQuotes === 'number' &&
-    typeof candidate.newPqrsCount === 'number' &&
-    typeof candidate.pendingPaymentOrders === 'number' &&
-    typeof candidate.inProductionOrders === 'number' &&
-    typeof candidate.pendingShipments === 'number' &&
-    typeof candidate.pendingPersonalizationRequests === 'number' &&
-    typeof candidate.inReviewPersonalizationRequests === 'number' &&
-    typeof candidate.approvedPersonalizationRequests === 'number' &&
-    typeof candidate.staleBatches === 'number' &&
-    typeof candidate.supplierPendingBalance === 'number' &&
-    typeof candidate.monthlyCashFlowNet === 'number'
-  );
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
 }
 
 function normalizeDashboardStats(value: unknown): DashboardStats | null {
-  if (!isDashboardStats(value)) {
+  if (!value || typeof value !== 'object') {
     return null;
   }
 
-  const candidate = value as unknown as Record<string, unknown>;
+  const candidate = value as Record<string, unknown>;
+  const dailyProduction = toFiniteNumber(candidate.dailyProduction);
+  const lowStockCount = toFiniteNumber(candidate.lowStockCount);
+  const pendingQuotes = toFiniteNumber(candidate.pendingQuotes);
+  const newPqrsCount = toFiniteNumber(candidate.newPqrsCount);
+  const pendingPaymentOrders = toFiniteNumber(candidate.pendingPaymentOrders);
+  const inProductionOrders = toFiniteNumber(candidate.inProductionOrders);
+  const pendingShipments = toFiniteNumber(candidate.pendingShipments);
+  const pendingPersonalizationRequests = toFiniteNumber(
+    candidate.pendingPersonalizationRequests,
+  );
+  const inReviewPersonalizationRequests = toFiniteNumber(
+    candidate.inReviewPersonalizationRequests,
+  );
+  const approvedPersonalizationRequests = toFiniteNumber(
+    candidate.approvedPersonalizationRequests,
+  );
+  const staleBatches = toFiniteNumber(candidate.staleBatches);
+  const supplierPendingBalance = toFiniteNumber(candidate.supplierPendingBalance);
+  const monthlyCashFlowNet = toFiniteNumber(candidate.monthlyCashFlowNet);
+
+  if (
+    dailyProduction === null ||
+    lowStockCount === null ||
+    pendingQuotes === null ||
+    newPqrsCount === null ||
+    pendingPaymentOrders === null ||
+    inProductionOrders === null ||
+    pendingShipments === null ||
+    pendingPersonalizationRequests === null ||
+    inReviewPersonalizationRequests === null ||
+    approvedPersonalizationRequests === null ||
+    staleBatches === null ||
+    supplierPendingBalance === null ||
+    monthlyCashFlowNet === null
+  ) {
+    return null;
+  }
 
   return {
-    dailyProduction: candidate.dailyProduction as number,
-    lowStockCount: candidate.lowStockCount as number,
-    pendingQuotes: candidate.pendingQuotes as number,
-    newPqrsCount: candidate.newPqrsCount as number,
-    pendingPaymentOrders: candidate.pendingPaymentOrders as number,
-    inProductionOrders: candidate.inProductionOrders as number,
-    pendingShipments: candidate.pendingShipments as number,
-    pendingPersonalizationRequests:
-      candidate.pendingPersonalizationRequests as number,
-    inReviewPersonalizationRequests:
-      candidate.inReviewPersonalizationRequests as number,
-    approvedPersonalizationRequests:
-      candidate.approvedPersonalizationRequests as number,
-    staleBatches: candidate.staleBatches as number,
-    supplierPendingBalance: candidate.supplierPendingBalance as number,
-    monthlyCashFlowNet: candidate.monthlyCashFlowNet as number,
+    dailyProduction,
+    lowStockCount,
+    pendingQuotes,
+    newPqrsCount,
+    pendingPaymentOrders,
+    inProductionOrders,
+    pendingShipments,
+    pendingPersonalizationRequests,
+    inReviewPersonalizationRequests,
+    approvedPersonalizationRequests,
+    staleBatches,
+    supplierPendingBalance,
+    monthlyCashFlowNet,
     topSellingProduct: isProductSalesBadge(candidate.topSellingProduct)
-      ? candidate.topSellingProduct
+      ? {
+          ...candidate.topSellingProduct,
+          unitsSold: toFiniteNumber(candidate.topSellingProduct.unitsSold) ?? 0,
+        }
       : null,
     lowestSellingProduct: isProductSalesBadge(candidate.lowestSellingProduct)
-      ? candidate.lowestSellingProduct
+      ? {
+          ...candidate.lowestSellingProduct,
+          unitsSold:
+            toFiniteNumber(candidate.lowestSellingProduct.unitsSold) ?? 0,
+        }
       : null,
   };
 }

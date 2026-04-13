@@ -43,6 +43,9 @@ describe('InventoryService', () => {
 
   const prisma = {
     $transaction: jest.fn(),
+    product: {
+      findMany: jest.fn(),
+    },
     purchaseBatch: {
       findMany: jest.fn(),
     },
@@ -145,6 +148,70 @@ describe('InventoryService', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
+  it('solo devuelve productos con lotes activos en inventario detallado', async () => {
+    prisma.product.findMany.mockResolvedValue([
+      {
+        id: 'product-1',
+        name: 'Tote Bag Crudo',
+        slug: 'tote-bag-crudo',
+        images: [{ url: 'https://example.com/crudo.jpg' }],
+        purchaseBatches: [
+          {
+            id: 'batch-1',
+            quantityRemaining: 60,
+            unitCost: 15411,
+            supplier: { id: 'supplier-1', name: 'Proveedor A' },
+          },
+        ],
+      },
+    ]);
+
+    const result = await service.getDetailedInventory();
+
+    expect(prisma.product.findMany).toHaveBeenCalledWith({
+      where: {
+        purchaseBatches: {
+          some: {
+            status: 'IN_STOCK',
+            quantityRemaining: { gt: 0 },
+            variantId: { not: null },
+          },
+        },
+      },
+      include: {
+        purchaseBatches: {
+          where: {
+            status: 'IN_STOCK',
+            quantityRemaining: { gt: 0 },
+            variantId: { not: null },
+          },
+          include: { supplier: true },
+          orderBy: { createdAt: 'asc' },
+        },
+        images: { take: 1 },
+      },
+    });
+    expect(result).toEqual([
+      {
+        id: 'product-1',
+        name: 'Tote Bag Crudo',
+        slug: 'tote-bag-crudo',
+        image: 'https://example.com/crudo.jpg',
+        totalStock: 60,
+        totalValuation: 924660,
+        weightedAvgCost: 15411,
+        batches: [
+          {
+            id: 'batch-1',
+            quantityRemaining: 60,
+            unitCost: 15411,
+            supplier: { id: 'supplier-1', name: 'Proveedor A' },
+          },
+        ],
+      },
+    ]);
+  });
+
   it('actualiza un lote intacto y ajusta stock y saldo del proveedor', async () => {
     tx.purchaseBatch.findUnique.mockResolvedValue({
       id: 'batch-1',
@@ -215,14 +282,14 @@ describe('InventoryService', () => {
         type: 'INCOME',
         category: 'PURCHASE',
         amount: 50000,
-      }),
+      }) as unknown,
     });
     expect(tx.financialTransaction.create).toHaveBeenNthCalledWith(2, {
       data: expect.objectContaining({
         type: 'EXPENSE',
         category: 'PURCHASE',
         amount: 48000,
-      }),
+      }) as unknown,
     });
   });
 

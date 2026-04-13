@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
+import Decimal from 'decimal.js';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma, Product } from '../../generated/client/client';
 import {
@@ -10,6 +11,11 @@ import {
   BatchInputStatus,
   CreatePurchaseBatchDto,
 } from './dto/create-purchase-batch.dto';
+import {
+  decimalToNumber,
+  roundMoney,
+  toDecimal,
+} from '../../common/utils/sales-tax.util';
 
 @Injectable()
 export class InventoryService {
@@ -42,9 +48,33 @@ export class InventoryService {
     quantityReceived: number;
   }) {
     return (
-      batch.status === BatchStatus.PENDING
-      || batch.quantityRemaining === batch.quantityReceived
+      batch.status === BatchStatus.PENDING ||
+      batch.quantityRemaining === batch.quantityReceived
     );
+  }
+
+  private normalizeFreightCost(value?: number) {
+    return Decimal.max(0, roundMoney(value ?? 0));
+  }
+
+  private serializeBatchMoney<T extends Record<string, unknown> | null>(
+    batch: T,
+  ): T {
+    if (!batch) {
+      return batch;
+    }
+
+    const result: Record<string, unknown> = { ...batch };
+
+    if ('unitCost' in result) {
+      result.unitCost = decimalToNumber(result.unitCost as Decimal.Value);
+    }
+
+    if ('totalCost' in result) {
+      result.totalCost = decimalToNumber(result.totalCost as Decimal.Value);
+    }
+
+    return result as T;
   }
 
   private async createPurchaseAdjustmentTransaction(
@@ -100,8 +130,12 @@ export class InventoryService {
         );
       }
 
-      const totalCost = data.totalCost;
-      const unitCost = totalCost / quantity;
+      const invoiceTotal = roundMoney(data.totalCost);
+      const freightCost = this.normalizeFreightCost(data.freightCost);
+      const totalCost = roundMoney(invoiceTotal.plus(freightCost));
+      const unitCost = roundMoney(totalCost.div(quantity));
+      const totalCostNumber = decimalToNumber(totalCost);
+      const unitCostNumber = decimalToNumber(unitCost);
       const opexCategory = await this.ensureMateriaPrimaCategory(tx);
 
       const statusValue = this.isReceivedStatus(data.status)
@@ -115,8 +149,8 @@ export class InventoryService {
           supplierId: data.supplierId,
           quantityReceived: quantity,
           quantityRemaining: this.isReceivedStatus(data.status) ? quantity : 0,
-          unitCost,
-          totalCost,
+          unitCost: unitCostNumber,
+          totalCost: totalCostNumber,
           status: statusValue,
           createdAt: data.purchaseDate
             ? new Date(data.purchaseDate)
@@ -133,6 +167,7 @@ export class InventoryService {
           where: { id: data.variantId },
           data: {
             stock: { increment: quantity },
+            costPrice: unitCostNumber,
           },
         });
 
@@ -140,7 +175,7 @@ export class InventoryService {
           data: {
             type: TransactionType.EXPENSE,
             category: TransactionCategory.PURCHASE,
-            amount: totalCost,
+            amount: totalCostNumber,
             description: `Compra de lote (Materia Prima): Producto ${productId} - Prov: ${data.supplierId}`,
             userId: data.userId,
             purchaseBatchId: batch.id,
@@ -152,7 +187,7 @@ export class InventoryService {
         await tx.supplier.update({
           where: { id: data.supplierId },
           data: {
-            balance: { increment: totalCost },
+            balance: { increment: totalCostNumber },
           },
         });
       }
@@ -166,13 +201,18 @@ export class InventoryService {
           payload: {
             productId,
             quantity,
-            totalCost,
+            invoiceTotal: decimalToNumber(invoiceTotal),
+            freightCost: decimalToNumber(freightCost),
+            totalCost: totalCostNumber,
+            landedTotalCost: totalCostNumber,
+            landedUnitCost: unitCostNumber,
+            documentType: data.documentType ?? null,
             status: data.status,
           },
         },
       });
 
-      return batch;
+      return this.serializeBatchMoney(batch);
     });
   }
 
@@ -188,11 +228,19 @@ export class InventoryService {
       const statusValue = this.isReceivedStatus(data.status)
         ? BatchStatus.IN_STOCK
         : BatchStatus.PENDING;
-      let recalculatedTotalCost = 0;
+      const freightCost = this.normalizeFreightCost(data.freightCost);
+      let invoiceSubtotal = new Decimal(0);
+      let allocatedFreight = new Decimal(0);
+      let recalculatedTotalCost = new Decimal(0);
 
       const batches: Prisma.PurchaseBatchGetPayload<{
         include: { product: true; supplier: true; variant: true };
       }>[] = [];
+      const resolvedItems: Array<{
+        item: (typeof data.items)[number];
+        product: Product;
+        rawLineTotal: Decimal;
+      }> = [];
 
       for (const item of data.items) {
         let product: Product | null;
@@ -229,6 +277,31 @@ export class InventoryService {
           );
         }
 
+        const rawLineTotal = roundMoney(
+          toDecimal(item.costoUnitario).mul(item.cantidad),
+        );
+        invoiceSubtotal = invoiceSubtotal.plus(rawLineTotal);
+        resolvedItems.push({ item, product, rawLineTotal });
+      }
+
+      if (invoiceSubtotal.lessThanOrEqualTo(0)) {
+        throw new BadRequestException(
+          'El valor facturado del lote debe ser mayor a cero',
+        );
+      }
+
+      for (const [index, resolved] of resolvedItems.entries()) {
+        const { item, product, rawLineTotal } = resolved;
+        const lineFreight =
+          index === resolvedItems.length - 1
+            ? roundMoney(freightCost.minus(allocatedFreight))
+            : roundMoney(rawLineTotal.div(invoiceSubtotal).mul(freightCost));
+        allocatedFreight = allocatedFreight.plus(lineFreight);
+        const landedLineTotal = roundMoney(rawLineTotal.plus(lineFreight));
+        const landedUnitCost = roundMoney(landedLineTotal.div(item.cantidad));
+        const landedLineTotalNumber = decimalToNumber(landedLineTotal);
+        const landedUnitCostNumber = decimalToNumber(landedUnitCost);
+
         const batch = await tx.purchaseBatch.create({
           data: {
             productId: product.id,
@@ -238,8 +311,8 @@ export class InventoryService {
             quantityRemaining: this.isReceivedStatus(data.status)
               ? item.cantidad
               : 0,
-            unitCost: item.costoUnitario,
-            totalCost: item.cantidad * item.costoUnitario,
+            unitCost: landedUnitCostNumber,
+            totalCost: landedLineTotalNumber,
             status: statusValue,
             createdAt: data.purchaseDate
               ? new Date(data.purchaseDate)
@@ -252,13 +325,14 @@ export class InventoryService {
           },
         });
 
-        recalculatedTotalCost += item.cantidad * item.costoUnitario;
+        recalculatedTotalCost = recalculatedTotalCost.plus(landedLineTotal);
 
         if (this.isReceivedStatus(data.status)) {
           await tx.variant.update({
             where: { id: item.variantId },
             data: {
               stock: { increment: item.cantidad },
+              costPrice: landedUnitCostNumber,
             },
           });
         }
@@ -267,6 +341,9 @@ export class InventoryService {
       }
 
       if (this.isReceivedStatus(data.status)) {
+        const recalculatedTotalCostNumber = decimalToNumber(
+          recalculatedTotalCost,
+        );
         const supplier = await tx.supplier.findUnique({
           where: { id: data.supplierId },
         });
@@ -275,7 +352,7 @@ export class InventoryService {
           data: {
             type: TransactionType.EXPENSE,
             category: TransactionCategory.PURCHASE,
-            amount: recalculatedTotalCost,
+            amount: recalculatedTotalCostNumber,
             description: `Compra de lote de insumos - Prov: ${supplier?.name || 'Desconocido'}`,
             userId: data.userId,
             supplierId: data.supplierId,
@@ -286,7 +363,7 @@ export class InventoryService {
         await tx.supplier.update({
           where: { id: data.supplierId },
           data: {
-            balance: { increment: recalculatedTotalCost },
+            balance: { increment: recalculatedTotalCostNumber },
           },
         });
       }
@@ -299,18 +376,31 @@ export class InventoryService {
           payload: {
             supplierId: data.supplierId,
             itemCount: data.items.length,
-            totalCost: recalculatedTotalCost,
+            invoiceSubtotal: decimalToNumber(invoiceSubtotal),
+            freightCost: decimalToNumber(freightCost),
+            totalCost: decimalToNumber(recalculatedTotalCost),
+            landedTotalCost: decimalToNumber(recalculatedTotalCost),
+            documentType: data.documentType ?? null,
             status: data.status,
           },
         },
       });
 
-      return batches;
+      return batches.map((batch) => this.serializeBatchMoney(batch));
     });
   }
 
   async getDetailedInventory() {
     const products = await this.prisma.product.findMany({
+      where: {
+        purchaseBatches: {
+          some: {
+            status: BatchStatus.IN_STOCK,
+            quantityRemaining: { gt: 0 },
+            variantId: { not: null },
+          },
+        },
+      },
       include: {
         purchaseBatches: {
           where: {
@@ -332,10 +422,11 @@ export class InventoryService {
         0,
       );
       const totalValuation = activeBatches.reduce(
-        (sum, b) => sum + b.quantityRemaining * b.unitCost,
-        0,
+        (sum, b) => sum.plus(toDecimal(b.unitCost).mul(b.quantityRemaining)),
+        new Decimal(0),
       );
-      const weightedAvgCost = totalStock > 0 ? totalValuation / totalStock : 0;
+      const weightedAvgCost =
+        totalStock > 0 ? totalValuation.div(totalStock) : new Decimal(0);
 
       return {
         id: product.id,
@@ -343,9 +434,9 @@ export class InventoryService {
         slug: product.slug,
         image: product.images[0]?.url,
         totalStock,
-        totalValuation,
-        weightedAvgCost,
-        batches: activeBatches,
+        totalValuation: decimalToNumber(totalValuation),
+        weightedAvgCost: decimalToNumber(weightedAvgCost),
+        batches: activeBatches.map((batch) => this.serializeBatchMoney(batch)),
       };
     });
   }
@@ -383,7 +474,10 @@ export class InventoryService {
         );
       }
 
-      const totalCost = data.quantityReceived * data.unitCost;
+      const unitCost = roundMoney(data.unitCost);
+      const totalCost = roundMoney(unitCost.mul(data.quantityReceived));
+      const unitCostNumber = decimalToNumber(unitCost);
+      const totalCostNumber = decimalToNumber(totalCost);
 
       const batch = await tx.purchaseBatch.create({
         data: {
@@ -392,8 +486,8 @@ export class InventoryService {
           supplierId: data.supplierId,
           quantityReceived: data.quantityReceived,
           quantityRemaining: data.quantityReceived,
-          unitCost: data.unitCost,
-          totalCost,
+          unitCost: unitCostNumber,
+          totalCost: totalCostNumber,
           status: BatchStatus.IN_STOCK,
           createdAt: data.purchaseDate,
         },
@@ -407,6 +501,7 @@ export class InventoryService {
         where: { id: data.variantId },
         data: {
           stock: { increment: data.quantityReceived },
+          costPrice: unitCostNumber,
         },
       });
 
@@ -414,7 +509,7 @@ export class InventoryService {
         data: {
           type: TransactionType.EXPENSE,
           category: TransactionCategory.PURCHASE,
-          amount: totalCost,
+          amount: totalCostNumber,
           description: `Compra de lote: Producto ${data.productId} (${data.quantityReceived} und) - Prov: ${data.supplierId}`,
           userId: data.userId,
           purchaseBatchId: batch.id,
@@ -424,7 +519,7 @@ export class InventoryService {
       await tx.supplier.update({
         where: { id: data.supplierId },
         data: {
-          balance: { increment: totalCost },
+          balance: { increment: totalCostNumber },
         },
       });
 
@@ -438,17 +533,19 @@ export class InventoryService {
             productId: data.productId,
             variantId: data.variantId,
             quantity: data.quantityReceived,
-            unitCost: data.unitCost,
+            invoiceUnitCost: decimalToNumber(unitCost),
+            landedUnitCost: unitCostNumber,
+            landedTotalCost: totalCostNumber,
           },
         },
       });
 
-      return batch;
+      return this.serializeBatchMoney(batch);
     });
   }
 
   async findAllBatches() {
-    return this.prisma.purchaseBatch.findMany({
+    const batches = await this.prisma.purchaseBatch.findMany({
       include: {
         product: true,
         supplier: true,
@@ -456,6 +553,8 @@ export class InventoryService {
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    return batches.map((batch) => this.serializeBatchMoney(batch));
   }
 
   async updatePurchaseBatch(
@@ -532,11 +631,16 @@ export class InventoryService {
       const nextStatus = this.isReceivedStatus(data.status)
         ? BatchStatus.IN_STOCK
         : BatchStatus.PENDING;
-      const nextTotalCost = data.quantityReceived * data.unitCost;
+      const nextUnitCost = roundMoney(data.unitCost);
+      const nextTotalCost = roundMoney(nextUnitCost.mul(data.quantityReceived));
+      const nextUnitCostNumber = decimalToNumber(nextUnitCost);
+      const nextTotalCostNumber = decimalToNumber(nextTotalCost);
       const previousFinancialImpact =
-        existingBatch.status === BatchStatus.IN_STOCK ? existingBatch.totalCost : 0;
+        existingBatch.status === BatchStatus.IN_STOCK
+          ? roundMoney(existingBatch.totalCost)
+          : new Decimal(0);
       const nextFinancialImpact =
-        nextStatus === BatchStatus.IN_STOCK ? nextTotalCost : 0;
+        nextStatus === BatchStatus.IN_STOCK ? nextTotalCost : new Decimal(0);
       const previousStockImpact =
         existingBatch.status === BatchStatus.IN_STOCK
           ? existingBatch.quantityRemaining
@@ -560,10 +664,7 @@ export class InventoryService {
         }
       }
 
-      if (
-        existingBatch.variantId !== data.variantId
-        && nextStockImpact !== 0
-      ) {
+      if (existingBatch.variantId !== data.variantId && nextStockImpact !== 0) {
         await tx.variant.update({
           where: { id: data.variantId },
           data: {
@@ -572,31 +673,40 @@ export class InventoryService {
         });
       }
 
+      if (nextStatus === BatchStatus.IN_STOCK) {
+        await tx.variant.update({
+          where: { id: data.variantId },
+          data: {
+            costPrice: nextUnitCostNumber,
+          },
+        });
+      }
+
       if (existingBatch.supplierId === data.supplierId) {
-        const balanceDelta = nextFinancialImpact - previousFinancialImpact;
-        if (balanceDelta !== 0) {
+        const balanceDelta = nextFinancialImpact.minus(previousFinancialImpact);
+        if (!balanceDelta.isZero()) {
           await tx.supplier.update({
             where: { id: data.supplierId },
             data: {
-              balance: { increment: balanceDelta },
+              balance: { increment: decimalToNumber(balanceDelta) },
             },
           });
         }
       } else {
-        if (previousFinancialImpact !== 0) {
+        if (!previousFinancialImpact.isZero()) {
           await tx.supplier.update({
             where: { id: existingBatch.supplierId },
             data: {
-              balance: { decrement: previousFinancialImpact },
+              balance: { decrement: decimalToNumber(previousFinancialImpact) },
             },
           });
         }
 
-        if (nextFinancialImpact !== 0) {
+        if (!nextFinancialImpact.isZero()) {
           await tx.supplier.update({
             where: { id: data.supplierId },
             data: {
-              balance: { increment: nextFinancialImpact },
+              balance: { increment: decimalToNumber(nextFinancialImpact) },
             },
           });
         }
@@ -604,7 +714,9 @@ export class InventoryService {
 
       if (existingBatch.supplierId === data.supplierId) {
         await this.createPurchaseAdjustmentTransaction(tx, {
-          amount: nextFinancialImpact - previousFinancialImpact,
+          amount: decimalToNumber(
+            nextFinancialImpact.minus(previousFinancialImpact),
+          ),
           supplierId: data.supplierId,
           purchaseBatchId: batchId,
           userId: data.userId,
@@ -612,14 +724,14 @@ export class InventoryService {
         });
       } else {
         await this.createPurchaseAdjustmentTransaction(tx, {
-          amount: -previousFinancialImpact,
+          amount: decimalToNumber(previousFinancialImpact.negated()),
           supplierId: existingBatch.supplierId,
           purchaseBatchId: batchId,
           userId: data.userId,
           description: `Reversion financiera por traslado del lote ${batchId}`,
         });
         await this.createPurchaseAdjustmentTransaction(tx, {
-          amount: nextFinancialImpact,
+          amount: decimalToNumber(nextFinancialImpact),
           supplierId: data.supplierId,
           purchaseBatchId: batchId,
           userId: data.userId,
@@ -635,8 +747,8 @@ export class InventoryService {
           variantId: data.variantId,
           quantityReceived: data.quantityReceived,
           quantityRemaining: nextStockImpact,
-          unitCost: data.unitCost,
-          totalCost: nextTotalCost,
+          unitCost: nextUnitCostNumber,
+          totalCost: nextTotalCostNumber,
           status: nextStatus,
           ...(data.purchaseDate
             ? {
@@ -672,15 +784,15 @@ export class InventoryService {
               productId: data.productId,
               variantId: data.variantId,
               quantityReceived: data.quantityReceived,
-              unitCost: data.unitCost,
-              totalCost: nextTotalCost,
+              unitCost: nextUnitCostNumber,
+              totalCost: nextTotalCostNumber,
               status: nextStatus,
             },
           },
         },
       });
 
-      return updatedBatch;
+      return this.serializeBatchMoney(updatedBatch);
     });
   }
 
@@ -717,8 +829,8 @@ export class InventoryService {
           : 0;
       const financialImpact =
         existingBatch.status === BatchStatus.IN_STOCK
-          ? existingBatch.totalCost
-          : 0;
+          ? roundMoney(existingBatch.totalCost)
+          : new Decimal(0);
 
       if (existingBatch.variantId && stockImpact !== 0) {
         await tx.variant.update({
@@ -729,16 +841,17 @@ export class InventoryService {
         });
       }
 
-      if (financialImpact !== 0) {
+      if (!financialImpact.isZero()) {
+        const financialImpactNumber = decimalToNumber(financialImpact);
         await tx.supplier.update({
           where: { id: existingBatch.supplierId },
           data: {
-            balance: { decrement: financialImpact },
+            balance: { decrement: financialImpactNumber },
           },
         });
 
         await this.createPurchaseAdjustmentTransaction(tx, {
-          amount: -financialImpact,
+          amount: -financialImpactNumber,
           supplierId: existingBatch.supplierId,
           purchaseBatchId: batchId,
           userId,
@@ -795,7 +908,7 @@ export class InventoryService {
       });
 
       let remainingToReduce = quantityToSell;
-      let totalCOGS = 0;
+      let totalCOGS = new Decimal(0);
       const reductions: {
         batchId: string;
         supplierId: string;
@@ -813,7 +926,8 @@ export class InventoryService {
           remainingToReduce,
         );
         remainingToReduce -= amountFromThisBatch;
-        totalCOGS += amountFromThisBatch * batch.unitCost;
+        const unitCost = roundMoney(batch.unitCost);
+        totalCOGS = totalCOGS.plus(unitCost.mul(amountFromThisBatch));
 
         const newRemaining = batch.quantityRemaining - amountFromThisBatch;
 
@@ -844,7 +958,7 @@ export class InventoryService {
               quantityReduced: amountFromThisBatch,
               previousRemaining: batch.quantityRemaining,
               newRemaining,
-              unitCost: batch.unitCost,
+              unitCost: decimalToNumber(unitCost),
             },
           },
         });
@@ -853,7 +967,7 @@ export class InventoryService {
           batchId: batch.id,
           supplierId: batch.supplierId,
           quantity: amountFromThisBatch,
-          unitCost: batch.unitCost,
+          unitCost: decimalToNumber(unitCost),
         });
       }
 
@@ -863,7 +977,7 @@ export class InventoryService {
         );
       }
 
-      return { totalCOGS, reductions };
+      return { totalCOGS: decimalToNumber(totalCOGS), reductions };
     };
 
     if (txClient) {
@@ -894,10 +1008,10 @@ export class InventoryService {
       0,
     );
     const totalCostValue = activeBatches.reduce(
-      (sum, b) => sum + b.quantityRemaining * b.unitCost,
-      0,
+      (sum, b) => sum.plus(toDecimal(b.unitCost).mul(b.quantityRemaining)),
+      new Decimal(0),
     );
 
-    return totalCostValue / totalRemaining;
+    return decimalToNumber(totalCostValue.div(totalRemaining));
   }
 }

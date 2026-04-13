@@ -133,7 +133,9 @@ export default function NewManualOrderPage() {
         apiFetch('/profiles', {
           headers: authHeaders,
         }),
-        apiFetch('/catalog/products'),
+        apiFetch('/catalog/admin/products', {
+          headers: authHeaders,
+        }),
         apiFetch('/shipping/providers', {
           headers: authHeaders,
         }),

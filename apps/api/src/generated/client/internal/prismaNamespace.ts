@@ -392,6 +392,7 @@ export const ModelName = {
   Shipment: 'Shipment',
   OrderStatusHistory: 'OrderStatusHistory',
   OrderIdempotencyKey: 'OrderIdempotencyKey',
+  OrderPayment: 'OrderPayment',
   OrderItem: 'OrderItem',
   User: 'User',
   RoleModel: 'RoleModel',
@@ -437,7 +438,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "product" | "productImage" | "collection" | "variant" | "order" | "shippingProvider" | "shipment" | "orderStatusHistory" | "orderIdempotencyKey" | "orderItem" | "user" | "roleModel" | "permission" | "rolePermission" | "userRole" | "webhookEvent" | "pqrsTicket" | "profile" | "department" | "municipality" | "b2BQuote" | "auditLog" | "address" | "productAttribute" | "personalizationOption" | "personalizationRule" | "personalizationRequest" | "pricingRule" | "b2BQuoteItem" | "wizardOption" | "supplier" | "purchaseBatch" | "purchaseInvoice" | "purchasePayment" | "financialTransaction" | "payrollWorker" | "payrollShift" | "payrollBillingStatement" | "opexCategory"
+    modelProps: "product" | "productImage" | "collection" | "variant" | "order" | "shippingProvider" | "shipment" | "orderStatusHistory" | "orderIdempotencyKey" | "orderPayment" | "orderItem" | "user" | "roleModel" | "permission" | "rolePermission" | "userRole" | "webhookEvent" | "pqrsTicket" | "profile" | "department" | "municipality" | "b2BQuote" | "auditLog" | "address" | "productAttribute" | "personalizationOption" | "personalizationRule" | "personalizationRequest" | "pricingRule" | "b2BQuoteItem" | "wizardOption" | "supplier" | "purchaseBatch" | "purchaseInvoice" | "purchasePayment" | "financialTransaction" | "payrollWorker" | "payrollShift" | "payrollBillingStatement" | "opexCategory"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1104,6 +1105,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.OrderIdempotencyKeyCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.OrderIdempotencyKeyCountAggregateOutputType> | number
+        }
+      }
+    }
+    OrderPayment: {
+      payload: Prisma.$OrderPaymentPayload<ExtArgs>
+      fields: Prisma.OrderPaymentFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.OrderPaymentFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrderPaymentPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.OrderPaymentFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrderPaymentPayload>
+        }
+        findFirst: {
+          args: Prisma.OrderPaymentFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrderPaymentPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.OrderPaymentFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrderPaymentPayload>
+        }
+        findMany: {
+          args: Prisma.OrderPaymentFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrderPaymentPayload>[]
+        }
+        create: {
+          args: Prisma.OrderPaymentCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrderPaymentPayload>
+        }
+        createMany: {
+          args: Prisma.OrderPaymentCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.OrderPaymentCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrderPaymentPayload>[]
+        }
+        delete: {
+          args: Prisma.OrderPaymentDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrderPaymentPayload>
+        }
+        update: {
+          args: Prisma.OrderPaymentUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrderPaymentPayload>
+        }
+        deleteMany: {
+          args: Prisma.OrderPaymentDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.OrderPaymentUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.OrderPaymentUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrderPaymentPayload>[]
+        }
+        upsert: {
+          args: Prisma.OrderPaymentUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrderPaymentPayload>
+        }
+        aggregate: {
+          args: Prisma.OrderPaymentAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateOrderPayment>
+        }
+        groupBy: {
+          args: Prisma.OrderPaymentGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.OrderPaymentGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.OrderPaymentCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.OrderPaymentCountAggregateOutputType> | number
         }
       }
     }
@@ -3426,6 +3501,7 @@ export const VariantScalarFieldEnum = {
   minPrice: 'minPrice',
   comparePrice: 'comparePrice',
   costPrice: 'costPrice',
+  taxRate: 'taxRate',
   stock: 'stock',
   isActive: 'isActive',
   productId: 'productId'
@@ -3442,6 +3518,10 @@ export const OrderScalarFieldEnum = {
   shippingAddress: 'shippingAddress',
   city: 'city',
   totalAmount: 'totalAmount',
+  netAmount: 'netAmount',
+  taxTotal: 'taxTotal',
+  amountPaid: 'amountPaid',
+  balanceDue: 'balanceDue',
   currency: 'currency',
   status: 'status',
   source: 'source',
@@ -3513,6 +3593,19 @@ export const OrderIdempotencyKeyScalarFieldEnum = {
 export type OrderIdempotencyKeyScalarFieldEnum = (typeof OrderIdempotencyKeyScalarFieldEnum)[keyof typeof OrderIdempotencyKeyScalarFieldEnum]
 
 
+export const OrderPaymentScalarFieldEnum = {
+  id: 'id',
+  orderId: 'orderId',
+  amount: 'amount',
+  paymentDate: 'paymentDate',
+  proofUrl: 'proofUrl',
+  notes: 'notes',
+  createdAt: 'createdAt'
+} as const
+
+export type OrderPaymentScalarFieldEnum = (typeof OrderPaymentScalarFieldEnum)[keyof typeof OrderPaymentScalarFieldEnum]
+
+
 export const OrderItemScalarFieldEnum = {
   id: 'id',
   quantity: 'quantity',
@@ -3524,7 +3617,9 @@ export const OrderItemScalarFieldEnum = {
   orderId: 'orderId',
   productId: 'productId',
   variantId: 'variantId',
-  unitPrice: 'unitPrice'
+  unitPrice: 'unitPrice',
+  netUnitPrice: 'netUnitPrice',
+  taxAmount: 'taxAmount'
 } as const
 
 export type OrderItemScalarFieldEnum = (typeof OrderItemScalarFieldEnum)[keyof typeof OrderItemScalarFieldEnum]
@@ -3886,6 +3981,7 @@ export const PurchaseInvoiceScalarFieldEnum = {
   totalAmount: 'totalAmount',
   paidAmount: 'paidAmount',
   balanceDue: 'balanceDue',
+  documentType: 'documentType',
   status: 'status',
   issueDate: 'issueDate',
   supplierId: 'supplierId',
@@ -4152,6 +4248,20 @@ export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel,
 
 
 /**
+ * Reference to a field of type 'Decimal'
+ */
+export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal'>
+    
+
+
+/**
+ * Reference to a field of type 'Decimal[]'
+ */
+export type ListDecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal[]'>
+    
+
+
+/**
  * Reference to a field of type 'Json'
  */
 export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
@@ -4334,16 +4444,16 @@ export type ListEnumBatchStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$
 
 
 /**
- * Reference to a field of type 'Decimal'
+ * Reference to a field of type 'PurchaseDocumentType'
  */
-export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal'>
+export type EnumPurchaseDocumentTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PurchaseDocumentType'>
     
 
 
 /**
- * Reference to a field of type 'Decimal[]'
+ * Reference to a field of type 'PurchaseDocumentType[]'
  */
-export type ListDecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal[]'>
+export type ListEnumPurchaseDocumentTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PurchaseDocumentType[]'>
     
 
 
@@ -4548,6 +4658,7 @@ export type GlobalOmitConfig = {
   shipment?: Prisma.ShipmentOmit
   orderStatusHistory?: Prisma.OrderStatusHistoryOmit
   orderIdempotencyKey?: Prisma.OrderIdempotencyKeyOmit
+  orderPayment?: Prisma.OrderPaymentOmit
   orderItem?: Prisma.OrderItemOmit
   user?: Prisma.UserOmit
   roleModel?: Prisma.RoleModelOmit

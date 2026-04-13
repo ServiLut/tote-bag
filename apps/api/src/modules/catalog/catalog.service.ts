@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
+import Decimal from 'decimal.js';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   CreateProductAttributeDto,
@@ -16,7 +17,18 @@ import {
 } from './dto/create-product.dto';
 import { Product, Prisma } from '../../generated/client/client';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { AttributeType, ProductStatus } from '../../generated/client/enums';
+import {
+  AttributeType,
+  BatchStatus,
+  ProductStatus,
+} from '../../generated/client/enums';
+import {
+  calculateSalesTaxBreakdown,
+  decimalToNumber,
+  DecimalInput,
+  roundMoney,
+  toDecimal,
+} from '../../common/utils/sales-tax.util';
 
 export type ProductWithRelations = Prisma.ProductGetPayload<{
   include: {
@@ -27,6 +39,21 @@ export type ProductWithRelations = Prisma.ProductGetPayload<{
     pricingRules: true;
   };
 }>;
+
+type ProductVariantWithFinancialBreakdown =
+  ProductWithRelations['variants'][number] & {
+    netSalePrice: number | null;
+    netPrice: number | null;
+    taxAmount: number | null;
+    marginPercentage: number | null;
+  };
+
+export type ProductWithCalculatedVariantPricing = Omit<
+  ProductWithRelations,
+  'variants'
+> & {
+  variants: ProductVariantWithFinancialBreakdown[];
+};
 
 export interface CatalogSearchSuggestion {
   id: string;
@@ -52,6 +79,7 @@ type PreparedVariant = {
   minPrice: number;
   comparePrice?: number;
   costPrice?: number;
+  taxRate?: number;
   stock: number;
   isActive: boolean;
 };
@@ -75,6 +103,55 @@ type PreparedPricingRule = {
 type ResolvedCollection = {
   id: string;
   name: string;
+};
+
+type CatalogFilters = {
+  collectionId?: string;
+  line?: string;
+  size?: string;
+  quality?: string;
+  material?: string;
+  status?: string;
+  isCustomizable?: boolean;
+  minPrice?: number;
+  maxPrice?: number;
+  search?: string;
+};
+
+type PublicVariant = {
+  id: string;
+  sku: string;
+  size: string | null;
+  color: string;
+  imageUrl: string;
+  salePrice: number | null;
+  comparePrice: number | null;
+  stock: number;
+  isActive: boolean;
+};
+
+type PublicProduct = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  basePrice: number;
+  comparePrice: number | null;
+  status: ProductStatus;
+  collectionId: string;
+  collection: ProductWithRelations['collection'];
+  images: ProductWithRelations['images'];
+  tags: string[];
+  deliveryTime: string;
+  material: string;
+  dimensions: string | null;
+  careInstructions: string | null;
+  printType: ProductWithRelations['printType'];
+  seoTitle: string | null;
+  seoDescription: string | null;
+  variants: PublicVariant[];
+  attributes: ProductWithRelations['attributes'];
+  pricingRules: ProductWithRelations['pricingRules'];
 };
 
 @Injectable()
@@ -225,9 +302,131 @@ export class CatalogService {
       minPrice: variant.minPrice,
       comparePrice: variant.comparePrice,
       costPrice: variant.costPrice,
+      taxRate: variant.taxRate,
       stock: variant.stock ?? 0,
       isActive: variant.isActive ?? true,
     }));
+  }
+
+  private calculateVariantFinancialBreakdown(variant: {
+    salePrice: number | null;
+    costPrice?: number | null;
+    taxRate?: DecimalInput;
+  }) {
+    if (variant.salePrice === null) {
+      return {
+        netSalePrice: null,
+        netPrice: null,
+        taxAmount: null,
+        marginPercentage: null,
+      };
+    }
+
+    const taxBreakdown = calculateSalesTaxBreakdown({
+      grossUnitPrice: variant.salePrice,
+      quantity: 1,
+      taxRate: variant.taxRate,
+    });
+    const netPrice = taxBreakdown.netUnitPrice;
+    const taxAmount = taxBreakdown.taxAmount;
+
+    let marginPercentage: number | null = null;
+    if (variant.costPrice !== null && variant.costPrice !== undefined) {
+      marginPercentage = netPrice.isZero()
+        ? // Zero net revenue cannot express a meaningful percentage margin.
+          0
+        : decimalToNumber(
+            roundMoney(
+              netPrice
+                .minus(toDecimal(variant.costPrice))
+                .div(netPrice)
+                .mul(new Decimal(100)),
+            ),
+          );
+    }
+
+    return {
+      netSalePrice: decimalToNumber(netPrice),
+      netPrice: decimalToNumber(netPrice),
+      taxAmount: decimalToNumber(taxAmount),
+      marginPercentage,
+    };
+  }
+
+  private withCalculatedVariantPricing<T extends ProductWithRelations>(
+    product: T,
+  ): Omit<T, 'variants'> & {
+    variants: ProductVariantWithFinancialBreakdown[];
+  } {
+    return {
+      ...product,
+      variants: product.variants.map((variant) => ({
+        ...variant,
+        ...this.calculateVariantFinancialBreakdown(variant),
+      })),
+    };
+  }
+
+  private toPublicVariant(variant: {
+    id: string;
+    sku: string;
+    size: string | null;
+    color: string;
+    imageUrl: string;
+    salePrice: number | null;
+    comparePrice: number | null;
+    stock: number;
+    isActive: boolean;
+  }): PublicVariant {
+    return {
+      id: variant.id,
+      sku: variant.sku,
+      size: variant.size,
+      color: variant.color,
+      imageUrl: variant.imageUrl,
+      salePrice: variant.salePrice,
+      comparePrice: variant.comparePrice,
+      stock: variant.stock,
+      isActive: variant.isActive,
+    };
+  }
+
+  private toPublicProduct(
+    product: ProductWithCalculatedVariantPricing,
+  ): PublicProduct {
+    const publicVariants = product.variants
+      .filter((variant) => variant.isActive)
+      .map((variant) => this.toPublicVariant(variant));
+    const referenceVariant =
+      publicVariants
+        .filter((variant) => typeof variant.salePrice === 'number')
+        .sort(
+          (left, right) => (left.salePrice ?? 0) - (right.salePrice ?? 0),
+        )[0] ?? publicVariants[0];
+
+    return {
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      description: product.description,
+      basePrice: referenceVariant?.salePrice ?? product.basePrice,
+      comparePrice: referenceVariant?.comparePrice ?? product.comparePrice,
+      status: product.status,
+      collectionId: product.collectionId,
+      collection: product.collection,
+      images: product.images,
+      tags: product.tags,
+      deliveryTime: product.deliveryTime,
+      material: product.material,
+      dimensions: product.dimensions,
+      careInstructions: product.careInstructions,
+      printType: product.printType,
+      seoTitle: product.seoTitle,
+      seoDescription: product.seoDescription,
+      variants: publicVariants,
+      attributes: product.attributes.filter((attribute) => attribute.isActive),
+      pricingRules: product.pricingRules.filter((rule) => rule.isActive),
+    };
   }
 
   private preparePricingRules(rules?: CreatePricingRuleDto[]) {
@@ -708,6 +907,27 @@ export class CatalogService {
     );
   }
 
+  private async hasActiveInventory(productId: string) {
+    const [activeBatchesCount, variantsWithStockCount] = await Promise.all([
+      this.prisma.purchaseBatch.count({
+        where: {
+          productId,
+          status: BatchStatus.IN_STOCK,
+          quantityRemaining: { gt: 0 },
+          variantId: { not: null },
+        },
+      }),
+      this.prisma.variant.count({
+        where: {
+          productId,
+          stock: { gt: 0 },
+        },
+      }),
+    ]);
+
+    return activeBatchesCount > 0 || variantsWithStockCount > 0;
+  }
+
   async update(
     id: string,
     updateProductDto: UpdateProductDto,
@@ -901,6 +1121,7 @@ export class CatalogService {
                   minPrice: variant.minPrice,
                   comparePrice: variant.comparePrice,
                   costPrice: variant.costPrice,
+                  taxRate: variant.taxRate,
                   isActive: variant.isActive,
                 },
               });
@@ -916,6 +1137,7 @@ export class CatalogService {
                   minPrice: variant.minPrice,
                   comparePrice: variant.comparePrice,
                   costPrice: variant.costPrice,
+                  taxRate: variant.taxRate,
                   stock: 0,
                   isActive: variant.isActive,
                 },
@@ -945,6 +1167,14 @@ export class CatalogService {
   }
 
   async remove(id: string): Promise<Product> {
+    const hasActiveInventory = await this.hasActiveInventory(id);
+
+    if (hasActiveInventory) {
+      throw new BadRequestException(
+        'No puedes eliminar ni ocultar un producto con stock activo. Traslada o agota sus lotes antes de retirarlo del catalogo.',
+      );
+    }
+
     const hasHistoricalReferences = await this.hasHistoricalReferences(id);
 
     let result: Product;
@@ -1037,6 +1267,7 @@ export class CatalogService {
                 minPrice: variant.minPrice,
                 comparePrice: variant.comparePrice,
                 costPrice: variant.costPrice,
+                taxRate: variant.taxRate,
                 stock: 0,
                 isActive: variant.isActive,
               })),
@@ -1091,18 +1322,14 @@ export class CatalogService {
     }
   }
 
-  async findAll(filters: {
-    collectionId?: string;
-    line?: string;
-    size?: string;
-    quality?: string;
-    material?: string;
-    status?: string;
-    isCustomizable?: boolean;
-    minPrice?: number;
-    maxPrice?: number;
-    search?: string;
-  }): Promise<ProductWithRelations[]> {
+  async findAll(filters: CatalogFilters): Promise<PublicProduct[]> {
+    const products = await this.findAllAdmin(filters);
+    return products.map((product) => this.toPublicProduct(product));
+  }
+
+  async findAllAdmin(
+    filters: CatalogFilters,
+  ): Promise<ProductWithCalculatedVariantPricing[]> {
     const {
       collectionId,
       line,
@@ -1211,16 +1438,18 @@ export class CatalogService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return products.filter((product) => {
-      const referencePrice = this.getReferencePrice(product);
-      if (minPrice !== undefined && referencePrice < minPrice) {
-        return false;
-      }
-      if (maxPrice !== undefined && referencePrice > maxPrice) {
-        return false;
-      }
-      return true;
-    });
+    return products
+      .filter((product) => {
+        const referencePrice = this.getReferencePrice(product);
+        if (minPrice !== undefined && referencePrice < minPrice) {
+          return false;
+        }
+        if (maxPrice !== undefined && referencePrice > maxPrice) {
+          return false;
+        }
+        return true;
+      })
+      .map((product) => this.withCalculatedVariantPricing(product));
   }
 
   async searchSuggestions(
@@ -1288,7 +1517,15 @@ export class CatalogService {
     }));
   }
 
-  async findOne(id: string): Promise<ProductWithRelations> {
+  async findOne(id: string): Promise<PublicProduct> {
+    const product = await this.findOneAdmin(id);
+    if (!product.isActive) {
+      throw new NotFoundException(`Product with ID ${id} not found`);
+    }
+    return this.toPublicProduct(product);
+  }
+
+  async findOneAdmin(id: string): Promise<ProductWithCalculatedVariantPricing> {
     const product = await this.prisma.product.findUnique({
       where: { id },
       include: {
@@ -1302,12 +1539,12 @@ export class CatalogService {
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
-    return product;
+    return this.withCalculatedVariantPricing(product);
   }
 
-  async findBySlug(slug: string): Promise<ProductWithRelations> {
-    const product = await this.prisma.product.findUnique({
-      where: { slug },
+  async findBySlug(slug: string): Promise<PublicProduct> {
+    const product = await this.prisma.product.findFirst({
+      where: { slug, isActive: true },
       include: {
         variants: true,
         images: true,
@@ -1319,12 +1556,12 @@ export class CatalogService {
     if (!product) {
       throw new NotFoundException(`Product with slug ${slug} not found`);
     }
-    return product;
+    return this.toPublicProduct(this.withCalculatedVariantPricing(product));
   }
 
   async getProductConfig(slug: string) {
-    const product = await this.prisma.product.findUnique({
-      where: { slug },
+    const product = await this.prisma.product.findFirst({
+      where: { slug, isActive: true },
       include: {
         variants: {
           where: { isActive: true },
@@ -1362,7 +1599,9 @@ export class CatalogService {
     return {
       productId: product.id,
       slug: product.slug,
-      variants: product.variants,
+      variants: product.variants.map((variant) =>
+        this.toPublicVariant(variant),
+      ),
       attributes: filteredAttributes,
       pricingRules: product.pricingRules,
       personalizationOptions:

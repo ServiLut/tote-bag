@@ -10,8 +10,10 @@ import {
 import { AlertCircle, Calculator, DollarSign, Loader2, TrendingUp } from 'lucide-react';
 import { Input, InputGroup } from '@tote-bag/ui';
 import { apiFetch } from '@/utils/api';
+import { useDashboardAuth } from '@/components/dashboard/DashboardAuthContext';
 
 export default function ProfitCalculator() {
+  const { accessToken } = useDashboardAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProductId, setSelectedProductId] = useState<string>('');
   const [suggestedPrice, setSuggestedPrice] = useState(() => createCurrencyInputState(0));
@@ -24,7 +26,15 @@ export default function ProfitCalculator() {
       try {
         setProductsError(null);
 
-        const res = await apiFetch('/catalog/products');
+        if (!accessToken) {
+          throw new Error('Tu sesion expiro. Inicia sesion nuevamente.');
+        }
+
+        const res = await apiFetch('/catalog/admin/products', {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
         if (!res.ok) {
           throw new Error('No se pudo cargar el catalogo de productos.');
         }
@@ -40,7 +50,7 @@ export default function ProfitCalculator() {
     };
 
     fetchProducts();
-  }, []);
+  }, [accessToken]);
 
   useEffect(() => {
     const product = products.find((item) => item.id === selectedProductId);

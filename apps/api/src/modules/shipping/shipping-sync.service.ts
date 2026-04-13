@@ -69,6 +69,8 @@ export class ShippingSyncService {
     switch (status) {
       case OrderStatus.PAGADA:
       case OrderStatus.EN_PRODUCCION:
+      case OrderStatus.IN_PRODUCTION:
+      case OrderStatus.READY_FOR_DISPATCH:
       case OrderStatus.ENVIADA:
       case OrderStatus.ENTREGADA:
       case OrderStatus.RETURNED_TO_STOCK:
@@ -84,6 +86,8 @@ export class ShippingSyncService {
         return ShipmentStatus.SHIPPED;
       case OrderStatus.ENTREGADA:
         return ShipmentStatus.DELIVERED;
+      case OrderStatus.READY_FOR_DISPATCH:
+        return ShipmentStatus.READY_TO_SHIP;
       case OrderStatus.RETURNED_TO_STOCK:
         return ShipmentStatus.RETURNED;
       case OrderStatus.CANCELADA:
@@ -300,6 +304,8 @@ export class ShippingSyncService {
     const shipmentEligibleStatuses = [
       OrderStatus.PAGADA,
       OrderStatus.EN_PRODUCCION,
+      OrderStatus.IN_PRODUCTION,
+      OrderStatus.READY_FOR_DISPATCH,
       OrderStatus.ENVIADA,
       OrderStatus.ENTREGADA,
       OrderStatus.RETURNED_TO_STOCK,

@@ -14,6 +14,7 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ApiResponse } from '@/types/api';
 import { apiFetch } from '@/utils/api';
+import { useDashboardAuth } from '@/components/dashboard/DashboardAuthContext';
 
 interface Product {
   id: string;
@@ -38,6 +39,7 @@ interface Product {
 
 export default function EditProductPage() {
   const { id } = useParams();
+  const { accessToken } = useDashboardAuth();
   const [productData, setProductData] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +49,15 @@ export default function EditProductPage() {
 
     const fetchProduct = async () => {
       try {
-        const res = await apiFetch(`/catalog/${id}`);
+        if (!accessToken) {
+          throw new Error('Tu sesion expiro. Inicia sesion de nuevo.');
+        }
+
+        const res = await apiFetch(`/catalog/admin/${id}`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
         if (!res.ok) throw new Error('No se pudo cargar el producto');
         const responseBody: ApiResponse<Product> = await res.json();
         setProductData(responseBody.data);
@@ -60,7 +70,7 @@ export default function EditProductPage() {
     };
 
     fetchProduct();
-  }, [id]);
+  }, [accessToken, id]);
 
   if (loading) {
     return (
@@ -91,9 +101,9 @@ export default function EditProductPage() {
           <ArrowLeft className="w-4 h-4" />
           Volver a productos
         </Link>
-        <h1 className="text-3xl font-black tracking-tight text-primary">Editar Producto</h1>
+        <h1 className="text-3xl font-black tracking-tight text-primary">Editar producto</h1>
         <p className="mt-2 text-muted font-medium">
-          Modifica la informaciÃ³n general, las variantes comerciales y las configuraciones opcionales del producto.
+          Modifica la información general, las variantes comerciales y las configuraciones opcionales del producto.
         </p>
       </div>
 

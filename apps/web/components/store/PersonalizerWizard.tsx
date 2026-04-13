@@ -819,6 +819,9 @@ export default function PersonalizerWizard({
             <span className="text-3xl font-bold">${calculatedTotalPrice.toLocaleString('es-CO')}</span>
             <span className="text-[10px] opacity-60">{t('wizard_currency_unit')}</span>
           </div>
+          <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-base-color/70">
+            IVA incluido
+          </p>
           {selections.quantity > 1 && (
             <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-base-color/70">
               ${calculatedUnitPrice.toLocaleString('es-CO')} c/u

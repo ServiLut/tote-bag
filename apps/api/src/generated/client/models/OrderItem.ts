@@ -29,12 +29,16 @@ export type OrderItemAvgAggregateOutputType = {
   quantity: number | null
   totalPrice: number | null
   unitPrice: number | null
+  netUnitPrice: runtime.Decimal | null
+  taxAmount: runtime.Decimal | null
 }
 
 export type OrderItemSumAggregateOutputType = {
   quantity: number | null
   totalPrice: number | null
   unitPrice: number | null
+  netUnitPrice: runtime.Decimal | null
+  taxAmount: runtime.Decimal | null
 }
 
 export type OrderItemMinAggregateOutputType = {
@@ -47,6 +51,8 @@ export type OrderItemMinAggregateOutputType = {
   productId: string | null
   variantId: string | null
   unitPrice: number | null
+  netUnitPrice: runtime.Decimal | null
+  taxAmount: runtime.Decimal | null
 }
 
 export type OrderItemMaxAggregateOutputType = {
@@ -59,6 +65,8 @@ export type OrderItemMaxAggregateOutputType = {
   productId: string | null
   variantId: string | null
   unitPrice: number | null
+  netUnitPrice: runtime.Decimal | null
+  taxAmount: runtime.Decimal | null
 }
 
 export type OrderItemCountAggregateOutputType = {
@@ -73,6 +81,8 @@ export type OrderItemCountAggregateOutputType = {
   productId: number
   variantId: number
   unitPrice: number
+  netUnitPrice: number
+  taxAmount: number
   _all: number
 }
 
@@ -81,12 +91,16 @@ export type OrderItemAvgAggregateInputType = {
   quantity?: true
   totalPrice?: true
   unitPrice?: true
+  netUnitPrice?: true
+  taxAmount?: true
 }
 
 export type OrderItemSumAggregateInputType = {
   quantity?: true
   totalPrice?: true
   unitPrice?: true
+  netUnitPrice?: true
+  taxAmount?: true
 }
 
 export type OrderItemMinAggregateInputType = {
@@ -99,6 +113,8 @@ export type OrderItemMinAggregateInputType = {
   productId?: true
   variantId?: true
   unitPrice?: true
+  netUnitPrice?: true
+  taxAmount?: true
 }
 
 export type OrderItemMaxAggregateInputType = {
@@ -111,6 +127,8 @@ export type OrderItemMaxAggregateInputType = {
   productId?: true
   variantId?: true
   unitPrice?: true
+  netUnitPrice?: true
+  taxAmount?: true
 }
 
 export type OrderItemCountAggregateInputType = {
@@ -125,6 +143,8 @@ export type OrderItemCountAggregateInputType = {
   productId?: true
   variantId?: true
   unitPrice?: true
+  netUnitPrice?: true
+  taxAmount?: true
   _all?: true
 }
 
@@ -226,6 +246,8 @@ export type OrderItemGroupByOutputType = {
   productId: string
   variantId: string | null
   unitPrice: number
+  netUnitPrice: runtime.Decimal
+  taxAmount: runtime.Decimal
   _count: OrderItemCountAggregateOutputType | null
   _avg: OrderItemAvgAggregateOutputType | null
   _sum: OrderItemSumAggregateOutputType | null
@@ -263,6 +285,8 @@ export type OrderItemWhereInput = {
   productId?: Prisma.StringFilter<"OrderItem"> | string
   variantId?: Prisma.StringNullableFilter<"OrderItem"> | string | null
   unitPrice?: Prisma.FloatFilter<"OrderItem"> | number
+  netUnitPrice?: Prisma.DecimalFilter<"OrderItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount?: Prisma.DecimalFilter<"OrderItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   order?: Prisma.XOR<Prisma.OrderScalarRelationFilter, Prisma.OrderWhereInput>
   product?: Prisma.XOR<Prisma.ProductScalarRelationFilter, Prisma.ProductWhereInput>
   variant?: Prisma.XOR<Prisma.VariantNullableScalarRelationFilter, Prisma.VariantWhereInput> | null
@@ -280,6 +304,8 @@ export type OrderItemOrderByWithRelationInput = {
   productId?: Prisma.SortOrder
   variantId?: Prisma.SortOrderInput | Prisma.SortOrder
   unitPrice?: Prisma.SortOrder
+  netUnitPrice?: Prisma.SortOrder
+  taxAmount?: Prisma.SortOrder
   order?: Prisma.OrderOrderByWithRelationInput
   product?: Prisma.ProductOrderByWithRelationInput
   variant?: Prisma.VariantOrderByWithRelationInput
@@ -300,6 +326,8 @@ export type OrderItemWhereUniqueInput = Prisma.AtLeast<{
   productId?: Prisma.StringFilter<"OrderItem"> | string
   variantId?: Prisma.StringNullableFilter<"OrderItem"> | string | null
   unitPrice?: Prisma.FloatFilter<"OrderItem"> | number
+  netUnitPrice?: Prisma.DecimalFilter<"OrderItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount?: Prisma.DecimalFilter<"OrderItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   order?: Prisma.XOR<Prisma.OrderScalarRelationFilter, Prisma.OrderWhereInput>
   product?: Prisma.XOR<Prisma.ProductScalarRelationFilter, Prisma.ProductWhereInput>
   variant?: Prisma.XOR<Prisma.VariantNullableScalarRelationFilter, Prisma.VariantWhereInput> | null
@@ -317,6 +345,8 @@ export type OrderItemOrderByWithAggregationInput = {
   productId?: Prisma.SortOrder
   variantId?: Prisma.SortOrderInput | Prisma.SortOrder
   unitPrice?: Prisma.SortOrder
+  netUnitPrice?: Prisma.SortOrder
+  taxAmount?: Prisma.SortOrder
   _count?: Prisma.OrderItemCountOrderByAggregateInput
   _avg?: Prisma.OrderItemAvgOrderByAggregateInput
   _max?: Prisma.OrderItemMaxOrderByAggregateInput
@@ -339,6 +369,8 @@ export type OrderItemScalarWhereWithAggregatesInput = {
   productId?: Prisma.StringWithAggregatesFilter<"OrderItem"> | string
   variantId?: Prisma.StringNullableWithAggregatesFilter<"OrderItem"> | string | null
   unitPrice?: Prisma.FloatWithAggregatesFilter<"OrderItem"> | number
+  netUnitPrice?: Prisma.DecimalWithAggregatesFilter<"OrderItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount?: Prisma.DecimalWithAggregatesFilter<"OrderItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
 }
 
 export type OrderItemCreateInput = {
@@ -350,6 +382,8 @@ export type OrderItemCreateInput = {
   configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   unitPrice?: number
+  netUnitPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   order: Prisma.OrderCreateNestedOneWithoutItemsInput
   product: Prisma.ProductCreateNestedOneWithoutOrderItemsInput
   variant?: Prisma.VariantCreateNestedOneWithoutOrderItemsInput
@@ -367,6 +401,8 @@ export type OrderItemUncheckedCreateInput = {
   productId: string
   variantId?: string | null
   unitPrice?: number
+  netUnitPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
 }
 
 export type OrderItemUpdateInput = {
@@ -378,6 +414,8 @@ export type OrderItemUpdateInput = {
   configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  netUnitPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   order?: Prisma.OrderUpdateOneRequiredWithoutItemsNestedInput
   product?: Prisma.ProductUpdateOneRequiredWithoutOrderItemsNestedInput
   variant?: Prisma.VariantUpdateOneWithoutOrderItemsNestedInput
@@ -395,6 +433,8 @@ export type OrderItemUncheckedUpdateInput = {
   productId?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  netUnitPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
 }
 
 export type OrderItemCreateManyInput = {
@@ -409,6 +449,8 @@ export type OrderItemCreateManyInput = {
   productId: string
   variantId?: string | null
   unitPrice?: number
+  netUnitPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
 }
 
 export type OrderItemUpdateManyMutationInput = {
@@ -420,6 +462,8 @@ export type OrderItemUpdateManyMutationInput = {
   configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  netUnitPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
 }
 
 export type OrderItemUncheckedUpdateManyInput = {
@@ -434,6 +478,8 @@ export type OrderItemUncheckedUpdateManyInput = {
   productId?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  netUnitPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
 }
 
 export type OrderItemListRelationFilter = {
@@ -458,12 +504,16 @@ export type OrderItemCountOrderByAggregateInput = {
   productId?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
   unitPrice?: Prisma.SortOrder
+  netUnitPrice?: Prisma.SortOrder
+  taxAmount?: Prisma.SortOrder
 }
 
 export type OrderItemAvgOrderByAggregateInput = {
   quantity?: Prisma.SortOrder
   totalPrice?: Prisma.SortOrder
   unitPrice?: Prisma.SortOrder
+  netUnitPrice?: Prisma.SortOrder
+  taxAmount?: Prisma.SortOrder
 }
 
 export type OrderItemMaxOrderByAggregateInput = {
@@ -476,6 +526,8 @@ export type OrderItemMaxOrderByAggregateInput = {
   productId?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
   unitPrice?: Prisma.SortOrder
+  netUnitPrice?: Prisma.SortOrder
+  taxAmount?: Prisma.SortOrder
 }
 
 export type OrderItemMinOrderByAggregateInput = {
@@ -488,12 +540,16 @@ export type OrderItemMinOrderByAggregateInput = {
   productId?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
   unitPrice?: Prisma.SortOrder
+  netUnitPrice?: Prisma.SortOrder
+  taxAmount?: Prisma.SortOrder
 }
 
 export type OrderItemSumOrderByAggregateInput = {
   quantity?: Prisma.SortOrder
   totalPrice?: Prisma.SortOrder
   unitPrice?: Prisma.SortOrder
+  netUnitPrice?: Prisma.SortOrder
+  taxAmount?: Prisma.SortOrder
 }
 
 export type OrderItemCreateNestedManyWithoutProductInput = {
@@ -631,6 +687,8 @@ export type OrderItemCreateWithoutProductInput = {
   configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   unitPrice?: number
+  netUnitPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   order: Prisma.OrderCreateNestedOneWithoutItemsInput
   variant?: Prisma.VariantCreateNestedOneWithoutOrderItemsInput
 }
@@ -646,6 +704,8 @@ export type OrderItemUncheckedCreateWithoutProductInput = {
   orderId: string
   variantId?: string | null
   unitPrice?: number
+  netUnitPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
 }
 
 export type OrderItemCreateOrConnectWithoutProductInput = {
@@ -689,6 +749,8 @@ export type OrderItemScalarWhereInput = {
   productId?: Prisma.StringFilter<"OrderItem"> | string
   variantId?: Prisma.StringNullableFilter<"OrderItem"> | string | null
   unitPrice?: Prisma.FloatFilter<"OrderItem"> | number
+  netUnitPrice?: Prisma.DecimalFilter<"OrderItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount?: Prisma.DecimalFilter<"OrderItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
 }
 
 export type OrderItemCreateWithoutVariantInput = {
@@ -700,6 +762,8 @@ export type OrderItemCreateWithoutVariantInput = {
   configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   unitPrice?: number
+  netUnitPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   order: Prisma.OrderCreateNestedOneWithoutItemsInput
   product: Prisma.ProductCreateNestedOneWithoutOrderItemsInput
 }
@@ -715,6 +779,8 @@ export type OrderItemUncheckedCreateWithoutVariantInput = {
   orderId: string
   productId: string
   unitPrice?: number
+  netUnitPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
 }
 
 export type OrderItemCreateOrConnectWithoutVariantInput = {
@@ -752,6 +818,8 @@ export type OrderItemCreateWithoutOrderInput = {
   configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   unitPrice?: number
+  netUnitPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   product: Prisma.ProductCreateNestedOneWithoutOrderItemsInput
   variant?: Prisma.VariantCreateNestedOneWithoutOrderItemsInput
 }
@@ -767,6 +835,8 @@ export type OrderItemUncheckedCreateWithoutOrderInput = {
   productId: string
   variantId?: string | null
   unitPrice?: number
+  netUnitPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
 }
 
 export type OrderItemCreateOrConnectWithoutOrderInput = {
@@ -806,6 +876,8 @@ export type OrderItemCreateManyProductInput = {
   orderId: string
   variantId?: string | null
   unitPrice?: number
+  netUnitPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
 }
 
 export type OrderItemUpdateWithoutProductInput = {
@@ -817,6 +889,8 @@ export type OrderItemUpdateWithoutProductInput = {
   configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  netUnitPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   order?: Prisma.OrderUpdateOneRequiredWithoutItemsNestedInput
   variant?: Prisma.VariantUpdateOneWithoutOrderItemsNestedInput
 }
@@ -832,6 +906,8 @@ export type OrderItemUncheckedUpdateWithoutProductInput = {
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  netUnitPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
 }
 
 export type OrderItemUncheckedUpdateManyWithoutProductInput = {
@@ -845,6 +921,8 @@ export type OrderItemUncheckedUpdateManyWithoutProductInput = {
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  netUnitPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
 }
 
 export type OrderItemCreateManyVariantInput = {
@@ -858,6 +936,8 @@ export type OrderItemCreateManyVariantInput = {
   orderId: string
   productId: string
   unitPrice?: number
+  netUnitPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
 }
 
 export type OrderItemUpdateWithoutVariantInput = {
@@ -869,6 +949,8 @@ export type OrderItemUpdateWithoutVariantInput = {
   configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  netUnitPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   order?: Prisma.OrderUpdateOneRequiredWithoutItemsNestedInput
   product?: Prisma.ProductUpdateOneRequiredWithoutOrderItemsNestedInput
 }
@@ -884,6 +966,8 @@ export type OrderItemUncheckedUpdateWithoutVariantInput = {
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
   productId?: Prisma.StringFieldUpdateOperationsInput | string
   unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  netUnitPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
 }
 
 export type OrderItemUncheckedUpdateManyWithoutVariantInput = {
@@ -897,6 +981,8 @@ export type OrderItemUncheckedUpdateManyWithoutVariantInput = {
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
   productId?: Prisma.StringFieldUpdateOperationsInput | string
   unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  netUnitPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
 }
 
 export type OrderItemCreateManyOrderInput = {
@@ -910,6 +996,8 @@ export type OrderItemCreateManyOrderInput = {
   productId: string
   variantId?: string | null
   unitPrice?: number
+  netUnitPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
 }
 
 export type OrderItemUpdateWithoutOrderInput = {
@@ -921,6 +1009,8 @@ export type OrderItemUpdateWithoutOrderInput = {
   configurationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   pricingJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  netUnitPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   product?: Prisma.ProductUpdateOneRequiredWithoutOrderItemsNestedInput
   variant?: Prisma.VariantUpdateOneWithoutOrderItemsNestedInput
 }
@@ -936,6 +1026,8 @@ export type OrderItemUncheckedUpdateWithoutOrderInput = {
   productId?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  netUnitPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
 }
 
 export type OrderItemUncheckedUpdateManyWithoutOrderInput = {
@@ -949,6 +1041,8 @@ export type OrderItemUncheckedUpdateManyWithoutOrderInput = {
   productId?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitPrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  netUnitPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
 }
 
 
@@ -965,6 +1059,8 @@ export type OrderItemSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   productId?: boolean
   variantId?: boolean
   unitPrice?: boolean
+  netUnitPrice?: boolean
+  taxAmount?: boolean
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
   variant?: boolean | Prisma.OrderItem$variantArgs<ExtArgs>
@@ -982,6 +1078,8 @@ export type OrderItemSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   productId?: boolean
   variantId?: boolean
   unitPrice?: boolean
+  netUnitPrice?: boolean
+  taxAmount?: boolean
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
   variant?: boolean | Prisma.OrderItem$variantArgs<ExtArgs>
@@ -999,6 +1097,8 @@ export type OrderItemSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   productId?: boolean
   variantId?: boolean
   unitPrice?: boolean
+  netUnitPrice?: boolean
+  taxAmount?: boolean
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
   variant?: boolean | Prisma.OrderItem$variantArgs<ExtArgs>
@@ -1016,9 +1116,11 @@ export type OrderItemSelectScalar = {
   productId?: boolean
   variantId?: boolean
   unitPrice?: boolean
+  netUnitPrice?: boolean
+  taxAmount?: boolean
 }
 
-export type OrderItemOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "quantity" | "totalPrice" | "sku" | "imageUrl" | "configurationJson" | "pricingJson" | "orderId" | "productId" | "variantId" | "unitPrice", ExtArgs["result"]["orderItem"]>
+export type OrderItemOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "quantity" | "totalPrice" | "sku" | "imageUrl" | "configurationJson" | "pricingJson" | "orderId" | "productId" | "variantId" | "unitPrice" | "netUnitPrice" | "taxAmount", ExtArgs["result"]["orderItem"]>
 export type OrderItemInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
@@ -1054,6 +1156,11 @@ export type $OrderItemPayload<ExtArgs extends runtime.Types.Extensions.InternalA
     productId: string
     variantId: string | null
     unitPrice: number
+    netUnitPrice: runtime.Decimal
+    /**
+     * IVA total de la linea, calculado como total bruto de linea menos total neto de linea.
+     */
+    taxAmount: runtime.Decimal
   }, ExtArgs["result"]["orderItem"]>
   composites: {}
 }
@@ -1491,6 +1598,8 @@ export interface OrderItemFieldRefs {
   readonly productId: Prisma.FieldRef<"OrderItem", 'String'>
   readonly variantId: Prisma.FieldRef<"OrderItem", 'String'>
   readonly unitPrice: Prisma.FieldRef<"OrderItem", 'Float'>
+  readonly netUnitPrice: Prisma.FieldRef<"OrderItem", 'Decimal'>
+  readonly taxAmount: Prisma.FieldRef<"OrderItem", 'Decimal'>
 }
     
 

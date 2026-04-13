@@ -1,10 +1,5 @@
 import { Transform } from 'class-transformer';
-import {
-  IsEnum,
-  IsNumber,
-  IsOptional,
-  IsString,
-} from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 import { parseLocalizedNumber } from '../../../common/utils/parse-localized-number';
 import { BatchInputStatus } from './create-purchase-batch.dto';
 

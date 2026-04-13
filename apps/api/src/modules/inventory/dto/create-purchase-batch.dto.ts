@@ -14,6 +14,11 @@ export enum BatchInputStatus {
   PENDIENTE = 'PENDIENTE',
 }
 
+export enum PurchaseDocumentTypeInput {
+  INVOICE = 'INVOICE',
+  DELIVERY_NOTE = 'DELIVERY_NOTE',
+}
+
 export class PurchaseBatchItemDto {
   @IsString()
   nombre: string;
@@ -43,8 +48,17 @@ export class CreatePurchaseBatchDto {
   @Transform(({ value }) => parseLocalizedNumber(value))
   totalCost: number;
 
+  @IsNumber()
+  @IsOptional()
+  @Transform(({ value }) => parseLocalizedNumber(value))
+  freightCost?: number;
+
   @IsEnum(BatchInputStatus)
   status: BatchInputStatus;
+
+  @IsOptional()
+  @IsEnum(PurchaseDocumentTypeInput)
+  documentType?: PurchaseDocumentTypeInput;
 
   @IsOptional()
   @IsString()

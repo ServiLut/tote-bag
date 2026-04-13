@@ -148,7 +148,7 @@ export class ShippingController {
     if (!user?.id) throw new UnauthorizedException();
     await this.ensureShipmentAccessPermission(user.id, 'update');
 
-    return this.shippingService.updateShipment(orderId, dto);
+    return this.shippingService.updateShipment(orderId, dto, user.id);
   }
 
   @Post('shipments/:orderId/process-return')

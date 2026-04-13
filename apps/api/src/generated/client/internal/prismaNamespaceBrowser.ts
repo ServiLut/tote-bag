@@ -59,6 +59,7 @@ export const ModelName = {
   Shipment: 'Shipment',
   OrderStatusHistory: 'OrderStatusHistory',
   OrderIdempotencyKey: 'OrderIdempotencyKey',
+  OrderPayment: 'OrderPayment',
   OrderItem: 'OrderItem',
   User: 'User',
   RoleModel: 'RoleModel',
@@ -167,6 +168,7 @@ export const VariantScalarFieldEnum = {
   minPrice: 'minPrice',
   comparePrice: 'comparePrice',
   costPrice: 'costPrice',
+  taxRate: 'taxRate',
   stock: 'stock',
   isActive: 'isActive',
   productId: 'productId'
@@ -183,6 +185,10 @@ export const OrderScalarFieldEnum = {
   shippingAddress: 'shippingAddress',
   city: 'city',
   totalAmount: 'totalAmount',
+  netAmount: 'netAmount',
+  taxTotal: 'taxTotal',
+  amountPaid: 'amountPaid',
+  balanceDue: 'balanceDue',
   currency: 'currency',
   status: 'status',
   source: 'source',
@@ -254,6 +260,19 @@ export const OrderIdempotencyKeyScalarFieldEnum = {
 export type OrderIdempotencyKeyScalarFieldEnum = (typeof OrderIdempotencyKeyScalarFieldEnum)[keyof typeof OrderIdempotencyKeyScalarFieldEnum]
 
 
+export const OrderPaymentScalarFieldEnum = {
+  id: 'id',
+  orderId: 'orderId',
+  amount: 'amount',
+  paymentDate: 'paymentDate',
+  proofUrl: 'proofUrl',
+  notes: 'notes',
+  createdAt: 'createdAt'
+} as const
+
+export type OrderPaymentScalarFieldEnum = (typeof OrderPaymentScalarFieldEnum)[keyof typeof OrderPaymentScalarFieldEnum]
+
+
 export const OrderItemScalarFieldEnum = {
   id: 'id',
   quantity: 'quantity',
@@ -265,7 +284,9 @@ export const OrderItemScalarFieldEnum = {
   orderId: 'orderId',
   productId: 'productId',
   variantId: 'variantId',
-  unitPrice: 'unitPrice'
+  unitPrice: 'unitPrice',
+  netUnitPrice: 'netUnitPrice',
+  taxAmount: 'taxAmount'
 } as const
 
 export type OrderItemScalarFieldEnum = (typeof OrderItemScalarFieldEnum)[keyof typeof OrderItemScalarFieldEnum]
@@ -627,6 +648,7 @@ export const PurchaseInvoiceScalarFieldEnum = {
   totalAmount: 'totalAmount',
   paidAmount: 'paidAmount',
   balanceDue: 'balanceDue',
+  documentType: 'documentType',
   status: 'status',
   issueDate: 'issueDate',
   supplierId: 'supplierId',

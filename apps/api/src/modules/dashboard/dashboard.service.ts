@@ -6,6 +6,7 @@ import {
   ShipmentStatus,
   TransactionType,
 } from '../../generated/client/enums';
+import { decimalToNumber } from '../../common/utils/sales-tax.util';
 
 export interface ProductSalesBadge {
   productId: string;
@@ -225,9 +226,10 @@ export class DashboardService {
 
     const monthlyCashFlowNet = monthlyTransactions.reduce(
       (sum, transaction) => {
+        const amount = decimalToNumber(transaction.amount);
         return transaction.type === TransactionType.INCOME
-          ? sum + transaction.amount
-          : sum - transaction.amount;
+          ? sum + amount
+          : sum - amount;
       },
       0,
     );
@@ -293,7 +295,9 @@ export class DashboardService {
       inReviewPersonalizationRequests,
       approvedPersonalizationRequests,
       staleBatches,
-      supplierPendingBalance: supplierBalanceAggregate._sum.balance || 0,
+      supplierPendingBalance: decimalToNumber(
+        supplierBalanceAggregate._sum.balance,
+      ),
       monthlyCashFlowNet,
       topSellingProduct,
       lowestSellingProduct,

@@ -257,6 +257,9 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
               <span className="text-3xl font-bold text-primary">
                 ${calculatedPrice.toLocaleString('es-CO')}
               </span>
+              <span className="text-[10px] font-bold uppercase tracking-wide text-muted">
+                IVA incluido
+              </span>
               {selectedVariant.comparePrice && selectedVariant.comparePrice > calculatedPrice && (
                 <span className="text-sm text-muted line-through">
                   ${selectedVariant.comparePrice.toLocaleString('es-CO')}

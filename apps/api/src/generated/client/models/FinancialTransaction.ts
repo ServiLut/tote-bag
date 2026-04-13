@@ -26,18 +26,18 @@ export type AggregateFinancialTransaction = {
 }
 
 export type FinancialTransactionAvgAggregateOutputType = {
-  amount: number | null
+  amount: runtime.Decimal | null
 }
 
 export type FinancialTransactionSumAggregateOutputType = {
-  amount: number | null
+  amount: runtime.Decimal | null
 }
 
 export type FinancialTransactionMinAggregateOutputType = {
   id: string | null
   type: $Enums.TransactionType | null
   category: $Enums.TransactionCategory | null
-  amount: number | null
+  amount: runtime.Decimal | null
   description: string | null
   status: $Enums.TransactionStatus | null
   userId: string | null
@@ -52,7 +52,7 @@ export type FinancialTransactionMaxAggregateOutputType = {
   id: string | null
   type: $Enums.TransactionType | null
   category: $Enums.TransactionCategory | null
-  amount: number | null
+  amount: runtime.Decimal | null
   description: string | null
   status: $Enums.TransactionStatus | null
   userId: string | null
@@ -224,7 +224,7 @@ export type FinancialTransactionGroupByOutputType = {
   id: string
   type: $Enums.TransactionType
   category: $Enums.TransactionCategory
-  amount: number
+  amount: runtime.Decimal
   description: string
   status: $Enums.TransactionStatus
   userId: string
@@ -262,7 +262,7 @@ export type FinancialTransactionWhereInput = {
   id?: Prisma.StringFilter<"FinancialTransaction"> | string
   type?: Prisma.EnumTransactionTypeFilter<"FinancialTransaction"> | $Enums.TransactionType
   category?: Prisma.EnumTransactionCategoryFilter<"FinancialTransaction"> | $Enums.TransactionCategory
-  amount?: Prisma.FloatFilter<"FinancialTransaction"> | number
+  amount?: Prisma.DecimalFilter<"FinancialTransaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   description?: Prisma.StringFilter<"FinancialTransaction"> | string
   status?: Prisma.EnumTransactionStatusFilter<"FinancialTransaction"> | $Enums.TransactionStatus
   userId?: Prisma.StringFilter<"FinancialTransaction"> | string
@@ -303,7 +303,7 @@ export type FinancialTransactionWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.FinancialTransactionWhereInput | Prisma.FinancialTransactionWhereInput[]
   type?: Prisma.EnumTransactionTypeFilter<"FinancialTransaction"> | $Enums.TransactionType
   category?: Prisma.EnumTransactionCategoryFilter<"FinancialTransaction"> | $Enums.TransactionCategory
-  amount?: Prisma.FloatFilter<"FinancialTransaction"> | number
+  amount?: Prisma.DecimalFilter<"FinancialTransaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   description?: Prisma.StringFilter<"FinancialTransaction"> | string
   status?: Prisma.EnumTransactionStatusFilter<"FinancialTransaction"> | $Enums.TransactionStatus
   userId?: Prisma.StringFilter<"FinancialTransaction"> | string
@@ -345,7 +345,7 @@ export type FinancialTransactionScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"FinancialTransaction"> | string
   type?: Prisma.EnumTransactionTypeWithAggregatesFilter<"FinancialTransaction"> | $Enums.TransactionType
   category?: Prisma.EnumTransactionCategoryWithAggregatesFilter<"FinancialTransaction"> | $Enums.TransactionCategory
-  amount?: Prisma.FloatWithAggregatesFilter<"FinancialTransaction"> | number
+  amount?: Prisma.DecimalWithAggregatesFilter<"FinancialTransaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   description?: Prisma.StringWithAggregatesFilter<"FinancialTransaction"> | string
   status?: Prisma.EnumTransactionStatusWithAggregatesFilter<"FinancialTransaction"> | $Enums.TransactionStatus
   userId?: Prisma.StringWithAggregatesFilter<"FinancialTransaction"> | string
@@ -360,7 +360,7 @@ export type FinancialTransactionCreateInput = {
   id?: string
   type: $Enums.TransactionType
   category: $Enums.TransactionCategory
-  amount: number
+  amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   description: string
   status?: $Enums.TransactionStatus
   createdAt?: Date | string
@@ -375,7 +375,7 @@ export type FinancialTransactionUncheckedCreateInput = {
   id?: string
   type: $Enums.TransactionType
   category: $Enums.TransactionCategory
-  amount: number
+  amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   description: string
   status?: $Enums.TransactionStatus
   userId: string
@@ -390,7 +390,7 @@ export type FinancialTransactionUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
   category?: Prisma.EnumTransactionCategoryFieldUpdateOperationsInput | $Enums.TransactionCategory
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumTransactionStatusFieldUpdateOperationsInput | $Enums.TransactionStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -405,7 +405,7 @@ export type FinancialTransactionUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
   category?: Prisma.EnumTransactionCategoryFieldUpdateOperationsInput | $Enums.TransactionCategory
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumTransactionStatusFieldUpdateOperationsInput | $Enums.TransactionStatus
   userId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -420,7 +420,7 @@ export type FinancialTransactionCreateManyInput = {
   id?: string
   type: $Enums.TransactionType
   category: $Enums.TransactionCategory
-  amount: number
+  amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   description: string
   status?: $Enums.TransactionStatus
   userId: string
@@ -435,7 +435,7 @@ export type FinancialTransactionUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
   category?: Prisma.EnumTransactionCategoryFieldUpdateOperationsInput | $Enums.TransactionCategory
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumTransactionStatusFieldUpdateOperationsInput | $Enums.TransactionStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -446,7 +446,7 @@ export type FinancialTransactionUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
   category?: Prisma.EnumTransactionCategoryFieldUpdateOperationsInput | $Enums.TransactionCategory
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumTransactionStatusFieldUpdateOperationsInput | $Enums.TransactionStatus
   userId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -704,7 +704,7 @@ export type FinancialTransactionCreateWithoutUserInput = {
   id?: string
   type: $Enums.TransactionType
   category: $Enums.TransactionCategory
-  amount: number
+  amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   description: string
   status?: $Enums.TransactionStatus
   createdAt?: Date | string
@@ -718,7 +718,7 @@ export type FinancialTransactionUncheckedCreateWithoutUserInput = {
   id?: string
   type: $Enums.TransactionType
   category: $Enums.TransactionCategory
-  amount: number
+  amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   description: string
   status?: $Enums.TransactionStatus
   purchaseBatchId?: string | null
@@ -761,7 +761,7 @@ export type FinancialTransactionScalarWhereInput = {
   id?: Prisma.StringFilter<"FinancialTransaction"> | string
   type?: Prisma.EnumTransactionTypeFilter<"FinancialTransaction"> | $Enums.TransactionType
   category?: Prisma.EnumTransactionCategoryFilter<"FinancialTransaction"> | $Enums.TransactionCategory
-  amount?: Prisma.FloatFilter<"FinancialTransaction"> | number
+  amount?: Prisma.DecimalFilter<"FinancialTransaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   description?: Prisma.StringFilter<"FinancialTransaction"> | string
   status?: Prisma.EnumTransactionStatusFilter<"FinancialTransaction"> | $Enums.TransactionStatus
   userId?: Prisma.StringFilter<"FinancialTransaction"> | string
@@ -776,7 +776,7 @@ export type FinancialTransactionCreateWithoutSupplierInput = {
   id?: string
   type: $Enums.TransactionType
   category: $Enums.TransactionCategory
-  amount: number
+  amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   description: string
   status?: $Enums.TransactionStatus
   createdAt?: Date | string
@@ -790,7 +790,7 @@ export type FinancialTransactionUncheckedCreateWithoutSupplierInput = {
   id?: string
   type: $Enums.TransactionType
   category: $Enums.TransactionCategory
-  amount: number
+  amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   description: string
   status?: $Enums.TransactionStatus
   userId: string
@@ -830,7 +830,7 @@ export type FinancialTransactionCreateWithoutPurchaseBatchInput = {
   id?: string
   type: $Enums.TransactionType
   category: $Enums.TransactionCategory
-  amount: number
+  amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   description: string
   status?: $Enums.TransactionStatus
   createdAt?: Date | string
@@ -844,7 +844,7 @@ export type FinancialTransactionUncheckedCreateWithoutPurchaseBatchInput = {
   id?: string
   type: $Enums.TransactionType
   category: $Enums.TransactionCategory
-  amount: number
+  amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   description: string
   status?: $Enums.TransactionStatus
   userId: string
@@ -884,7 +884,7 @@ export type FinancialTransactionCreateWithoutOpexCategoryInput = {
   id?: string
   type: $Enums.TransactionType
   category: $Enums.TransactionCategory
-  amount: number
+  amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   description: string
   status?: $Enums.TransactionStatus
   createdAt?: Date | string
@@ -898,7 +898,7 @@ export type FinancialTransactionUncheckedCreateWithoutOpexCategoryInput = {
   id?: string
   type: $Enums.TransactionType
   category: $Enums.TransactionCategory
-  amount: number
+  amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   description: string
   status?: $Enums.TransactionStatus
   userId: string
@@ -938,7 +938,7 @@ export type FinancialTransactionCreateManyUserInput = {
   id?: string
   type: $Enums.TransactionType
   category: $Enums.TransactionCategory
-  amount: number
+  amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   description: string
   status?: $Enums.TransactionStatus
   purchaseBatchId?: string | null
@@ -952,7 +952,7 @@ export type FinancialTransactionUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
   category?: Prisma.EnumTransactionCategoryFieldUpdateOperationsInput | $Enums.TransactionCategory
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumTransactionStatusFieldUpdateOperationsInput | $Enums.TransactionStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -966,7 +966,7 @@ export type FinancialTransactionUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
   category?: Prisma.EnumTransactionCategoryFieldUpdateOperationsInput | $Enums.TransactionCategory
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumTransactionStatusFieldUpdateOperationsInput | $Enums.TransactionStatus
   purchaseBatchId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -980,7 +980,7 @@ export type FinancialTransactionUncheckedUpdateManyWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
   category?: Prisma.EnumTransactionCategoryFieldUpdateOperationsInput | $Enums.TransactionCategory
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumTransactionStatusFieldUpdateOperationsInput | $Enums.TransactionStatus
   purchaseBatchId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -994,7 +994,7 @@ export type FinancialTransactionCreateManySupplierInput = {
   id?: string
   type: $Enums.TransactionType
   category: $Enums.TransactionCategory
-  amount: number
+  amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   description: string
   status?: $Enums.TransactionStatus
   userId: string
@@ -1008,7 +1008,7 @@ export type FinancialTransactionUpdateWithoutSupplierInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
   category?: Prisma.EnumTransactionCategoryFieldUpdateOperationsInput | $Enums.TransactionCategory
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumTransactionStatusFieldUpdateOperationsInput | $Enums.TransactionStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1022,7 +1022,7 @@ export type FinancialTransactionUncheckedUpdateWithoutSupplierInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
   category?: Prisma.EnumTransactionCategoryFieldUpdateOperationsInput | $Enums.TransactionCategory
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumTransactionStatusFieldUpdateOperationsInput | $Enums.TransactionStatus
   userId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1036,7 +1036,7 @@ export type FinancialTransactionUncheckedUpdateManyWithoutSupplierInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
   category?: Prisma.EnumTransactionCategoryFieldUpdateOperationsInput | $Enums.TransactionCategory
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumTransactionStatusFieldUpdateOperationsInput | $Enums.TransactionStatus
   userId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1050,7 +1050,7 @@ export type FinancialTransactionCreateManyPurchaseBatchInput = {
   id?: string
   type: $Enums.TransactionType
   category: $Enums.TransactionCategory
-  amount: number
+  amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   description: string
   status?: $Enums.TransactionStatus
   userId: string
@@ -1064,7 +1064,7 @@ export type FinancialTransactionUpdateWithoutPurchaseBatchInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
   category?: Prisma.EnumTransactionCategoryFieldUpdateOperationsInput | $Enums.TransactionCategory
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumTransactionStatusFieldUpdateOperationsInput | $Enums.TransactionStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1078,7 +1078,7 @@ export type FinancialTransactionUncheckedUpdateWithoutPurchaseBatchInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
   category?: Prisma.EnumTransactionCategoryFieldUpdateOperationsInput | $Enums.TransactionCategory
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumTransactionStatusFieldUpdateOperationsInput | $Enums.TransactionStatus
   userId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1092,7 +1092,7 @@ export type FinancialTransactionUncheckedUpdateManyWithoutPurchaseBatchInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
   category?: Prisma.EnumTransactionCategoryFieldUpdateOperationsInput | $Enums.TransactionCategory
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumTransactionStatusFieldUpdateOperationsInput | $Enums.TransactionStatus
   userId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1106,7 +1106,7 @@ export type FinancialTransactionCreateManyOpexCategoryInput = {
   id?: string
   type: $Enums.TransactionType
   category: $Enums.TransactionCategory
-  amount: number
+  amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   description: string
   status?: $Enums.TransactionStatus
   userId: string
@@ -1120,7 +1120,7 @@ export type FinancialTransactionUpdateWithoutOpexCategoryInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
   category?: Prisma.EnumTransactionCategoryFieldUpdateOperationsInput | $Enums.TransactionCategory
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumTransactionStatusFieldUpdateOperationsInput | $Enums.TransactionStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1134,7 +1134,7 @@ export type FinancialTransactionUncheckedUpdateWithoutOpexCategoryInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
   category?: Prisma.EnumTransactionCategoryFieldUpdateOperationsInput | $Enums.TransactionCategory
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumTransactionStatusFieldUpdateOperationsInput | $Enums.TransactionStatus
   userId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1148,7 +1148,7 @@ export type FinancialTransactionUncheckedUpdateManyWithoutOpexCategoryInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
   category?: Prisma.EnumTransactionCategoryFieldUpdateOperationsInput | $Enums.TransactionCategory
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumTransactionStatusFieldUpdateOperationsInput | $Enums.TransactionStatus
   userId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1264,7 +1264,7 @@ export type $FinancialTransactionPayload<ExtArgs extends runtime.Types.Extension
     id: string
     type: $Enums.TransactionType
     category: $Enums.TransactionCategory
-    amount: number
+    amount: runtime.Decimal
     description: string
     status: $Enums.TransactionStatus
     userId: string
@@ -1703,7 +1703,7 @@ export interface FinancialTransactionFieldRefs {
   readonly id: Prisma.FieldRef<"FinancialTransaction", 'String'>
   readonly type: Prisma.FieldRef<"FinancialTransaction", 'TransactionType'>
   readonly category: Prisma.FieldRef<"FinancialTransaction", 'TransactionCategory'>
-  readonly amount: Prisma.FieldRef<"FinancialTransaction", 'Float'>
+  readonly amount: Prisma.FieldRef<"FinancialTransaction", 'Decimal'>
   readonly description: Prisma.FieldRef<"FinancialTransaction", 'String'>
   readonly status: Prisma.FieldRef<"FinancialTransaction", 'TransactionStatus'>
   readonly userId: Prisma.FieldRef<"FinancialTransaction", 'String'>

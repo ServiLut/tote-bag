@@ -32,7 +32,11 @@ describe('ShippingService', () => {
     },
     auditLog: {
       findMany: jest.fn(),
+      create: jest.fn(),
     },
+    $transaction: jest.fn((callback: (tx: unknown) => unknown) =>
+      callback(prisma),
+    ),
   };
 
   const shippingNotifier = {
@@ -43,6 +47,10 @@ describe('ShippingService', () => {
     getOrdersWithoutShipmentRecords: jest.fn(),
   };
 
+  const inventoryService = {
+    reduceStockFIFO: jest.fn(),
+  };
+
   let service: ShippingService;
 
   beforeEach(() => {
@@ -51,6 +59,7 @@ describe('ShippingService', () => {
       prisma as never,
       shippingNotifier as never,
       shippingSyncService as never,
+      inventoryService as never,
     );
   });
 
@@ -59,6 +68,7 @@ describe('ShippingService', () => {
       status: OrderStatus.PAGADA,
       trackingNumber: null,
       carrier: null,
+      balanceDue: 0,
     });
     prisma.shipment.findUnique.mockResolvedValue(null);
     prisma.shippingProvider.findUnique.mockResolvedValue({
@@ -133,6 +143,7 @@ describe('ShippingService', () => {
       status: OrderStatus.PAGADA,
       trackingNumber: null,
       carrier: null,
+      balanceDue: 0,
     });
     prisma.shipment.findUnique.mockResolvedValue({
       id: 'shipment-1',
