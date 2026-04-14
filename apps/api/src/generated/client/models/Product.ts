@@ -800,6 +800,11 @@ export type ProductOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
+export type ProductNullableScalarRelationFilter = {
+  is?: Prisma.ProductWhereInput | null
+  isNot?: Prisma.ProductWhereInput | null
+}
+
 export type ProductCreatetagsInput = {
   set: string[]
 }
@@ -1009,10 +1014,12 @@ export type ProductCreateNestedOneWithoutPurchaseBatchesInput = {
   connect?: Prisma.ProductWhereUniqueInput
 }
 
-export type ProductUpdateOneRequiredWithoutPurchaseBatchesNestedInput = {
+export type ProductUpdateOneWithoutPurchaseBatchesNestedInput = {
   create?: Prisma.XOR<Prisma.ProductCreateWithoutPurchaseBatchesInput, Prisma.ProductUncheckedCreateWithoutPurchaseBatchesInput>
   connectOrCreate?: Prisma.ProductCreateOrConnectWithoutPurchaseBatchesInput
   upsert?: Prisma.ProductUpsertWithoutPurchaseBatchesInput
+  disconnect?: Prisma.ProductWhereInput | boolean
+  delete?: Prisma.ProductWhereInput | boolean
   connect?: Prisma.ProductWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.ProductUpdateToOneWithWhereWithoutPurchaseBatchesInput, Prisma.ProductUpdateWithoutPurchaseBatchesInput>, Prisma.ProductUncheckedUpdateWithoutPurchaseBatchesInput>
 }

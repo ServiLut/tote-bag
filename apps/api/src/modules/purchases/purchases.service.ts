@@ -17,6 +17,12 @@ const purchaseInvoiceInclude = {
     include: {
       product: true,
       variant: true,
+      lines: {
+        include: {
+          variant: true,
+          supplyItem: true,
+        },
+      },
     },
   },
   payments: {

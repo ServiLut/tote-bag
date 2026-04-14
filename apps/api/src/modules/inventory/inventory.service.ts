@@ -4,18 +4,34 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma, Product } from '../../generated/client/client';
 import {
   BatchStatus,
+  PurchaseBatchItemType,
   TransactionType,
   TransactionCategory,
 } from '../../generated/client/enums';
 import {
   BatchInputStatus,
   CreatePurchaseBatchDto,
+  CreateSupplyItemDto,
+  PurchaseBatchItemDto,
 } from './dto/create-purchase-batch.dto';
 import {
   decimalToNumber,
   roundMoney,
   toDecimal,
 } from '../../common/utils/sales-tax.util';
+
+type ResolvedBatchLine = {
+  item: PurchaseBatchItemDto;
+  itemType: PurchaseBatchItemType;
+  product: Product | null;
+  variant: { id: string; productId: string } | null;
+  supplyItem: { id: string; name: string; unitOfMeasure: string } | null;
+  itemName: string | null;
+  description: string | null;
+  quantity: Decimal;
+  unitOfMeasure: string;
+  rawLineTotal: Decimal;
+};
 
 @Injectable()
 export class InventoryService {
@@ -57,6 +73,43 @@ export class InventoryService {
     return Decimal.max(0, roundMoney(value ?? 0));
   }
 
+  private toQuantityDecimal(value: Decimal.Value) {
+    return toDecimal(value).toDecimalPlaces(3, Decimal.ROUND_HALF_UP);
+  }
+
+  private quantityToNumber(value: Decimal.Value) {
+    return this.toQuantityDecimal(value).toNumber();
+  }
+
+  private quantityToLegacyInt(value: Decimal.Value) {
+    return this.toQuantityDecimal(value).toDecimalPlaces(0).toNumber();
+  }
+
+  private isWholeQuantity(value: Decimal.Value) {
+    return this.toQuantityDecimal(value).isInteger();
+  }
+
+  private sanitizeOptionalText(value?: string | null) {
+    const trimmed = value?.trim();
+    return trimmed ? trimmed : null;
+  }
+
+  private resolveLineItemType(item: PurchaseBatchItemDto) {
+    if (item.itemType) {
+      return item.itemType as PurchaseBatchItemType;
+    }
+
+    if (item.supplyItemId) {
+      return PurchaseBatchItemType.SUPPLY;
+    }
+
+    if (item.variantId || item.productId) {
+      return PurchaseBatchItemType.VARIANT;
+    }
+
+    return PurchaseBatchItemType.OTHER;
+  }
+
   private serializeBatchMoney<T extends Record<string, unknown> | null>(
     batch: T,
   ): T {
@@ -72,6 +125,76 @@ export class InventoryService {
 
     if ('totalCost' in result) {
       result.totalCost = decimalToNumber(result.totalCost as Decimal.Value);
+    }
+
+    if (Array.isArray(result.lines)) {
+      result.lines = result.lines.map((line) =>
+        this.serializePurchaseBatchLine(line as Record<string, unknown>),
+      );
+    }
+
+    return result as T;
+  }
+
+  private serializePurchaseBatchLine<T extends Record<string, unknown> | null>(
+    line: T,
+  ): T {
+    if (!line) {
+      return line;
+    }
+
+    const result: Record<string, unknown> = { ...line };
+
+    if ('quantity' in result) {
+      result.quantity = this.quantityToNumber(result.quantity as Decimal.Value);
+    }
+
+    if ('quantityRemaining' in result) {
+      result.quantityRemaining = this.quantityToNumber(
+        result.quantityRemaining as Decimal.Value,
+      );
+    }
+
+    if ('unitCost' in result) {
+      result.unitCost = decimalToNumber(result.unitCost as Decimal.Value);
+    }
+
+    if ('lineTotal' in result) {
+      result.lineTotal = decimalToNumber(result.lineTotal as Decimal.Value);
+    }
+
+    if (
+      result.supplyItem &&
+      typeof result.supplyItem === 'object' &&
+      !Array.isArray(result.supplyItem)
+    ) {
+      result.supplyItem = this.serializeSupplyItem(
+        result.supplyItem as Record<string, unknown>,
+      );
+    }
+
+    return result as T;
+  }
+
+  private serializeSupplyItem<T extends Record<string, unknown> | null>(
+    supplyItem: T,
+  ): T {
+    if (!supplyItem) {
+      return supplyItem;
+    }
+
+    const result: Record<string, unknown> = { ...supplyItem };
+
+    if ('cost' in result) {
+      result.cost = decimalToNumber(result.cost as Decimal.Value);
+    }
+
+    if ('stock' in result) {
+      result.stock = this.quantityToNumber(result.stock as Decimal.Value);
+    }
+
+    if ('minStock' in result && result.minStock !== null) {
+      result.minStock = this.quantityToNumber(result.minStock as Decimal.Value);
     }
 
     return result as T;
@@ -106,6 +229,133 @@ export class InventoryService {
         opexCategoryId: opexCategory.id,
       },
     });
+  }
+
+  private async resolvePurchaseBatchLine(
+    tx: Prisma.TransactionClient,
+    item: PurchaseBatchItemDto,
+  ): Promise<ResolvedBatchLine> {
+    const itemType = this.resolveLineItemType(item);
+    const quantity = this.toQuantityDecimal(item.cantidad || 0);
+    const unitCost = roundMoney(item.costoUnitario || 0);
+    const requestedUnitOfMeasure = this.sanitizeOptionalText(
+      item.unitOfMeasure,
+    );
+    const unitOfMeasure = requestedUnitOfMeasure || 'und';
+
+    if (quantity.lessThanOrEqualTo(0)) {
+      throw new BadRequestException(
+        `La cantidad de ${item.nombre || item.itemName || 'la linea'} debe ser mayor a cero`,
+      );
+    }
+
+    if (unitCost.lessThan(0)) {
+      throw new BadRequestException(
+        `El costo unitario de ${item.nombre || item.itemName || 'la linea'} no puede ser negativo`,
+      );
+    }
+
+    if (itemType === PurchaseBatchItemType.VARIANT) {
+      if (!item.variantId) {
+        throw new BadRequestException(
+          `El item ${item.nombre || 'VARIANT'} debe incluir una variante`,
+        );
+      }
+
+      if (!this.isWholeQuantity(quantity)) {
+        throw new BadRequestException(
+          `La cantidad de la variante ${item.variantId} debe ser entera`,
+        );
+      }
+
+      const variant = await tx.variant.findUnique({
+        where: { id: item.variantId },
+        select: { id: true, productId: true },
+      });
+
+      if (!variant) {
+        throw new BadRequestException('La variante seleccionada no existe');
+      }
+
+      if (item.productId && variant.productId !== item.productId) {
+        throw new BadRequestException(
+          `La variante seleccionada no pertenece al producto ${item.productId}`,
+        );
+      }
+
+      const product = await tx.product.findUnique({
+        where: { id: variant.productId },
+      });
+
+      if (!product) {
+        throw new BadRequestException(
+          'El producto de la variante seleccionada no existe',
+        );
+      }
+
+      return {
+        item,
+        itemType,
+        product,
+        variant,
+        supplyItem: null,
+        itemName: null,
+        description: null,
+        quantity,
+        unitOfMeasure,
+        rawLineTotal: roundMoney(unitCost.mul(quantity)),
+      };
+    }
+
+    if (itemType === PurchaseBatchItemType.SUPPLY) {
+      if (!item.supplyItemId) {
+        throw new BadRequestException('El insumo debe incluir supplyItemId');
+      }
+
+      const supplyItem = await tx.supplyItem.findUnique({
+        where: { id: item.supplyItemId },
+        select: { id: true, name: true, unitOfMeasure: true },
+      });
+
+      if (!supplyItem) {
+        throw new BadRequestException('El insumo seleccionado no existe');
+      }
+
+      return {
+        item,
+        itemType,
+        product: null,
+        variant: null,
+        supplyItem,
+        itemName: supplyItem.name,
+        description: this.sanitizeOptionalText(item.description),
+        quantity,
+        unitOfMeasure: requestedUnitOfMeasure || supplyItem.unitOfMeasure,
+        rawLineTotal: roundMoney(unitCost.mul(quantity)),
+      };
+    }
+
+    const itemName = this.sanitizeOptionalText(item.itemName || item.nombre);
+    const description = this.sanitizeOptionalText(item.description);
+
+    if (!itemName && !description) {
+      throw new BadRequestException(
+        `${itemType} debe incluir nombre o descripcion`,
+      );
+    }
+
+    return {
+      item,
+      itemType,
+      product: null,
+      variant: null,
+      supplyItem: null,
+      itemName,
+      description,
+      quantity,
+      unitOfMeasure,
+      rawLineTotal: roundMoney(unitCost.mul(quantity)),
+    };
   }
 
   async receiveBatch(data: CreatePurchaseBatchDto & { userId: string }) {
@@ -159,6 +409,21 @@ export class InventoryService {
         include: {
           product: true,
           supplier: true,
+        },
+      });
+
+      await tx.purchaseBatchLine.create({
+        data: {
+          purchaseBatchId: batch.id,
+          itemType: PurchaseBatchItemType.VARIANT,
+          variantId: data.variantId,
+          quantity,
+          quantityRemaining: this.isReceivedStatus(data.status) ? quantity : 0,
+          unitOfMeasure: 'und',
+          unitCost: unitCostNumber,
+          lineTotal: totalCostNumber,
+          status: statusValue,
+          notes: 'Linea generada desde endpoint legacy receive-batch',
         },
       });
 
@@ -220,8 +485,17 @@ export class InventoryService {
     return this.prisma.$transaction(async (tx) => {
       if (!data.items.length) {
         throw new BadRequestException(
-          'Debes registrar al menos un item en el lote',
+          'Debes registrar al menos una linea en el lote',
         );
+      }
+
+      const supplier = await tx.supplier.findUnique({
+        where: { id: data.supplierId },
+        select: { id: true, name: true },
+      });
+
+      if (!supplier) {
+        throw new BadRequestException('Proveedor no encontrado');
       }
 
       const opexCategory = await this.ensureMateriaPrimaCategory(tx);
@@ -233,55 +507,12 @@ export class InventoryService {
       let allocatedFreight = new Decimal(0);
       let recalculatedTotalCost = new Decimal(0);
 
-      const batches: Prisma.PurchaseBatchGetPayload<{
-        include: { product: true; supplier: true; variant: true };
-      }>[] = [];
-      const resolvedItems: Array<{
-        item: (typeof data.items)[number];
-        product: Product;
-        rawLineTotal: Decimal;
-      }> = [];
+      const resolvedItems: ResolvedBatchLine[] = [];
 
       for (const item of data.items) {
-        let product: Product | null;
-        if (item.productId) {
-          product = await tx.product.findUnique({
-            where: { id: item.productId },
-          });
-        } else {
-          product = await tx.product.findFirst({
-            where: { name: item.nombre },
-          });
-        }
-
-        if (!product) {
-          throw new BadRequestException(
-            `Producto o Insumo no encontrado: ${item.nombre}`,
-          );
-        }
-
-        if (!item.variantId) {
-          throw new BadRequestException(
-            `El item ${item.nombre} debe incluir una variante`,
-          );
-        }
-
-        const variant = await tx.variant.findUnique({
-          where: { id: item.variantId },
-          select: { id: true, productId: true },
-        });
-
-        if (!variant || variant.productId !== product.id) {
-          throw new BadRequestException(
-            `La variante seleccionada no pertenece al producto ${product.name}`,
-          );
-        }
-
-        const rawLineTotal = roundMoney(
-          toDecimal(item.costoUnitario).mul(item.cantidad),
-        );
-        invoiceSubtotal = invoiceSubtotal.plus(rawLineTotal);
-        resolvedItems.push({ item, product, rawLineTotal });
+        const resolvedLine = await this.resolvePurchaseBatchLine(tx, item);
+        invoiceSubtotal = invoiceSubtotal.plus(resolvedLine.rawLineTotal);
+        resolvedItems.push(resolvedLine);
       }
 
       if (invoiceSubtotal.lessThanOrEqualTo(0)) {
@@ -290,71 +521,145 @@ export class InventoryService {
         );
       }
 
+      const singleVariantLine =
+        resolvedItems.length === 1 &&
+        resolvedItems[0].itemType === PurchaseBatchItemType.VARIANT;
+      const legacyQuantity = singleVariantLine
+        ? this.quantityToLegacyInt(resolvedItems[0].quantity)
+        : 0;
+
+      const batch = await tx.purchaseBatch.create({
+        data: {
+          productId: singleVariantLine ? resolvedItems[0].product?.id : null,
+          variantId: singleVariantLine ? resolvedItems[0].variant?.id : null,
+          supplierId: data.supplierId,
+          quantityReceived: legacyQuantity,
+          quantityRemaining: this.isReceivedStatus(data.status)
+            ? legacyQuantity
+            : 0,
+          unitCost: 0,
+          totalCost: 0,
+          status: statusValue,
+          createdAt: data.purchaseDate
+            ? new Date(data.purchaseDate)
+            : new Date(),
+        },
+        include: {
+          product: true,
+          supplier: true,
+          variant: true,
+          lines: {
+            include: {
+              variant: true,
+              supplyItem: true,
+            },
+          },
+        },
+      });
+
       for (const [index, resolved] of resolvedItems.entries()) {
-        const { item, product, rawLineTotal } = resolved;
+        const { item, rawLineTotal } = resolved;
         const lineFreight =
           index === resolvedItems.length - 1
             ? roundMoney(freightCost.minus(allocatedFreight))
             : roundMoney(rawLineTotal.div(invoiceSubtotal).mul(freightCost));
         allocatedFreight = allocatedFreight.plus(lineFreight);
         const landedLineTotal = roundMoney(rawLineTotal.plus(lineFreight));
-        const landedUnitCost = roundMoney(landedLineTotal.div(item.cantidad));
+        const landedUnitCost = roundMoney(
+          landedLineTotal.div(resolved.quantity),
+        );
         const landedLineTotalNumber = decimalToNumber(landedLineTotal);
         const landedUnitCostNumber = decimalToNumber(landedUnitCost);
+        const quantityNumber = this.quantityToNumber(resolved.quantity);
+        const lineStatus = this.isReceivedStatus(data.status)
+          ? BatchStatus.IN_STOCK
+          : BatchStatus.PENDING;
 
-        const batch = await tx.purchaseBatch.create({
+        await tx.purchaseBatchLine.create({
           data: {
-            productId: product.id,
-            variantId: item.variantId,
-            supplierId: data.supplierId,
-            quantityReceived: item.cantidad,
+            purchaseBatchId: batch.id,
+            itemType: resolved.itemType,
+            variantId: resolved.variant?.id ?? null,
+            supplyItemId: resolved.supplyItem?.id ?? null,
+            itemName: resolved.itemName,
+            description: resolved.description,
+            quantity: quantityNumber,
             quantityRemaining: this.isReceivedStatus(data.status)
-              ? item.cantidad
+              ? quantityNumber
               : 0,
+            unitOfMeasure: resolved.unitOfMeasure,
             unitCost: landedUnitCostNumber,
-            totalCost: landedLineTotalNumber,
-            status: statusValue,
-            createdAt: data.purchaseDate
-              ? new Date(data.purchaseDate)
-              : new Date(),
-          },
-          include: {
-            product: true,
-            supplier: true,
-            variant: true,
+            lineTotal: landedLineTotalNumber,
+            status: lineStatus,
+            notes: this.sanitizeOptionalText(item.notes),
           },
         });
 
         recalculatedTotalCost = recalculatedTotalCost.plus(landedLineTotal);
 
-        if (this.isReceivedStatus(data.status)) {
+        if (
+          this.isReceivedStatus(data.status) &&
+          resolved.itemType === PurchaseBatchItemType.VARIANT &&
+          resolved.variant
+        ) {
           await tx.variant.update({
-            where: { id: item.variantId },
+            where: { id: resolved.variant.id },
             data: {
-              stock: { increment: item.cantidad },
+              stock: { increment: this.quantityToLegacyInt(resolved.quantity) },
               costPrice: landedUnitCostNumber,
             },
           });
         }
 
-        batches.push(batch);
+        if (
+          this.isReceivedStatus(data.status) &&
+          resolved.itemType === PurchaseBatchItemType.SUPPLY &&
+          resolved.supplyItem
+        ) {
+          await tx.supplyItem.update({
+            where: { id: resolved.supplyItem.id },
+            data: {
+              stock: { increment: quantityNumber },
+              cost: landedUnitCostNumber,
+            },
+          });
+        }
       }
 
-      if (this.isReceivedStatus(data.status)) {
-        const recalculatedTotalCostNumber = decimalToNumber(
-          recalculatedTotalCost,
-        );
-        const supplier = await tx.supplier.findUnique({
-          where: { id: data.supplierId },
-        });
+      const recalculatedTotalCostNumber = decimalToNumber(
+        recalculatedTotalCost,
+      );
+      const updatedBatch = await tx.purchaseBatch.update({
+        where: { id: batch.id },
+        data: {
+          totalCost: recalculatedTotalCostNumber,
+          unitCost:
+            legacyQuantity > 0
+              ? decimalToNumber(recalculatedTotalCost.div(legacyQuantity))
+              : 0,
+        },
+        include: {
+          product: true,
+          supplier: true,
+          variant: true,
+          lines: {
+            include: {
+              variant: true,
+              supplyItem: true,
+            },
+          },
+        },
+      });
 
+      if (this.isReceivedStatus(data.status)) {
         await tx.financialTransaction.create({
           data: {
             type: TransactionType.EXPENSE,
             category: TransactionCategory.PURCHASE,
             amount: recalculatedTotalCostNumber,
-            description: `Compra de lote de insumos - Prov: ${supplier?.name || 'Desconocido'}`,
+            description: `Recepcion de abastecimiento - Prov: ${supplier.name}`,
             userId: data.userId,
+            purchaseBatchId: batch.id,
             supplierId: data.supplierId,
             opexCategoryId: opexCategory.id,
           },
@@ -372,10 +677,12 @@ export class InventoryService {
         data: {
           action: 'CREATE_PURCHASE_BATCH_MULTIPLE',
           entity: 'PurchaseBatch',
+          entityId: batch.id,
           userId: data.userId,
           payload: {
             supplierId: data.supplierId,
             itemCount: data.items.length,
+            lineTypes: resolvedItems.map((line) => line.itemType),
             invoiceSubtotal: decimalToNumber(invoiceSubtotal),
             freightCost: decimalToNumber(freightCost),
             totalCost: decimalToNumber(recalculatedTotalCost),
@@ -386,43 +693,90 @@ export class InventoryService {
         },
       });
 
-      return batches.map((batch) => this.serializeBatchMoney(batch));
+      return this.serializeBatchMoney(updatedBatch);
     });
   }
 
   async getDetailedInventory() {
-    const products = await this.prisma.product.findMany({
+    const activeLines = await this.prisma.purchaseBatchLine.findMany({
       where: {
-        purchaseBatches: {
-          some: {
-            status: BatchStatus.IN_STOCK,
-            quantityRemaining: { gt: 0 },
-            variantId: { not: null },
-          },
+        itemType: PurchaseBatchItemType.VARIANT,
+        variantId: { not: null },
+        status: BatchStatus.IN_STOCK,
+        quantityRemaining: { gt: 0 },
+        purchaseBatch: {
+          status: BatchStatus.IN_STOCK,
         },
       },
       include: {
-        purchaseBatches: {
-          where: {
-            status: BatchStatus.IN_STOCK,
-            quantityRemaining: { gt: 0 },
-            variantId: { not: null },
+        variant: {
+          include: {
+            product: {
+              include: {
+                images: { take: 1 },
+              },
+            },
           },
-          include: { supplier: true },
-          orderBy: { createdAt: 'asc' },
         },
-        images: { take: 1 },
+        purchaseBatch: {
+          include: { supplier: true },
+        },
       },
+      orderBy: [{ purchaseBatch: { createdAt: 'asc' } }, { createdAt: 'asc' }],
     });
 
-    return products.map((product) => {
-      const activeBatches = product.purchaseBatches;
-      const totalStock = activeBatches.reduce(
-        (sum, b) => sum + b.quantityRemaining,
+    const grouped = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        slug: string;
+        image?: string | null;
+        batches: Array<Record<string, unknown>>;
+      }
+    >();
+
+    for (const line of activeLines) {
+      if (!line.variant) {
+        continue;
+      }
+
+      const product = line.variant.product;
+      const current = grouped.get(product.id) ?? {
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        image: product.images[0]?.url,
+        batches: [],
+      };
+
+      current.batches.push({
+        id: line.purchaseBatchId,
+        lineId: line.id,
+        quantityReceived: this.quantityToNumber(line.quantity),
+        quantityRemaining: this.quantityToNumber(line.quantityRemaining),
+        unitCost: line.unitCost,
+        totalCost: line.lineTotal,
+        status: line.status,
+        createdAt: line.purchaseBatch.createdAt,
+        supplier: line.purchaseBatch.supplier,
+      });
+
+      grouped.set(product.id, current);
+    }
+
+    return Array.from(grouped.values()).map((product) => {
+      const totalStock = product.batches.reduce(
+        (sum, batch) => sum + Number(batch.quantityRemaining || 0),
         0,
       );
-      const totalValuation = activeBatches.reduce(
-        (sum, b) => sum.plus(toDecimal(b.unitCost).mul(b.quantityRemaining)),
+      const totalValuation = product.batches.reduce(
+        (sum, batch) =>
+          sum.plus(
+            toDecimal(batch.unitCost as Decimal.Value).mul(
+              Number(batch.quantityRemaining || 0),
+            ),
+          ),
         new Decimal(0),
       );
       const weightedAvgCost =
@@ -432,11 +786,13 @@ export class InventoryService {
         id: product.id,
         name: product.name,
         slug: product.slug,
-        image: product.images[0]?.url,
+        image: product.image,
         totalStock,
         totalValuation: decimalToNumber(totalValuation),
         weightedAvgCost: decimalToNumber(weightedAvgCost),
-        batches: activeBatches.map((batch) => this.serializeBatchMoney(batch)),
+        batches: product.batches.map((batch) =>
+          this.serializeBatchMoney(batch),
+        ),
       };
     });
   }
@@ -497,6 +853,21 @@ export class InventoryService {
         },
       });
 
+      await tx.purchaseBatchLine.create({
+        data: {
+          purchaseBatchId: batch.id,
+          itemType: PurchaseBatchItemType.VARIANT,
+          variantId: data.variantId,
+          quantity: data.quantityReceived,
+          quantityRemaining: data.quantityReceived,
+          unitOfMeasure: 'und',
+          unitCost: unitCostNumber,
+          lineTotal: totalCostNumber,
+          status: BatchStatus.IN_STOCK,
+          notes: 'Linea generada desde endpoint legacy batch',
+        },
+      });
+
       await tx.variant.update({
         where: { id: data.variantId },
         data: {
@@ -550,6 +921,13 @@ export class InventoryService {
         product: true,
         supplier: true,
         variant: true,
+        lines: {
+          include: {
+            variant: true,
+            supplyItem: true,
+          },
+          orderBy: { createdAt: 'asc' },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -577,6 +955,7 @@ export class InventoryService {
           invoices: {
             select: { id: true },
           },
+          lines: true,
         },
       });
 
@@ -584,7 +963,27 @@ export class InventoryService {
         throw new BadRequestException('Lote no encontrado');
       }
 
-      if (!this.canAdjustBatch(existingBatch)) {
+      const existingLines = existingBatch.lines ?? [];
+
+      if (
+        existingLines.length > 1 ||
+        (existingLines[0] &&
+          existingLines[0].itemType !== PurchaseBatchItemType.VARIANT)
+      ) {
+        throw new BadRequestException(
+          'Este endpoint solo edita lotes legacy de una variante. Usa el flujo de lineas para recepciones mixtas.',
+        );
+      }
+
+      const canAdjustExisting =
+        existingLines[0] !== undefined
+          ? existingLines[0].status === BatchStatus.PENDING ||
+            toDecimal(existingLines[0].quantityRemaining).equals(
+              existingLines[0].quantity,
+            )
+          : this.canAdjustBatch(existingBatch);
+
+      if (!canAdjustExisting) {
         throw new BadRequestException(
           'Solo puedes editar lotes que no hayan tenido movimientos de stock.',
         );
@@ -760,8 +1159,48 @@ export class InventoryService {
           product: true,
           supplier: true,
           variant: true,
+          lines: {
+            include: {
+              variant: true,
+              supplyItem: true,
+            },
+          },
         },
       });
+
+      if (existingLines[0]) {
+        await tx.purchaseBatchLine.update({
+          where: { id: existingLines[0].id },
+          data: {
+            itemType: PurchaseBatchItemType.VARIANT,
+            variantId: data.variantId,
+            supplyItemId: null,
+            itemName: null,
+            description: null,
+            quantity: data.quantityReceived,
+            quantityRemaining: nextStockImpact,
+            unitOfMeasure: 'und',
+            unitCost: nextUnitCostNumber,
+            lineTotal: nextTotalCostNumber,
+            status: nextStatus,
+          },
+        });
+      } else {
+        await tx.purchaseBatchLine.create({
+          data: {
+            purchaseBatchId: batchId,
+            itemType: PurchaseBatchItemType.VARIANT,
+            variantId: data.variantId,
+            quantity: data.quantityReceived,
+            quantityRemaining: nextStockImpact,
+            unitOfMeasure: 'und',
+            unitCost: nextUnitCostNumber,
+            lineTotal: nextTotalCostNumber,
+            status: nextStatus,
+            notes: 'Linea generada al editar lote legacy',
+          },
+        });
+      }
 
       await tx.auditLog.create({
         data: {
@@ -804,6 +1243,7 @@ export class InventoryService {
           invoices: {
             select: { id: true },
           },
+          lines: true,
         },
       });
 
@@ -811,7 +1251,17 @@ export class InventoryService {
         throw new BadRequestException('Lote no encontrado');
       }
 
-      if (!this.canAdjustBatch(existingBatch)) {
+      const existingLines = existingBatch.lines ?? [];
+      const hasLines = existingLines.length > 0;
+      const canAdjustLines = hasLines
+        ? existingLines.every(
+            (line) =>
+              line.status === BatchStatus.PENDING ||
+              toDecimal(line.quantityRemaining).equals(line.quantity),
+          )
+        : this.canAdjustBatch(existingBatch);
+
+      if (!canAdjustLines) {
         throw new BadRequestException(
           'Solo puedes borrar lotes que no hayan tenido movimientos de stock.',
         );
@@ -823,20 +1273,54 @@ export class InventoryService {
         );
       }
 
-      const stockImpact =
-        existingBatch.status === BatchStatus.IN_STOCK
-          ? existingBatch.quantityRemaining
-          : 0;
       const financialImpact =
         existingBatch.status === BatchStatus.IN_STOCK
           ? roundMoney(existingBatch.totalCost)
           : new Decimal(0);
 
-      if (existingBatch.variantId && stockImpact !== 0) {
+      if (hasLines) {
+        for (const line of existingLines) {
+          if (line.status !== BatchStatus.IN_STOCK) {
+            continue;
+          }
+
+          const quantity = this.quantityToNumber(line.quantityRemaining);
+
+          if (
+            line.itemType === PurchaseBatchItemType.VARIANT &&
+            line.variantId &&
+            quantity !== 0
+          ) {
+            await tx.variant.update({
+              where: { id: line.variantId },
+              data: {
+                stock: { decrement: this.quantityToLegacyInt(quantity) },
+              },
+            });
+          }
+
+          if (
+            line.itemType === PurchaseBatchItemType.SUPPLY &&
+            line.supplyItemId &&
+            quantity !== 0
+          ) {
+            await tx.supplyItem.update({
+              where: { id: line.supplyItemId },
+              data: {
+                stock: { decrement: quantity },
+              },
+            });
+          }
+        }
+      } else if (
+        existingBatch.variantId &&
+        existingBatch.status === BatchStatus.IN_STOCK &&
+        existingBatch.quantityRemaining !== 0
+      ) {
         await tx.variant.update({
           where: { id: existingBatch.variantId },
           data: {
-            stock: { decrement: stockImpact },
+            stock: { decrement: existingBatch.quantityRemaining },
           },
         });
       }
@@ -873,6 +1357,14 @@ export class InventoryService {
             quantityRemaining: existingBatch.quantityRemaining,
             totalCost: existingBatch.totalCost,
             status: existingBatch.status,
+            lines: existingLines.map((line) => ({
+              id: line.id,
+              itemType: line.itemType,
+              variantId: line.variantId,
+              supplyItemId: line.supplyItemId,
+              quantity: line.quantity,
+              quantityRemaining: line.quantityRemaining,
+            })),
           },
         },
       });
@@ -891,6 +1383,64 @@ export class InventoryService {
     });
   }
 
+  async findReceivableVariants() {
+    return this.prisma.product.findMany({
+      where: { isActive: true },
+      include: {
+        variants: {
+          where: { isActive: true },
+          orderBy: [{ size: 'asc' }, { color: 'asc' }],
+        },
+        images: {
+          orderBy: { position: 'asc' },
+          take: 1,
+        },
+      },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  async findAllSupplyItems() {
+    const supplyItems = await this.prisma.supplyItem.findMany({
+      where: { isActive: true },
+      orderBy: [{ category: 'asc' }, { name: 'asc' }],
+    });
+
+    return supplyItems.map((item) => this.serializeSupplyItem(item));
+  }
+
+  async createSupplyItem(data: CreateSupplyItemDto) {
+    const name = data.name.trim();
+    const category = data.category.trim();
+    const unitOfMeasure = data.unitOfMeasure.trim();
+    const sku = this.sanitizeOptionalText(data.sku);
+
+    if (!name || !category || !unitOfMeasure) {
+      throw new BadRequestException(
+        'Nombre, categoria y unidad de medida son obligatorios',
+      );
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const supplyItem = await tx.supplyItem.create({
+        data: {
+          name,
+          sku,
+          category,
+          unitOfMeasure,
+          cost: decimalToNumber(roundMoney(data.cost ?? 0)),
+          stock: this.quantityToNumber(data.stock ?? 0),
+          minStock:
+            data.minStock === undefined
+              ? undefined
+              : this.quantityToNumber(data.minStock),
+        },
+      });
+
+      return this.serializeSupplyItem(supplyItem);
+    });
+  }
+
   async reduceStockFIFO(
     variantId: string,
     quantityToSell: number,
@@ -898,13 +1448,30 @@ export class InventoryService {
     txClient?: Prisma.TransactionClient,
   ) {
     const execute = async (tx: Prisma.TransactionClient) => {
-      const batches = await tx.purchaseBatch.findMany({
+      const lines = await tx.purchaseBatchLine.findMany({
         where: {
           variantId,
           quantityRemaining: { gt: 0 },
           status: BatchStatus.IN_STOCK,
+          itemType: PurchaseBatchItemType.VARIANT,
+          purchaseBatch: {
+            status: BatchStatus.IN_STOCK,
+          },
         },
-        orderBy: { createdAt: 'asc' },
+        include: {
+          purchaseBatch: {
+            select: {
+              id: true,
+              supplierId: true,
+              variantId: true,
+              createdAt: true,
+            },
+          },
+        },
+        orderBy: [
+          { purchaseBatch: { createdAt: 'asc' } },
+          { createdAt: 'asc' },
+        ],
       });
 
       let remainingToReduce = quantityToSell;
@@ -916,27 +1483,60 @@ export class InventoryService {
         unitCost: number;
       }[] = [];
 
-      for (const batch of batches) {
+      for (const line of lines) {
         if (remainingToReduce <= 0) {
           break;
         }
 
         const amountFromThisBatch = Math.min(
-          batch.quantityRemaining,
+          this.quantityToNumber(line.quantityRemaining),
           remainingToReduce,
         );
         remainingToReduce -= amountFromThisBatch;
-        const unitCost = roundMoney(batch.unitCost);
+        const unitCost = roundMoney(line.unitCost);
         totalCOGS = totalCOGS.plus(unitCost.mul(amountFromThisBatch));
 
-        const newRemaining = batch.quantityRemaining - amountFromThisBatch;
+        const previousRemaining = this.quantityToNumber(line.quantityRemaining);
+        const newRemaining = previousRemaining - amountFromThisBatch;
 
-        await tx.purchaseBatch.update({
-          where: { id: batch.id },
+        await tx.purchaseBatchLine.update({
+          where: { id: line.id },
           data: {
             quantityRemaining: newRemaining,
             status:
               newRemaining === 0 ? BatchStatus.DEPLETED : BatchStatus.IN_STOCK,
+          },
+        });
+
+        const siblingActiveLines = await tx.purchaseBatchLine.count({
+          where: {
+            purchaseBatchId: line.purchaseBatchId,
+            quantityRemaining: { gt: 0 },
+            status: BatchStatus.IN_STOCK,
+          },
+        });
+        const remainingSummary = await tx.purchaseBatchLine.aggregate({
+          where: {
+            purchaseBatchId: line.purchaseBatchId,
+          },
+          _sum: {
+            quantityRemaining: true,
+          },
+        });
+        const batchRemaining = this.quantityToLegacyInt(
+          remainingSummary._sum.quantityRemaining ?? 0,
+        );
+
+        await tx.purchaseBatch.update({
+          where: { id: line.purchaseBatchId },
+          data: {
+            quantityRemaining: line.purchaseBatch.variantId
+              ? batchRemaining
+              : 0,
+            status:
+              siblingActiveLines === 0
+                ? BatchStatus.DEPLETED
+                : BatchStatus.IN_STOCK,
           },
         });
 
@@ -950,13 +1550,14 @@ export class InventoryService {
         await tx.auditLog.create({
           data: {
             action: 'REDUCE_STOCK_FIFO',
-            entity: 'PurchaseBatch',
-            entityId: batch.id,
+            entity: 'PurchaseBatchLine',
+            entityId: line.id,
             userId: userId ?? null,
             payload: {
+              purchaseBatchId: line.purchaseBatchId,
               variantId,
               quantityReduced: amountFromThisBatch,
-              previousRemaining: batch.quantityRemaining,
+              previousRemaining,
               newRemaining,
               unitCost: decimalToNumber(unitCost),
             },
@@ -964,8 +1565,8 @@ export class InventoryService {
         });
 
         reductions.push({
-          batchId: batch.id,
-          supplierId: batch.supplierId,
+          batchId: line.purchaseBatchId,
+          supplierId: line.purchaseBatch.supplierId,
           quantity: amountFromThisBatch,
           unitCost: decimalToNumber(unitCost),
         });
@@ -990,25 +1591,36 @@ export class InventoryService {
   }
 
   async getAverageCost(productId: string): Promise<number> {
-    const activeBatches = await this.prisma.purchaseBatch.findMany({
+    const activeLines = await this.prisma.purchaseBatchLine.findMany({
       where: {
-        productId,
         variantId: { not: null },
         quantityRemaining: { gt: 0 },
         status: BatchStatus.IN_STOCK,
+        itemType: PurchaseBatchItemType.VARIANT,
+        variant: {
+          productId,
+        },
+        purchaseBatch: {
+          status: BatchStatus.IN_STOCK,
+        },
+      },
+      select: {
+        quantityRemaining: true,
+        unitCost: true,
       },
     });
 
-    if (activeBatches.length === 0) {
+    if (activeLines.length === 0) {
       return 0;
     }
 
-    const totalRemaining = activeBatches.reduce(
-      (sum, b) => sum + b.quantityRemaining,
-      0,
+    const totalRemaining = activeLines.reduce(
+      (sum, line) => sum.plus(toDecimal(line.quantityRemaining)),
+      new Decimal(0),
     );
-    const totalCostValue = activeBatches.reduce(
-      (sum, b) => sum.plus(toDecimal(b.unitCost).mul(b.quantityRemaining)),
+    const totalCostValue = activeLines.reduce(
+      (sum, line) =>
+        sum.plus(toDecimal(line.unitCost).mul(line.quantityRemaining)),
       new Decimal(0),
     );
 

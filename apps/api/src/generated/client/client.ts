@@ -197,10 +197,30 @@ export type WizardOption = Prisma.WizardOptionModel
  */
 export type Supplier = Prisma.SupplierModel
 /**
+ * Model SupplyItem
+ * 
+ */
+export type SupplyItem = Prisma.SupplyItemModel
+/**
  * Model PurchaseBatch
  * 
  */
 export type PurchaseBatch = Prisma.PurchaseBatchModel
+/**
+ * Model PurchaseBatchLine
+ * 
+ */
+export type PurchaseBatchLine = Prisma.PurchaseBatchLineModel
+/**
+ * Model ShipmentSupplyUsage
+ * 
+ */
+export type ShipmentSupplyUsage = Prisma.ShipmentSupplyUsageModel
+/**
+ * Model ShipmentSupplyUsageAllocation
+ * 
+ */
+export type ShipmentSupplyUsageAllocation = Prisma.ShipmentSupplyUsageAllocationModel
 /**
  * Model PurchaseInvoice
  * 

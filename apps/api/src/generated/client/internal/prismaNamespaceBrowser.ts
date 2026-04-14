@@ -82,7 +82,11 @@ export const ModelName = {
   B2BQuoteItem: 'B2BQuoteItem',
   WizardOption: 'WizardOption',
   Supplier: 'Supplier',
+  SupplyItem: 'SupplyItem',
   PurchaseBatch: 'PurchaseBatch',
+  PurchaseBatchLine: 'PurchaseBatchLine',
+  ShipmentSupplyUsage: 'ShipmentSupplyUsage',
+  ShipmentSupplyUsageAllocation: 'ShipmentSupplyUsageAllocation',
   PurchaseInvoice: 'PurchaseInvoice',
   PurchasePayment: 'PurchasePayment',
   FinancialTransaction: 'FinancialTransaction',
@@ -626,6 +630,24 @@ export const SupplierScalarFieldEnum = {
 export type SupplierScalarFieldEnum = (typeof SupplierScalarFieldEnum)[keyof typeof SupplierScalarFieldEnum]
 
 
+export const SupplyItemScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  sku: 'sku',
+  category: 'category',
+  supplyType: 'supplyType',
+  unitOfMeasure: 'unitOfMeasure',
+  cost: 'cost',
+  stock: 'stock',
+  minStock: 'minStock',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SupplyItemScalarFieldEnum = (typeof SupplyItemScalarFieldEnum)[keyof typeof SupplyItemScalarFieldEnum]
+
+
 export const PurchaseBatchScalarFieldEnum = {
   id: 'id',
   productId: 'productId',
@@ -642,6 +664,51 @@ export const PurchaseBatchScalarFieldEnum = {
 } as const
 
 export type PurchaseBatchScalarFieldEnum = (typeof PurchaseBatchScalarFieldEnum)[keyof typeof PurchaseBatchScalarFieldEnum]
+
+
+export const PurchaseBatchLineScalarFieldEnum = {
+  id: 'id',
+  purchaseBatchId: 'purchaseBatchId',
+  itemType: 'itemType',
+  variantId: 'variantId',
+  supplyItemId: 'supplyItemId',
+  itemName: 'itemName',
+  description: 'description',
+  quantity: 'quantity',
+  quantityRemaining: 'quantityRemaining',
+  unitOfMeasure: 'unitOfMeasure',
+  unitCost: 'unitCost',
+  lineTotal: 'lineTotal',
+  status: 'status',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PurchaseBatchLineScalarFieldEnum = (typeof PurchaseBatchLineScalarFieldEnum)[keyof typeof PurchaseBatchLineScalarFieldEnum]
+
+
+export const ShipmentSupplyUsageScalarFieldEnum = {
+  id: 'id',
+  shipmentId: 'shipmentId',
+  supplyItemId: 'supplyItemId',
+  quantityUsed: 'quantityUsed',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ShipmentSupplyUsageScalarFieldEnum = (typeof ShipmentSupplyUsageScalarFieldEnum)[keyof typeof ShipmentSupplyUsageScalarFieldEnum]
+
+
+export const ShipmentSupplyUsageAllocationScalarFieldEnum = {
+  id: 'id',
+  shipmentSupplyUsageId: 'shipmentSupplyUsageId',
+  purchaseBatchLineId: 'purchaseBatchLineId',
+  quantityAllocated: 'quantityAllocated',
+  createdAt: 'createdAt'
+} as const
+
+export type ShipmentSupplyUsageAllocationScalarFieldEnum = (typeof ShipmentSupplyUsageAllocationScalarFieldEnum)[keyof typeof ShipmentSupplyUsageAllocationScalarFieldEnum]
 
 
 export const PurchaseInvoiceScalarFieldEnum = {

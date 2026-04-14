@@ -180,7 +180,8 @@ export class FinanceService {
     }
 
     if (Array.isArray(result.batches)) {
-      result.batches = result.batches.map((batch) => {
+      const batches = result.batches as unknown[];
+      result.batches = batches.map((batch): unknown => {
         if (!batch || typeof batch !== 'object') {
           return batch;
         }

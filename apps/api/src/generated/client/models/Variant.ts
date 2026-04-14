@@ -315,6 +315,7 @@ export type VariantWhereInput = {
   personalizationRequests?: Prisma.PersonalizationRequestListRelationFilter
   product?: Prisma.XOR<Prisma.ProductScalarRelationFilter, Prisma.ProductWhereInput>
   purchaseBatches?: Prisma.PurchaseBatchListRelationFilter
+  purchaseBatchLines?: Prisma.PurchaseBatchLineListRelationFilter
 }
 
 export type VariantOrderByWithRelationInput = {
@@ -336,6 +337,7 @@ export type VariantOrderByWithRelationInput = {
   personalizationRequests?: Prisma.PersonalizationRequestOrderByRelationAggregateInput
   product?: Prisma.ProductOrderByWithRelationInput
   purchaseBatches?: Prisma.PurchaseBatchOrderByRelationAggregateInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineOrderByRelationAggregateInput
 }
 
 export type VariantWhereUniqueInput = Prisma.AtLeast<{
@@ -360,6 +362,7 @@ export type VariantWhereUniqueInput = Prisma.AtLeast<{
   personalizationRequests?: Prisma.PersonalizationRequestListRelationFilter
   product?: Prisma.XOR<Prisma.ProductScalarRelationFilter, Prisma.ProductWhereInput>
   purchaseBatches?: Prisma.PurchaseBatchListRelationFilter
+  purchaseBatchLines?: Prisma.PurchaseBatchLineListRelationFilter
 }, "id" | "sku">
 
 export type VariantOrderByWithAggregationInput = {
@@ -422,6 +425,7 @@ export type VariantCreateInput = {
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutVariantInput
   product: Prisma.ProductCreateNestedOneWithoutVariantsInput
   purchaseBatches?: Prisma.PurchaseBatchCreateNestedManyWithoutVariantInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineCreateNestedManyWithoutVariantInput
 }
 
 export type VariantUncheckedCreateInput = {
@@ -442,6 +446,7 @@ export type VariantUncheckedCreateInput = {
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutVariantInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutVariantInput
   purchaseBatches?: Prisma.PurchaseBatchUncheckedCreateNestedManyWithoutVariantInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineUncheckedCreateNestedManyWithoutVariantInput
 }
 
 export type VariantUpdateInput = {
@@ -462,6 +467,7 @@ export type VariantUpdateInput = {
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutVariantNestedInput
   product?: Prisma.ProductUpdateOneRequiredWithoutVariantsNestedInput
   purchaseBatches?: Prisma.PurchaseBatchUpdateManyWithoutVariantNestedInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineUpdateManyWithoutVariantNestedInput
 }
 
 export type VariantUncheckedUpdateInput = {
@@ -482,6 +488,7 @@ export type VariantUncheckedUpdateInput = {
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutVariantNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutVariantNestedInput
   purchaseBatches?: Prisma.PurchaseBatchUncheckedUpdateManyWithoutVariantNestedInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineUncheckedUpdateManyWithoutVariantNestedInput
 }
 
 export type VariantCreateManyInput = {
@@ -718,6 +725,22 @@ export type VariantUpdateOneWithoutPurchaseBatchesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.VariantUpdateToOneWithWhereWithoutPurchaseBatchesInput, Prisma.VariantUpdateWithoutPurchaseBatchesInput>, Prisma.VariantUncheckedUpdateWithoutPurchaseBatchesInput>
 }
 
+export type VariantCreateNestedOneWithoutPurchaseBatchLinesInput = {
+  create?: Prisma.XOR<Prisma.VariantCreateWithoutPurchaseBatchLinesInput, Prisma.VariantUncheckedCreateWithoutPurchaseBatchLinesInput>
+  connectOrCreate?: Prisma.VariantCreateOrConnectWithoutPurchaseBatchLinesInput
+  connect?: Prisma.VariantWhereUniqueInput
+}
+
+export type VariantUpdateOneWithoutPurchaseBatchLinesNestedInput = {
+  create?: Prisma.XOR<Prisma.VariantCreateWithoutPurchaseBatchLinesInput, Prisma.VariantUncheckedCreateWithoutPurchaseBatchLinesInput>
+  connectOrCreate?: Prisma.VariantCreateOrConnectWithoutPurchaseBatchLinesInput
+  upsert?: Prisma.VariantUpsertWithoutPurchaseBatchLinesInput
+  disconnect?: Prisma.VariantWhereInput | boolean
+  delete?: Prisma.VariantWhereInput | boolean
+  connect?: Prisma.VariantWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.VariantUpdateToOneWithWhereWithoutPurchaseBatchLinesInput, Prisma.VariantUpdateWithoutPurchaseBatchLinesInput>, Prisma.VariantUncheckedUpdateWithoutPurchaseBatchLinesInput>
+}
+
 export type VariantCreateWithoutProductInput = {
   id?: string
   sku: string
@@ -735,6 +758,7 @@ export type VariantCreateWithoutProductInput = {
   orderItems?: Prisma.OrderItemCreateNestedManyWithoutVariantInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutVariantInput
   purchaseBatches?: Prisma.PurchaseBatchCreateNestedManyWithoutVariantInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineCreateNestedManyWithoutVariantInput
 }
 
 export type VariantUncheckedCreateWithoutProductInput = {
@@ -754,6 +778,7 @@ export type VariantUncheckedCreateWithoutProductInput = {
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutVariantInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutVariantInput
   purchaseBatches?: Prisma.PurchaseBatchUncheckedCreateNestedManyWithoutVariantInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineUncheckedCreateNestedManyWithoutVariantInput
 }
 
 export type VariantCreateOrConnectWithoutProductInput = {
@@ -819,6 +844,7 @@ export type VariantCreateWithoutOrderItemsInput = {
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutVariantInput
   product: Prisma.ProductCreateNestedOneWithoutVariantsInput
   purchaseBatches?: Prisma.PurchaseBatchCreateNestedManyWithoutVariantInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineCreateNestedManyWithoutVariantInput
 }
 
 export type VariantUncheckedCreateWithoutOrderItemsInput = {
@@ -838,6 +864,7 @@ export type VariantUncheckedCreateWithoutOrderItemsInput = {
   productId: string
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutVariantInput
   purchaseBatches?: Prisma.PurchaseBatchUncheckedCreateNestedManyWithoutVariantInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineUncheckedCreateNestedManyWithoutVariantInput
 }
 
 export type VariantCreateOrConnectWithoutOrderItemsInput = {
@@ -873,6 +900,7 @@ export type VariantUpdateWithoutOrderItemsInput = {
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutVariantNestedInput
   product?: Prisma.ProductUpdateOneRequiredWithoutVariantsNestedInput
   purchaseBatches?: Prisma.PurchaseBatchUpdateManyWithoutVariantNestedInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineUpdateManyWithoutVariantNestedInput
 }
 
 export type VariantUncheckedUpdateWithoutOrderItemsInput = {
@@ -892,6 +920,7 @@ export type VariantUncheckedUpdateWithoutOrderItemsInput = {
   productId?: Prisma.StringFieldUpdateOperationsInput | string
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutVariantNestedInput
   purchaseBatches?: Prisma.PurchaseBatchUncheckedUpdateManyWithoutVariantNestedInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineUncheckedUpdateManyWithoutVariantNestedInput
 }
 
 export type VariantCreateWithoutPersonalizationRequestsInput = {
@@ -911,6 +940,7 @@ export type VariantCreateWithoutPersonalizationRequestsInput = {
   orderItems?: Prisma.OrderItemCreateNestedManyWithoutVariantInput
   product: Prisma.ProductCreateNestedOneWithoutVariantsInput
   purchaseBatches?: Prisma.PurchaseBatchCreateNestedManyWithoutVariantInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineCreateNestedManyWithoutVariantInput
 }
 
 export type VariantUncheckedCreateWithoutPersonalizationRequestsInput = {
@@ -930,6 +960,7 @@ export type VariantUncheckedCreateWithoutPersonalizationRequestsInput = {
   productId: string
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutVariantInput
   purchaseBatches?: Prisma.PurchaseBatchUncheckedCreateNestedManyWithoutVariantInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineUncheckedCreateNestedManyWithoutVariantInput
 }
 
 export type VariantCreateOrConnectWithoutPersonalizationRequestsInput = {
@@ -965,6 +996,7 @@ export type VariantUpdateWithoutPersonalizationRequestsInput = {
   orderItems?: Prisma.OrderItemUpdateManyWithoutVariantNestedInput
   product?: Prisma.ProductUpdateOneRequiredWithoutVariantsNestedInput
   purchaseBatches?: Prisma.PurchaseBatchUpdateManyWithoutVariantNestedInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineUpdateManyWithoutVariantNestedInput
 }
 
 export type VariantUncheckedUpdateWithoutPersonalizationRequestsInput = {
@@ -984,6 +1016,7 @@ export type VariantUncheckedUpdateWithoutPersonalizationRequestsInput = {
   productId?: Prisma.StringFieldUpdateOperationsInput | string
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutVariantNestedInput
   purchaseBatches?: Prisma.PurchaseBatchUncheckedUpdateManyWithoutVariantNestedInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineUncheckedUpdateManyWithoutVariantNestedInput
 }
 
 export type VariantCreateWithoutPurchaseBatchesInput = {
@@ -1003,6 +1036,7 @@ export type VariantCreateWithoutPurchaseBatchesInput = {
   orderItems?: Prisma.OrderItemCreateNestedManyWithoutVariantInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutVariantInput
   product: Prisma.ProductCreateNestedOneWithoutVariantsInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineCreateNestedManyWithoutVariantInput
 }
 
 export type VariantUncheckedCreateWithoutPurchaseBatchesInput = {
@@ -1022,6 +1056,7 @@ export type VariantUncheckedCreateWithoutPurchaseBatchesInput = {
   productId: string
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutVariantInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutVariantInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineUncheckedCreateNestedManyWithoutVariantInput
 }
 
 export type VariantCreateOrConnectWithoutPurchaseBatchesInput = {
@@ -1057,6 +1092,7 @@ export type VariantUpdateWithoutPurchaseBatchesInput = {
   orderItems?: Prisma.OrderItemUpdateManyWithoutVariantNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutVariantNestedInput
   product?: Prisma.ProductUpdateOneRequiredWithoutVariantsNestedInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineUpdateManyWithoutVariantNestedInput
 }
 
 export type VariantUncheckedUpdateWithoutPurchaseBatchesInput = {
@@ -1076,6 +1112,103 @@ export type VariantUncheckedUpdateWithoutPurchaseBatchesInput = {
   productId?: Prisma.StringFieldUpdateOperationsInput | string
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutVariantNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutVariantNestedInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineUncheckedUpdateManyWithoutVariantNestedInput
+}
+
+export type VariantCreateWithoutPurchaseBatchLinesInput = {
+  id?: string
+  sku: string
+  size?: string | null
+  color: string
+  imageUrl: string
+  salePrice?: number | null
+  minPrice?: number | null
+  comparePrice?: number | null
+  costPrice?: number | null
+  totalCost?: number | null
+  taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  stock?: number
+  isActive?: boolean
+  orderItems?: Prisma.OrderItemCreateNestedManyWithoutVariantInput
+  personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutVariantInput
+  product: Prisma.ProductCreateNestedOneWithoutVariantsInput
+  purchaseBatches?: Prisma.PurchaseBatchCreateNestedManyWithoutVariantInput
+}
+
+export type VariantUncheckedCreateWithoutPurchaseBatchLinesInput = {
+  id?: string
+  sku: string
+  size?: string | null
+  color: string
+  imageUrl: string
+  salePrice?: number | null
+  minPrice?: number | null
+  comparePrice?: number | null
+  costPrice?: number | null
+  totalCost?: number | null
+  taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  stock?: number
+  isActive?: boolean
+  productId: string
+  orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutVariantInput
+  personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutVariantInput
+  purchaseBatches?: Prisma.PurchaseBatchUncheckedCreateNestedManyWithoutVariantInput
+}
+
+export type VariantCreateOrConnectWithoutPurchaseBatchLinesInput = {
+  where: Prisma.VariantWhereUniqueInput
+  create: Prisma.XOR<Prisma.VariantCreateWithoutPurchaseBatchLinesInput, Prisma.VariantUncheckedCreateWithoutPurchaseBatchLinesInput>
+}
+
+export type VariantUpsertWithoutPurchaseBatchLinesInput = {
+  update: Prisma.XOR<Prisma.VariantUpdateWithoutPurchaseBatchLinesInput, Prisma.VariantUncheckedUpdateWithoutPurchaseBatchLinesInput>
+  create: Prisma.XOR<Prisma.VariantCreateWithoutPurchaseBatchLinesInput, Prisma.VariantUncheckedCreateWithoutPurchaseBatchLinesInput>
+  where?: Prisma.VariantWhereInput
+}
+
+export type VariantUpdateToOneWithWhereWithoutPurchaseBatchLinesInput = {
+  where?: Prisma.VariantWhereInput
+  data: Prisma.XOR<Prisma.VariantUpdateWithoutPurchaseBatchLinesInput, Prisma.VariantUncheckedUpdateWithoutPurchaseBatchLinesInput>
+}
+
+export type VariantUpdateWithoutPurchaseBatchLinesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sku?: Prisma.StringFieldUpdateOperationsInput | string
+  size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  color?: Prisma.StringFieldUpdateOperationsInput | string
+  imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  salePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  minPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  comparePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  costPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  totalCost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  stock?: Prisma.IntFieldUpdateOperationsInput | number
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderItems?: Prisma.OrderItemUpdateManyWithoutVariantNestedInput
+  personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutVariantNestedInput
+  product?: Prisma.ProductUpdateOneRequiredWithoutVariantsNestedInput
+  purchaseBatches?: Prisma.PurchaseBatchUpdateManyWithoutVariantNestedInput
+}
+
+export type VariantUncheckedUpdateWithoutPurchaseBatchLinesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sku?: Prisma.StringFieldUpdateOperationsInput | string
+  size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  color?: Prisma.StringFieldUpdateOperationsInput | string
+  imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  salePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  minPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  comparePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  costPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  totalCost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  stock?: Prisma.IntFieldUpdateOperationsInput | number
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  productId?: Prisma.StringFieldUpdateOperationsInput | string
+  orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutVariantNestedInput
+  personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutVariantNestedInput
+  purchaseBatches?: Prisma.PurchaseBatchUncheckedUpdateManyWithoutVariantNestedInput
 }
 
 export type VariantCreateManyProductInput = {
@@ -1111,6 +1244,7 @@ export type VariantUpdateWithoutProductInput = {
   orderItems?: Prisma.OrderItemUpdateManyWithoutVariantNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutVariantNestedInput
   purchaseBatches?: Prisma.PurchaseBatchUpdateManyWithoutVariantNestedInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineUpdateManyWithoutVariantNestedInput
 }
 
 export type VariantUncheckedUpdateWithoutProductInput = {
@@ -1130,6 +1264,7 @@ export type VariantUncheckedUpdateWithoutProductInput = {
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutVariantNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutVariantNestedInput
   purchaseBatches?: Prisma.PurchaseBatchUncheckedUpdateManyWithoutVariantNestedInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineUncheckedUpdateManyWithoutVariantNestedInput
 }
 
 export type VariantUncheckedUpdateManyWithoutProductInput = {
@@ -1157,12 +1292,14 @@ export type VariantCountOutputType = {
   orderItems: number
   personalizationRequests: number
   purchaseBatches: number
+  purchaseBatchLines: number
 }
 
 export type VariantCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   orderItems?: boolean | VariantCountOutputTypeCountOrderItemsArgs
   personalizationRequests?: boolean | VariantCountOutputTypeCountPersonalizationRequestsArgs
   purchaseBatches?: boolean | VariantCountOutputTypeCountPurchaseBatchesArgs
+  purchaseBatchLines?: boolean | VariantCountOutputTypeCountPurchaseBatchLinesArgs
 }
 
 /**
@@ -1196,6 +1333,13 @@ export type VariantCountOutputTypeCountPurchaseBatchesArgs<ExtArgs extends runti
   where?: Prisma.PurchaseBatchWhereInput
 }
 
+/**
+ * VariantCountOutputType without action
+ */
+export type VariantCountOutputTypeCountPurchaseBatchLinesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PurchaseBatchLineWhereInput
+}
+
 
 export type VariantSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1216,6 +1360,7 @@ export type VariantSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   personalizationRequests?: boolean | Prisma.Variant$personalizationRequestsArgs<ExtArgs>
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
   purchaseBatches?: boolean | Prisma.Variant$purchaseBatchesArgs<ExtArgs>
+  purchaseBatchLines?: boolean | Prisma.Variant$purchaseBatchLinesArgs<ExtArgs>
   _count?: boolean | Prisma.VariantCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["variant"]>
 
@@ -1278,6 +1423,7 @@ export type VariantInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs
   personalizationRequests?: boolean | Prisma.Variant$personalizationRequestsArgs<ExtArgs>
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
   purchaseBatches?: boolean | Prisma.Variant$purchaseBatchesArgs<ExtArgs>
+  purchaseBatchLines?: boolean | Prisma.Variant$purchaseBatchLinesArgs<ExtArgs>
   _count?: boolean | Prisma.VariantCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type VariantIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1294,6 +1440,7 @@ export type $VariantPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     personalizationRequests: Prisma.$PersonalizationRequestPayload<ExtArgs>[]
     product: Prisma.$ProductPayload<ExtArgs>
     purchaseBatches: Prisma.$PurchaseBatchPayload<ExtArgs>[]
+    purchaseBatchLines: Prisma.$PurchaseBatchLinePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1708,6 +1855,7 @@ export interface Prisma__VariantClient<T, Null = never, ExtArgs extends runtime.
   personalizationRequests<T extends Prisma.Variant$personalizationRequestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Variant$personalizationRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PersonalizationRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   product<T extends Prisma.ProductDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProductDefaultArgs<ExtArgs>>): Prisma.Prisma__ProductClient<runtime.Types.Result.GetResult<Prisma.$ProductPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   purchaseBatches<T extends Prisma.Variant$purchaseBatchesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Variant$purchaseBatchesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PurchaseBatchPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  purchaseBatchLines<T extends Prisma.Variant$purchaseBatchLinesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Variant$purchaseBatchLinesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PurchaseBatchLinePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2216,6 +2364,30 @@ export type Variant$purchaseBatchesArgs<ExtArgs extends runtime.Types.Extensions
   take?: number
   skip?: number
   distinct?: Prisma.PurchaseBatchScalarFieldEnum | Prisma.PurchaseBatchScalarFieldEnum[]
+}
+
+/**
+ * Variant.purchaseBatchLines
+ */
+export type Variant$purchaseBatchLinesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PurchaseBatchLine
+   */
+  select?: Prisma.PurchaseBatchLineSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PurchaseBatchLine
+   */
+  omit?: Prisma.PurchaseBatchLineOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PurchaseBatchLineInclude<ExtArgs> | null
+  where?: Prisma.PurchaseBatchLineWhereInput
+  orderBy?: Prisma.PurchaseBatchLineOrderByWithRelationInput | Prisma.PurchaseBatchLineOrderByWithRelationInput[]
+  cursor?: Prisma.PurchaseBatchLineWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PurchaseBatchLineScalarFieldEnum | Prisma.PurchaseBatchLineScalarFieldEnum[]
 }
 
 /**

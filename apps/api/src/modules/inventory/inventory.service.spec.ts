@@ -29,6 +29,19 @@ describe('InventoryService', () => {
       update: jest.fn(),
       delete: jest.fn(),
     },
+    purchaseBatchLine: {
+      create: jest.fn(),
+      update: jest.fn(),
+      findMany: jest.fn(),
+      count: jest.fn(),
+      aggregate: jest.fn(),
+    },
+    supplyItem: {
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+    },
     supplier: {
       findUnique: jest.fn(),
       update: jest.fn(),
@@ -49,6 +62,13 @@ describe('InventoryService', () => {
     purchaseBatch: {
       findMany: jest.fn(),
     },
+    purchaseBatchLine: {
+      findMany: jest.fn(),
+    },
+    supplyItem: {
+      findMany: jest.fn(),
+      create: jest.fn(),
+    },
   };
 
   let service: InventoryService;
@@ -60,6 +80,43 @@ describe('InventoryService', () => {
       (callback: (client: typeof tx) => Promise<unknown>) => callback(tx),
     );
   });
+
+  function mockPurchaseBatchCreate() {
+    tx.purchaseBatch.create.mockImplementation(
+      ({ data }: { data: Record<string, unknown> }) =>
+        Promise.resolve({
+          id: 'batch-1',
+          ...data,
+          product: null,
+          supplier: { id: data.supplierId, name: 'Proveedor demo' },
+          variant: null,
+          lines: [],
+        }),
+    );
+    tx.purchaseBatch.update.mockImplementation(
+      ({ data }: { data: Record<string, unknown> }) =>
+        Promise.resolve({
+          id: 'batch-1',
+          ...data,
+          product: null,
+          supplier: { id: 'supplier-1', name: 'Proveedor demo' },
+          variant: null,
+          lines: [],
+        }),
+    );
+  }
+
+  function mockCreateBatchBase() {
+    tx.opexCategory.findUnique.mockResolvedValue({ id: 'opex-1' });
+    tx.supplier.findUnique.mockResolvedValue({
+      id: 'supplier-1',
+      name: 'Proveedor demo',
+    });
+    tx.financialTransaction.create.mockResolvedValue({});
+    tx.supplier.update.mockResolvedValue({});
+    tx.auditLog.create.mockResolvedValue({});
+    mockPurchaseBatchCreate();
+  }
 
   it('recalcula el total financiero desde los items y no confia en totalCost del cliente', async () => {
     tx.opexCategory.findUnique.mockResolvedValue({
@@ -148,48 +205,332 @@ describe('InventoryService', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
+  it('crea recepcion de producto vendible y solo actualiza stock de variante', async () => {
+    mockCreateBatchBase();
+    tx.variant.findUnique.mockResolvedValue({
+      id: 'variant-1',
+      productId: 'product-1',
+    });
+    tx.product.findUnique.mockResolvedValue({
+      id: 'product-1',
+      name: 'Bolso catalogo',
+    });
+
+    await service.createPurchaseBatch({
+      supplierId: 'supplier-1',
+      totalCost: 5000,
+      status: 'RECIBIDO',
+      purchaseDate: '2026-04-14',
+      userId: 'admin-1',
+      items: [
+        {
+          itemType: 'VARIANT',
+          productId: 'product-1',
+          variantId: 'variant-1',
+          cantidad: 5,
+          unitOfMeasure: 'und',
+          costoUnitario: 1000,
+        },
+      ],
+    });
+
+    expect(tx.purchaseBatchLine.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        itemType: 'VARIANT',
+        variantId: 'variant-1',
+        supplyItemId: null,
+        quantity: 5,
+        quantityRemaining: 5,
+        unitOfMeasure: 'und',
+      }) as unknown,
+    });
+    expect(tx.variant.update).toHaveBeenCalledWith({
+      where: { id: 'variant-1' },
+      data: {
+        stock: { increment: 5 },
+        costPrice: 1000,
+      },
+    });
+    expect(tx.supplyItem.update).not.toHaveBeenCalled();
+  });
+
+  it('crea recepcion de Supply Bolsa de envio sin tocar stock vendible', async () => {
+    mockCreateBatchBase();
+    tx.supplyItem.findUnique.mockResolvedValue({
+      id: 'supply-1',
+      name: 'Bolsa de envio',
+      unitOfMeasure: 'und',
+    });
+
+    await service.createPurchaseBatch({
+      supplierId: 'supplier-1',
+      totalCost: 2400,
+      status: 'RECIBIDO',
+      purchaseDate: '2026-04-14',
+      userId: 'admin-1',
+      items: [
+        {
+          itemType: 'SUPPLY',
+          supplyItemId: 'supply-1',
+          cantidad: 12,
+          unitOfMeasure: 'und',
+          costoUnitario: 200,
+        },
+      ],
+    });
+
+    expect(tx.purchaseBatchLine.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        itemType: 'SUPPLY',
+        variantId: null,
+        supplyItemId: 'supply-1',
+        itemName: 'Bolsa de envio',
+        quantity: 12,
+        unitOfMeasure: 'und',
+      }) as unknown,
+    });
+    expect(tx.supplyItem.update).toHaveBeenCalledWith({
+      where: { id: 'supply-1' },
+      data: {
+        stock: { increment: 12 },
+        cost: 200,
+      },
+    });
+    expect(tx.variant.update).not.toHaveBeenCalled();
+  });
+
+  it('crea recepcion de Tool descriptiva sin exigir variantId', async () => {
+    mockCreateBatchBase();
+
+    await service.createPurchaseBatch({
+      supplierId: 'supplier-1',
+      totalCost: 45000,
+      status: 'RECIBIDO',
+      purchaseDate: '2026-04-14',
+      userId: 'admin-1',
+      items: [
+        {
+          itemType: 'TOOL',
+          itemName: 'Tijeras industriales',
+          cantidad: 1,
+          unitOfMeasure: 'und',
+          costoUnitario: 45000,
+        },
+      ],
+    });
+
+    expect(tx.purchaseBatchLine.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        itemType: 'TOOL',
+        variantId: null,
+        supplyItemId: null,
+        itemName: 'Tijeras industriales',
+        quantity: 1,
+      }) as unknown,
+    });
+    expect(tx.variant.update).not.toHaveBeenCalled();
+    expect(tx.supplyItem.update).not.toHaveBeenCalled();
+  });
+
+  it('crea recepcion de Other descriptiva sin exigir variantId', async () => {
+    mockCreateBatchBase();
+
+    await service.createPurchaseBatch({
+      supplierId: 'supplier-1',
+      totalCost: 15000,
+      status: 'RECIBIDO',
+      purchaseDate: '2026-04-14',
+      userId: 'admin-1',
+      items: [
+        {
+          itemType: 'OTHER',
+          description: 'Elemento operativo no catalogado',
+          cantidad: 3,
+          unitOfMeasure: 'und',
+          costoUnitario: 5000,
+        },
+      ],
+    });
+
+    expect(tx.purchaseBatchLine.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        itemType: 'OTHER',
+        variantId: null,
+        supplyItemId: null,
+        itemName: null,
+        description: 'Elemento operativo no catalogado',
+        quantity: 3,
+      }) as unknown,
+    });
+    expect(tx.variant.update).not.toHaveBeenCalled();
+    expect(tx.supplyItem.update).not.toHaveBeenCalled();
+  });
+
+  it('crea recepcion mixta y aplica stock solo donde corresponde', async () => {
+    mockCreateBatchBase();
+    tx.variant.findUnique.mockResolvedValue({
+      id: 'variant-1',
+      productId: 'product-1',
+    });
+    tx.product.findUnique.mockResolvedValue({
+      id: 'product-1',
+      name: 'Bolso catalogo',
+    });
+    tx.supplyItem.findUnique.mockResolvedValue({
+      id: 'supply-1',
+      name: 'Bolsa de envio',
+      unitOfMeasure: 'und',
+    });
+
+    await service.createPurchaseBatch({
+      supplierId: 'supplier-1',
+      totalCost: 67500,
+      status: 'RECIBIDO',
+      purchaseDate: '2026-04-14',
+      userId: 'admin-1',
+      items: [
+        {
+          itemType: 'VARIANT',
+          productId: 'product-1',
+          variantId: 'variant-1',
+          cantidad: 2,
+          unitOfMeasure: 'und',
+          costoUnitario: 1000,
+        },
+        {
+          itemType: 'SUPPLY',
+          supplyItemId: 'supply-1',
+          cantidad: 10,
+          unitOfMeasure: 'und',
+          costoUnitario: 250,
+        },
+        {
+          itemType: 'TOOL',
+          itemName: 'Regla metalica',
+          cantidad: 1,
+          unitOfMeasure: 'und',
+          costoUnitario: 18000,
+        },
+        {
+          itemType: 'OTHER',
+          itemName: 'Ajuste operativo',
+          cantidad: 3,
+          unitOfMeasure: 'und',
+          costoUnitario: 15000,
+        },
+      ],
+    });
+
+    expect(tx.purchaseBatch.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          productId: null,
+          variantId: null,
+          quantityReceived: 0,
+        }) as unknown,
+      }),
+    );
+    expect(tx.purchaseBatchLine.create).toHaveBeenCalledTimes(4);
+    expect(tx.purchaseBatchLine.create).toHaveBeenNthCalledWith(1, {
+      data: expect.objectContaining({
+        itemType: 'VARIANT',
+        variantId: 'variant-1',
+        supplyItemId: null,
+      }) as unknown,
+    });
+    expect(tx.purchaseBatchLine.create).toHaveBeenNthCalledWith(2, {
+      data: expect.objectContaining({
+        itemType: 'SUPPLY',
+        variantId: null,
+        supplyItemId: 'supply-1',
+      }) as unknown,
+    });
+    expect(tx.purchaseBatchLine.create).toHaveBeenNthCalledWith(3, {
+      data: expect.objectContaining({
+        itemType: 'TOOL',
+        variantId: null,
+        supplyItemId: null,
+      }) as unknown,
+    });
+    expect(tx.purchaseBatchLine.create).toHaveBeenNthCalledWith(4, {
+      data: expect.objectContaining({
+        itemType: 'OTHER',
+        variantId: null,
+        supplyItemId: null,
+      }) as unknown,
+    });
+    expect(tx.variant.update).toHaveBeenCalledTimes(1);
+    expect(tx.variant.update).toHaveBeenCalledWith({
+      where: { id: 'variant-1' },
+      data: {
+        stock: { increment: 2 },
+        costPrice: 1000,
+      },
+    });
+    expect(tx.supplyItem.update).toHaveBeenCalledTimes(1);
+    expect(tx.supplyItem.update).toHaveBeenCalledWith({
+      where: { id: 'supply-1' },
+      data: {
+        stock: { increment: 10 },
+        cost: 250,
+      },
+    });
+  });
+
   it('solo devuelve productos con lotes activos en inventario detallado', async () => {
-    prisma.product.findMany.mockResolvedValue([
+    prisma.purchaseBatchLine.findMany.mockResolvedValue([
       {
-        id: 'product-1',
-        name: 'Tote Bag Crudo',
-        slug: 'tote-bag-crudo',
-        images: [{ url: 'https://example.com/crudo.jpg' }],
-        purchaseBatches: [
-          {
-            id: 'batch-1',
-            quantityRemaining: 60,
-            unitCost: 15411,
-            supplier: { id: 'supplier-1', name: 'Proveedor A' },
+        id: 'line-1',
+        purchaseBatchId: 'batch-1',
+        quantity: 60,
+        quantityRemaining: 60,
+        unitCost: 15411,
+        lineTotal: 924660,
+        status: 'IN_STOCK',
+        variant: {
+          id: 'variant-1',
+          product: {
+            id: 'product-1',
+            name: 'Tote Bag Crudo',
+            slug: 'tote-bag-crudo',
+            images: [{ url: 'https://example.com/crudo.jpg' }],
           },
-        ],
+        },
+        purchaseBatch: {
+          id: 'batch-1',
+          createdAt: new Date('2026-04-01T00:00:00.000Z'),
+          supplier: { id: 'supplier-1', name: 'Proveedor A' },
+        },
       },
     ]);
 
     const result = await service.getDetailedInventory();
 
-    expect(prisma.product.findMany).toHaveBeenCalledWith({
+    expect(prisma.purchaseBatchLine.findMany).toHaveBeenCalledWith({
       where: {
-        purchaseBatches: {
-          some: {
-            status: 'IN_STOCK',
-            quantityRemaining: { gt: 0 },
-            variantId: { not: null },
-          },
+        itemType: 'VARIANT',
+        variantId: { not: null },
+        status: 'IN_STOCK',
+        quantityRemaining: { gt: 0 },
+        purchaseBatch: {
+          status: 'IN_STOCK',
         },
       },
       include: {
-        purchaseBatches: {
-          where: {
-            status: 'IN_STOCK',
-            quantityRemaining: { gt: 0 },
-            variantId: { not: null },
+        variant: {
+          include: {
+            product: {
+              include: {
+                images: { take: 1 },
+              },
+            },
           },
-          include: { supplier: true },
-          orderBy: { createdAt: 'asc' },
         },
-        images: { take: 1 },
+        purchaseBatch: {
+          include: { supplier: true },
+        },
       },
+      orderBy: [{ purchaseBatch: { createdAt: 'asc' } }, { createdAt: 'asc' }],
     });
     expect(result).toEqual([
       {
@@ -203,8 +544,13 @@ describe('InventoryService', () => {
         batches: [
           {
             id: 'batch-1',
+            lineId: 'line-1',
+            quantityReceived: 60,
             quantityRemaining: 60,
             unitCost: 15411,
+            totalCost: 924660,
+            status: 'IN_STOCK',
+            createdAt: new Date('2026-04-01T00:00:00.000Z'),
             supplier: { id: 'supplier-1', name: 'Proveedor A' },
           },
         ],

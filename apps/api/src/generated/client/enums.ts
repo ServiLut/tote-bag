@@ -151,6 +151,24 @@ export const BatchStatus = {
 export type BatchStatus = (typeof BatchStatus)[keyof typeof BatchStatus]
 
 
+export const PurchaseBatchItemType = {
+  VARIANT: 'VARIANT',
+  SUPPLY: 'SUPPLY',
+  TOOL: 'TOOL',
+  OTHER: 'OTHER'
+} as const
+
+export type PurchaseBatchItemType = (typeof PurchaseBatchItemType)[keyof typeof PurchaseBatchItemType]
+
+
+export const SupplyItemType = {
+  GENERAL: 'GENERAL',
+  SHIPPING_BAG: 'SHIPPING_BAG'
+} as const
+
+export type SupplyItemType = (typeof SupplyItemType)[keyof typeof SupplyItemType]
+
+
 export const PurchaseInvoiceStatus = {
   PENDING: 'PENDING',
   PARTIAL: 'PARTIAL',

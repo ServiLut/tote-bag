@@ -89,6 +89,7 @@ model Variant {
   personalizationRequests PersonalizationRequest[]
   product                 Product                  @relation(fields: [productId], references: [id], onDelete: Cascade)
   purchaseBatches         PurchaseBatch[]
+  purchaseBatchLines      PurchaseBatchLine[]
 
   @@index([productId, size])
   @@index([productId, isActive])
@@ -144,20 +145,21 @@ model ShippingProvider {
 }
 
 model Shipment {
-  id                String            @id @default(uuid()) @map("id")
-  orderId           String            @unique @map("order_id")
-  providerId        String?           @map("provider_id")
-  trackingNumber    String?           @map("tracking_number")
-  status            ShipmentStatus    @default(PENDING) @map("status")
-  weight            Float?            @map("weight")
-  dimensions        String?           @map("dimensions")
-  estimatedDelivery DateTime?         @map("estimated_delivery")
-  shippedAt         DateTime?         @map("shipped_at")
-  deliveredAt       DateTime?         @map("delivered_at")
-  createdAt         DateTime          @default(now()) @map("created_at")
-  updatedAt         DateTime          @updatedAt @map("updated_at")
-  order             Order             @relation(fields: [orderId], references: [id])
-  provider          ShippingProvider? @relation(fields: [providerId], references: [id])
+  id                String                @id @default(uuid()) @map("id")
+  orderId           String                @unique @map("order_id")
+  providerId        String?               @map("provider_id")
+  trackingNumber    String?               @map("tracking_number")
+  status            ShipmentStatus        @default(PENDING) @map("status")
+  weight            Float?                @map("weight")
+  dimensions        String?               @map("dimensions")
+  estimatedDelivery DateTime?             @map("estimated_delivery")
+  shippedAt         DateTime?             @map("shipped_at")
+  deliveredAt       DateTime?             @map("delivered_at")
+  createdAt         DateTime              @default(now()) @map("created_at")
+  updatedAt         DateTime              @updatedAt @map("updated_at")
+  order             Order                 @relation(fields: [orderId], references: [id])
+  provider          ShippingProvider?     @relation(fields: [providerId], references: [id])
+  supplyUsages      ShipmentSupplyUsage[]
 
   @@map("shipments")
   @@schema("tote-bag")
@@ -620,9 +622,32 @@ model Supplier {
   @@schema("tote-bag")
 }
 
+model SupplyItem {
+  id                 String                @id @default(uuid()) @map("id")
+  name               String                @map("name")
+  sku                String?               @unique @map("sku")
+  category           String                @map("category")
+  supplyType         SupplyItemType        @default(GENERAL) @map("supply_type")
+  unitOfMeasure      String                @map("unit_of_measure")
+  cost               Decimal               @default(0) @map("cost") @db.Decimal(18, 2)
+  stock              Decimal               @default(0) @map("stock") @db.Decimal(18, 3)
+  minStock           Decimal?              @map("min_stock") @db.Decimal(18, 3)
+  isActive           Boolean               @default(true) @map("is_active")
+  createdAt          DateTime              @default(now()) @map("created_at")
+  updatedAt          DateTime              @updatedAt @map("updated_at")
+  purchaseBatchLines PurchaseBatchLine[]
+  shipmentUsages     ShipmentSupplyUsage[]
+
+  @@index([category, isActive])
+  @@index([supplyType, isActive])
+  @@index([name])
+  @@map("supply_items")
+  @@schema("tote-bag")
+}
+
 model PurchaseBatch {
   id                String                 @id @default(uuid()) @map("id")
-  productId         String                 @map("product_id")
+  productId         String?                @map("product_id")
   variantId         String?                @map("variant_id")
   supplierId        String                 @map("supplier_id")
   quantityReceived  Int                    @map("quantity_received")
@@ -633,13 +658,77 @@ model PurchaseBatch {
   paymentReceiptUrl String?                @map("payment_receipt_url")
   createdAt         DateTime               @default(now()) @map("created_at")
   updatedAt         DateTime               @updatedAt @map("updated_at")
+  lines             PurchaseBatchLine[]
   transactions      FinancialTransaction[]
   invoices          PurchaseInvoice[]
-  product           Product                @relation(fields: [productId], references: [id])
+  product           Product?               @relation(fields: [productId], references: [id])
   supplier          Supplier               @relation(fields: [supplierId], references: [id])
   variant           Variant?               @relation(fields: [variantId], references: [id])
 
   @@map("purchase_batches")
+  @@schema("tote-bag")
+}
+
+model PurchaseBatchLine {
+  id                       String                          @id @default(uuid()) @map("id")
+  purchaseBatchId          String                          @map("purchase_batch_id")
+  itemType                 PurchaseBatchItemType           @map("item_type")
+  variantId                String?                         @map("variant_id")
+  supplyItemId             String?                         @map("supply_item_id")
+  itemName                 String?                         @map("item_name")
+  description              String?                         @map("description")
+  quantity                 Decimal                         @map("quantity") @db.Decimal(18, 3)
+  quantityRemaining        Decimal                         @default(0) @map("quantity_remaining") @db.Decimal(18, 3)
+  unitOfMeasure            String                          @map("unit_of_measure")
+  unitCost                 Decimal                         @map("unit_cost") @db.Decimal(18, 2)
+  lineTotal                Decimal                         @map("line_total") @db.Decimal(18, 2)
+  status                   BatchStatus                     @default(IN_STOCK) @map("status")
+  notes                    String?                         @map("notes")
+  createdAt                DateTime                        @default(now()) @map("created_at")
+  updatedAt                DateTime                        @updatedAt @map("updated_at")
+  purchaseBatch            PurchaseBatch                   @relation(fields: [purchaseBatchId], references: [id], onDelete: Cascade)
+  variant                  Variant?                        @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  supplyItem               SupplyItem?                     @relation(fields: [supplyItemId], references: [id], onDelete: SetNull)
+  shipmentUsageAllocations ShipmentSupplyUsageAllocation[]
+
+  @@index([purchaseBatchId])
+  @@index([itemType])
+  @@index([variantId])
+  @@index([supplyItemId])
+  @@map("purchase_batch_lines")
+  @@schema("tote-bag")
+}
+
+model ShipmentSupplyUsage {
+  id           String                          @id @default(uuid()) @map("id")
+  shipmentId   String                          @map("shipment_id")
+  supplyItemId String                          @map("supply_item_id")
+  quantityUsed Decimal                         @map("quantity_used") @db.Decimal(18, 3)
+  createdAt    DateTime                        @default(now()) @map("created_at")
+  updatedAt    DateTime                        @updatedAt @map("updated_at")
+  shipment     Shipment                        @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  supplyItem   SupplyItem                      @relation(fields: [supplyItemId], references: [id])
+  allocations  ShipmentSupplyUsageAllocation[]
+
+  @@unique([shipmentId, supplyItemId])
+  @@index([shipmentId])
+  @@index([supplyItemId])
+  @@map("shipment_supply_usages")
+  @@schema("tote-bag")
+}
+
+model ShipmentSupplyUsageAllocation {
+  id                    String              @id @default(uuid()) @map("id")
+  shipmentSupplyUsageId String              @map("shipment_supply_usage_id")
+  purchaseBatchLineId   String              @map("purchase_batch_line_id")
+  quantityAllocated     Decimal             @map("quantity_allocated") @db.Decimal(18, 3)
+  createdAt             DateTime            @default(now()) @map("created_at")
+  shipmentSupplyUsage   ShipmentSupplyUsage @relation(fields: [shipmentSupplyUsageId], references: [id], onDelete: Cascade)
+  purchaseBatchLine     PurchaseBatchLine   @relation(fields: [purchaseBatchLineId], references: [id])
+
+  @@index([shipmentSupplyUsageId])
+  @@index([purchaseBatchLineId])
+  @@map("shipment_supply_usage_allocations")
   @@schema("tote-bag")
 }
 
@@ -918,6 +1007,22 @@ enum BatchStatus {
   IN_STOCK
   DEPLETED
   CANCELLED
+
+  @@schema("tote-bag")
+}
+
+enum PurchaseBatchItemType {
+  VARIANT
+  SUPPLY
+  TOOL
+  OTHER
+
+  @@schema("tote-bag")
+}
+
+enum SupplyItemType {
+  GENERAL
+  SHIPPING_BAG
 
   @@schema("tote-bag")
 }

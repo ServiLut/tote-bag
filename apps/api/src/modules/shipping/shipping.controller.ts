@@ -137,6 +137,31 @@ export class ShippingController {
     return this.shippingService.getShipments();
   }
 
+  @Get('shipping-bags/availability')
+  @ApiOperation({ summary: 'Consultar disponibilidad de bolsas de envio' })
+  async getShippingBagAvailability(
+    @Req() req: RequestWithUser,
+  ): Promise<unknown> {
+    const user = req.user;
+    if (!user?.id) throw new UnauthorizedException();
+    await this.ensureShipmentAccessPermission(user.id, 'read');
+
+    return this.shippingService.getShippingBagAvailability();
+  }
+
+  @Get('shipments/:orderId/supply-usage')
+  @ApiOperation({ summary: 'Consultar consumo de insumos por envio' })
+  async getShipmentSupplyUsage(
+    @Param('orderId') orderId: string,
+    @Req() req: RequestWithUser,
+  ): Promise<unknown> {
+    const user = req.user;
+    if (!user?.id) throw new UnauthorizedException();
+    await this.ensureShipmentAccessPermission(user.id, 'read');
+
+    return this.shippingService.getShipmentSupplyUsage(orderId);
+  }
+
   @Patch('shipments/:orderId')
   @ApiOperation({ summary: 'Actualizar estado de envio y numero de guia' })
   async updateShipment(

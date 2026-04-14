@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsArray,
   ValidateNested,
+  IsNotEmpty,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { parseLocalizedNumber } from '../../../common/utils/parse-localized-number';
@@ -19,9 +20,21 @@ export enum PurchaseDocumentTypeInput {
   DELIVERY_NOTE = 'DELIVERY_NOTE',
 }
 
+export enum PurchaseBatchLineItemTypeInput {
+  VARIANT = 'VARIANT',
+  SUPPLY = 'SUPPLY',
+  TOOL = 'TOOL',
+  OTHER = 'OTHER',
+}
+
 export class PurchaseBatchItemDto {
   @IsString()
-  nombre: string;
+  @IsOptional()
+  nombre?: string;
+
+  @IsEnum(PurchaseBatchLineItemTypeInput)
+  @IsOptional()
+  itemType?: PurchaseBatchLineItemTypeInput;
 
   @IsString()
   @IsOptional()
@@ -31,13 +44,33 @@ export class PurchaseBatchItemDto {
   @IsOptional()
   variantId?: string;
 
+  @IsString()
+  @IsOptional()
+  supplyItemId?: string;
+
+  @IsString()
+  @IsOptional()
+  itemName?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
   @IsNumber()
   @Transform(({ value }) => parseLocalizedNumber(value))
   cantidad: number;
 
+  @IsString()
+  @IsOptional()
+  unitOfMeasure?: string;
+
   @IsNumber()
   @Transform(({ value }) => parseLocalizedNumber(value))
   costoUnitario: number;
+
+  @IsString()
+  @IsOptional()
+  notes?: string;
 }
 
 export class CreatePurchaseBatchDto {
@@ -82,4 +115,37 @@ export class CreatePurchaseBatchDto {
   @IsOptional()
   @Transform(({ value }) => parseLocalizedNumber(value))
   quantityReceived?: number;
+}
+
+export class CreateSupplyItemDto {
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsString()
+  @IsOptional()
+  sku?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  category: string;
+
+  @IsString()
+  @IsNotEmpty()
+  unitOfMeasure: string;
+
+  @IsNumber()
+  @IsOptional()
+  @Transform(({ value }) => parseLocalizedNumber(value))
+  cost?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Transform(({ value }) => parseLocalizedNumber(value))
+  stock?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Transform(({ value }) => parseLocalizedNumber(value))
+  minStock?: number;
 }

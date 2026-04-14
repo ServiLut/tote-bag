@@ -234,7 +234,7 @@ export type PurchaseBatchGroupByArgs<ExtArgs extends runtime.Types.Extensions.In
 
 export type PurchaseBatchGroupByOutputType = {
   id: string
-  productId: string
+  productId: string | null
   variantId: string | null
   supplierId: string
   quantityReceived: number
@@ -272,7 +272,7 @@ export type PurchaseBatchWhereInput = {
   OR?: Prisma.PurchaseBatchWhereInput[]
   NOT?: Prisma.PurchaseBatchWhereInput | Prisma.PurchaseBatchWhereInput[]
   id?: Prisma.StringFilter<"PurchaseBatch"> | string
-  productId?: Prisma.StringFilter<"PurchaseBatch"> | string
+  productId?: Prisma.StringNullableFilter<"PurchaseBatch"> | string | null
   variantId?: Prisma.StringNullableFilter<"PurchaseBatch"> | string | null
   supplierId?: Prisma.StringFilter<"PurchaseBatch"> | string
   quantityReceived?: Prisma.IntFilter<"PurchaseBatch"> | number
@@ -283,16 +283,17 @@ export type PurchaseBatchWhereInput = {
   paymentReceiptUrl?: Prisma.StringNullableFilter<"PurchaseBatch"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PurchaseBatch"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PurchaseBatch"> | Date | string
+  lines?: Prisma.PurchaseBatchLineListRelationFilter
   transactions?: Prisma.FinancialTransactionListRelationFilter
   invoices?: Prisma.PurchaseInvoiceListRelationFilter
-  product?: Prisma.XOR<Prisma.ProductScalarRelationFilter, Prisma.ProductWhereInput>
+  product?: Prisma.XOR<Prisma.ProductNullableScalarRelationFilter, Prisma.ProductWhereInput> | null
   supplier?: Prisma.XOR<Prisma.SupplierScalarRelationFilter, Prisma.SupplierWhereInput>
   variant?: Prisma.XOR<Prisma.VariantNullableScalarRelationFilter, Prisma.VariantWhereInput> | null
 }
 
 export type PurchaseBatchOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  productId?: Prisma.SortOrder
+  productId?: Prisma.SortOrderInput | Prisma.SortOrder
   variantId?: Prisma.SortOrderInput | Prisma.SortOrder
   supplierId?: Prisma.SortOrder
   quantityReceived?: Prisma.SortOrder
@@ -303,6 +304,7 @@ export type PurchaseBatchOrderByWithRelationInput = {
   paymentReceiptUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  lines?: Prisma.PurchaseBatchLineOrderByRelationAggregateInput
   transactions?: Prisma.FinancialTransactionOrderByRelationAggregateInput
   invoices?: Prisma.PurchaseInvoiceOrderByRelationAggregateInput
   product?: Prisma.ProductOrderByWithRelationInput
@@ -315,7 +317,7 @@ export type PurchaseBatchWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.PurchaseBatchWhereInput | Prisma.PurchaseBatchWhereInput[]
   OR?: Prisma.PurchaseBatchWhereInput[]
   NOT?: Prisma.PurchaseBatchWhereInput | Prisma.PurchaseBatchWhereInput[]
-  productId?: Prisma.StringFilter<"PurchaseBatch"> | string
+  productId?: Prisma.StringNullableFilter<"PurchaseBatch"> | string | null
   variantId?: Prisma.StringNullableFilter<"PurchaseBatch"> | string | null
   supplierId?: Prisma.StringFilter<"PurchaseBatch"> | string
   quantityReceived?: Prisma.IntFilter<"PurchaseBatch"> | number
@@ -326,16 +328,17 @@ export type PurchaseBatchWhereUniqueInput = Prisma.AtLeast<{
   paymentReceiptUrl?: Prisma.StringNullableFilter<"PurchaseBatch"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PurchaseBatch"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PurchaseBatch"> | Date | string
+  lines?: Prisma.PurchaseBatchLineListRelationFilter
   transactions?: Prisma.FinancialTransactionListRelationFilter
   invoices?: Prisma.PurchaseInvoiceListRelationFilter
-  product?: Prisma.XOR<Prisma.ProductScalarRelationFilter, Prisma.ProductWhereInput>
+  product?: Prisma.XOR<Prisma.ProductNullableScalarRelationFilter, Prisma.ProductWhereInput> | null
   supplier?: Prisma.XOR<Prisma.SupplierScalarRelationFilter, Prisma.SupplierWhereInput>
   variant?: Prisma.XOR<Prisma.VariantNullableScalarRelationFilter, Prisma.VariantWhereInput> | null
 }, "id">
 
 export type PurchaseBatchOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  productId?: Prisma.SortOrder
+  productId?: Prisma.SortOrderInput | Prisma.SortOrder
   variantId?: Prisma.SortOrderInput | Prisma.SortOrder
   supplierId?: Prisma.SortOrder
   quantityReceived?: Prisma.SortOrder
@@ -358,7 +361,7 @@ export type PurchaseBatchScalarWhereWithAggregatesInput = {
   OR?: Prisma.PurchaseBatchScalarWhereWithAggregatesInput[]
   NOT?: Prisma.PurchaseBatchScalarWhereWithAggregatesInput | Prisma.PurchaseBatchScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"PurchaseBatch"> | string
-  productId?: Prisma.StringWithAggregatesFilter<"PurchaseBatch"> | string
+  productId?: Prisma.StringNullableWithAggregatesFilter<"PurchaseBatch"> | string | null
   variantId?: Prisma.StringNullableWithAggregatesFilter<"PurchaseBatch"> | string | null
   supplierId?: Prisma.StringWithAggregatesFilter<"PurchaseBatch"> | string
   quantityReceived?: Prisma.IntWithAggregatesFilter<"PurchaseBatch"> | number
@@ -381,16 +384,17 @@ export type PurchaseBatchCreateInput = {
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  lines?: Prisma.PurchaseBatchLineCreateNestedManyWithoutPurchaseBatchInput
   transactions?: Prisma.FinancialTransactionCreateNestedManyWithoutPurchaseBatchInput
   invoices?: Prisma.PurchaseInvoiceCreateNestedManyWithoutPurchaseBatchInput
-  product: Prisma.ProductCreateNestedOneWithoutPurchaseBatchesInput
+  product?: Prisma.ProductCreateNestedOneWithoutPurchaseBatchesInput
   supplier: Prisma.SupplierCreateNestedOneWithoutBatchesInput
   variant?: Prisma.VariantCreateNestedOneWithoutPurchaseBatchesInput
 }
 
 export type PurchaseBatchUncheckedCreateInput = {
   id?: string
-  productId: string
+  productId?: string | null
   variantId?: string | null
   supplierId: string
   quantityReceived: number
@@ -401,6 +405,7 @@ export type PurchaseBatchUncheckedCreateInput = {
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  lines?: Prisma.PurchaseBatchLineUncheckedCreateNestedManyWithoutPurchaseBatchInput
   transactions?: Prisma.FinancialTransactionUncheckedCreateNestedManyWithoutPurchaseBatchInput
   invoices?: Prisma.PurchaseInvoiceUncheckedCreateNestedManyWithoutPurchaseBatchInput
 }
@@ -415,16 +420,17 @@ export type PurchaseBatchUpdateInput = {
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lines?: Prisma.PurchaseBatchLineUpdateManyWithoutPurchaseBatchNestedInput
   transactions?: Prisma.FinancialTransactionUpdateManyWithoutPurchaseBatchNestedInput
   invoices?: Prisma.PurchaseInvoiceUpdateManyWithoutPurchaseBatchNestedInput
-  product?: Prisma.ProductUpdateOneRequiredWithoutPurchaseBatchesNestedInput
+  product?: Prisma.ProductUpdateOneWithoutPurchaseBatchesNestedInput
   supplier?: Prisma.SupplierUpdateOneRequiredWithoutBatchesNestedInput
   variant?: Prisma.VariantUpdateOneWithoutPurchaseBatchesNestedInput
 }
 
 export type PurchaseBatchUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  productId?: Prisma.StringFieldUpdateOperationsInput | string
+  productId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   supplierId?: Prisma.StringFieldUpdateOperationsInput | string
   quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
@@ -435,13 +441,14 @@ export type PurchaseBatchUncheckedUpdateInput = {
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lines?: Prisma.PurchaseBatchLineUncheckedUpdateManyWithoutPurchaseBatchNestedInput
   transactions?: Prisma.FinancialTransactionUncheckedUpdateManyWithoutPurchaseBatchNestedInput
   invoices?: Prisma.PurchaseInvoiceUncheckedUpdateManyWithoutPurchaseBatchNestedInput
 }
 
 export type PurchaseBatchCreateManyInput = {
   id?: string
-  productId: string
+  productId?: string | null
   variantId?: string | null
   supplierId: string
   quantityReceived: number
@@ -468,7 +475,7 @@ export type PurchaseBatchUpdateManyMutationInput = {
 
 export type PurchaseBatchUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  productId?: Prisma.StringFieldUpdateOperationsInput | string
+  productId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   supplierId?: Prisma.StringFieldUpdateOperationsInput | string
   quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
@@ -548,6 +555,11 @@ export type PurchaseBatchSumOrderByAggregateInput = {
   quantityRemaining?: Prisma.SortOrder
   unitCost?: Prisma.SortOrder
   totalCost?: Prisma.SortOrder
+}
+
+export type PurchaseBatchScalarRelationFilter = {
+  is?: Prisma.PurchaseBatchWhereInput
+  isNot?: Prisma.PurchaseBatchWhereInput
 }
 
 export type PurchaseBatchNullableScalarRelationFilter = {
@@ -685,6 +697,20 @@ export type EnumBatchStatusFieldUpdateOperationsInput = {
   set?: $Enums.BatchStatus
 }
 
+export type PurchaseBatchCreateNestedOneWithoutLinesInput = {
+  create?: Prisma.XOR<Prisma.PurchaseBatchCreateWithoutLinesInput, Prisma.PurchaseBatchUncheckedCreateWithoutLinesInput>
+  connectOrCreate?: Prisma.PurchaseBatchCreateOrConnectWithoutLinesInput
+  connect?: Prisma.PurchaseBatchWhereUniqueInput
+}
+
+export type PurchaseBatchUpdateOneRequiredWithoutLinesNestedInput = {
+  create?: Prisma.XOR<Prisma.PurchaseBatchCreateWithoutLinesInput, Prisma.PurchaseBatchUncheckedCreateWithoutLinesInput>
+  connectOrCreate?: Prisma.PurchaseBatchCreateOrConnectWithoutLinesInput
+  upsert?: Prisma.PurchaseBatchUpsertWithoutLinesInput
+  connect?: Prisma.PurchaseBatchWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.PurchaseBatchUpdateToOneWithWhereWithoutLinesInput, Prisma.PurchaseBatchUpdateWithoutLinesInput>, Prisma.PurchaseBatchUncheckedUpdateWithoutLinesInput>
+}
+
 export type PurchaseBatchCreateNestedOneWithoutInvoicesInput = {
   create?: Prisma.XOR<Prisma.PurchaseBatchCreateWithoutInvoicesInput, Prisma.PurchaseBatchUncheckedCreateWithoutInvoicesInput>
   connectOrCreate?: Prisma.PurchaseBatchCreateOrConnectWithoutInvoicesInput
@@ -727,6 +753,7 @@ export type PurchaseBatchCreateWithoutProductInput = {
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  lines?: Prisma.PurchaseBatchLineCreateNestedManyWithoutPurchaseBatchInput
   transactions?: Prisma.FinancialTransactionCreateNestedManyWithoutPurchaseBatchInput
   invoices?: Prisma.PurchaseInvoiceCreateNestedManyWithoutPurchaseBatchInput
   supplier: Prisma.SupplierCreateNestedOneWithoutBatchesInput
@@ -745,6 +772,7 @@ export type PurchaseBatchUncheckedCreateWithoutProductInput = {
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  lines?: Prisma.PurchaseBatchLineUncheckedCreateNestedManyWithoutPurchaseBatchInput
   transactions?: Prisma.FinancialTransactionUncheckedCreateNestedManyWithoutPurchaseBatchInput
   invoices?: Prisma.PurchaseInvoiceUncheckedCreateNestedManyWithoutPurchaseBatchInput
 }
@@ -780,7 +808,7 @@ export type PurchaseBatchScalarWhereInput = {
   OR?: Prisma.PurchaseBatchScalarWhereInput[]
   NOT?: Prisma.PurchaseBatchScalarWhereInput | Prisma.PurchaseBatchScalarWhereInput[]
   id?: Prisma.StringFilter<"PurchaseBatch"> | string
-  productId?: Prisma.StringFilter<"PurchaseBatch"> | string
+  productId?: Prisma.StringNullableFilter<"PurchaseBatch"> | string | null
   variantId?: Prisma.StringNullableFilter<"PurchaseBatch"> | string | null
   supplierId?: Prisma.StringFilter<"PurchaseBatch"> | string
   quantityReceived?: Prisma.IntFilter<"PurchaseBatch"> | number
@@ -803,15 +831,16 @@ export type PurchaseBatchCreateWithoutVariantInput = {
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  lines?: Prisma.PurchaseBatchLineCreateNestedManyWithoutPurchaseBatchInput
   transactions?: Prisma.FinancialTransactionCreateNestedManyWithoutPurchaseBatchInput
   invoices?: Prisma.PurchaseInvoiceCreateNestedManyWithoutPurchaseBatchInput
-  product: Prisma.ProductCreateNestedOneWithoutPurchaseBatchesInput
+  product?: Prisma.ProductCreateNestedOneWithoutPurchaseBatchesInput
   supplier: Prisma.SupplierCreateNestedOneWithoutBatchesInput
 }
 
 export type PurchaseBatchUncheckedCreateWithoutVariantInput = {
   id?: string
-  productId: string
+  productId?: string | null
   supplierId: string
   quantityReceived: number
   quantityRemaining: number
@@ -821,6 +850,7 @@ export type PurchaseBatchUncheckedCreateWithoutVariantInput = {
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  lines?: Prisma.PurchaseBatchLineUncheckedCreateNestedManyWithoutPurchaseBatchInput
   transactions?: Prisma.FinancialTransactionUncheckedCreateNestedManyWithoutPurchaseBatchInput
   invoices?: Prisma.PurchaseInvoiceUncheckedCreateNestedManyWithoutPurchaseBatchInput
 }
@@ -861,15 +891,16 @@ export type PurchaseBatchCreateWithoutSupplierInput = {
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  lines?: Prisma.PurchaseBatchLineCreateNestedManyWithoutPurchaseBatchInput
   transactions?: Prisma.FinancialTransactionCreateNestedManyWithoutPurchaseBatchInput
   invoices?: Prisma.PurchaseInvoiceCreateNestedManyWithoutPurchaseBatchInput
-  product: Prisma.ProductCreateNestedOneWithoutPurchaseBatchesInput
+  product?: Prisma.ProductCreateNestedOneWithoutPurchaseBatchesInput
   variant?: Prisma.VariantCreateNestedOneWithoutPurchaseBatchesInput
 }
 
 export type PurchaseBatchUncheckedCreateWithoutSupplierInput = {
   id?: string
-  productId: string
+  productId?: string | null
   variantId?: string | null
   quantityReceived: number
   quantityRemaining: number
@@ -879,6 +910,7 @@ export type PurchaseBatchUncheckedCreateWithoutSupplierInput = {
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  lines?: Prisma.PurchaseBatchLineUncheckedCreateNestedManyWithoutPurchaseBatchInput
   transactions?: Prisma.FinancialTransactionUncheckedCreateNestedManyWithoutPurchaseBatchInput
   invoices?: Prisma.PurchaseInvoiceUncheckedCreateNestedManyWithoutPurchaseBatchInput
 }
@@ -909,7 +941,7 @@ export type PurchaseBatchUpdateManyWithWhereWithoutSupplierInput = {
   data: Prisma.XOR<Prisma.PurchaseBatchUpdateManyMutationInput, Prisma.PurchaseBatchUncheckedUpdateManyWithoutSupplierInput>
 }
 
-export type PurchaseBatchCreateWithoutInvoicesInput = {
+export type PurchaseBatchCreateWithoutLinesInput = {
   id?: string
   quantityReceived: number
   quantityRemaining: number
@@ -920,14 +952,15 @@ export type PurchaseBatchCreateWithoutInvoicesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   transactions?: Prisma.FinancialTransactionCreateNestedManyWithoutPurchaseBatchInput
-  product: Prisma.ProductCreateNestedOneWithoutPurchaseBatchesInput
+  invoices?: Prisma.PurchaseInvoiceCreateNestedManyWithoutPurchaseBatchInput
+  product?: Prisma.ProductCreateNestedOneWithoutPurchaseBatchesInput
   supplier: Prisma.SupplierCreateNestedOneWithoutBatchesInput
   variant?: Prisma.VariantCreateNestedOneWithoutPurchaseBatchesInput
 }
 
-export type PurchaseBatchUncheckedCreateWithoutInvoicesInput = {
+export type PurchaseBatchUncheckedCreateWithoutLinesInput = {
   id?: string
-  productId: string
+  productId?: string | null
   variantId?: string | null
   supplierId: string
   quantityReceived: number
@@ -938,6 +971,91 @@ export type PurchaseBatchUncheckedCreateWithoutInvoicesInput = {
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  transactions?: Prisma.FinancialTransactionUncheckedCreateNestedManyWithoutPurchaseBatchInput
+  invoices?: Prisma.PurchaseInvoiceUncheckedCreateNestedManyWithoutPurchaseBatchInput
+}
+
+export type PurchaseBatchCreateOrConnectWithoutLinesInput = {
+  where: Prisma.PurchaseBatchWhereUniqueInput
+  create: Prisma.XOR<Prisma.PurchaseBatchCreateWithoutLinesInput, Prisma.PurchaseBatchUncheckedCreateWithoutLinesInput>
+}
+
+export type PurchaseBatchUpsertWithoutLinesInput = {
+  update: Prisma.XOR<Prisma.PurchaseBatchUpdateWithoutLinesInput, Prisma.PurchaseBatchUncheckedUpdateWithoutLinesInput>
+  create: Prisma.XOR<Prisma.PurchaseBatchCreateWithoutLinesInput, Prisma.PurchaseBatchUncheckedCreateWithoutLinesInput>
+  where?: Prisma.PurchaseBatchWhereInput
+}
+
+export type PurchaseBatchUpdateToOneWithWhereWithoutLinesInput = {
+  where?: Prisma.PurchaseBatchWhereInput
+  data: Prisma.XOR<Prisma.PurchaseBatchUpdateWithoutLinesInput, Prisma.PurchaseBatchUncheckedUpdateWithoutLinesInput>
+}
+
+export type PurchaseBatchUpdateWithoutLinesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
+  quantityRemaining?: Prisma.IntFieldUpdateOperationsInput | number
+  unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  status?: Prisma.EnumBatchStatusFieldUpdateOperationsInput | $Enums.BatchStatus
+  paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  transactions?: Prisma.FinancialTransactionUpdateManyWithoutPurchaseBatchNestedInput
+  invoices?: Prisma.PurchaseInvoiceUpdateManyWithoutPurchaseBatchNestedInput
+  product?: Prisma.ProductUpdateOneWithoutPurchaseBatchesNestedInput
+  supplier?: Prisma.SupplierUpdateOneRequiredWithoutBatchesNestedInput
+  variant?: Prisma.VariantUpdateOneWithoutPurchaseBatchesNestedInput
+}
+
+export type PurchaseBatchUncheckedUpdateWithoutLinesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  productId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  supplierId?: Prisma.StringFieldUpdateOperationsInput | string
+  quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
+  quantityRemaining?: Prisma.IntFieldUpdateOperationsInput | number
+  unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  status?: Prisma.EnumBatchStatusFieldUpdateOperationsInput | $Enums.BatchStatus
+  paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  transactions?: Prisma.FinancialTransactionUncheckedUpdateManyWithoutPurchaseBatchNestedInput
+  invoices?: Prisma.PurchaseInvoiceUncheckedUpdateManyWithoutPurchaseBatchNestedInput
+}
+
+export type PurchaseBatchCreateWithoutInvoicesInput = {
+  id?: string
+  quantityReceived: number
+  quantityRemaining: number
+  unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  status?: $Enums.BatchStatus
+  paymentReceiptUrl?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  lines?: Prisma.PurchaseBatchLineCreateNestedManyWithoutPurchaseBatchInput
+  transactions?: Prisma.FinancialTransactionCreateNestedManyWithoutPurchaseBatchInput
+  product?: Prisma.ProductCreateNestedOneWithoutPurchaseBatchesInput
+  supplier: Prisma.SupplierCreateNestedOneWithoutBatchesInput
+  variant?: Prisma.VariantCreateNestedOneWithoutPurchaseBatchesInput
+}
+
+export type PurchaseBatchUncheckedCreateWithoutInvoicesInput = {
+  id?: string
+  productId?: string | null
+  variantId?: string | null
+  supplierId: string
+  quantityReceived: number
+  quantityRemaining: number
+  unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  status?: $Enums.BatchStatus
+  paymentReceiptUrl?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  lines?: Prisma.PurchaseBatchLineUncheckedCreateNestedManyWithoutPurchaseBatchInput
   transactions?: Prisma.FinancialTransactionUncheckedCreateNestedManyWithoutPurchaseBatchInput
 }
 
@@ -967,15 +1085,16 @@ export type PurchaseBatchUpdateWithoutInvoicesInput = {
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lines?: Prisma.PurchaseBatchLineUpdateManyWithoutPurchaseBatchNestedInput
   transactions?: Prisma.FinancialTransactionUpdateManyWithoutPurchaseBatchNestedInput
-  product?: Prisma.ProductUpdateOneRequiredWithoutPurchaseBatchesNestedInput
+  product?: Prisma.ProductUpdateOneWithoutPurchaseBatchesNestedInput
   supplier?: Prisma.SupplierUpdateOneRequiredWithoutBatchesNestedInput
   variant?: Prisma.VariantUpdateOneWithoutPurchaseBatchesNestedInput
 }
 
 export type PurchaseBatchUncheckedUpdateWithoutInvoicesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  productId?: Prisma.StringFieldUpdateOperationsInput | string
+  productId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   supplierId?: Prisma.StringFieldUpdateOperationsInput | string
   quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
@@ -986,6 +1105,7 @@ export type PurchaseBatchUncheckedUpdateWithoutInvoicesInput = {
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lines?: Prisma.PurchaseBatchLineUncheckedUpdateManyWithoutPurchaseBatchNestedInput
   transactions?: Prisma.FinancialTransactionUncheckedUpdateManyWithoutPurchaseBatchNestedInput
 }
 
@@ -999,15 +1119,16 @@ export type PurchaseBatchCreateWithoutTransactionsInput = {
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  lines?: Prisma.PurchaseBatchLineCreateNestedManyWithoutPurchaseBatchInput
   invoices?: Prisma.PurchaseInvoiceCreateNestedManyWithoutPurchaseBatchInput
-  product: Prisma.ProductCreateNestedOneWithoutPurchaseBatchesInput
+  product?: Prisma.ProductCreateNestedOneWithoutPurchaseBatchesInput
   supplier: Prisma.SupplierCreateNestedOneWithoutBatchesInput
   variant?: Prisma.VariantCreateNestedOneWithoutPurchaseBatchesInput
 }
 
 export type PurchaseBatchUncheckedCreateWithoutTransactionsInput = {
   id?: string
-  productId: string
+  productId?: string | null
   variantId?: string | null
   supplierId: string
   quantityReceived: number
@@ -1018,6 +1139,7 @@ export type PurchaseBatchUncheckedCreateWithoutTransactionsInput = {
   paymentReceiptUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  lines?: Prisma.PurchaseBatchLineUncheckedCreateNestedManyWithoutPurchaseBatchInput
   invoices?: Prisma.PurchaseInvoiceUncheckedCreateNestedManyWithoutPurchaseBatchInput
 }
 
@@ -1047,15 +1169,16 @@ export type PurchaseBatchUpdateWithoutTransactionsInput = {
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lines?: Prisma.PurchaseBatchLineUpdateManyWithoutPurchaseBatchNestedInput
   invoices?: Prisma.PurchaseInvoiceUpdateManyWithoutPurchaseBatchNestedInput
-  product?: Prisma.ProductUpdateOneRequiredWithoutPurchaseBatchesNestedInput
+  product?: Prisma.ProductUpdateOneWithoutPurchaseBatchesNestedInput
   supplier?: Prisma.SupplierUpdateOneRequiredWithoutBatchesNestedInput
   variant?: Prisma.VariantUpdateOneWithoutPurchaseBatchesNestedInput
 }
 
 export type PurchaseBatchUncheckedUpdateWithoutTransactionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  productId?: Prisma.StringFieldUpdateOperationsInput | string
+  productId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   supplierId?: Prisma.StringFieldUpdateOperationsInput | string
   quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1066,6 +1189,7 @@ export type PurchaseBatchUncheckedUpdateWithoutTransactionsInput = {
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lines?: Prisma.PurchaseBatchLineUncheckedUpdateManyWithoutPurchaseBatchNestedInput
   invoices?: Prisma.PurchaseInvoiceUncheckedUpdateManyWithoutPurchaseBatchNestedInput
 }
 
@@ -1093,6 +1217,7 @@ export type PurchaseBatchUpdateWithoutProductInput = {
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lines?: Prisma.PurchaseBatchLineUpdateManyWithoutPurchaseBatchNestedInput
   transactions?: Prisma.FinancialTransactionUpdateManyWithoutPurchaseBatchNestedInput
   invoices?: Prisma.PurchaseInvoiceUpdateManyWithoutPurchaseBatchNestedInput
   supplier?: Prisma.SupplierUpdateOneRequiredWithoutBatchesNestedInput
@@ -1111,6 +1236,7 @@ export type PurchaseBatchUncheckedUpdateWithoutProductInput = {
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lines?: Prisma.PurchaseBatchLineUncheckedUpdateManyWithoutPurchaseBatchNestedInput
   transactions?: Prisma.FinancialTransactionUncheckedUpdateManyWithoutPurchaseBatchNestedInput
   invoices?: Prisma.PurchaseInvoiceUncheckedUpdateManyWithoutPurchaseBatchNestedInput
 }
@@ -1131,7 +1257,7 @@ export type PurchaseBatchUncheckedUpdateManyWithoutProductInput = {
 
 export type PurchaseBatchCreateManyVariantInput = {
   id?: string
-  productId: string
+  productId?: string | null
   supplierId: string
   quantityReceived: number
   quantityRemaining: number
@@ -1153,15 +1279,16 @@ export type PurchaseBatchUpdateWithoutVariantInput = {
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lines?: Prisma.PurchaseBatchLineUpdateManyWithoutPurchaseBatchNestedInput
   transactions?: Prisma.FinancialTransactionUpdateManyWithoutPurchaseBatchNestedInput
   invoices?: Prisma.PurchaseInvoiceUpdateManyWithoutPurchaseBatchNestedInput
-  product?: Prisma.ProductUpdateOneRequiredWithoutPurchaseBatchesNestedInput
+  product?: Prisma.ProductUpdateOneWithoutPurchaseBatchesNestedInput
   supplier?: Prisma.SupplierUpdateOneRequiredWithoutBatchesNestedInput
 }
 
 export type PurchaseBatchUncheckedUpdateWithoutVariantInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  productId?: Prisma.StringFieldUpdateOperationsInput | string
+  productId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   supplierId?: Prisma.StringFieldUpdateOperationsInput | string
   quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
   quantityRemaining?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1171,13 +1298,14 @@ export type PurchaseBatchUncheckedUpdateWithoutVariantInput = {
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lines?: Prisma.PurchaseBatchLineUncheckedUpdateManyWithoutPurchaseBatchNestedInput
   transactions?: Prisma.FinancialTransactionUncheckedUpdateManyWithoutPurchaseBatchNestedInput
   invoices?: Prisma.PurchaseInvoiceUncheckedUpdateManyWithoutPurchaseBatchNestedInput
 }
 
 export type PurchaseBatchUncheckedUpdateManyWithoutVariantInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  productId?: Prisma.StringFieldUpdateOperationsInput | string
+  productId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   supplierId?: Prisma.StringFieldUpdateOperationsInput | string
   quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
   quantityRemaining?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1191,7 +1319,7 @@ export type PurchaseBatchUncheckedUpdateManyWithoutVariantInput = {
 
 export type PurchaseBatchCreateManySupplierInput = {
   id?: string
-  productId: string
+  productId?: string | null
   variantId?: string | null
   quantityReceived: number
   quantityRemaining: number
@@ -1213,15 +1341,16 @@ export type PurchaseBatchUpdateWithoutSupplierInput = {
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lines?: Prisma.PurchaseBatchLineUpdateManyWithoutPurchaseBatchNestedInput
   transactions?: Prisma.FinancialTransactionUpdateManyWithoutPurchaseBatchNestedInput
   invoices?: Prisma.PurchaseInvoiceUpdateManyWithoutPurchaseBatchNestedInput
-  product?: Prisma.ProductUpdateOneRequiredWithoutPurchaseBatchesNestedInput
+  product?: Prisma.ProductUpdateOneWithoutPurchaseBatchesNestedInput
   variant?: Prisma.VariantUpdateOneWithoutPurchaseBatchesNestedInput
 }
 
 export type PurchaseBatchUncheckedUpdateWithoutSupplierInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  productId?: Prisma.StringFieldUpdateOperationsInput | string
+  productId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
   quantityRemaining?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1231,13 +1360,14 @@ export type PurchaseBatchUncheckedUpdateWithoutSupplierInput = {
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lines?: Prisma.PurchaseBatchLineUncheckedUpdateManyWithoutPurchaseBatchNestedInput
   transactions?: Prisma.FinancialTransactionUncheckedUpdateManyWithoutPurchaseBatchNestedInput
   invoices?: Prisma.PurchaseInvoiceUncheckedUpdateManyWithoutPurchaseBatchNestedInput
 }
 
 export type PurchaseBatchUncheckedUpdateManyWithoutSupplierInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  productId?: Prisma.StringFieldUpdateOperationsInput | string
+  productId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantityReceived?: Prisma.IntFieldUpdateOperationsInput | number
   quantityRemaining?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1255,11 +1385,13 @@ export type PurchaseBatchUncheckedUpdateManyWithoutSupplierInput = {
  */
 
 export type PurchaseBatchCountOutputType = {
+  lines: number
   transactions: number
   invoices: number
 }
 
 export type PurchaseBatchCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  lines?: boolean | PurchaseBatchCountOutputTypeCountLinesArgs
   transactions?: boolean | PurchaseBatchCountOutputTypeCountTransactionsArgs
   invoices?: boolean | PurchaseBatchCountOutputTypeCountInvoicesArgs
 }
@@ -1272,6 +1404,13 @@ export type PurchaseBatchCountOutputTypeDefaultArgs<ExtArgs extends runtime.Type
    * Select specific fields to fetch from the PurchaseBatchCountOutputType
    */
   select?: Prisma.PurchaseBatchCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * PurchaseBatchCountOutputType without action
+ */
+export type PurchaseBatchCountOutputTypeCountLinesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PurchaseBatchLineWhereInput
 }
 
 /**
@@ -1302,9 +1441,10 @@ export type PurchaseBatchSelect<ExtArgs extends runtime.Types.Extensions.Interna
   paymentReceiptUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  lines?: boolean | Prisma.PurchaseBatch$linesArgs<ExtArgs>
   transactions?: boolean | Prisma.PurchaseBatch$transactionsArgs<ExtArgs>
   invoices?: boolean | Prisma.PurchaseBatch$invoicesArgs<ExtArgs>
-  product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
+  product?: boolean | Prisma.PurchaseBatch$productArgs<ExtArgs>
   supplier?: boolean | Prisma.SupplierDefaultArgs<ExtArgs>
   variant?: boolean | Prisma.PurchaseBatch$variantArgs<ExtArgs>
   _count?: boolean | Prisma.PurchaseBatchCountOutputTypeDefaultArgs<ExtArgs>
@@ -1323,7 +1463,7 @@ export type PurchaseBatchSelectCreateManyAndReturn<ExtArgs extends runtime.Types
   paymentReceiptUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
+  product?: boolean | Prisma.PurchaseBatch$productArgs<ExtArgs>
   supplier?: boolean | Prisma.SupplierDefaultArgs<ExtArgs>
   variant?: boolean | Prisma.PurchaseBatch$variantArgs<ExtArgs>
 }, ExtArgs["result"]["purchaseBatch"]>
@@ -1341,7 +1481,7 @@ export type PurchaseBatchSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
   paymentReceiptUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
+  product?: boolean | Prisma.PurchaseBatch$productArgs<ExtArgs>
   supplier?: boolean | Prisma.SupplierDefaultArgs<ExtArgs>
   variant?: boolean | Prisma.PurchaseBatch$variantArgs<ExtArgs>
 }, ExtArgs["result"]["purchaseBatch"]>
@@ -1363,20 +1503,21 @@ export type PurchaseBatchSelectScalar = {
 
 export type PurchaseBatchOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "productId" | "variantId" | "supplierId" | "quantityReceived" | "quantityRemaining" | "unitCost" | "totalCost" | "status" | "paymentReceiptUrl" | "createdAt" | "updatedAt", ExtArgs["result"]["purchaseBatch"]>
 export type PurchaseBatchInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  lines?: boolean | Prisma.PurchaseBatch$linesArgs<ExtArgs>
   transactions?: boolean | Prisma.PurchaseBatch$transactionsArgs<ExtArgs>
   invoices?: boolean | Prisma.PurchaseBatch$invoicesArgs<ExtArgs>
-  product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
+  product?: boolean | Prisma.PurchaseBatch$productArgs<ExtArgs>
   supplier?: boolean | Prisma.SupplierDefaultArgs<ExtArgs>
   variant?: boolean | Prisma.PurchaseBatch$variantArgs<ExtArgs>
   _count?: boolean | Prisma.PurchaseBatchCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type PurchaseBatchIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
+  product?: boolean | Prisma.PurchaseBatch$productArgs<ExtArgs>
   supplier?: boolean | Prisma.SupplierDefaultArgs<ExtArgs>
   variant?: boolean | Prisma.PurchaseBatch$variantArgs<ExtArgs>
 }
 export type PurchaseBatchIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
+  product?: boolean | Prisma.PurchaseBatch$productArgs<ExtArgs>
   supplier?: boolean | Prisma.SupplierDefaultArgs<ExtArgs>
   variant?: boolean | Prisma.PurchaseBatch$variantArgs<ExtArgs>
 }
@@ -1384,15 +1525,16 @@ export type PurchaseBatchIncludeUpdateManyAndReturn<ExtArgs extends runtime.Type
 export type $PurchaseBatchPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "PurchaseBatch"
   objects: {
+    lines: Prisma.$PurchaseBatchLinePayload<ExtArgs>[]
     transactions: Prisma.$FinancialTransactionPayload<ExtArgs>[]
     invoices: Prisma.$PurchaseInvoicePayload<ExtArgs>[]
-    product: Prisma.$ProductPayload<ExtArgs>
+    product: Prisma.$ProductPayload<ExtArgs> | null
     supplier: Prisma.$SupplierPayload<ExtArgs>
     variant: Prisma.$VariantPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    productId: string
+    productId: string | null
     variantId: string | null
     supplierId: string
     quantityReceived: number
@@ -1797,9 +1939,10 @@ readonly fields: PurchaseBatchFieldRefs;
  */
 export interface Prisma__PurchaseBatchClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  lines<T extends Prisma.PurchaseBatch$linesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PurchaseBatch$linesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PurchaseBatchLinePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   transactions<T extends Prisma.PurchaseBatch$transactionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PurchaseBatch$transactionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FinancialTransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   invoices<T extends Prisma.PurchaseBatch$invoicesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PurchaseBatch$invoicesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PurchaseInvoicePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  product<T extends Prisma.ProductDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProductDefaultArgs<ExtArgs>>): Prisma.Prisma__ProductClient<runtime.Types.Result.GetResult<Prisma.$ProductPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  product<T extends Prisma.PurchaseBatch$productArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PurchaseBatch$productArgs<ExtArgs>>): Prisma.Prisma__ProductClient<runtime.Types.Result.GetResult<Prisma.$ProductPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   supplier<T extends Prisma.SupplierDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SupplierDefaultArgs<ExtArgs>>): Prisma.Prisma__SupplierClient<runtime.Types.Result.GetResult<Prisma.$SupplierPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   variant<T extends Prisma.PurchaseBatch$variantArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PurchaseBatch$variantArgs<ExtArgs>>): Prisma.Prisma__VariantClient<runtime.Types.Result.GetResult<Prisma.$VariantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
@@ -2239,6 +2382,30 @@ export type PurchaseBatchDeleteManyArgs<ExtArgs extends runtime.Types.Extensions
 }
 
 /**
+ * PurchaseBatch.lines
+ */
+export type PurchaseBatch$linesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PurchaseBatchLine
+   */
+  select?: Prisma.PurchaseBatchLineSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PurchaseBatchLine
+   */
+  omit?: Prisma.PurchaseBatchLineOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PurchaseBatchLineInclude<ExtArgs> | null
+  where?: Prisma.PurchaseBatchLineWhereInput
+  orderBy?: Prisma.PurchaseBatchLineOrderByWithRelationInput | Prisma.PurchaseBatchLineOrderByWithRelationInput[]
+  cursor?: Prisma.PurchaseBatchLineWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PurchaseBatchLineScalarFieldEnum | Prisma.PurchaseBatchLineScalarFieldEnum[]
+}
+
+/**
  * PurchaseBatch.transactions
  */
 export type PurchaseBatch$transactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2284,6 +2451,25 @@ export type PurchaseBatch$invoicesArgs<ExtArgs extends runtime.Types.Extensions.
   take?: number
   skip?: number
   distinct?: Prisma.PurchaseInvoiceScalarFieldEnum | Prisma.PurchaseInvoiceScalarFieldEnum[]
+}
+
+/**
+ * PurchaseBatch.product
+ */
+export type PurchaseBatch$productArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Product
+   */
+  select?: Prisma.ProductSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Product
+   */
+  omit?: Prisma.ProductOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProductInclude<ExtArgs> | null
+  where?: Prisma.ProductWhereInput
 }
 
 /**

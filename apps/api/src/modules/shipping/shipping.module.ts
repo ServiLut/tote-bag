@@ -6,10 +6,9 @@ import { ShippingSyncService } from './shipping-sync.service';
 import { ShippingController } from './shipping.controller';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { RolesModule } from '../roles/roles.module';
-import { InventoryModule } from '../inventory/inventory.module';
 
 @Module({
-  imports: [PrismaModule, RolesModule, InventoryModule],
+  imports: [PrismaModule, RolesModule],
   controllers: [ShippingController],
   providers: [
     ShippingService,

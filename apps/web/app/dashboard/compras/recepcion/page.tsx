@@ -1,1576 +1,1986 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle,
-  Calendar,
   CheckCircle2,
+  ChevronDown,
   Database,
   Loader2,
-  MoreHorizontal,
   Package,
-  Pencil,
   Plus,
   Search,
   Trash2,
   Truck,
   X,
-  XCircle,
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import {
-  Button,
-  Input,
-  InputGroup,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-  Select,
-} from '@tote-bag/ui';
+import { Button, Input, Select } from '@tote-bag/ui';
+import { CreatableCombobox } from '@/components/ui/CreatableCombobox';
 import {
   createCurrencyInputState,
   handleCurrencyInputChangeWithState,
-  sanitizeIntegerInput,
+  parseLocalizedNumber,
 } from '@/lib/numeric-input';
-import { Product } from '@/types/product';
+import { useDashboardAuth } from '@/components/dashboard/DashboardAuthContext';
+import { notifyFinanceDataChanged } from '@/lib/finance-events';
 import { apiFetch } from '@/utils/api';
 import { createClient } from '@/utils/supabase/client';
-import { notifyFinanceDataChanged } from '@/lib/finance-events';
+
+type ItemType = 'VARIANT' | 'SUPPLY' | 'TOOL' | 'OTHER';
+type BatchInputStatus = 'RECIBIDO' | 'PENDIENTE';
+type PurchaseDocumentType = 'INVOICE' | 'DELIVERY_NOTE';
 
 interface Supplier {
   id: string;
   name: string;
-  nit: string;
+  nit?: string | null;
+}
+
+interface ReceivableVariant {
+  id: string;
+  sku: string;
+  size?: string | null;
+  color?: string | null;
+  costPrice?: number | null;
+  stock?: number | null;
+  productId: string;
+}
+
+interface ReceivableProduct {
+  id: string;
+  name: string;
+  variants?: ReceivableVariant[];
+}
+
+interface VariantOption {
+  id: string;
+  productId: string;
+  productName: string;
+  sku: string;
+  label: string;
+  costPrice: number;
+  stock: number;
+}
+
+interface SupplyItem {
+  id: string;
+  name: string;
+  sku?: string | null;
+  category: string;
+  unitOfMeasure: string;
+  cost: number;
+  stock: number;
+  minStock?: number | null;
+}
+
+interface ComboboxOption {
+  value: string;
+  label: string;
+}
+
+interface PurchaseBatchLine {
+  id: string;
+  itemType: ItemType;
+  variantId?: string | null;
+  supplyItemId?: string | null;
+  itemName?: string | null;
+  description?: string | null;
+  quantity: number;
+  quantityRemaining: number;
+  unitOfMeasure: string;
+  unitCost: number;
+  lineTotal: number;
+  status: string;
+  notes?: string | null;
+  variant?: ReceivableVariant | null;
+  supplyItem?: SupplyItem | null;
 }
 
 interface PurchaseBatch {
   id: string;
-  productId: string;
-  variantId: string | null;
+  productId?: string | null;
+  variantId?: string | null;
   supplierId: string;
   quantityReceived: number;
   quantityRemaining: number;
   unitCost: number;
   totalCost: number;
   status: string;
-  paymentReceiptUrl?: string | null;
   createdAt: string;
-  product: { name: string };
-  variant?: { id?: string; sku?: string; color?: string } | null;
-  supplier: { name: string };
+  product?: { name: string } | null;
+  variant?: ReceivableVariant | null;
+  supplier?: { name: string } | null;
+  lines?: PurchaseBatchLine[];
 }
 
-interface BatchItem {
-  productId: string;
+interface LineForm {
+  id: string;
+  itemType: ItemType;
   variantId: string;
-  nombre: string;
-  size: string;
-  material: string;
-  cantidad: number;
-  costoUnitarioInput: string;
-  costoUnitario: number;
-}
-
-interface EditBatchFormData {
-  supplierId: string;
-  productId: string;
-  variantId: string;
-  quantityReceived: number;
+  supplyItemId: string;
+  itemName: string;
+  description: string;
+  quantity: string;
+  unitOfMeasure: string;
   unitCostInput: string;
   unitCost: number;
-  status: 'RECIBIDO' | 'PENDIENTE';
-  purchaseDate: string;
+  notes: string;
 }
 
-export default function BatchReceptionPage() {
-  const createEmptyItem = (): BatchItem => ({
-    productId: '',
+interface ReceptionForm {
+  supplierId: string;
+  freightCostInput: string;
+  freightCost: number;
+  status: BatchInputStatus;
+  documentType: PurchaseDocumentType;
+  purchaseDate: string;
+  lines: LineForm[];
+}
+
+interface SupplyForm {
+  name: string;
+  sku: string;
+  category: string;
+  unitOfMeasure: string;
+  costInput: string;
+  cost: number;
+  minStock: string;
+}
+
+const ITEM_TYPE_LABELS: Record<ItemType, string> = {
+  VARIANT: 'Producto vendible',
+  SUPPLY: 'Insumo / empaque',
+  TOOL: 'Herramienta / utensilio',
+  OTHER: 'Otro',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  IN_STOCK: 'Recibido',
+  PENDING: 'Pendiente',
+  DEPLETED: 'Agotado',
+};
+
+const UNIT_OPTIONS = ['und', 'kg', 'g', 'm', 'cm', 'lt', 'ml', 'caja', 'rollo'];
+
+function getToday() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function createEmptyLine(itemType: ItemType = 'VARIANT'): LineForm {
+  return {
+    id: crypto.randomUUID(),
+    itemType,
     variantId: '',
-    nombre: '',
-    size: '',
-    material: '',
-    cantidad: 1,
-    costoUnitarioInput: '',
-    costoUnitario: 0,
-  });
-
-  const getBatchInputStatus = (
-    batch: PurchaseBatch,
-  ): EditBatchFormData['status'] =>
-    batch.status === 'PENDING' ? 'PENDIENTE' : 'RECIBIDO';
-
-  const createEditFormFromBatch = (batch: PurchaseBatch): EditBatchFormData => {
-    const costState = createCurrencyInputState(batch.unitCost);
-
-    return {
-      supplierId: batch.supplierId,
-      productId: batch.productId,
-      variantId: batch.variantId || '',
-      quantityReceived: batch.quantityReceived,
-      unitCostInput: costState.formattedValue,
-      unitCost: costState.numericValue,
-      status: getBatchInputStatus(batch),
-      purchaseDate: new Date(batch.createdAt).toISOString().split('T')[0],
-    };
+    supplyItemId: '',
+    itemName: '',
+    description: '',
+    quantity: '1',
+    unitOfMeasure: 'und',
+    unitCostInput: '',
+    unitCost: 0,
+    notes: '',
   };
+}
 
-  const canModifyBatch = (batch: PurchaseBatch) =>
-    batch.status === 'PENDING' ||
-    batch.quantityRemaining === batch.quantityReceived;
-
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const supabase = createClient();
-
-  const [batches, setBatches] = useState<PurchaseBatch[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [editingBatchId, setEditingBatchId] = useState<string | null>(null);
-  const [deletingBatchId, setDeletingBatchId] = useState<string | null>(null);
-  const [activeActionMenu, setActiveActionMenu] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<
-    'all' | 'IN_STOCK' | 'PENDING' | 'DEPLETED'
-  >('all');
-  const [stockFilter, setStockFilter] = useState<
-    'all' | 'available' | 'partial' | 'empty'
-  >('all');
-  const [entryDateFilter, setEntryDateFilter] = useState('');
-  const [error, setError] = useState<string | null>(null);
-
-  const [formData, setFormData] = useState({
+function createEmptyForm(): ReceptionForm {
+  return {
     supplierId: '',
-    totalCost: 0,
     freightCostInput: '',
     freightCost: 0,
     status: 'RECIBIDO',
     documentType: 'INVOICE',
-    purchaseDate: new Date().toISOString().split('T')[0],
-    items: [createEmptyItem()] as BatchItem[],
-  });
-  const [editFormData, setEditFormData] = useState<EditBatchFormData>({
-    supplierId: '',
-    productId: '',
-    variantId: '',
-    quantityReceived: 1,
-    unitCostInput: '',
-    unitCost: 0,
-    status: 'RECIBIDO',
-    purchaseDate: new Date().toISOString().split('T')[0],
-  });
+    purchaseDate: getToday(),
+    lines: [createEmptyLine()],
+  };
+}
+
+function createEmptySupplyForm(): SupplyForm {
+  return {
+    name: '',
+    sku: '',
+    category: 'Empaque',
+    unitOfMeasure: 'und',
+    costInput: '',
+    cost: 0,
+    minStock: '',
+  };
+}
+
+function formatCurrency(amount: number) {
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0,
+  }).format(Number.isFinite(amount) ? amount : 0);
+}
+
+function formatQuantity(value: number, unit?: string) {
+  const formatted = new Intl.NumberFormat('es-CO', {
+    maximumFractionDigits: 3,
+  }).format(Number.isFinite(value) ? value : 0);
+
+  return unit ? `${formatted} ${unit}` : formatted;
+}
+
+function parseQuantity(value: string) {
+  const parsed = parseLocalizedNumber(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function sanitizeQuantityInput(value: string) {
+  return value.replace(/[^\d.,]/g, '');
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function getApiList<T>(body: unknown): T[] {
+  if (Array.isArray(body)) {
+    return body as T[];
+  }
+
+  if (isRecord(body) && Array.isArray(body.data)) {
+    return body.data as T[];
+  }
+
+  return [];
+}
+
+function getApiEntity<T>(body: unknown): T | null {
+  if (isRecord(body) && isRecord(body.data)) {
+    return body.data as T;
+  }
+
+  if (isRecord(body)) {
+    return body as T;
+  }
+
+  return null;
+}
+
+export default function BatchReceptionPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { accessToken } = useDashboardAuth();
+  const supabase = createClient();
+
+  const [batches, setBatches] = useState<PurchaseBatch[]>([]);
+  const [products, setProducts] = useState<ReceivableProduct[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [supplyItems, setSupplyItems] = useState<SupplyItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSupplyModalOpen, setIsSupplyModalOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [creatingSupply, setCreatingSupply] = useState(false);
+  const [creatingSupplyForLine, setCreatingSupplyForLine] = useState<
+    string | null
+  >(null);
+  const [deletingBatchId, setDeletingBatchId] = useState<string | null>(null);
+  const [expandedBatchId, setExpandedBatchId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | string>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | ItemType>('all');
+  const [entryDateFilter, setEntryDateFilter] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [formData, setFormData] = useState<ReceptionForm>(createEmptyForm);
+  const [supplyForm, setSupplyForm] =
+    useState<SupplyForm>(createEmptySupplyForm);
+
+  const variantOptions = useMemo<VariantOption[]>(() => {
+    return products.flatMap((product) =>
+      (product.variants || []).map((variant) => {
+        const details = [variant.size, variant.color]
+          .filter(Boolean)
+          .join(' / ');
+
+        return {
+          id: variant.id,
+          productId: product.id,
+          productName: product.name,
+          sku: variant.sku,
+          label: `${product.name}${details ? ` - ${details}` : ''} (${variant.sku})`,
+          costPrice: Number(variant.costPrice || 0),
+          stock: Number(variant.stock || 0),
+        };
+      }),
+    );
+  }, [products]);
+
+  const variantById = useMemo(() => {
+    return new Map(variantOptions.map((variant) => [variant.id, variant]));
+  }, [variantOptions]);
+
+  const supplyById = useMemo(() => {
+    return new Map(supplyItems.map((item) => [item.id, item]));
+  }, [supplyItems]);
+
+  const supplyOptions = useMemo<ComboboxOption[]>(() => {
+    return supplyItems.map((item) => ({
+      value: item.id,
+      label: `${item.name}${item.sku ? ` (${item.sku})` : ''}`,
+    }));
+  }, [supplyItems]);
+
+  const subtotal = useMemo(() => {
+    return formData.lines.reduce((total, line) => {
+      return total + parseQuantity(line.quantity) * line.unitCost;
+    }, 0);
+  }, [formData.lines]);
+
+  const projectedTotal = subtotal + formData.freightCost;
 
   const getAuthHeaders = useCallback(async (): Promise<
     Record<string, string>
   > => {
-    // We call getUser() to ensure the session is refreshed if needed
-    await supabase.auth.getUser();
-
     const {
       data: { session },
-      error: sessionError,
     } = await supabase.auth.getSession();
+    const token = session?.access_token ?? accessToken;
 
-    if (sessionError || !session?.access_token) {
-      throw new Error(
-        'Tu sesion expiro o no esta disponible. Inicia sesion nuevamente.',
-      );
-    }
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }, [accessToken, supabase.auth]);
 
-    return {
-      Authorization: `Bearer ${session.access_token}`,
-    };
-  }, [supabase.auth]);
+  const resolveApiErrorMessage = useCallback(
+    async (
+      res: Response,
+      fallbackMessage: string,
+      options?: { redirectOnUnauthorized?: boolean; forbiddenMessage?: string },
+    ) => {
+      if (res.status === 401) {
+        if (options?.redirectOnUnauthorized) {
+          router.push(
+            `/login?redirect=${encodeURIComponent(window.location.pathname)}`,
+          );
+        }
+
+        return 'Tu sesion expiro. Inicia sesion nuevamente.';
+      }
+
+      if (res.status === 403) {
+        return (
+          options?.forbiddenMessage ||
+          'No tienes permisos para gestionar recepcion de abastecimiento.'
+        );
+      }
+
+      const body: unknown = await res.json().catch(() => null);
+
+      if (isRecord(body)) {
+        const message = body.message;
+
+        if (typeof message === 'string' && message.trim()) {
+          return message;
+        }
+
+        if (Array.isArray(message)) {
+          const firstMessage = message.find(
+            (value): value is string =>
+              typeof value === 'string' && value.trim().length > 0,
+          );
+
+          if (firstMessage) {
+            return firstMessage;
+          }
+        }
+
+        if (typeof body.error === 'string' && body.error.trim()) {
+          return body.error;
+        }
+      }
+
+      return fallbackMessage;
+    },
+    [router],
+  );
 
   const fetchData = useCallback(async () => {
     setError(null);
 
     try {
       const authHeaders = await getAuthHeaders();
-      const [batchesRes, productsRes, suppliersRes] = await Promise.all([
-        apiFetch('/inventory/batches', { headers: authHeaders }),
-        apiFetch('/catalog/admin/products', { headers: authHeaders }),
-        apiFetch('/inventory/suppliers', { headers: authHeaders }),
-      ]);
+      const [batchesRes, variantsRes, suppliersRes, supplyRes] =
+        await Promise.all([
+          apiFetch('/inventory/batches', { headers: authHeaders }),
+          apiFetch('/inventory/receivable-variants', { headers: authHeaders }),
+          apiFetch('/inventory/suppliers', { headers: authHeaders }),
+          apiFetch('/inventory/supply-items', { headers: authHeaders }),
+        ]);
 
-      if (batchesRes.status === 401 || suppliersRes.status === 401) {
-        throw new Error('Tu sesion expiro. Inicia sesion nuevamente.');
-      }
-
-      if (batchesRes.status === 403 || suppliersRes.status === 403) {
+      if (!batchesRes.ok) {
         throw new Error(
-          'No tienes permisos para gestionar recepcion de lotes.',
+          await resolveApiErrorMessage(
+            batchesRes,
+            'No fue posible cargar las recepciones.',
+            { redirectOnUnauthorized: true },
+          ),
         );
       }
 
-      if (batchesRes.ok) {
-        const result = await batchesRes.json();
-        setBatches(result.data || result || []);
-      } else {
-        setBatches([]);
-      }
-
-      if (productsRes.ok) {
-        const result = await productsRes.json();
-        setProducts(result.data || result || []);
-      } else {
-        setProducts([]);
-      }
-
-      if (suppliersRes.ok) {
-        const result = await suppliersRes.json();
-        setSuppliers(result.data || result || []);
-      } else {
-        setSuppliers([]);
-      }
-
-      if (!batchesRes.ok || !productsRes.ok || !suppliersRes.ok) {
-        setError(
-          'La vista cargo parcialmente. Algunos datos no estuvieron disponibles.',
+      if (!variantsRes.ok) {
+        throw new Error(
+          await resolveApiErrorMessage(
+            variantsRes,
+            'No fue posible cargar el catalogo vendible.',
+          ),
         );
       }
-    } catch (fetchError) {
-      console.error('Error fetching data:', fetchError);
+
+      if (!suppliersRes.ok) {
+        throw new Error(
+          await resolveApiErrorMessage(
+            suppliersRes,
+            'No fue posible cargar los proveedores.',
+          ),
+        );
+      }
+
+      if (!supplyRes.ok) {
+        throw new Error(
+          await resolveApiErrorMessage(
+            supplyRes,
+            'No fue posible cargar los insumos.',
+          ),
+        );
+      }
+
+      const [batchesBody, variantsBody, suppliersBody, supplyBody] =
+        await Promise.all([
+          batchesRes.json() as Promise<unknown>,
+          variantsRes.json() as Promise<unknown>,
+          suppliersRes.json() as Promise<unknown>,
+          supplyRes.json() as Promise<unknown>,
+        ]);
+
+      setBatches(getApiList<PurchaseBatch>(batchesBody));
+      setProducts(getApiList<ReceivableProduct>(variantsBody));
+      setSuppliers(getApiList<Supplier>(suppliersBody));
+      setSupplyItems(getApiList<SupplyItem>(supplyBody));
+    } catch (err) {
+      console.error('Error fetching reception data:', err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Error cargando la recepcion de abastecimiento.',
+      );
       setBatches([]);
+      setProducts([]);
       setSuppliers([]);
-
-      const errorMessage =
-        fetchError instanceof Error
-          ? fetchError.message
-          : 'Error cargando la recepcion de lotes.';
-
-      setError(errorMessage);
-
-      if (
-        errorMessage.includes('sesion expiro') ||
-        errorMessage.includes('no esta disponible')
-      ) {
-        router.push(
-          `/login?redirect=${encodeURIComponent(window.location.pathname)}`,
-        );
-      }
+      setSupplyItems([]);
     } finally {
       setLoading(false);
     }
-  }, [getAuthHeaders, router]);
+  }, [getAuthHeaders, resolveApiErrorMessage]);
 
   useEffect(() => {
-    fetchData();
+    void fetchData();
   }, [fetchData]);
 
   useEffect(() => {
-    const incomingSearch = searchParams.get('search')?.trim() || '';
-    if (incomingSearch) {
-      setSearch(incomingSearch);
+    const skuSearch = searchParams.get('search');
+
+    if (skuSearch) {
+      setSearch(skuSearch);
     }
   }, [searchParams]);
 
-  const resolveApiErrorMessage = async (
-    response: Response,
-    fallback: string,
-  ) => {
-    const errorBody = await response.json().catch(() => null);
-    return errorBody?.message || fallback;
-  };
+  const updateLine = useCallback(
+    (lineId: string, updates: Partial<LineForm>) => {
+      setFormData((prev) => ({
+        ...prev,
+        lines: prev.lines.map((line) =>
+          line.id === lineId ? { ...line, ...updates } : line,
+        ),
+      }));
+    },
+    [],
+  );
 
-  const closeEditModal = () => {
-    setIsEditModalOpen(false);
-    setEditingBatchId(null);
-  };
-
-  const openEditModal = (batch: PurchaseBatch) => {
-    setError(null);
-    setEditingBatchId(batch.id);
-    setEditFormData(createEditFormFromBatch(batch));
-    setIsEditModalOpen(true);
-  };
-
-  const addItem = () => {
-    setFormData((current) => ({
-      ...current,
-      items: [...current.items, createEmptyItem()],
-    }));
-  };
-
-  const removeItem = (index: number) => {
-    if (formData.items.length === 1) return;
-
-    const newItems = [...formData.items];
-    newItems.splice(index, 1);
-
-    const newTotal = newItems.reduce(
-      (sum, item) => sum + item.cantidad * item.costoUnitario,
-      0,
-    );
-
-    setFormData({
-      ...formData,
-      items: newItems,
-      totalCost: newTotal,
-    });
-  };
-
-  const updateItem = (
-    index: number,
-    field: keyof BatchItem,
-    value: string | number,
-  ) => {
-    const newItems = [...formData.items];
-
-    if (field === 'productId') {
-      const product = products.find((item) => item.id === value);
-      const fallbackVariant =
-        product?.variants.find((variant) => variant.isActive !== false) ||
-        product?.variants[0];
-      const costState = createCurrencyInputState(
-        fallbackVariant?.costPrice || newItems[index].costoUnitario || 0,
-      );
-
-      newItems[index] = {
-        ...newItems[index],
-        productId: value as string,
+  const handleLineTypeChange = useCallback(
+    (lineId: string, itemType: ItemType) => {
+      updateLine(lineId, {
+        itemType,
         variantId: '',
-        nombre: product?.name || '',
-        size: '',
-        material: '',
-        costoUnitarioInput: costState.formattedValue,
-        costoUnitario: costState.numericValue,
-      };
-    } else if (field === 'variantId') {
-      const product = products.find(
-        (item) => item.id === newItems[index].productId,
-      );
-      const variant = product?.variants.find((item) => item.id === value);
-      const costState = createCurrencyInputState(
-        variant?.costPrice || newItems[index].costoUnitario || 0,
-      );
+        supplyItemId: '',
+        itemName: '',
+        description: '',
+        unitOfMeasure: 'und',
+        unitCostInput: '',
+        unitCost: 0,
+      });
+    },
+    [updateLine],
+  );
 
-      newItems[index] = {
-        ...newItems[index],
-        variantId: value as string,
-        size: variant?.size || newItems[index].size,
-        costoUnitarioInput: costState.formattedValue,
-        costoUnitario: costState.numericValue,
-      };
-    } else {
-      newItems[index] = { ...newItems[index], [field]: value } as BatchItem;
+  const handleVariantChange = useCallback(
+    (lineId: string, variantId: string) => {
+      const option = variantById.get(variantId);
+      const costState = createCurrencyInputState(option?.costPrice ?? 0);
+
+      updateLine(lineId, {
+        variantId,
+        unitOfMeasure: 'und',
+        unitCostInput: costState.formattedValue,
+        unitCost: costState.numericValue,
+      });
+    },
+    [updateLine, variantById],
+  );
+
+  const handleSupplyChange = useCallback(
+    (lineId: string, supplyItemId: string) => {
+      const supplyItem = supplyById.get(supplyItemId);
+      const costState = createCurrencyInputState(supplyItem?.cost ?? 0);
+
+      updateLine(lineId, {
+        supplyItemId,
+        unitOfMeasure: supplyItem?.unitOfMeasure || 'und',
+        unitCostInput: costState.formattedValue,
+        unitCost: costState.numericValue,
+      });
+    },
+    [supplyById, updateLine],
+  );
+
+  const handleCreateSupplyFromCombobox = useCallback(
+    async (lineId: string, label: string) => {
+      const name = label.trim();
+
+      if (!name) {
+        return;
+      }
+
+      setCreatingSupply(true);
+      setCreatingSupplyForLine(lineId);
+      setError(null);
+
+      try {
+        const authHeaders = await getAuthHeaders();
+        const res = await apiFetch('/inventory/supply-items', {
+          method: 'POST',
+          headers: {
+            ...authHeaders,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name,
+            category: 'Empaque',
+            unitOfMeasure: 'und',
+            cost: 0,
+            stock: 0,
+          }),
+        });
+
+        if (!res.ok) {
+          throw new Error(
+            await resolveApiErrorMessage(
+              res,
+              'No fue posible crear el insumo.',
+              { redirectOnUnauthorized: true },
+            ),
+          );
+        }
+
+        const body: unknown = await res.json();
+        const created = getApiEntity<SupplyItem>(body);
+
+        if (!created) {
+          throw new Error('La API no retorno el insumo creado.');
+        }
+
+        const costState = createCurrencyInputState(created.cost);
+        setSupplyItems((prev) => [...prev, created]);
+        updateLine(lineId, {
+          itemType: 'SUPPLY',
+          supplyItemId: created.id,
+          unitOfMeasure: created.unitOfMeasure,
+          unitCostInput: costState.formattedValue,
+          unitCost: costState.numericValue,
+        });
+      } catch (err) {
+        console.error('Error creating supply item from combobox:', err);
+        setError(
+          err instanceof Error ? err.message : 'No fue posible crear el insumo.',
+        );
+        throw err;
+      } finally {
+        setCreatingSupply(false);
+        setCreatingSupplyForLine(null);
+      }
+    },
+    [getAuthHeaders, resolveApiErrorMessage, updateLine],
+  );
+
+  const addLine = useCallback(() => {
+    setFormData((prev) => ({
+      ...prev,
+      lines: [...prev.lines, createEmptyLine()],
+    }));
+  }, []);
+
+  const removeLine = useCallback((lineId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      lines:
+        prev.lines.length === 1
+          ? prev.lines
+          : prev.lines.filter((line) => line.id !== lineId),
+    }));
+  }, []);
+
+  const closeCreateModal = useCallback(() => {
+    if (submitting) {
+      return;
     }
 
-    const newTotal = newItems.reduce(
-      (sum, item) => sum + item.cantidad * item.costoUnitario,
-      0,
-    );
+    setIsModalOpen(false);
+    setError(null);
+    setFormData(createEmptyForm());
+  }, [submitting]);
 
-    setFormData({
-      ...formData,
-      items: newItems,
-      totalCost: newTotal,
-    });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const validateForm = useCallback(() => {
     if (!formData.supplierId) {
-      alert('Por favor selecciona un proveedor.');
-      return;
+      return 'Selecciona un proveedor.';
     }
 
-    if (
-      formData.items.some(
-        (item) => !item.productId || !item.variantId || item.cantidad <= 0,
-      )
-    ) {
-      alert(
-        'Por favor completa todos los items con producto, variante y cantidades validas.',
-      );
-      return;
+    if (!formData.purchaseDate) {
+      return 'Selecciona la fecha de recepcion.';
     }
 
-    setSubmitting(true);
-    setError(null);
+    if (formData.lines.length === 0) {
+      return 'Agrega al menos una linea al lote.';
+    }
 
-    try {
-      const authHeaders = await getAuthHeaders();
-      const res = await apiFetch('/inventory/batches', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders,
-        },
-        body: JSON.stringify({
-          ...formData,
-          totalCost: formData.totalCost,
+    for (const [index, line] of formData.lines.entries()) {
+      const lineNumber = index + 1;
+      const quantity = parseQuantity(line.quantity);
+
+      if (quantity <= 0) {
+        return `La linea ${lineNumber} debe tener una cantidad mayor a cero.`;
+      }
+
+      if (!line.unitOfMeasure.trim()) {
+        return `La linea ${lineNumber} debe tener unidad de medida.`;
+      }
+
+      if (line.unitCost < 0) {
+        return `La linea ${lineNumber} no puede tener costo negativo.`;
+      }
+
+      if (line.itemType === 'VARIANT') {
+        if (!line.variantId) {
+          return `La linea ${lineNumber} requiere una variante.`;
+        }
+
+        if (!Number.isInteger(quantity)) {
+          return `La linea ${lineNumber} es producto vendible y requiere cantidad entera.`;
+        }
+      }
+
+      if (line.itemType === 'SUPPLY' && !line.supplyItemId) {
+        return `La linea ${lineNumber} requiere un insumo o empaque.`;
+      }
+
+      if (
+        (line.itemType === 'TOOL' || line.itemType === 'OTHER') &&
+        !line.itemName.trim() &&
+        !line.description.trim()
+      ) {
+        return `La linea ${lineNumber} requiere nombre o descripcion.`;
+      }
+    }
+
+    if (subtotal <= 0) {
+      return 'El subtotal del lote debe ser mayor a cero.';
+    }
+
+    return null;
+  }, [formData, subtotal]);
+
+  const handleSubmit = useCallback(
+    async (event: React.FormEvent) => {
+      event.preventDefault();
+      setError(null);
+
+      const validationError = validateForm();
+      if (validationError) {
+        setError(validationError);
+        return;
+      }
+
+      setSubmitting(true);
+
+      try {
+        const authHeaders = await getAuthHeaders();
+        const payload = {
+          supplierId: formData.supplierId,
+          totalCost: subtotal,
           freightCost: formData.freightCost,
+          status: formData.status,
           documentType: formData.documentType,
-          items: formData.items.map((item) => ({
-            productId: item.productId,
-            variantId: item.variantId,
-            nombre: [item.nombre, item.size, item.material]
-              .filter((value) => value && value.trim().length > 0)
-              .join(' · '),
-            cantidad: item.cantidad,
-            costoUnitario: item.costoUnitario,
-          })),
-        }),
-      });
+          purchaseDate: formData.purchaseDate,
+          items: formData.lines.map((line) => {
+            const variant = variantById.get(line.variantId);
 
-      if (!res.ok) {
-        if (res.status === 401) {
-          throw new Error('Tu sesion expiro. Inicia sesion nuevamente.');
+            return {
+              itemType: line.itemType,
+              productId:
+                line.itemType === 'VARIANT' ? variant?.productId : undefined,
+              variantId:
+                line.itemType === 'VARIANT' ? line.variantId : undefined,
+              supplyItemId:
+                line.itemType === 'SUPPLY' ? line.supplyItemId : undefined,
+              itemName:
+                line.itemType === 'TOOL' || line.itemType === 'OTHER'
+                  ? line.itemName.trim()
+                  : undefined,
+              description: line.description.trim() || undefined,
+              cantidad: parseQuantity(line.quantity),
+              unitOfMeasure: line.unitOfMeasure.trim(),
+              costoUnitario: line.unitCost,
+              notes: line.notes.trim() || undefined,
+            };
+          }),
+        };
+
+        const res = await apiFetch('/inventory/batches', {
+          method: 'POST',
+          headers: {
+            ...authHeaders,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          throw new Error(
+            await resolveApiErrorMessage(
+              res,
+              'No fue posible registrar la recepcion.',
+              { redirectOnUnauthorized: true },
+            ),
+          );
         }
 
-        if (res.status === 403) {
-          throw new Error('No tienes permisos para registrar lotes.');
-        }
-
-        const errorBody = await res.json().catch(() => null);
-        throw new Error(
-          errorBody?.message || 'Error desconocido al registrar el lote',
+        setIsModalOpen(false);
+        setFormData(createEmptyForm());
+        await fetchData();
+        notifyFinanceDataChanged();
+      } catch (err) {
+        console.error('Error creating reception batch:', err);
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'No fue posible registrar la recepcion.',
         );
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [
+      fetchData,
+      formData,
+      getAuthHeaders,
+      resolveApiErrorMessage,
+      subtotal,
+      validateForm,
+      variantById,
+    ],
+  );
+
+  const handleCreateSupply = useCallback(
+    async (event: React.FormEvent) => {
+      event.preventDefault();
+      setError(null);
+
+      if (!supplyForm.name.trim()) {
+        setError('El insumo requiere nombre.');
+        return;
       }
 
-      setIsModalOpen(false);
-      setFormData({
-        supplierId: '',
-        totalCost: 0,
-        freightCostInput: '',
-        freightCost: 0,
-        status: 'RECIBIDO',
-        documentType: 'INVOICE',
-        purchaseDate: new Date().toISOString().split('T')[0],
-        items: [createEmptyItem()],
-      });
-      await fetchData();
-      notifyFinanceDataChanged();
-    } catch (submitError) {
-      console.error('Error receiving batch:', submitError);
-      setError(
-        submitError instanceof Error
-          ? submitError.message
-          : 'Error de conexion con el servidor. No fue posible registrar el lote.',
-      );
-    } finally {
-      setSubmitting(false);
+      if (!supplyForm.category.trim()) {
+        setError('El insumo requiere categoria.');
+        return;
+      }
+
+      if (!supplyForm.unitOfMeasure.trim()) {
+        setError('El insumo requiere unidad de medida.');
+        return;
+      }
+
+      setCreatingSupply(true);
+
+      try {
+        const authHeaders = await getAuthHeaders();
+        const res = await apiFetch('/inventory/supply-items', {
+          method: 'POST',
+          headers: {
+            ...authHeaders,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: supplyForm.name.trim(),
+            sku: supplyForm.sku.trim() || undefined,
+            category: supplyForm.category.trim(),
+            unitOfMeasure: supplyForm.unitOfMeasure.trim(),
+            cost: supplyForm.cost,
+            minStock: supplyForm.minStock
+              ? parseQuantity(supplyForm.minStock)
+              : undefined,
+          }),
+        });
+
+        if (!res.ok) {
+          throw new Error(
+            await resolveApiErrorMessage(
+              res,
+              'No fue posible crear el insumo.',
+              { redirectOnUnauthorized: true },
+            ),
+          );
+        }
+
+        const body: unknown = await res.json();
+        const created = getApiEntity<SupplyItem>(body);
+
+        if (!created) {
+          throw new Error('La API no retorno el insumo creado.');
+        }
+
+        setSupplyItems((prev) => [...prev, created]);
+
+        if (creatingSupplyForLine) {
+          const costState = createCurrencyInputState(created.cost);
+          updateLine(creatingSupplyForLine, {
+            itemType: 'SUPPLY',
+            supplyItemId: created.id,
+            unitOfMeasure: created.unitOfMeasure,
+            unitCostInput: costState.formattedValue,
+            unitCost: costState.numericValue,
+          });
+        }
+
+        setSupplyForm(createEmptySupplyForm());
+        setIsSupplyModalOpen(false);
+        setCreatingSupplyForLine(null);
+      } catch (err) {
+        console.error('Error creating supply item:', err);
+        setError(
+          err instanceof Error ? err.message : 'No fue posible crear el insumo.',
+        );
+      } finally {
+        setCreatingSupply(false);
+      }
+    },
+    [
+      creatingSupplyForLine,
+      getAuthHeaders,
+      resolveApiErrorMessage,
+      supplyForm,
+      updateLine,
+    ],
+  );
+
+  const getDisplayLines = useCallback((batch: PurchaseBatch) => {
+    if (batch.lines?.length) {
+      return batch.lines;
     }
-  };
 
-  const getVariantsForProduct = (productId: string) => {
-    return products.find((product) => product.id === productId)?.variants || [];
-  };
+    return [
+      {
+        id: `${batch.id}-legacy`,
+        itemType: 'VARIANT' as ItemType,
+        variantId: batch.variantId,
+        supplyItemId: null,
+        itemName: batch.product?.name || 'Producto vendible',
+        description: null,
+        quantity: batch.quantityReceived,
+        quantityRemaining: batch.quantityRemaining,
+        unitOfMeasure: 'und',
+        unitCost: batch.unitCost,
+        lineTotal: batch.totalCost,
+        status: batch.status,
+        variant: batch.variant,
+        supplyItem: null,
+      },
+    ];
+  }, []);
 
-  const getAttributeOptionsForProduct = (
-    productId: string,
-    type: 'MATERIAL',
-  ) => {
-    const product = products.find((item) => item.id === productId);
-    return (product?.attributes || []).filter(
-      (attribute) => attribute.type === type && attribute.isActive,
-    );
-  };
-
-  const handleEditFieldChange = (
-    field: keyof EditBatchFormData,
-    value: string | number,
-  ) => {
-    setEditFormData((current) => {
-      if (field === 'productId') {
-        const product = products.find((item) => item.id === value);
-        const fallbackVariant =
-          product?.variants.find((variant) => variant.isActive !== false) ||
-          product?.variants[0];
-        const costState = createCurrencyInputState(
-          fallbackVariant?.costPrice || current.unitCost || 0,
-        );
-
-        return {
-          ...current,
-          productId: value as string,
-          variantId: '',
-          unitCostInput: costState.formattedValue,
-          unitCost: costState.numericValue,
-        };
+  const getLineDisplayName = useCallback(
+    (line: PurchaseBatchLine) => {
+      if (line.itemType === 'VARIANT') {
+        const option = line.variantId ? variantById.get(line.variantId) : null;
+        const variantText = line.variant?.sku ? ` (${line.variant.sku})` : '';
+        return option?.label || `${line.itemName || 'Producto'}${variantText}`;
       }
 
-      if (field === 'variantId') {
-        const product = products.find((item) => item.id === current.productId);
-        const variant = product?.variants.find((item) => item.id === value);
-        const costState = createCurrencyInputState(
-          variant?.costPrice || current.unitCost || 0,
-        );
-
-        return {
-          ...current,
-          variantId: value as string,
-          unitCostInput: costState.formattedValue,
-          unitCost: costState.numericValue,
-        };
+      if (line.itemType === 'SUPPLY') {
+        return line.supplyItem?.name || line.itemName || 'Insumo / empaque';
       }
 
-      return {
-        ...current,
-        [field]: value,
-      } as EditBatchFormData;
+      return line.itemName || line.description || ITEM_TYPE_LABELS[line.itemType];
+    },
+    [variantById],
+  );
+
+  const canDeleteBatch = useCallback(
+    (batch: PurchaseBatch) => {
+      if (batch.status === 'PENDING') {
+        return true;
+      }
+
+      return getDisplayLines(batch).every(
+        (line) => line.quantityRemaining === line.quantity,
+      );
+    },
+    [getDisplayLines],
+  );
+
+  const handleDelete = useCallback(
+    async (batch: PurchaseBatch) => {
+      if (!canDeleteBatch(batch)) {
+        setError(
+          'No se puede eliminar una recepcion con consumo o movimientos aplicados.',
+        );
+        return;
+      }
+
+      const shouldDelete = window.confirm(
+        'Eliminar esta recepcion revertira el stock recibido cuando aplique. Deseas continuar?',
+      );
+
+      if (!shouldDelete) {
+        return;
+      }
+
+      setDeletingBatchId(batch.id);
+      setError(null);
+
+      try {
+        const authHeaders = await getAuthHeaders();
+        const response = await apiFetch(`/inventory/batches/${batch.id}`, {
+          method: 'DELETE',
+          headers: authHeaders,
+        });
+
+        if (!response.ok) {
+          throw new Error(
+            await resolveApiErrorMessage(
+              response,
+              'No fue posible eliminar la recepcion.',
+              { redirectOnUnauthorized: true },
+            ),
+          );
+        }
+
+        await fetchData();
+        notifyFinanceDataChanged();
+      } catch (err) {
+        console.error('Error deleting reception batch:', err);
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'No fue posible eliminar la recepcion.',
+        );
+      } finally {
+        setDeletingBatchId(null);
+      }
+    },
+    [canDeleteBatch, fetchData, getAuthHeaders, resolveApiErrorMessage],
+  );
+
+  const filteredBatches = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase();
+
+    return batches.filter((batch) => {
+      const lines = getDisplayLines(batch);
+      const supplierName = batch.supplier?.name || '';
+      const searchable = [
+        batch.id,
+        supplierName,
+        STATUS_LABELS[batch.status] || batch.status,
+        ...lines.flatMap((line) => [
+          ITEM_TYPE_LABELS[line.itemType],
+          getLineDisplayName(line),
+          line.variant?.sku || '',
+          line.supplyItem?.sku || '',
+          line.description || '',
+        ]),
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      const matchesSearch =
+        !normalizedSearch || searchable.includes(normalizedSearch);
+      const matchesStatus =
+        statusFilter === 'all' || batch.status === statusFilter;
+      const matchesType =
+        typeFilter === 'all' ||
+        lines.some((line) => line.itemType === typeFilter);
+      const matchesDate =
+        !entryDateFilter ||
+        new Date(batch.createdAt).toISOString().split('T')[0] ===
+          entryDateFilter;
+
+      return matchesSearch && matchesStatus && matchesType && matchesDate;
     });
-  };
+  }, [
+    batches,
+    entryDateFilter,
+    getDisplayLines,
+    getLineDisplayName,
+    search,
+    statusFilter,
+    typeFilter,
+  ]);
 
-  const handleEditSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!editingBatchId) {
-      return;
-    }
-
-    if (
-      !editFormData.supplierId ||
-      !editFormData.productId ||
-      !editFormData.variantId ||
-      editFormData.quantityReceived <= 0
-    ) {
-      setError(
-        'Completa proveedor, producto, variante y cantidad valida para editar el lote.',
-      );
-      return;
-    }
-
-    setSubmitting(true);
-    setError(null);
-
-    try {
-      const authHeaders = await getAuthHeaders();
-      const response = await apiFetch(`/inventory/batches/${editingBatchId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders,
-        },
-        body: JSON.stringify({
-          supplierId: editFormData.supplierId,
-          productId: editFormData.productId,
-          variantId: editFormData.variantId,
-          quantityReceived: editFormData.quantityReceived,
-          unitCost: editFormData.unitCost,
-          status: editFormData.status,
-          purchaseDate: editFormData.purchaseDate,
-        }),
-      });
-
-      if (!response.ok) {
-        setError(
-          await resolveApiErrorMessage(
-            response,
-            'No fue posible actualizar el lote.',
-          ),
-        );
-        return;
-      }
-
-      closeEditModal();
-      await fetchData();
-      notifyFinanceDataChanged();
-    } catch (submitError) {
-      console.error('Error updating batch:', submitError);
-      setError(
-        submitError instanceof Error
-          ? submitError.message
-          : 'No fue posible actualizar el lote.',
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleDeleteBatch = async (batch: PurchaseBatch) => {
-    if (deletingBatchId) {
-      return;
-    }
-
-    const confirmed = window.confirm(
-      `Deseas borrar el lote de ${batch.product?.name || 'este producto'}? Esta accion revertira su impacto en inventario y compras.`,
+  const metricTotals = useMemo(() => {
+    return batches.reduce(
+      (acc, batch) => {
+        const lines = getDisplayLines(batch);
+        acc.totalCost += batch.totalCost;
+        acc.lines += lines.length;
+        acc.supplyLines += lines.filter(
+          (line) => line.itemType === 'SUPPLY',
+        ).length;
+        acc.operationalLines += lines.filter(
+          (line) => line.itemType === 'TOOL' || line.itemType === 'OTHER',
+        ).length;
+        return acc;
+      },
+      {
+        totalCost: 0,
+        lines: 0,
+        supplyLines: 0,
+        operationalLines: 0,
+      },
     );
+  }, [batches, getDisplayLines]);
 
-    if (!confirmed) {
-      return;
-    }
+  const lineErrors = useMemo(() => {
+    return new Map(
+      formData.lines.map((line) => {
+        const quantity = parseQuantity(line.quantity);
+        let message = '';
 
-    setDeletingBatchId(batch.id);
-    setError(null);
+        if (quantity <= 0) {
+          message = 'Cantidad requerida';
+        } else if (line.itemType === 'VARIANT' && !line.variantId) {
+          message = 'Selecciona una variante';
+        } else if (
+          line.itemType === 'VARIANT' &&
+          !Number.isInteger(quantity)
+        ) {
+          message = 'La cantidad debe ser entera';
+        } else if (line.itemType === 'SUPPLY' && !line.supplyItemId) {
+          message = 'Selecciona un insumo';
+        } else if (
+          (line.itemType === 'TOOL' || line.itemType === 'OTHER') &&
+          !line.itemName.trim() &&
+          !line.description.trim()
+        ) {
+          message = 'Nombre o descripcion requerido';
+        }
 
-    try {
-      const authHeaders = await getAuthHeaders();
-      const response = await apiFetch(`/inventory/batches/${batch.id}`, {
-        method: 'DELETE',
-        headers: {
-          ...authHeaders,
-        },
-      });
-
-      if (!response.ok) {
-        setError(
-          await resolveApiErrorMessage(
-            response,
-            'No fue posible borrar el lote.',
-          ),
-        );
-        return;
-      }
-
-      if (editingBatchId === batch.id) {
-        closeEditModal();
-      }
-
-      await fetchData();
-      notifyFinanceDataChanged();
-    } catch (deleteError) {
-      console.error('Error deleting batch:', deleteError);
-      setError(
-        deleteError instanceof Error
-          ? deleteError.message
-          : 'No fue posible borrar el lote.',
-      );
-    } finally {
-      setDeletingBatchId(null);
-    }
-  };
-
-  const normalizedSearch = search.trim().toLowerCase();
-  const filteredBatches = batches.filter((batch) => {
-    const batchDate = new Date(batch.createdAt).toISOString().split('T')[0];
-    const stockState =
-      batch.quantityRemaining === 0
-        ? 'empty'
-        : batch.quantityRemaining === batch.quantityReceived
-          ? 'available'
-          : 'partial';
-
-    if (entryDateFilter && batchDate !== entryDateFilter) return false;
-    if (statusFilter !== 'all' && batch.status !== statusFilter) return false;
-    if (stockFilter !== 'all' && stockState !== stockFilter) return false;
-
-    const productName = batch.product?.name?.toLowerCase() || '';
-    const variantSku = batch.variant?.sku?.toLowerCase() || '';
-    const variantColor = batch.variant?.color?.toLowerCase() || '';
-    const supplierName = batch.supplier?.name?.toLowerCase() || '';
-    const status = batch.status?.toLowerCase() || '';
-    const batchId = batch.id?.toLowerCase() || '';
-
-    return (
-      !normalizedSearch ||
-      productName.includes(normalizedSearch) ||
-      variantSku.includes(normalizedSearch) ||
-      variantColor.includes(normalizedSearch) ||
-      supplierName.includes(normalizedSearch) ||
-      status.includes(normalizedSearch) ||
-      batchId.includes(normalizedSearch)
+        return [line.id, message];
+      }),
     );
-  });
+  }, [formData.lines]);
 
   return (
-    <div className="p-8 md:p-12 max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex flex-col gap-2">
+    <div className="mx-auto max-w-7xl animate-in space-y-8 p-8 duration-500 fade-in slide-in-from-bottom-4 md:p-12">
+      <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
+        <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-primary rounded-xl text-base-color shadow-lg shadow-primary/20">
-              <Database className="w-6 h-6" />
+            <div className="rounded-xl bg-primary p-2.5 text-base-color shadow-lg shadow-primary/20">
+              <Truck className="h-6 w-6" />
             </div>
             <h1 className="text-3xl font-black tracking-tight text-primary">
-              Recepcion de Mercancia
+              Recepcion de Abastecimiento
             </h1>
           </div>
-          <p className="text-muted font-medium">
-            Alimenta el inventario FIFO y registra las facturas de compra
-            automaticamente.
+          <p className="font-medium text-muted">
+            Registra productos vendibles, insumos, empaques, herramientas y
+            otros ingresos operativos en un mismo lote.
           </p>
         </div>
+
         <Button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center justify-center gap-2 px-6 py-3 bg-primary text-base-color font-bold rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
+          type="button"
+          onClick={() => {
+            setFormData(createEmptyForm());
+            setError(null);
+            setIsModalOpen(true);
+          }}
+          className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-black text-base-color shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95"
         >
-          <Plus className="w-5 h-5" />
-          Nuevo Lote
+          <Plus className="h-4 w-4" />
+          Nuevo ingreso
         </Button>
       </div>
 
-      <div className="bg-surface border border-theme rounded-2xl overflow-hidden shadow-sm">
-        <div className="p-6 border-b border-theme bg-base/50 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-bold text-primary flex items-center gap-2">
-              <Package className="w-5 h-5 text-primary/60" />
-              Lotes Activos e Historial
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <div className="relative xl:col-span-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+        <ReceptionMetricCard
+          label="Recepciones"
+          value={String(batches.length)}
+          detail={`${filteredBatches.length} visibles con filtros`}
+          icon={<Database className="h-5 w-5" />}
+        />
+        <ReceptionMetricCard
+          label="Lineas registradas"
+          value={String(metricTotals.lines)}
+          detail="Items recibidos por lote"
+          icon={<Package className="h-5 w-5" />}
+        />
+        <ReceptionMetricCard
+          label="Insumos / operacion"
+          value={String(metricTotals.supplyLines + metricTotals.operationalLines)}
+          detail={`${metricTotals.supplyLines} insumos y ${metricTotals.operationalLines} operativos`}
+          icon={<Truck className="h-5 w-5" />}
+        />
+        <ReceptionMetricCard
+          label="Valor recibido"
+          value={formatCurrency(metricTotals.totalCost)}
+          detail="Costo registrado en abastecimiento"
+          icon={<CheckCircle2 className="h-5 w-5" />}
+        />
+      </div>
+
+      <div className="overflow-hidden rounded-3xl border border-theme bg-surface shadow-sm">
+        <div className="border-b border-theme bg-base/30 p-6">
+          <div className="grid gap-3 md:grid-cols-[1fr_180px_180px_170px]">
+            <label className="relative block">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
               <Input
-                type="text"
-                placeholder="Buscar lote, producto o SKU..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 pr-4 py-2 bg-base border border-theme rounded-lg text-xs font-medium outline-none focus:ring-2 focus:ring-primary/20 transition-all w-full"
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Buscar por proveedor, SKU, insumo o descripcion"
+                className="w-full rounded-xl border border-theme bg-base py-2.5 pl-10 pr-4 text-sm font-medium text-primary outline-none focus:ring-2 focus:ring-primary/20"
               />
-            </div>
+            </label>
+            <Select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+              className="rounded-xl border border-theme bg-base px-4 py-2.5 text-xs font-black text-primary outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="all">Todos los estados</option>
+              <option value="IN_STOCK">Recibidos</option>
+              <option value="PENDING">Pendientes</option>
+              <option value="DEPLETED">Agotados</option>
+            </Select>
+            <Select
+              value={typeFilter}
+              onChange={(event) => setTypeFilter(event.target.value as ItemType)}
+              className="rounded-xl border border-theme bg-base px-4 py-2.5 text-xs font-black text-primary outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="all">Todos los tipos</option>
+              <option value="VARIANT">Producto vendible</option>
+              <option value="SUPPLY">Insumo / empaque</option>
+              <option value="TOOL">Herramienta</option>
+              <option value="OTHER">Otro</option>
+            </Select>
             <Input
               type="date"
               value={entryDateFilter}
-              onChange={(e) => setEntryDateFilter(e.target.value)}
-              className="bg-base border border-theme rounded-lg text-xs font-medium"
+              onChange={(event) => setEntryDateFilter(event.target.value)}
+              className="rounded-xl border border-theme bg-base px-4 py-2.5 text-xs font-black text-primary outline-none focus:ring-2 focus:ring-primary/20"
             />
-            <Select
-              value={statusFilter}
-              onChange={(e) =>
-                setStatusFilter(e.target.value as typeof statusFilter)
-              }
-              className="bg-base border border-theme rounded-lg text-xs font-bold"
-            >
-              <option value="all">Todos los estados</option>
-              <option value="IN_STOCK">En stock</option>
-              <option value="PENDING">Pendiente</option>
-              <option value="DEPLETED">Agotado</option>
-            </Select>
-            <Select
-              value={stockFilter}
-              onChange={(e) =>
-                setStockFilter(e.target.value as typeof stockFilter)
-              }
-              className="bg-base border border-theme rounded-lg text-xs font-bold"
-            >
-              <option value="all">Todo el stock</option>
-              <option value="available">Stock completo</option>
-              <option value="partial">Stock parcial</option>
-              <option value="empty">Sin stock</option>
-            </Select>
           </div>
         </div>
 
         {error ? (
-          <div className="border-b border-rose-200 bg-rose-50 px-6 py-3 text-sm font-semibold text-rose-700">
-            {error}
+          <div className="flex items-start gap-3 border-b border-rose-200 bg-rose-50 px-6 py-3 text-sm font-semibold text-rose-700">
+            <AlertCircle className="mt-0.5 h-4 w-4 flex-none" />
+            <span>{error}</span>
           </div>
         ) : null}
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-base/30 text-[10px] uppercase tracking-widest font-black text-muted/60 border-b border-theme">
-                <th className="px-6 py-4">Producto</th>
-                <th className="px-6 py-4">Proveedor</th>
-                <th className="px-6 py-4">Stock Restante</th>
-                <th className="px-6 py-4">Costo Total</th>
-                <th className="px-6 py-4">Fecha Ingreso</th>
-                <th className="px-6 py-4">Estado</th>
-                <th className="px-6 py-4">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-theme">
-              {loading ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
-                  </td>
-                </tr>
-              ) : filteredBatches.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={7}
-                    className="px-6 py-12 text-center text-muted font-medium"
-                  >
-                    {batches.length === 0
-                      ? 'No hay lotes registrados todavia.'
-                      : 'No se encontraron lotes con ese filtro.'}
-                  </td>
-                </tr>
-              ) : (
-                filteredBatches.map((batch) => (
-                  <tr
-                    key={batch.id}
-                    className="hover:bg-primary/5 transition-colors group"
-                  >
-                    <td className="px-6 py-4 font-bold text-primary text-sm">
-                      <div className="flex flex-col">
-                        <span>{batch.product?.name}</span>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-muted">
-                          {batch.variant?.sku || batch.variant?.color
-                            ? `${batch.variant?.color || 'Variante'}${batch.variant?.sku ? ` - ${batch.variant.sku}` : ''}`
-                            : 'Sin variante visible'}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-muted font-bold text-xs uppercase">
-                        <Truck className="w-3.5 h-3.5" />
-                        {batch.supplier?.name}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-sm font-black text-primary">
-                          {batch.quantityRemaining}{' '}
-                          <span className="text-[10px] text-muted font-bold">
-                            / {batch.quantityReceived}
+        {loading ? (
+          <div className="flex min-h-72 items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : filteredBatches.length === 0 ? (
+          <div className="flex min-h-72 flex-col items-center justify-center px-8 py-14 text-center">
+            <div className="rounded-full bg-base p-4">
+              <Database className="h-8 w-8 text-muted" />
+            </div>
+            <h2 className="mt-3 text-lg font-black text-primary">
+              Sin recepciones
+            </h2>
+            <p className="mt-1 max-w-md text-sm font-bold text-muted">
+              Crea un ingreso de abastecimiento para registrar inventario
+              vendible u operativo.
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-theme">
+            {filteredBatches.map((batch) => {
+              const lines = getDisplayLines(batch);
+              const expanded = expandedBatchId === batch.id;
+              const lineTypes = Array.from(
+                new Set(lines.map((line) => ITEM_TYPE_LABELS[line.itemType])),
+              ).join(', ');
+
+              return (
+                <div
+                  key={batch.id}
+                  className="px-8 py-5 transition-colors hover:bg-primary/5"
+                >
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpandedBatchId(expanded ? null : batch.id)
+                      }
+                      className="flex min-w-0 flex-1 items-start gap-4 text-left"
+                    >
+                      <span className="mt-0.5 flex h-9 w-9 flex-none items-center justify-center rounded-xl border border-theme bg-base text-muted">
+                        <ChevronDown
+                          className={`h-4 w-4 transition ${
+                            expanded ? 'rotate-180' : ''
+                          }`}
+                        />
+                      </span>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-black text-primary">
+                            {batch.supplier?.name || 'Proveedor sin nombre'}
+                          </p>
+                          <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-primary">
+                            {STATUS_LABELS[batch.status] || batch.status}
                           </span>
-                        </span>
-                        <div className="w-24 h-1.5 bg-theme rounded-full overflow-hidden">
-                          <div
-                            className={`h-full transition-all duration-1000 ${
-                              batch.quantityRemaining === 0
-                                ? 'bg-red-500'
-                                : 'bg-emerald-500'
-                            }`}
-                            style={{
-                              width: `${(batch.quantityRemaining / batch.quantityReceived) * 100}%`,
-                            }}
-                          />
+                        </div>
+                        <p className="mt-1 text-xs font-bold text-muted">
+                          {new Date(batch.createdAt).toLocaleDateString(
+                            'es-CO',
+                          )}{' '}
+                          - {lines.length} linea
+                          {lines.length === 1 ? '' : 's'} - {lineTypes}
+                        </p>
+                      </div>
+                    </button>
+
+                    <div className="flex flex-wrap items-center gap-4 lg:justify-end">
+                      <div className="text-left lg:text-right">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted">
+                          Total
+                        </p>
+                        <p className="font-black text-primary">
+                          {formatCurrency(batch.totalCost)}
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        disabled={
+                          deletingBatchId === batch.id || !canDeleteBatch(batch)
+                        }
+                        onClick={() => void handleDelete(batch)}
+                        className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-black uppercase tracking-widest text-rose-700 transition-colors hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {deletingBatchId === batch.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                        Eliminar
+                      </Button>
+                    </div>
+                  </div>
+
+                  {expanded ? (
+                    <div className="mt-4 overflow-x-auto rounded-2xl border border-theme bg-surface">
+                      <div className="min-w-[760px]">
+                        <div className="grid grid-cols-[1.2fr_150px_120px_140px_140px] gap-3 border-b border-theme bg-base/50 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-muted/60">
+                          <span>Item</span>
+                          <span>Tipo</span>
+                          <span>Cantidad</span>
+                          <span>Costo unitario</span>
+                          <span>Subtotal</span>
+                        </div>
+                        <div className="divide-y divide-theme">
+                          {lines.map((line) => (
+                            <div
+                              key={line.id}
+                              className="grid grid-cols-[1.2fr_150px_120px_140px_140px] gap-3 px-6 py-4 text-sm transition-colors hover:bg-base/30"
+                            >
+                              <div className="min-w-0">
+                                <p className="truncate font-bold text-primary">
+                                  {getLineDisplayName(line)}
+                                </p>
+                                {(line.description || line.notes) && (
+                                  <p className="mt-1 truncate text-xs font-medium text-muted">
+                                    {line.description || line.notes}
+                                  </p>
+                                )}
+                              </div>
+                              <span className="font-medium text-muted">
+                                {ITEM_TYPE_LABELS[line.itemType]}
+                              </span>
+                              <span className="font-medium text-muted">
+                                {formatQuantity(
+                                  line.quantity,
+                                  line.unitOfMeasure,
+                                )}
+                              </span>
+                              <span className="font-medium text-muted">
+                                {formatCurrency(line.unitCost)}
+                              </span>
+                              <span className="font-black text-primary">
+                                {formatCurrency(line.lineTotal)}
+                              </span>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 font-bold text-primary/70 text-sm">
-                      ${batch.totalCost.toLocaleString('es-CO')}
-                      <div className="text-[10px] text-muted">
-                        unit: ${batch.unitCost.toLocaleString('es-CO')}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-muted font-medium text-xs">
-                        <Calendar className="w-3.5 h-3.5" />
-                        {new Date(batch.createdAt).toLocaleDateString()}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                          batch.status === 'IN_STOCK'
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : batch.status === 'PENDING'
-                              ? 'bg-amber-100 text-amber-700'
-                              : batch.status === 'DEPLETED'
-                                ? 'bg-red-100 text-red-700'
-                                : 'bg-slate-100 text-slate-700'
-                        }`}
-                      >
-                        {batch.status === 'IN_STOCK' ? (
-                          <CheckCircle2 className="w-3 h-3" />
-                        ) : batch.status === 'PENDING' ? (
-                          <AlertCircle className="w-3 h-3" />
-                        ) : (
-                          <XCircle className="w-3 h-3" />
-                        )}
-                        {batch.status === 'IN_STOCK'
-                          ? 'En Stock'
-                          : batch.status === 'PENDING'
-                            ? 'Pendiente'
-                            : 'Agotado'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end">
-                        <Popover
-                          open={activeActionMenu === batch.id}
-                          onOpenChange={(open) =>
-                            setActiveActionMenu(open ? batch.id : null)
-                          }
-                        >
-                          <PopoverTrigger>
-                            <button
-                              type="button"
-                              className="inline-flex items-center rounded-xl border border-theme bg-base p-2 text-primary transition-colors hover:bg-primary/5"
-                              aria-label={`Acciones para lote ${batch.id.slice(0, 8)}`}
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent
-                            side="bottom"
-                            align="end"
-                            className="w-60 overflow-hidden rounded-2xl border border-theme bg-surface shadow-xl"
-                          >
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setActiveActionMenu(null);
-                                openEditModal(batch);
-                              }}
-                              disabled={
-                                !canModifyBatch(batch) ||
-                                deletingBatchId === batch.id
-                              }
-                              title={
-                                canModifyBatch(batch)
-                                  ? 'Editar lote'
-                                  : 'Solo puedes editar lotes sin movimiento de stock'
-                              }
-                              className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-primary transition-colors hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              <Pencil className="h-4 w-4" />
-                              {canModifyBatch(batch)
-                                ? 'Editar'
-                                : 'Sin movimiento de stock para editar'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setActiveActionMenu(null);
-                                void handleDeleteBatch(batch);
-                              }}
-                              disabled={
-                                !canModifyBatch(batch) ||
-                                deletingBatchId === batch.id
-                              }
-                              title={
-                                canModifyBatch(batch)
-                                  ? 'Borrar lote'
-                                  : 'Solo puedes borrar lotes sin movimiento de stock'
-                              }
-                              className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-rose-700 transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              {deletingBatchId === batch.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-4 w-4" />
-                              )}
-                              {canModifyBatch(batch)
-                                ? 'Borrar'
-                                : 'Sin movimiento de stock para borrar'}
-                            </button>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {isEditModalOpen ? (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-primary/20 backdrop-blur-sm animate-in fade-in duration-300"
-            onClick={closeEditModal}
-          />
-
-          <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-theme bg-surface shadow-2xl animate-in zoom-in-95 duration-300">
-            <div className="border-b border-theme bg-primary p-6 text-base-color">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h2 className="text-2xl font-black">Editar Lote</h2>
-                  <p className="mt-1 text-sm font-medium text-primary-foreground/70">
-                    Corrige un lote registrado con errores antes de que tenga
-                    movimientos.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={closeEditModal}
-                  className="rounded-xl p-2 transition-colors hover:bg-white/10"
-                  aria-label="Cerrar modal"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-primary/20 p-4 backdrop-blur-sm">
+          <div className="my-8 w-full max-w-6xl rounded-3xl border border-theme bg-surface shadow-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-theme p-8">
+              <div>
+                <h2 className="text-2xl font-black text-primary">
+                  Nuevo ingreso de abastecimiento
+                </h2>
+                <p className="mt-1 text-sm font-medium text-muted">
+                  Usa lineas separadas para controlar que solo los productos
+                  vendibles afecten stock comercial.
+                </p>
               </div>
+              <Button
+                type="button"
+                onClick={closeCreateModal}
+                className="rounded-xl p-2 text-muted transition-colors hover:bg-base hover:text-primary"
+              >
+                <X className="h-5 w-5" />
+              </Button>
             </div>
 
-            <form onSubmit={handleEditSubmit} className="space-y-6 p-6">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted">
+            <form onSubmit={handleSubmit} className="space-y-6 p-8">
+              <div className="grid gap-4 md:grid-cols-5">
+                <label className="md:col-span-2">
+                  <span className="mb-1 block text-sm font-medium text-primary">
                     Proveedor
-                  </label>
+                  </span>
                   <Select
-                    required
-                    value={editFormData.supplierId}
-                    onChange={(e) =>
-                      handleEditFieldChange('supplierId', e.target.value)
+                    value={formData.supplierId}
+                    onChange={(event) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        supplierId: event.target.value,
+                      }))
                     }
-                    className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-primary/20"
+                    disabled={submitting}
+                    className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
                   >
-                    <option value="">Seleccionar...</option>
+                    <option value="">Selecciona proveedor</option>
                     {suppliers.map((supplier) => (
                       <option key={supplier.id} value={supplier.id}>
                         {supplier.name}
                       </option>
                     ))}
                   </Select>
-                </div>
+                </label>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted">
-                    Estado
-                  </label>
-                  <Select
-                    required
-                    value={editFormData.status}
-                    onChange={(e) =>
-                      handleEditFieldChange('status', e.target.value)
-                    }
-                    className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-primary/20"
-                  >
-                    <option value="RECIBIDO">RECIBIDO (Suma al stock)</option>
-                    <option value="PENDIENTE">PENDIENTE (Sin stock)</option>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted">
-                    Producto
-                  </label>
-                  <Select
-                    required
-                    value={editFormData.productId}
-                    onChange={(e) =>
-                      handleEditFieldChange('productId', e.target.value)
-                    }
-                    className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-primary/20"
-                  >
-                    <option value="">Seleccionar producto...</option>
-                    {products.map((product) => (
-                      <option key={product.id} value={product.id}>
-                        {product.name}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted">
-                    Variante
-                  </label>
-                  <Select
-                    required
-                    value={editFormData.variantId}
-                    onChange={(e) =>
-                      handleEditFieldChange('variantId', e.target.value)
-                    }
-                    disabled={!editFormData.productId}
-                    className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
-                  >
-                    <option value="">Seleccionar variante...</option>
-                    {getVariantsForProduct(editFormData.productId).map(
-                      (variant) => (
-                        <option
-                          key={variant.id || variant.sku}
-                          value={variant.id || ''}
-                        >
-                          {[variant.size, variant.color, variant.sku]
-                            .filter(Boolean)
-                            .join(' - ')}
-                        </option>
-                      ),
-                    )}
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted">
-                    Cantidad
-                  </label>
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    value={
-                      editFormData.quantityReceived === 0
-                        ? ''
-                        : String(editFormData.quantityReceived)
-                    }
-                    onChange={(e) => {
-                      const nextValue = sanitizeIntegerInput(e.target.value);
-                      if (nextValue !== null) {
-                        handleEditFieldChange(
-                          'quantityReceived',
-                          parseInt(nextValue, 10) || 0,
-                        );
-                      }
-                    }}
-                    className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-primary/20"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted">
-                    Costo Unitario
-                  </label>
-                  <InputGroup
-                    prefix={<span className="text-xs text-muted">$</span>}
-                    className="flex items-center gap-1"
-                  >
-                    <Input
-                      type="text"
-                      inputMode="decimal"
-                      value={editFormData.unitCostInput}
-                      onChange={(e) =>
-                        handleCurrencyInputChangeWithState(e, (nextValue) =>
-                          setEditFormData((current) => ({
-                            ...current,
-                            unitCostInput: nextValue.formattedValue,
-                            unitCost: nextValue.numericValue,
-                          })),
-                        )
-                      }
-                      className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-primary/20"
-                    />
-                  </InputGroup>
-                </div>
-
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted">
+                <label>
+                  <span className="mb-1 block text-sm font-medium text-primary">
                     Fecha
-                  </label>
+                  </span>
                   <Input
                     type="date"
-                    required
-                    value={editFormData.purchaseDate}
-                    onChange={(e) =>
-                      handleEditFieldChange('purchaseDate', e.target.value)
+                    value={formData.purchaseDate}
+                    onChange={(event) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        purchaseDate: event.target.value,
+                      }))
                     }
-                    className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-primary/20"
+                    disabled={submitting}
+                    className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
                   />
+                </label>
+
+                <label>
+                  <span className="mb-1 block text-sm font-medium text-primary">
+                    Estado
+                  </span>
+                  <Select
+                    value={formData.status}
+                    onChange={(event) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        status: event.target.value as BatchInputStatus,
+                      }))
+                    }
+                    disabled={submitting}
+                    className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                  >
+                    <option value="RECIBIDO">Recibido</option>
+                    <option value="PENDIENTE">Pendiente</option>
+                  </Select>
+                </label>
+
+                <label>
+                  <span className="mb-1 block text-sm font-medium text-primary">
+                    Documento
+                  </span>
+                  <Select
+                    value={formData.documentType}
+                    onChange={(event) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        documentType: event.target
+                          .value as PurchaseDocumentType,
+                      }))
+                    }
+                    disabled={submitting}
+                    className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                  >
+                    <option value="INVOICE">Factura</option>
+                    <option value="DELIVERY_NOTE">Remision</option>
+                  </Select>
+                </label>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <h3 className="font-semibold text-primary">
+                      Lineas del lote
+                    </h3>
+                    <p className="text-sm font-medium text-muted">
+                      Cada linea define su tipo y su impacto operativo.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={addLine}
+                    disabled={submitting}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-theme bg-base px-4 py-2.5 text-xs font-black uppercase tracking-widest text-primary transition-colors hover:bg-primary/5 disabled:opacity-60"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Agregar linea
+                  </Button>
+                </div>
+
+                <div className="space-y-3">
+                  {formData.lines.map((line, index) => {
+                    const lineTotal =
+                      parseQuantity(line.quantity) * line.unitCost;
+                    const lineError = lineErrors.get(line.id);
+
+                    return (
+                      <div
+                        key={line.id}
+                        className="rounded-2xl border border-theme bg-base/40 p-5"
+                      >
+                        <div className="mb-3 flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-black text-primary">
+                              Linea {index + 1}
+                            </p>
+                            {lineError && (
+                              <p className="mt-1 text-xs font-bold text-rose-600">
+                                {lineError}
+                              </p>
+                            )}
+                          </div>
+                          <Button
+                            type="button"
+                            onClick={() => removeLine(line.id)}
+                            disabled={submitting || formData.lines.length === 1}
+                            className="rounded-xl p-2 text-muted transition-colors hover:bg-surface hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+
+                        <div className="grid gap-3 lg:grid-cols-12">
+                          <label className="lg:col-span-3">
+                            <span className="mb-1 block text-sm font-medium text-primary">
+                              Tipo de item
+                            </span>
+                            <Select
+                              value={line.itemType}
+                              onChange={(event) =>
+                                handleLineTypeChange(
+                                  line.id,
+                                  event.target.value as ItemType,
+                                )
+                              }
+                              disabled={submitting}
+                              className="w-full rounded-xl border border-theme bg-surface px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                            >
+                              <option value="VARIANT">Producto vendible</option>
+                              <option value="SUPPLY">Insumo / empaque</option>
+                              <option value="TOOL">
+                                Herramienta / utensilio
+                              </option>
+                              <option value="OTHER">Otro</option>
+                            </Select>
+                          </label>
+
+                          {line.itemType === 'VARIANT' && (
+                            <label className="lg:col-span-5">
+                              <span className="mb-1 block text-sm font-medium text-primary">
+                                Variante
+                              </span>
+                              <Select
+                                value={line.variantId}
+                                onChange={(event) =>
+                                  handleVariantChange(
+                                    line.id,
+                                    event.target.value,
+                                  )
+                                }
+                                disabled={submitting}
+                                className="w-full rounded-xl border border-theme bg-surface px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                              >
+                                <option value="">Selecciona variante</option>
+                                {variantOptions.map((variant) => (
+                                  <option key={variant.id} value={variant.id}>
+                                    {variant.label}
+                                  </option>
+                                ))}
+                              </Select>
+                            </label>
+                          )}
+
+                          {line.itemType === 'SUPPLY' && (
+                            <div className="lg:col-span-5">
+                              <span className="mb-1 block text-sm font-medium text-primary">
+                                Insumo o empaque
+                              </span>
+                              <CreatableCombobox
+                                options={supplyOptions}
+                                value={line.supplyItemId}
+                                onChange={(value) =>
+                                  handleSupplyChange(line.id, value)
+                                }
+                                onCreate={(label) =>
+                                  handleCreateSupplyFromCombobox(
+                                    line.id,
+                                    label,
+                                  )
+                                }
+                                placeholder="Selecciona o crea un insumo"
+                                searchPlaceholder="Buscar o escribir nuevo insumo..."
+                                emptyMessage="Escribe un nombre para crear un insumo."
+                                disabled={submitting}
+                                isLoading={
+                                  creatingSupply &&
+                                  creatingSupplyForLine === line.id
+                                }
+                              />
+                            </div>
+                          )}
+
+                          {(line.itemType === 'TOOL' ||
+                            line.itemType === 'OTHER') && (
+                            <label className="lg:col-span-5">
+                              <span className="mb-1 block text-sm font-medium text-primary">
+                                Nombre / descripcion
+                              </span>
+                              <Input
+                                value={line.itemName}
+                                onChange={(event) =>
+                                  updateLine(line.id, {
+                                    itemName: event.target.value,
+                                  })
+                                }
+                                disabled={submitting}
+                                placeholder={
+                                  line.itemType === 'TOOL'
+                                    ? 'Ej. Tijeras industriales'
+                                    : 'Ej. Servicio o elemento operativo'
+                                }
+                                className="w-full rounded-xl border border-theme bg-surface px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                              />
+                            </label>
+                          )}
+
+                          <label className="lg:col-span-1">
+                            <span className="mb-1 block text-sm font-medium text-primary">
+                              Cantidad
+                            </span>
+                            <Input
+                              value={line.quantity}
+                              onChange={(event) =>
+                                updateLine(line.id, {
+                                  quantity: sanitizeQuantityInput(
+                                    event.target.value,
+                                  ),
+                                })
+                              }
+                              disabled={submitting}
+                              inputMode="decimal"
+                              className="w-full rounded-xl border border-theme bg-surface px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                            />
+                          </label>
+
+                          <label className="lg:col-span-1">
+                            <span className="mb-1 block text-sm font-medium text-primary">
+                              Unidad
+                            </span>
+                            <Input
+                              value={line.unitOfMeasure}
+                              onChange={(event) =>
+                                updateLine(line.id, {
+                                  unitOfMeasure: event.target.value,
+                                })
+                              }
+                              disabled={submitting}
+                              list={`units-${line.id}`}
+                              className="w-full rounded-xl border border-theme bg-surface px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                            />
+                            <datalist id={`units-${line.id}`}>
+                              {UNIT_OPTIONS.map((unit) => (
+                                <option key={unit} value={unit} />
+                              ))}
+                            </datalist>
+                          </label>
+
+                          <label className="lg:col-span-2">
+                            <span className="mb-1 block text-sm font-medium text-primary">
+                              Costo unitario
+                            </span>
+                            <Input
+                              value={line.unitCostInput}
+                              onChange={(event) =>
+                                handleCurrencyInputChangeWithState(
+                                  event,
+                                  (state) =>
+                                    updateLine(line.id, {
+                                      unitCostInput: state.formattedValue,
+                                      unitCost: state.numericValue,
+                                    }),
+                                )
+                              }
+                              disabled={submitting}
+                              inputMode="decimal"
+                              className="w-full rounded-xl border border-theme bg-surface px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                            />
+                          </label>
+                        </div>
+
+                        <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_180px]">
+                          <label>
+                            <span className="mb-1 block text-sm font-medium text-primary">
+                              Notas
+                            </span>
+                            <Input
+                              value={line.notes}
+                              onChange={(event) =>
+                                updateLine(line.id, {
+                                  notes: event.target.value,
+                                })
+                              }
+                              disabled={submitting}
+                              placeholder="Referencia, observacion o uso esperado"
+                              className="w-full rounded-xl border border-theme bg-surface px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                            />
+                          </label>
+                          <div className="rounded-2xl border border-theme bg-surface p-4">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-muted">
+                              Subtotal visual
+                            </p>
+                            <p className="mt-1 font-black text-primary">
+                              {formatCurrency(lineTotal)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="flex items-center justify-between rounded-2xl border border-theme bg-base/40 px-4 py-3">
-                <div>
-                  <div className="text-[10px] font-black uppercase tracking-widest text-muted">
-                    Total corregido
+              <div className="grid gap-4 md:grid-cols-[1fr_320px]">
+                <label>
+                  <span className="mb-1 block text-sm font-medium text-primary">
+                    Flete / costo adicional
+                  </span>
+                  <Input
+                    value={formData.freightCostInput}
+                    onChange={(event) =>
+                      handleCurrencyInputChangeWithState(event, (state) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          freightCostInput: state.formattedValue,
+                          freightCost: state.numericValue,
+                        })),
+                      )
+                    }
+                    disabled={submitting}
+                    inputMode="decimal"
+                    className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                  />
+                </label>
+
+                <div className="rounded-2xl border border-theme bg-base/40 p-5">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-bold text-muted">Subtotal lineas</span>
+                    <span className="font-black text-primary">
+                      {formatCurrency(subtotal)}
+                    </span>
                   </div>
-                  <div className="text-xl font-black text-primary">
-                    $
-                    {(
-                      editFormData.quantityReceived * editFormData.unitCost
-                    ).toLocaleString('es-CO')}
+                  <div className="mt-2 flex items-center justify-between text-sm">
+                    <span className="font-bold text-muted">Flete</span>
+                    <span className="font-black text-primary">
+                      {formatCurrency(formData.freightCost)}
+                    </span>
                   </div>
-                </div>
-                <div className="text-right text-xs font-medium text-muted">
-                  Solo se permiten lotes sin movimientos de stock ni facturas
-                  asociadas.
+                  <div className="mt-3 border-t border-theme pt-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-black text-primary">
+                        Total proyectado
+                      </span>
+                      <span className="text-lg font-black text-primary">
+                        {formatCurrency(projectedTotal)}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs font-medium text-muted">
+                      El backend recalcula el total oficial y prorratea flete.
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex gap-4">
+              <div className="flex flex-col gap-3 border-t border-theme pt-5 sm:flex-row sm:justify-end">
                 <Button
                   type="button"
-                  onClick={closeEditModal}
-                  className="cursor-pointer rounded-2xl border border-theme bg-base px-6 py-3 font-bold text-muted transition-all hover:bg-theme/5"
+                  onClick={closeCreateModal}
+                  disabled={submitting}
+                  className="rounded-xl border border-theme bg-base px-5 py-3 text-sm font-bold text-muted disabled:opacity-60"
                 >
                   Cancelar
                 </Button>
                 <Button
                   type="submit"
                   disabled={submitting}
-                  className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl bg-primary px-8 py-3 font-black text-base-color shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-black text-base-color disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {submitting ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <CheckCircle2 className="h-5 w-5" />
+                    <CheckCircle2 className="h-4 w-4" />
                   )}
-                  Guardar Cambios
+                  Confirmar recepcion
                 </Button>
               </div>
             </form>
           </div>
         </div>
-      ) : null}
+      )}
 
-      {isModalOpen ? (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-primary/20 backdrop-blur-sm animate-in fade-in duration-300"
-            onClick={() => setIsModalOpen(false)}
-          />
-
-          <div className="relative bg-surface w-full max-w-4xl rounded-3xl shadow-2xl border border-theme animate-in zoom-in-95 duration-300 overflow-hidden">
-            <div className="p-6 border-b border-theme bg-primary text-base-color">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h2 className="text-2xl font-black">Nuevo Lote de Compra</h2>
-                  <p className="text-primary-foreground/70 font-medium text-sm mt-1">
-                    Registra la compra de multiples insumos o materias primas.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="rounded-xl p-2 transition-colors hover:bg-white/10"
-                  aria-label="Cerrar modal"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+      {isSupplyModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-primary/20 p-4 backdrop-blur-sm">
+          <div className="my-12 w-full max-w-xl rounded-3xl border border-theme bg-surface shadow-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-theme p-8">
+              <div>
+                <h2 className="text-2xl font-black text-primary">
+                  Crear insumo o empaque
+                </h2>
+                <p className="mt-1 text-sm font-medium text-muted">
+                  Quedara disponible para futuras recepciones.
+                </p>
               </div>
+              <Button
+                type="button"
+                onClick={() => {
+                  if (!creatingSupply) {
+                    setIsSupplyModalOpen(false);
+                    setCreatingSupplyForLine(null);
+                  }
+                }}
+                className="rounded-xl p-2 text-muted transition-colors hover:bg-base hover:text-primary"
+              >
+                <X className="h-5 w-5" />
+              </Button>
             </div>
 
-            <form
-              onSubmit={handleSubmit}
-              className="p-6 space-y-6 max-h-[80vh] overflow-y-auto"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted">
-                    Proveedor
-                  </label>
-                  <Select
-                    required
-                    value={formData.supplierId}
-                    onChange={(e) =>
-                      setFormData({ ...formData, supplierId: e.target.value })
-                    }
-                    className="w-full bg-base border border-theme rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                  >
-                    <option value="">Seleccionar...</option>
-                    {suppliers.map((supplier) => (
-                      <option key={supplier.id} value={supplier.id}>
-                        {supplier.name}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted">
-                    Documento
-                  </label>
-                  <Select
-                    required
-                    value={formData.documentType}
-                    onChange={(e) =>
-                      setFormData({ ...formData, documentType: e.target.value })
-                    }
-                    className="w-full bg-base border border-theme rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                  >
-                    <option value="INVOICE">Factura</option>
-                    <option value="DELIVERY_NOTE">Remision</option>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted">
-                    Estado
-                  </label>
-                  <Select
-                    required
-                    value={formData.status}
-                    onChange={(e) =>
-                      setFormData({ ...formData, status: e.target.value })
-                    }
-                    className="w-full bg-base border border-theme rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                  >
-                    <option value="RECIBIDO">RECIBIDO (Suma al stock)</option>
-                    <option value="PENDIENTE">PENDIENTE (Sin stock)</option>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted">
-                    Fecha
-                  </label>
+            <form onSubmit={handleCreateSupply} className="space-y-5 p-8">
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="md:col-span-2">
+                  <span className="mb-1 block text-sm font-medium text-primary">
+                    Nombre
+                  </span>
                   <Input
-                    type="date"
-                    required
-                    value={formData.purchaseDate}
-                    onChange={(e) =>
-                      setFormData({ ...formData, purchaseDate: e.target.value })
+                    value={supplyForm.name}
+                    onChange={(event) =>
+                      setSupplyForm((prev) => ({
+                        ...prev,
+                        name: event.target.value,
+                      }))
                     }
-                    className="w-full bg-base border border-theme rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                    disabled={creatingSupply}
+                    placeholder="Ej. Bolsa de envio"
+                    className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
                   />
-                </div>
+                </label>
 
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted">
-                    Fletes
-                  </label>
-                  <InputGroup
-                    prefix={<span className="text-xs text-muted">$</span>}
-                    className="flex items-center gap-1"
-                  >
-                    <Input
-                      type="text"
-                      inputMode="decimal"
-                      value={formData.freightCostInput}
-                      onChange={(e) =>
-                        handleCurrencyInputChangeWithState(e, (nextValue) =>
-                          setFormData((current) => ({
-                            ...current,
-                            freightCostInput: nextValue.formattedValue,
-                            freightCost: nextValue.numericValue,
-                          })),
-                        )
-                      }
-                      className="w-full bg-base border border-theme rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                    />
-                  </InputGroup>
-                </div>
-              </div>
+                <label>
+                  <span className="mb-1 block text-sm font-medium text-primary">
+                    SKU
+                  </span>
+                  <Input
+                    value={supplyForm.sku}
+                    onChange={(event) =>
+                      setSupplyForm((prev) => ({
+                        ...prev,
+                        sku: event.target.value,
+                      }))
+                    }
+                    disabled={creatingSupply}
+                    className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                  />
+                </label>
 
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                    <Package className="w-4 h-4" />
-                    Items del Lote
-                  </h3>
-                  <Button
-                    type="button"
-                    onClick={addItem}
-                    className="text-[10px] font-black uppercase bg-primary/10 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-all flex items-center gap-1.5"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    Agregar Item
-                  </Button>
-                </div>
+                <label>
+                  <span className="mb-1 block text-sm font-medium text-primary">
+                    Categoria
+                  </span>
+                  <Input
+                    value={supplyForm.category}
+                    onChange={(event) =>
+                      setSupplyForm((prev) => ({
+                        ...prev,
+                        category: event.target.value,
+                      }))
+                    }
+                    disabled={creatingSupply}
+                    className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                  />
+                </label>
 
-                <div className="border border-theme rounded-2xl overflow-hidden bg-base/30">
-                  <table className="w-full table-fixed text-left border-collapse">
-                    <thead className="bg-base/50 text-[10px] uppercase font-black text-muted/60 border-b border-theme">
-                      <tr>
-                        <th className="w-[22%] px-5 py-3.5">
-                          Insumo / Producto
-                        </th>
-                        <th className="w-[16%] px-4 py-3.5 text-center">
-                          Variante
-                        </th>
-                        <th className="px-4 py-3">Tamaño</th>
-                        <th className="w-[14%] px-4 py-3.5 text-center">
-                          Tela
-                        </th>
-                        <th className="w-[10%] px-4 py-3.5 text-center">
-                          Cantidad
-                        </th>
-                        <th className="w-[12%] px-4 py-3.5 text-center">
-                          Costo Unit.
-                        </th>
-                        <th className="w-[10%] px-4 py-3.5 text-center">
-                          Subtotal
-                        </th>
-                        <th className="w-[2%] px-4 py-3.5" />
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-theme">
-                      {formData.items.map((item, index) => (
-                        <tr key={`${item.productId}-${index}`}>
-                          <td className="px-5 py-3.5">
-                            <Select
-                              required
-                              value={item.productId}
-                              onChange={(e) =>
-                                updateItem(index, 'productId', e.target.value)
-                              }
-                              className="w-full bg-transparent border-none text-sm font-bold focus:ring-0 outline-none"
-                            >
-                              <option value="">Seleccionar producto...</option>
-                              {products.map((product) => (
-                                <option key={product.id} value={product.id}>
-                                  {product.name}
-                                </option>
-                              ))}
-                            </Select>
-                          </td>
-                          <td className="px-4 py-3.5">
-                            <Select
-                              required
-                              value={item.variantId}
-                              onChange={(e) =>
-                                updateItem(index, 'variantId', e.target.value)
-                              }
-                              disabled={!item.productId}
-                              className="w-full bg-transparent border-none text-sm font-bold focus:ring-0 outline-none disabled:opacity-50"
-                            >
-                              <option value="">Seleccionar variante...</option>
-                              {getVariantsForProduct(item.productId).map(
-                                (variant) => (
-                                  <option
-                                    key={variant.id || variant.sku}
-                                    value={variant.id || ''}
-                                  >
-                                    {[variant.size, variant.color, variant.sku]
-                                      .filter(Boolean)
-                                      .join(' - ')}
-                                  </option>
-                                ),
-                              )}
-                            </Select>
-                          </td>
-                          <td className="px-4 py-3.5">
-                            <div className="px-2 text-sm font-bold text-primary">
-                              {item.size || 'Se define al elegir variante'}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3.5">
-                            <Select
-                              value={item.material}
-                              onChange={(e) =>
-                                updateItem(index, 'material', e.target.value)
-                              }
-                              disabled={!item.productId}
-                              className="w-full bg-transparent border-none text-sm font-bold focus:ring-0 outline-none disabled:opacity-50"
-                            >
-                              <option value="">Seleccionar tela...</option>
-                              {getAttributeOptionsForProduct(
-                                item.productId,
-                                'MATERIAL',
-                              ).map((attribute) => (
-                                <option
-                                  key={attribute.id}
-                                  value={attribute.value}
-                                >
-                                  {attribute.value}
-                                </option>
-                              ))}
-                            </Select>
-                          </td>
-                          <td className="px-4 py-3.5">
-                            <Input
-                              type="text"
-                              inputMode="numeric"
-                              value={
-                                item.cantidad === 0 ? '' : String(item.cantidad)
-                              }
-                              onChange={(e) => {
-                                const nextValue = sanitizeIntegerInput(
-                                  e.target.value,
-                                );
-                                if (nextValue !== null) {
-                                  updateItem(
-                                    index,
-                                    'cantidad',
-                                    parseInt(nextValue, 10) || 0,
-                                  );
-                                }
-                              }}
-                              className="w-full bg-transparent border-none text-sm font-bold text-center focus:ring-0 outline-none"
-                            />
-                          </td>
-                          <td className="px-4 py-3.5">
-                            <InputGroup
-                              prefix={
-                                <span className="text-xs text-muted">$</span>
-                              }
-                              className="flex items-center gap-1"
-                            >
-                              <Input
-                                type="text"
-                                inputMode="decimal"
-                                value={item.costoUnitarioInput}
-                                onChange={(e) =>
-                                  handleCurrencyInputChangeWithState(
-                                    e,
-                                    (nextValue) =>
-                                      setFormData((current) => {
-                                        const nextItems = [...current.items];
-                                        nextItems[index] = {
-                                          ...nextItems[index],
-                                          costoUnitarioInput:
-                                            nextValue.formattedValue,
-                                          costoUnitario: nextValue.numericValue,
-                                        };
+                <label>
+                  <span className="mb-1 block text-sm font-medium text-primary">
+                    Unidad
+                  </span>
+                  <Input
+                    value={supplyForm.unitOfMeasure}
+                    onChange={(event) =>
+                      setSupplyForm((prev) => ({
+                        ...prev,
+                        unitOfMeasure: event.target.value,
+                      }))
+                    }
+                    disabled={creatingSupply}
+                    list="new-supply-units"
+                    className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                  />
+                  <datalist id="new-supply-units">
+                    {UNIT_OPTIONS.map((unit) => (
+                      <option key={unit} value={unit} />
+                    ))}
+                  </datalist>
+                </label>
 
-                                        return {
-                                          ...current,
-                                          items: nextItems,
-                                          totalCost: nextItems.reduce(
-                                            (sum, currentItem) =>
-                                              sum +
-                                              currentItem.cantidad *
-                                                currentItem.costoUnitario,
-                                            0,
-                                          ),
-                                        };
-                                      }),
-                                  )
-                                }
-                                className="w-full bg-transparent border-none text-sm font-bold focus:ring-0 outline-none"
-                              />
-                            </InputGroup>
-                          </td>
-                          <td className="px-4 py-3.5 text-center text-sm font-black text-primary/70">
-                            $
-                            {(
-                              item.cantidad * item.costoUnitario
-                            ).toLocaleString('es-CO')}
-                          </td>
-                          <td className="px-4 py-3.5 text-right">
-                            <button
-                              type="button"
-                              onClick={() => removeItem(index)}
-                              className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-4 border-t border-theme">
-                <div className="flex items-center gap-6">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted">
-                      Total Inversion
-                    </span>
-                    <span className="text-2xl font-black text-primary">
-                      ${formData.totalCost.toLocaleString('es-CO')}
-                    </span>
-                  </div>
-                  <div className="h-10 w-[1px] bg-theme hidden md:block" />
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted">
-                      Fletes
-                    </span>
-                    <span className="text-lg font-bold text-primary">
-                      ${formData.freightCost.toLocaleString('es-CO')}
-                    </span>
-                  </div>
-                  <div className="h-10 w-[1px] bg-theme hidden md:block" />
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted">
-                      Items Totales
-                    </span>
-                    <span className="text-lg font-bold text-primary">
-                      {formData.items.reduce(
-                        (sum, item) => sum + (item.cantidad || 0),
-                        0,
-                      )}{' '}
-                      und.
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex gap-4 w-full md:w-auto">
-                  <Button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="px-6 py-3 bg-base border border-theme rounded-2xl font-bold text-muted hover:bg-theme/5 transition-all cursor-pointer"
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={
-                      submitting ||
-                      formData.items.some(
-                        (item) => !item.productId || !item.variantId,
+                <label>
+                  <span className="mb-1 block text-sm font-medium text-primary">
+                    Costo base
+                  </span>
+                  <Input
+                    value={supplyForm.costInput}
+                    onChange={(event) =>
+                      handleCurrencyInputChangeWithState(event, (state) =>
+                        setSupplyForm((prev) => ({
+                          ...prev,
+                          costInput: state.formattedValue,
+                          cost: state.numericValue,
+                        })),
                       )
                     }
-                    className="px-8 py-3 bg-primary text-base-color font-black rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    {submitting ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <CheckCircle2 className="w-5 h-5" />
-                    )}
-                    Confirmar Compra
-                  </Button>
-                </div>
+                    disabled={creatingSupply}
+                    inputMode="decimal"
+                    className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                  />
+                </label>
+
+                <label>
+                  <span className="mb-1 block text-sm font-medium text-primary">
+                    Stock minimo
+                  </span>
+                  <Input
+                    value={supplyForm.minStock}
+                    onChange={(event) =>
+                      setSupplyForm((prev) => ({
+                        ...prev,
+                        minStock: sanitizeQuantityInput(event.target.value),
+                      }))
+                    }
+                    disabled={creatingSupply}
+                    inputMode="decimal"
+                    className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                  />
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-3 border-t border-theme pt-4">
+                <Button
+                  type="button"
+                  onClick={() => {
+                    if (!creatingSupply) {
+                      setIsSupplyModalOpen(false);
+                      setCreatingSupplyForLine(null);
+                    }
+                  }}
+                  disabled={creatingSupply}
+                  className="rounded-xl border border-theme bg-base px-5 py-3 text-sm font-bold text-muted disabled:opacity-60"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={creatingSupply}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-black text-base-color disabled:opacity-60"
+                >
+                  {creatingSupply ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Package className="h-4 w-4" />
+                  )}
+                  Crear insumo
+                </Button>
               </div>
             </form>
           </div>
         </div>
-      ) : null}
+      )}
+    </div>
+  );
+}
+
+function ReceptionMetricCard({
+  label,
+  value,
+  detail,
+  icon,
+}: {
+  label: string;
+  value: string;
+  detail: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-theme bg-surface p-6 shadow-sm">
+      <div className="mb-4 flex items-center justify-between">
+        <div className="rounded-lg bg-primary/10 p-2 text-primary">{icon}</div>
+      </div>
+      <p className="text-xs font-bold uppercase tracking-widest text-muted">
+        {label}
+      </p>
+      <h3 className="mt-1 text-2xl font-black text-primary">{value}</h3>
+      <p className="mt-2 text-[11px] font-medium text-muted">{detail}</p>
     </div>
   );
 }

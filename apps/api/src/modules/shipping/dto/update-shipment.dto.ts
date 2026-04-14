@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsDateString,
   IsNumber,
+  IsUUID,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
@@ -41,4 +42,15 @@ export class UpdateShipmentDto {
   @IsString()
   @IsOptional()
   dimensions?: string;
+
+  @ApiProperty({ example: 'supply-item-uuid', required: false })
+  @IsUUID()
+  @IsOptional()
+  shippingBagSupplyItemId?: string;
+
+  @ApiProperty({ example: 1, required: false })
+  @IsOptional()
+  @Transform(({ value }) => parseLocalizedNumber(value))
+  @IsNumber()
+  shippingBagQuantityUsed?: number;
 }

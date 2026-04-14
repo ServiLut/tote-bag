@@ -325,9 +325,7 @@ export class CatalogService {
     if (input.totalCost !== null && input.totalCost !== undefined) {
       const totalCost = toDecimal(input.totalCost);
       if (totalCost.lessThan(0)) {
-        throw new BadRequestException(
-          'El costo total no puede ser negativo.',
-        );
+        throw new BadRequestException('El costo total no puede ser negativo.');
       }
     }
 

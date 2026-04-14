@@ -16,7 +16,10 @@ import {
 import { Role } from '../../generated/client/client';
 import { InventoryService } from './inventory.service';
 import { FinanceService } from './finance.service';
-import { CreatePurchaseBatchDto } from './dto/create-purchase-batch.dto';
+import {
+  CreatePurchaseBatchDto,
+  CreateSupplyItemDto,
+} from './dto/create-purchase-batch.dto';
 import { UpdatePurchaseBatchDto } from './dto/update-purchase-batch.dto';
 import { BreakEvenSimulationDto } from './dto/break-even-simulation.dto';
 import {
@@ -146,6 +149,27 @@ export class InventoryController {
   async findAllBatches(@Request() req: RequestWithUser) {
     await this.ensureAdmin(req.user?.id);
     return this.inventoryService.findAllBatches();
+  }
+
+  @Get('receivable-variants')
+  async findReceivableVariants(@Request() req: RequestWithUser) {
+    await this.ensureAdmin(req.user?.id);
+    return this.inventoryService.findReceivableVariants();
+  }
+
+  @Get('supply-items')
+  async findAllSupplyItems(@Request() req: RequestWithUser) {
+    await this.ensureAdmin(req.user?.id);
+    return this.inventoryService.findAllSupplyItems();
+  }
+
+  @Post('supply-items')
+  async createSupplyItem(
+    @Body() body: CreateSupplyItemDto,
+    @Request() req: RequestWithUser,
+  ) {
+    await this.ensureAdmin(req.user?.id);
+    return this.inventoryService.createSupplyItem(body);
   }
 
   @Patch('batches/:id')

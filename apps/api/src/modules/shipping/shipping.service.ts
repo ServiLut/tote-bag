@@ -10,7 +10,6 @@ import Decimal from 'decimal.js';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ShippingNotifierService } from './shipping-notifier.service';
 import { ShippingSyncService } from './shipping-sync.service';
-import { InventoryService } from '../inventory/inventory.service';
 import { decimalToNumber, toDecimal } from '../../common/utils/sales-tax.util';
 import { CreateShippingProviderDto } from './dto/create-provider.dto';
 import {
@@ -26,9 +25,12 @@ import {
   OrderStatus,
   Prisma,
   Role,
+  PurchaseBatchItemType,
+  SupplyItemType,
 } from '../../generated/client/client';
 
 const RETURN_ACTION = 'PROCESS_SHIPMENT_RETURN';
+const SHIPPING_BAG_CONSUMPTION_ACTION = 'CONSUME_SHIPPING_BAG_FIFO';
 
 type ShipmentListItem = {
   id: string;
@@ -93,7 +95,6 @@ export class ShippingService {
     private readonly prisma: PrismaService,
     private readonly shippingNotifier: ShippingNotifierService,
     private readonly shippingSyncService: ShippingSyncService,
-    private readonly inventoryService: InventoryService,
   ) {}
 
   private isReturnedToStockEnumMismatch(error: unknown) {
@@ -126,91 +127,275 @@ export class ShippingService {
     );
   }
 
-  private toMoney(value: unknown) {
-    return new Decimal(
-      value && typeof value === 'object' && 'toString' in value
-        ? value.toString()
-        : String(value ?? 0),
-    ).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+  private isShipmentPastDispatch(status: ShipmentStatus | undefined) {
+    return (
+      this.isDispatchedStatus(status) || status === ShipmentStatus.DELIVERED
+    );
   }
 
-  private async consumeDispatchSupplyIfConfigured(
-    tx: Prisma.TransactionClient,
-    orderId: string,
-    userId?: string,
-  ) {
-    const securityBagVariantId =
-      process.env.SECURITY_BAG_VARIANT_ID?.trim() || '';
-    const securityBagSku = process.env.SECURITY_BAG_VARIANT_SKU?.trim();
-
-    if (!securityBagVariantId && !securityBagSku) {
-      await tx.auditLog.create({
-        data: {
-          action: 'DISPATCH_SUPPLY_NOT_CONFIGURED',
-          entity: 'Order',
-          entityId: orderId,
-          userId: userId ?? null,
-          payload: {
-            reason: 'SECURITY_BAG_VARIANT_ID_OR_SKU_NOT_CONFIGURED',
-            expectedEnvVars: [
-              'SECURITY_BAG_VARIANT_ID',
-              'SECURITY_BAG_VARIANT_SKU',
-            ],
-          },
-        },
-      });
-      return;
+  private toMoney(value: unknown) {
+    if (value instanceof Decimal) {
+      return value.toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
     }
 
-    const variant = securityBagVariantId
-      ? await tx.variant.findUnique({
-          where: { id: securityBagVariantId },
-          select: { id: true, sku: true },
-        })
-      : await tx.variant.findUnique({
-          where: { sku: securityBagSku },
-          select: { id: true, sku: true },
-        });
-
-    if (!variant) {
-      await tx.auditLog.create({
-        data: {
-          action: 'DISPATCH_SUPPLY_MISSING',
-          entity: 'Order',
-          entityId: orderId,
-          userId: userId ?? null,
-          payload: {
-            reason: securityBagVariantId
-              ? 'SECURITY_BAG_VARIANT_ID_NOT_FOUND'
-              : 'SECURITY_BAG_VARIANT_SKU_NOT_FOUND',
-            variantId: securityBagVariantId || null,
-            sku: securityBagSku || null,
-          },
-        },
-      });
-      return;
+    if (
+      typeof value === 'number' ||
+      typeof value === 'string' ||
+      typeof value === 'bigint'
+    ) {
+      return new Decimal(value).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
     }
 
-    const reduction = await this.inventoryService.reduceStockFIFO(
-      variant.id,
-      1,
-      userId,
-      tx,
+    return new Decimal(0).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+  }
+
+  private toQuantity(value: Decimal.Value) {
+    const quantity = new Decimal(value).toDecimalPlaces(
+      3,
+      Decimal.ROUND_HALF_UP,
     );
+
+    if (!quantity.isFinite()) {
+      throw new BadRequestException('La cantidad de bolsas no es valida');
+    }
+
+    return quantity;
+  }
+
+  private quantityToNumber(value: Decimal.Value | null | undefined) {
+    if (value === null || value === undefined) return 0;
+    return new Decimal(value).toNumber();
+  }
+
+  private validateShippingBagQuantity(quantity: number | undefined) {
+    if (quantity === undefined || quantity === null) {
+      throw new BadRequestException(
+        'Indica cuantas bolsas de envio se usaran en este despacho',
+      );
+    }
+
+    const parsedQuantity = this.toQuantity(quantity);
+    if (parsedQuantity.lte(0)) {
+      throw new BadRequestException(
+        'La cantidad de bolsas de envio debe ser mayor a cero',
+      );
+    }
+
+    return parsedQuantity;
+  }
+
+  private async consumeShippingBagsFIFO(
+    tx: Prisma.TransactionClient,
+    params: {
+      shipmentId: string;
+      orderId: string;
+      supplyItemId: string;
+      quantity: Decimal;
+      userId?: string;
+    },
+  ) {
+    const existingUsage = await tx.shipmentSupplyUsage.findFirst({
+      where: { shipmentId: params.shipmentId },
+      select: { id: true },
+    });
+
+    if (existingUsage) {
+      throw new BadRequestException(
+        'Este envio ya tiene consumo de bolsas registrado',
+      );
+    }
+
+    const supplyItem = await tx.supplyItem.findUnique({
+      where: { id: params.supplyItemId },
+      select: {
+        id: true,
+        name: true,
+        sku: true,
+        supplyType: true,
+        isActive: true,
+      },
+    });
+
+    if (!supplyItem || !supplyItem.isActive) {
+      throw new NotFoundException('Bolsa de envio no encontrada');
+    }
+
+    if (supplyItem.supplyType !== SupplyItemType.SHIPPING_BAG) {
+      throw new BadRequestException(
+        'El insumo seleccionado no esta configurado como bolsa de envio',
+      );
+    }
+
+    const lines = await tx.purchaseBatchLine.findMany({
+      where: {
+        itemType: PurchaseBatchItemType.SUPPLY,
+        supplyItemId: params.supplyItemId,
+        status: BatchStatus.IN_STOCK,
+        quantityRemaining: { gt: 0 },
+        purchaseBatch: { status: BatchStatus.IN_STOCK },
+      },
+      include: {
+        purchaseBatch: {
+          select: {
+            id: true,
+            supplierId: true,
+            createdAt: true,
+            variantId: true,
+          },
+        },
+      },
+      orderBy: [
+        { purchaseBatch: { createdAt: 'asc' } },
+        { createdAt: 'asc' },
+        { id: 'asc' },
+      ],
+    });
+
+    const available = lines.reduce(
+      (sum, line) => sum.plus(line.quantityRemaining),
+      new Decimal(0),
+    );
+
+    if (available.lt(params.quantity)) {
+      throw new BadRequestException(
+        `Stock insuficiente de bolsas de envio. Disponible: ${available.toString()}, solicitado: ${params.quantity.toString()}`,
+      );
+    }
+
+    const usage = await tx.shipmentSupplyUsage.create({
+      data: {
+        shipmentId: params.shipmentId,
+        supplyItemId: params.supplyItemId,
+        quantityUsed: params.quantity,
+      },
+      select: { id: true },
+    });
+
+    let remaining = params.quantity;
+    const allocations: Array<{
+      purchaseBatchLineId: string;
+      purchaseBatchId: string;
+      supplierId: string;
+      quantityAllocated: number;
+    }> = [];
+
+    for (const line of lines) {
+      if (remaining.lte(0)) break;
+
+      const lineAvailable = new Decimal(line.quantityRemaining);
+      const quantityToAllocate = Decimal.min(remaining, lineAvailable);
+      const updatedLines = await tx.purchaseBatchLine.updateMany({
+        where: {
+          id: line.id,
+          quantityRemaining: { gte: quantityToAllocate },
+          status: BatchStatus.IN_STOCK,
+        },
+        data: {
+          quantityRemaining: { decrement: quantityToAllocate },
+        },
+      });
+
+      if (updatedLines.count !== 1) {
+        throw new ConflictException(
+          'El stock de bolsas cambio mientras se confirmaba el envio. Intenta nuevamente.',
+        );
+      }
+
+      const updatedLine = await tx.purchaseBatchLine.findUnique({
+        where: { id: line.id },
+        select: { quantityRemaining: true },
+      });
+      const lineRemaining = new Decimal(updatedLine?.quantityRemaining ?? 0);
+
+      if (lineRemaining.lte(0)) {
+        await tx.purchaseBatchLine.update({
+          where: { id: line.id },
+          data: { status: BatchStatus.DEPLETED },
+        });
+      }
+
+      await tx.shipmentSupplyUsageAllocation.create({
+        data: {
+          shipmentSupplyUsageId: usage.id,
+          purchaseBatchLineId: line.id,
+          quantityAllocated: quantityToAllocate,
+        },
+      });
+
+      const activeLines = await tx.purchaseBatchLine.count({
+        where: {
+          purchaseBatchId: line.purchaseBatchId,
+          status: BatchStatus.IN_STOCK,
+          quantityRemaining: { gt: 0 },
+        },
+      });
+      const batchRemaining = await tx.purchaseBatchLine.aggregate({
+        where: {
+          purchaseBatchId: line.purchaseBatchId,
+          status: BatchStatus.IN_STOCK,
+        },
+        _sum: { quantityRemaining: true },
+      });
+
+      await tx.purchaseBatch.update({
+        where: { id: line.purchaseBatchId },
+        data: {
+          quantityRemaining: line.purchaseBatch.variantId
+            ? this.quantityToNumber(batchRemaining._sum.quantityRemaining)
+            : 0,
+          status:
+            activeLines === 0 ? BatchStatus.DEPLETED : BatchStatus.IN_STOCK,
+        },
+      });
+
+      allocations.push({
+        purchaseBatchLineId: line.id,
+        purchaseBatchId: line.purchaseBatchId,
+        supplierId: line.purchaseBatch.supplierId,
+        quantityAllocated: quantityToAllocate.toNumber(),
+      });
+
+      remaining = remaining.minus(quantityToAllocate);
+    }
+
+    const updatedSupplyStock = await tx.supplyItem.updateMany({
+      where: {
+        id: params.supplyItemId,
+        stock: { gte: params.quantity },
+      },
+      data: { stock: { decrement: params.quantity } },
+    });
+
+    if (updatedSupplyStock.count !== 1) {
+      throw new ConflictException(
+        'El stock consolidado de bolsas no coincide con los lotes disponibles. Revisa inventario antes de despachar.',
+      );
+    }
 
     await tx.auditLog.create({
       data: {
-        action: 'CONSUME_DISPATCH_SUPPLY',
-        entity: 'Order',
-        entityId: orderId,
-        userId: userId ?? null,
+        action: SHIPPING_BAG_CONSUMPTION_ACTION,
+        entity: 'ShipmentSupplyUsage',
+        entityId: usage.id,
+        userId: params.userId ?? null,
         payload: {
-          sku: variant.sku,
-          quantity: 1,
-          inventoryConsumption: reduction,
+          shipmentId: params.shipmentId,
+          orderId: params.orderId,
+          supplyItemId: supplyItem.id,
+          sku: supplyItem.sku,
+          supplyType: supplyItem.supplyType,
+          quantityUsed: params.quantity.toNumber(),
+          allocations,
         },
       },
     });
+
+    return {
+      usageId: usage.id,
+      supplyItemId: supplyItem.id,
+      quantityUsed: params.quantity.toNumber(),
+      allocations,
+    };
   }
 
   // --- Shipping Providers CRUD ---
@@ -491,7 +676,7 @@ export class ShippingService {
 
       totalRestocked += reduction.quantity;
 
-      await tx.purchaseBatch.create({
+      const batch = await tx.purchaseBatch.create({
         data: {
           productId: item.productId,
           variantId: item.variantId,
@@ -501,6 +686,21 @@ export class ShippingService {
           unitCost: reduction.unitCost,
           totalCost: reduction.quantity * reduction.unitCost,
           status: BatchStatus.IN_STOCK,
+        },
+      });
+
+      await tx.purchaseBatchLine.create({
+        data: {
+          purchaseBatchId: batch.id,
+          itemType: PurchaseBatchItemType.VARIANT,
+          variantId: item.variantId,
+          quantity: reduction.quantity,
+          quantityRemaining: reduction.quantity,
+          unitOfMeasure: 'und',
+          unitCost: reduction.unitCost,
+          lineTotal: reduction.quantity * reduction.unitCost,
+          status: BatchStatus.IN_STOCK,
+          notes: 'Linea generada por reingreso de devolucion',
         },
       });
     }
@@ -629,157 +829,341 @@ export class ShippingService {
     );
   }
 
+  async getShippingBagAvailability() {
+    const supplyItems = await this.prisma.supplyItem.findMany({
+      where: {
+        isActive: true,
+        supplyType: SupplyItemType.SHIPPING_BAG,
+      },
+      select: {
+        id: true,
+        name: true,
+        sku: true,
+        category: true,
+        unitOfMeasure: true,
+        stock: true,
+        minStock: true,
+      },
+      orderBy: [{ name: 'asc' }, { id: 'asc' }],
+    });
+
+    if (supplyItems.length === 0) {
+      return [];
+    }
+
+    const supplyItemIds = supplyItems.map((item) => item.id);
+    const lineAvailability = await this.prisma.purchaseBatchLine.groupBy({
+      by: ['supplyItemId'],
+      where: {
+        itemType: PurchaseBatchItemType.SUPPLY,
+        supplyItemId: { in: supplyItemIds },
+        status: BatchStatus.IN_STOCK,
+        quantityRemaining: { gt: 0 },
+        purchaseBatch: { status: BatchStatus.IN_STOCK },
+      },
+      _sum: { quantityRemaining: true },
+    });
+
+    const availableBySupplyItemId = new Map(
+      lineAvailability.flatMap((entry) =>
+        entry.supplyItemId
+          ? [
+              [
+                entry.supplyItemId,
+                this.quantityToNumber(entry._sum.quantityRemaining),
+              ] as const,
+            ]
+          : [],
+      ),
+    );
+
+    return supplyItems.map((item) => ({
+      id: item.id,
+      name: item.name,
+      sku: item.sku,
+      category: item.category,
+      unitOfMeasure: item.unitOfMeasure,
+      stock: this.quantityToNumber(item.stock),
+      minStock: this.quantityToNumber(item.minStock),
+      availableQuantity: availableBySupplyItemId.get(item.id) ?? 0,
+    }));
+  }
+
+  async getShipmentSupplyUsage(orderId: string) {
+    const shipment = await this.prisma.shipment.findUnique({
+      where: { orderId },
+      select: {
+        id: true,
+        orderId: true,
+        supplyUsages: {
+          include: {
+            supplyItem: {
+              select: {
+                id: true,
+                name: true,
+                sku: true,
+                category: true,
+                supplyType: true,
+                unitOfMeasure: true,
+              },
+            },
+            allocations: {
+              include: {
+                purchaseBatchLine: {
+                  include: {
+                    purchaseBatch: {
+                      include: {
+                        supplier: {
+                          select: {
+                            id: true,
+                            name: true,
+                            nit: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+              orderBy: { createdAt: 'asc' },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    });
+
+    if (!shipment) {
+      throw new NotFoundException('Envio no encontrado');
+    }
+
+    return {
+      shipmentId: shipment.id,
+      orderId: shipment.orderId,
+      usages: shipment.supplyUsages.map((usage) => ({
+        id: usage.id,
+        supplyItem: usage.supplyItem,
+        quantityUsed: this.quantityToNumber(usage.quantityUsed),
+        createdAt: usage.createdAt,
+        allocations: usage.allocations.map((allocation) => ({
+          id: allocation.id,
+          purchaseBatchLineId: allocation.purchaseBatchLineId,
+          purchaseBatchId: allocation.purchaseBatchLine.purchaseBatchId,
+          quantityAllocated: this.quantityToNumber(
+            allocation.quantityAllocated,
+          ),
+          unitCost: decimalToNumber(allocation.purchaseBatchLine.unitCost),
+          lineRemaining: this.quantityToNumber(
+            allocation.purchaseBatchLine.quantityRemaining,
+          ),
+          batchCreatedAt: allocation.purchaseBatchLine.purchaseBatch.createdAt,
+          supplier: allocation.purchaseBatchLine.purchaseBatch.supplier,
+          createdAt: allocation.createdAt,
+        })),
+      })),
+    };
+  }
+
   async updateShipment(
     orderId: string,
     dto: UpdateShipmentDto,
     userId?: string,
   ) {
-    const order = await this.prisma.order.findUnique({
-      where: { id: orderId },
-      select: {
-        status: true,
-        trackingNumber: true,
-        carrier: true,
-        balanceDue: true,
-      },
-    });
+    const { shippingBagSupplyItemId, shippingBagQuantityUsed, ...shipmentDto } =
+      dto;
 
-    if (!order) {
-      throw new NotFoundException('Orden no encontrada');
-    }
+    const result = await this.prisma.$transaction(
+      async (tx) => {
+        const order = await tx.order.findUnique({
+          where: { id: orderId },
+          select: {
+            status: true,
+            trackingNumber: true,
+            carrier: true,
+            balanceDue: true,
+          },
+        });
 
-    if (
-      this.isDispatchedStatus(dto.status) &&
-      this.toMoney(order.balanceDue).greaterThan(0)
-    ) {
-      throw new ForbiddenException(
-        'La orden no puede despacharse con saldo pendiente',
-      );
-    }
-
-    // Buscar si existe el envío para esta orden
-    let shipment = await this.prisma.shipment.findUnique({
-      where: { orderId },
-    });
-    const wasDispatched = this.isDispatchedStatus(shipment?.status);
-
-    let carrierName: string | null = order.carrier;
-
-    if (dto.providerId) {
-      const provider = await this.prisma.shippingProvider.findUnique({
-        where: { id: dto.providerId },
-        select: { name: true },
-      });
-      if (!provider) {
-        throw new NotFoundException('Proveedor no encontrado');
-      }
-      carrierName = provider?.name ?? carrierName;
-    }
-
-    if (!shipment) {
-      const isDispatched = this.isDispatchedStatus(dto.status);
-      // Crear envío si no existe
-      shipment = await this.prisma.shipment.create({
-        data: {
-          orderId,
-          ...dto,
-          status: dto.status || ShipmentStatus.PENDING,
-          shippedAt: isDispatched ? new Date() : null,
-          deliveredAt:
-            dto.status === ShipmentStatus.DELIVERED ? new Date() : null,
-        },
-      });
-    } else {
-      // Actualizar envío
-      const data: Prisma.ShipmentUpdateInput = { ...dto };
-      if (
-        this.isDispatchedStatus(dto.status) &&
-        !this.isDispatchedStatus(shipment.status) &&
-        shipment.status !== ShipmentStatus.DELIVERED
-      ) {
-        data.shippedAt = new Date();
-      }
-      if (
-        dto.status === ShipmentStatus.DELIVERED &&
-        shipment.status !== ShipmentStatus.DELIVERED
-      ) {
-        if (!shipment.shippedAt) {
-          data.shippedAt = new Date();
+        if (!order) {
+          throw new NotFoundException('Orden no encontrada');
         }
-        data.deliveredAt = new Date();
-      }
 
-      shipment = await this.prisma.shipment.update({
-        where: { orderId },
-        data,
-      });
-    }
+        if (
+          this.isShipmentPastDispatch(shipmentDto.status) &&
+          this.toMoney(order.balanceDue).greaterThan(0)
+        ) {
+          throw new ForbiddenException(
+            'La orden no puede despacharse con saldo pendiente',
+          );
+        }
 
-    // Si el estado cambia a SHIPPED, enviar notificación (placeholder)
-    if (this.isDispatchedStatus(dto.status)) {
-      if (!wasDispatched) {
-        await this.prisma.$transaction((tx) =>
-          this.consumeDispatchSupplyIfConfigured(tx, orderId, userId),
+        // Buscar si existe el envío para esta orden
+        let shipment = await tx.shipment.findUnique({
+          where: { orderId },
+        });
+        const wasPastDispatch = this.isShipmentPastDispatch(shipment?.status);
+        const willMovePastDispatch = this.isShipmentPastDispatch(
+          shipmentDto.status,
         );
-      }
+        const shouldConsumeBags = willMovePastDispatch && !wasPastDispatch;
+        const receivedBagFields =
+          shippingBagSupplyItemId !== undefined ||
+          shippingBagQuantityUsed !== undefined;
 
+        if (shouldConsumeBags && !shippingBagSupplyItemId?.trim()) {
+          throw new BadRequestException(
+            'Selecciona el tipo de bolsa de envio para confirmar el despacho',
+          );
+        }
+
+        const shippingBagQuantity = shouldConsumeBags
+          ? this.validateShippingBagQuantity(shippingBagQuantityUsed)
+          : null;
+
+        if (!shouldConsumeBags && receivedBagFields) {
+          throw new BadRequestException(
+            wasPastDispatch
+              ? 'Este envio ya fue despachado; no se puede volver a descontar bolsas'
+              : 'El consumo de bolsas solo se registra al confirmar el despacho',
+          );
+        }
+
+        let carrierName: string | null = order.carrier;
+
+        if (shipmentDto.providerId) {
+          const provider = await tx.shippingProvider.findUnique({
+            where: { id: shipmentDto.providerId },
+            select: { name: true },
+          });
+          if (!provider) {
+            throw new NotFoundException('Proveedor no encontrado');
+          }
+          carrierName = provider.name ?? carrierName;
+        }
+
+        if (!shipment) {
+          const isDispatched = this.isDispatchedStatus(shipmentDto.status);
+          // Crear envío si no existe
+          shipment = await tx.shipment.create({
+            data: {
+              orderId,
+              ...shipmentDto,
+              status: shipmentDto.status || ShipmentStatus.PENDING,
+              shippedAt:
+                isDispatched || shipmentDto.status === ShipmentStatus.DELIVERED
+                  ? new Date()
+                  : null,
+              deliveredAt:
+                shipmentDto.status === ShipmentStatus.DELIVERED
+                  ? new Date()
+                  : null,
+            },
+          });
+        } else {
+          // Actualizar envío
+          const data: Prisma.ShipmentUpdateInput = { ...shipmentDto };
+          if (
+            this.isDispatchedStatus(shipmentDto.status) &&
+            !this.isDispatchedStatus(shipment.status) &&
+            shipment.status !== ShipmentStatus.DELIVERED
+          ) {
+            data.shippedAt = new Date();
+          }
+          if (
+            shipmentDto.status === ShipmentStatus.DELIVERED &&
+            shipment.status !== ShipmentStatus.DELIVERED
+          ) {
+            if (!shipment.shippedAt) {
+              data.shippedAt = new Date();
+            }
+            data.deliveredAt = new Date();
+          }
+
+          shipment = await tx.shipment.update({
+            where: { orderId },
+            data,
+          });
+        }
+
+        // Si el estado cambia a SHIPPED, enviar notificación (placeholder)
+        if (shouldConsumeBags) {
+          await this.consumeShippingBagsFIFO(tx, {
+            shipmentId: shipment.id,
+            orderId,
+            supplyItemId: shippingBagSupplyItemId as string,
+            quantity: shippingBagQuantity as Decimal,
+            userId,
+          });
+        }
+
+        // Actualizar también el estado de la orden si corresponde
+        if (this.isDispatchedStatus(shipmentDto.status)) {
+          await tx.order.update({
+            where: { id: orderId },
+            data: {
+              status: OrderStatus.ENVIADA,
+              trackingNumber:
+                shipmentDto.trackingNumber ?? order.trackingNumber ?? undefined,
+              carrier: carrierName ?? undefined,
+              ...(order.status !== OrderStatus.ENVIADA
+                ? {
+                    statusHistory: {
+                      create: {
+                        status: OrderStatus.ENVIADA,
+                      },
+                    },
+                  }
+                : {}),
+            },
+          });
+        } else if (shipmentDto.status === ShipmentStatus.DELIVERED) {
+          await tx.order.update({
+            where: { id: orderId },
+            data: {
+              status: OrderStatus.ENTREGADA,
+              trackingNumber:
+                shipmentDto.trackingNumber ?? order.trackingNumber ?? undefined,
+              carrier: carrierName ?? undefined,
+              ...(order.status !== OrderStatus.ENTREGADA
+                ? {
+                    statusHistory: {
+                      create: {
+                        status: OrderStatus.ENTREGADA,
+                      },
+                    },
+                  }
+                : {}),
+            },
+          });
+        } else if (shipmentDto.trackingNumber || shipmentDto.providerId) {
+          await tx.order.update({
+            where: { id: orderId },
+            data: {
+              trackingNumber:
+                shipmentDto.trackingNumber ?? order.trackingNumber ?? undefined,
+              carrier: carrierName ?? undefined,
+            },
+          });
+        }
+
+        return {
+          shipment,
+          shouldNotifyDispatch: this.isDispatchedStatus(shipmentDto.status),
+        };
+      },
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      },
+    );
+
+    if (result.shouldNotifyDispatch) {
       await this.shippingNotifier.notifyShipmentDispatched(
         orderId,
-        shipment.trackingNumber ?? undefined,
+        result.shipment.trackingNumber ?? undefined,
       );
     }
 
-    // Actualizar también el estado de la orden si corresponde
-    if (this.isDispatchedStatus(dto.status)) {
-      await this.prisma.order.update({
-        where: { id: orderId },
-        data: {
-          status: OrderStatus.ENVIADA,
-          trackingNumber:
-            dto.trackingNumber ?? order.trackingNumber ?? undefined,
-          carrier: carrierName ?? undefined,
-          ...(order.status !== OrderStatus.ENVIADA
-            ? {
-                statusHistory: {
-                  create: {
-                    status: OrderStatus.ENVIADA,
-                  },
-                },
-              }
-            : {}),
-        },
-      });
-    } else if (dto.status === ShipmentStatus.DELIVERED) {
-      await this.prisma.order.update({
-        where: { id: orderId },
-        data: {
-          status: OrderStatus.ENTREGADA,
-          trackingNumber:
-            dto.trackingNumber ?? order.trackingNumber ?? undefined,
-          carrier: carrierName ?? undefined,
-          ...(order.status !== OrderStatus.ENTREGADA
-            ? {
-                statusHistory: {
-                  create: {
-                    status: OrderStatus.ENTREGADA,
-                  },
-                },
-              }
-            : {}),
-        },
-      });
-    } else if (dto.trackingNumber || dto.providerId) {
-      await this.prisma.order.update({
-        where: { id: orderId },
-        data: {
-          trackingNumber:
-            dto.trackingNumber ?? order.trackingNumber ?? undefined,
-          carrier: carrierName ?? undefined,
-        },
-      });
-    }
-
-    return shipment;
+    return result.shipment;
   }
 
   async processReturn(orderId: string, dto: ProcessReturnDto, userId?: string) {
