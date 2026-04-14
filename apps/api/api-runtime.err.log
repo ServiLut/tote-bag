@@ -1,0 +1,17 @@
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:16416:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async _handleRequest (C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\@supabase+auth-js@2.94.0\node_modules\@supabase\auth-js\src\lib\fetch.ts:184:14)
+    at async _request (C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\@supabase+auth-js@2.94.0\node_modules\@supabase\auth-js\src\lib\fetch.ts:157:16)
+    at async SupabaseAuthClient._getUser (C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\@supabase+auth-js@2.94.0\node_modules\@supabase\auth-js\src\GoTrueClient.ts:1741:16)
+    at async SupabaseAuthClient.getUser (C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\@supabase+auth-js@2.94.0\node_modules\@supabase\auth-js\src\GoTrueClient.ts:1722:14)
+    at async AuthMiddleware.use (C:\Users\user\Desktop\deybis\tote-bag\apps\api\src\common\middleware\auth.middleware.ts:115:35)
+    at async C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\@nestjs+core@11.1.12_@nestj_cbe7cfc41de5bef826b769e633ad1837\node_modules\@nestjs\core\router\router-proxy.js:9:17 {
+  [cause]: ConnectTimeoutError: Connect Timeout Error (attempted address: supabase.servilutioncrm.cloud:443, timeout: 10000ms)
+      at onConnectTimeout (node:internal/deps/undici/undici:1946:23)
+      at Immediate._onImmediate (node:internal/deps/undici/undici:1912:35)
+      at process.processImmediate (node:internal/timers:504:21) {
+    code: 'UND_ERR_CONNECT_TIMEOUT'
+  }
+}
+AuthMiddleware: Supabase validation error: fetch failed

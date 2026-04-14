@@ -132,6 +132,7 @@ interface SidebarProps {
   isMobileMenuOpen: boolean;
   setIsMobileMenuOpen: (open: boolean) => void;
   isCollapsed: boolean;
+  shouldAnimate?: boolean;
 }
 
 export default function Sidebar({
@@ -141,6 +142,7 @@ export default function Sidebar({
   isMobileMenuOpen,
   setIsMobileMenuOpen,
   isCollapsed,
+  shouldAnimate = true,
 }: SidebarProps) {
   const pathname = usePathname();
   const [newPqrsCount, setNewPqrsCount] = useState(0);
@@ -278,41 +280,48 @@ export default function Sidebar({
     }))
     .filter((group) => group.items.length > 0);
 
-  const renderDesktopLink = (item: MenuLinkItem, nested = false) => {
+  const renderDesktopLink = (item: MenuLinkItem, nested = false, forceExpanded = false) => {
     const isActive = isItemActive(item.href);
     const Icon = item.icon;
     const showPqrsBadge = item.href === '/dashboard/pqrs' && newPqrsCount > 0;
+    const renderCollapsed = isCollapsed && !forceExpanded;
 
     return (
       <Link
         key={item.href}
         href={item.href}
-        title={isCollapsed ? item.name : undefined}
-        className={`group relative flex items-center gap-3 rounded-xl text-sm font-bold transition-all duration-200 ${
+        title={renderCollapsed ? item.name : undefined}
+        className={`group relative flex items-center rounded-xl text-sm font-bold transition-all duration-200 ${
           isActive
             ? 'bg-primary text-base-color shadow-md shadow-primary/10'
             : 'text-muted hover:bg-primary/5 hover:text-primary'
-        } ${isCollapsed ? 'justify-center px-0 py-2.5' : nested ? 'ml-4 px-4 py-2.5' : 'px-4 py-2.5'}`}
+        } ${renderCollapsed ? 'justify-center gap-0 px-0 py-2.5' : nested ? 'ml-4 gap-3 px-4 py-2.5' : 'gap-3 px-4 py-2.5'}`}
       >
         <Icon
           className={`h-4 w-4 transition-colors ${
             isActive ? 'text-base-color' : 'text-muted group-hover:text-primary'
           }`}
         />
-        {!isCollapsed ? (
-          <span className="flex min-w-0 flex-1 items-center justify-between gap-3">
-            <span className="truncate">{item.name}</span>
-            {showPqrsBadge ? (
-              <span
-                className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
-                  isActive ? 'bg-base-color/15 text-base-color' : 'bg-rose-100 text-rose-700'
-                }`}
-              >
-                {newPqrsCount}
-              </span>
-            ) : null}
-          </span>
-        ) : showPqrsBadge ? (
+        <span
+          aria-hidden={renderCollapsed}
+          className={`flex min-w-0 flex-1 items-center justify-between gap-3 overflow-hidden whitespace-nowrap transition-all duration-200 ${
+            renderCollapsed
+              ? 'max-w-0 translate-x-1 opacity-0'
+              : 'max-w-52 translate-x-0 opacity-100 delay-100'
+          }`}
+        >
+          <span className="truncate">{item.name}</span>
+          {showPqrsBadge ? (
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+                isActive ? 'bg-base-color/15 text-base-color' : 'bg-rose-100 text-rose-700'
+              }`}
+            >
+              {newPqrsCount}
+            </span>
+          ) : null}
+        </span>
+        {renderCollapsed && showPqrsBadge ? (
           <span className="absolute right-2 top-1 rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] font-black text-rose-700">
             {newPqrsCount}
           </span>
@@ -355,34 +364,47 @@ export default function Sidebar({
 
   return (
     <>
-      <aside className={`fixed inset-y-0 z-20 hidden flex-col border-r border-theme bg-surface transition-[width] duration-300 md:flex ${isCollapsed ? 'w-24' : 'w-72'}`}>
-        <div className={`border-b border-theme ${isCollapsed ? 'p-4' : 'p-8'}`}>
+      <aside className={`fixed inset-y-0 z-20 hidden flex-col border-r border-theme bg-surface ${shouldAnimate ? 'transition-[width] duration-300 ease-in-out' : 'transition-none'} md:flex ${isCollapsed ? 'w-24' : 'w-72'}`}>
+        <div className={`border-b border-theme transition-[padding] duration-300 ease-in-out ${isCollapsed ? 'p-4' : 'p-8'}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-xl font-black text-base-color shadow-sm transition-transform hover:rotate-3">
                 T
               </div>
-              {!isCollapsed ? (
-                <h1 className="text-xl font-black tracking-tight text-primary">Tote Bag Co.</h1>
-              ) : null}
+              <h1
+                aria-hidden={isCollapsed}
+                className={`overflow-hidden whitespace-nowrap text-xl font-black tracking-tight text-primary transition-all duration-200 ${
+                  isCollapsed
+                    ? 'max-w-0 translate-x-1 opacity-0'
+                    : 'max-w-40 translate-x-0 opacity-100 delay-100'
+                }`}
+              >
+                Tote Bag Co.
+              </h1>
             </div>
           </div>
-          {!isCollapsed ? (
-            <div className="mt-4 flex items-center gap-2">
-              <span className="h-px w-4 bg-accent/40"></span>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted">Panel Admin</p>
-            </div>
-          ) : null}
+          <div
+            aria-hidden={isCollapsed}
+            className={`flex items-center gap-2 overflow-hidden transition-all duration-200 ${
+              isCollapsed ? 'mt-0 max-h-0 opacity-0' : 'mt-4 max-h-4 opacity-100 delay-100'
+            }`}
+          >
+            <span className="h-px w-4 bg-accent/40"></span>
+            <p className="whitespace-nowrap text-[10px] font-bold uppercase tracking-[0.2em] text-muted">Panel Admin</p>
+          </div>
         </div>
 
-        <nav className={`custom-scrollbar flex-1 overflow-y-auto ${isCollapsed ? 'space-y-6 px-3 py-4' : 'space-y-8 px-4 py-6'}`}>
+        <nav className={`custom-scrollbar flex-1 overflow-y-auto transition-all duration-300 ease-in-out ${isCollapsed ? 'space-y-6 px-3 py-4' : 'space-y-8 px-4 py-6'}`}>
           {filteredMenuGroups.map((group) => (
             <div key={group.title} className="space-y-2">
-              {!isCollapsed ? (
-                <h3 className="px-4 text-[10px] font-bold uppercase tracking-widest text-muted/50">
-                  {group.title}
-                </h3>
-              ) : null}
+              <h3
+                aria-hidden={isCollapsed}
+                className={`overflow-hidden px-4 text-[10px] font-bold uppercase tracking-widest text-muted/50 transition-all duration-200 ${
+                  isCollapsed ? 'max-h-0 opacity-0' : 'max-h-4 opacity-100 delay-100'
+                }`}
+              >
+                {group.title}
+              </h3>
               <div className="space-y-1">
                 {group.items.map((item) => {
                   if (!isSubmenuItem(item)) {
@@ -404,33 +426,32 @@ export default function Sidebar({
                           }))
                         }
                         title={isCollapsed ? item.name : undefined}
-                        className={`group relative flex w-full items-center gap-3 rounded-xl text-sm font-bold transition-all duration-200 ${
+                        className={`group relative flex w-full items-center rounded-xl text-sm font-bold transition-all duration-200 ${
                           isActive
                             ? 'bg-primary/10 text-primary'
                             : 'text-muted hover:bg-primary/5 hover:text-primary'
-                        } ${isCollapsed ? 'justify-center px-0 py-2.5' : 'px-4 py-2.5'}`}
+                        } ${isCollapsed ? 'justify-center gap-0 px-0 py-2.5' : 'gap-3 px-4 py-2.5'}`}
                       >
                         <Icon
                           className={`h-4 w-4 transition-colors ${
                             isActive ? 'text-primary' : 'text-muted group-hover:text-primary'
                           }`}
                         />
-                        {!isCollapsed ? (
-                          <>
-                            <span className="min-w-0 flex-1 truncate text-left">{item.name}</span>
-                            <ChevronDown
-                              className={`h-4 w-4 transition-transform duration-200 ${
-                                isOpen ? 'rotate-180 text-primary' : 'text-muted'
-                              }`}
-                            />
-                          </>
-                        ) : (
-                          <ChevronDown
-                            className={`absolute -bottom-0.5 right-1 h-3 w-3 transition-transform duration-200 ${
-                              isOpen ? 'rotate-180 text-primary' : 'text-muted'
-                            }`}
-                          />
-                        )}
+                        <span
+                          aria-hidden={isCollapsed}
+                          className={`min-w-0 flex-1 overflow-hidden truncate whitespace-nowrap text-left transition-all duration-200 ${
+                            isCollapsed
+                              ? 'max-w-0 translate-x-1 opacity-0'
+                              : 'max-w-52 translate-x-0 opacity-100 delay-100'
+                          }`}
+                        >
+                          {item.name}
+                        </span>
+                        <ChevronDown
+                          className={`transition-transform duration-200 ${
+                            isOpen ? 'rotate-180 text-primary' : 'text-muted'
+                          } ${isCollapsed ? 'absolute -bottom-0.5 right-1 h-3 w-3' : 'h-4 w-4'}`}
+                        />
                       </button>
 
                       {!isCollapsed && isOpen ? (
@@ -448,7 +469,7 @@ export default function Sidebar({
                             </p>
                           </div>
                           <div className="space-y-1">
-                            {item.items.map((child) => renderDesktopLink(child))}
+                            {item.items.map((child) => renderDesktopLink(child, false, true))}
                           </div>
                         </div>
                       ) : null}
@@ -467,14 +488,19 @@ export default function Sidebar({
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-base-color">
                 <UserCircle className="h-6 w-6" />
               </div>
-              {!isCollapsed ? (
-                <div className="flex min-w-0 flex-col">
+                <div
+                  aria-hidden={isCollapsed}
+                  className={`flex min-w-0 flex-col overflow-hidden whitespace-nowrap transition-all duration-200 ${
+                    isCollapsed
+                      ? 'max-w-0 translate-x-1 opacity-0'
+                      : 'max-w-40 translate-x-0 opacity-100 delay-100'
+                  }`}
+                >
                   <span className="truncate text-sm font-bold text-primary">
                     {user?.email?.split('@')[0] || 'Admin'}
                   </span>
                   <span className="truncate text-[10px] font-medium text-muted">{user?.email}</span>
                 </div>
-              ) : null}
               </div>
               <button
                 onClick={() => {

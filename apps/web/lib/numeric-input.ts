@@ -255,3 +255,21 @@ export function parseLocalizedNumber(value: string) {
 export function sanitizeDecimalInput(value: string) {
   return normalizeCurrencyInput(value);
 }
+
+export function normalizeTaxRateValue(
+  value: number | string | null | undefined,
+  fallback = 0.19,
+) {
+  const parsedValue =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string'
+        ? parseLocalizedNumber(sanitizeDecimalInput(value))
+        : fallback;
+
+  if (!Number.isFinite(parsedValue)) {
+    return fallback;
+  }
+
+  return parsedValue > 1 ? parsedValue / 100 : parsedValue;
+}

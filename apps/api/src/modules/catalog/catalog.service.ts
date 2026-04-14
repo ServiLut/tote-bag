@@ -23,6 +23,7 @@ import {
   ProductStatus,
 } from '../../generated/client/enums';
 import {
+  calculateSalesTaxFromNet,
   calculateSalesTaxBreakdown,
   decimalToNumber,
   DecimalInput,
@@ -42,6 +43,7 @@ export type ProductWithRelations = Prisma.ProductGetPayload<{
 
 type ProductVariantWithFinancialBreakdown =
   ProductWithRelations['variants'][number] & {
+    price: number | null;
     netSalePrice: number | null;
     netPrice: number | null;
     taxAmount: number | null;
@@ -76,9 +78,11 @@ type PreparedVariant = {
   color: string;
   imageUrl: string;
   salePrice: number;
+  netPrice?: number;
   minPrice: number;
   comparePrice?: number;
   costPrice?: number;
+  totalCost?: number;
   taxRate?: number;
   stock: number;
   isActive: boolean;
@@ -285,6 +289,106 @@ export class CatalogService {
     );
   }
 
+  private calculateVariantPricePreview(input: {
+    netPrice: DecimalInput;
+    taxRate?: DecimalInput;
+    costPrice?: DecimalInput;
+    totalCost?: DecimalInput;
+  }) {
+    const netPrice = roundMoney(input.netPrice);
+    const taxRate =
+      input.taxRate === null || input.taxRate === undefined
+        ? undefined
+        : toDecimal(input.taxRate);
+
+    if (netPrice.lessThanOrEqualTo(0)) {
+      throw new BadRequestException('La venta neta debe ser mayor a 0.');
+    }
+
+    if (taxRate && taxRate.lessThan(0)) {
+      throw new BadRequestException('La tarifa IVA no puede ser negativa.');
+    }
+
+    if (taxRate && taxRate.greaterThan(1)) {
+      throw new BadRequestException('La tarifa IVA debe estar entre 0 y 1.');
+    }
+
+    if (input.costPrice !== null && input.costPrice !== undefined) {
+      const costPrice = toDecimal(input.costPrice);
+      if (costPrice.lessThan(0)) {
+        throw new BadRequestException(
+          'El costo unitario no puede ser negativo.',
+        );
+      }
+    }
+
+    if (input.totalCost !== null && input.totalCost !== undefined) {
+      const totalCost = toDecimal(input.totalCost);
+      if (totalCost.lessThan(0)) {
+        throw new BadRequestException(
+          'El costo total no puede ser negativo.',
+        );
+      }
+    }
+
+    const taxBreakdown = calculateSalesTaxFromNet({
+      netUnitPrice: netPrice,
+      taxRate,
+    });
+
+    const marginCost = input.totalCost ?? input.costPrice;
+    const marginPercentage =
+      marginCost === null || marginCost === undefined
+        ? null
+        : decimalToNumber(
+            roundMoney(
+              taxBreakdown.netUnitPrice
+                .minus(toDecimal(marginCost))
+                .div(taxBreakdown.netUnitPrice)
+                .mul(new Decimal(100)),
+            ),
+          );
+
+    const grossPrice = decimalToNumber(taxBreakdown.grossUnitPrice);
+
+    return {
+      netPrice: decimalToNumber(taxBreakdown.netUnitPrice),
+      price: grossPrice,
+      salePrice: grossPrice,
+      taxAmount: decimalToNumber(taxBreakdown.taxAmount),
+      marginPercentage,
+      taxRate: taxBreakdown.taxRate.toNumber(),
+    };
+  }
+
+  previewVariantPrice(input: {
+    netPrice: DecimalInput;
+    taxRate?: DecimalInput;
+    costPrice?: DecimalInput;
+    totalCost?: DecimalInput;
+  }) {
+    return this.calculateVariantPricePreview(input);
+  }
+
+  private resolveVariantSalePrice(variant: CreateVariantDto) {
+    if (variant.netPrice !== undefined && variant.netPrice !== null) {
+      return this.calculateVariantPricePreview({
+        netPrice: variant.netPrice,
+        taxRate: variant.taxRate,
+        costPrice: variant.costPrice,
+        totalCost: variant.totalCost,
+      }).salePrice;
+    }
+
+    if (variant.salePrice === undefined || variant.salePrice === null) {
+      throw new BadRequestException(
+        `La variante ${variant.sku || variant.color || 'sin SKU'} debe incluir venta neta o precio de venta.`,
+      );
+    }
+
+    return variant.salePrice;
+  }
+
   private prepareVariants(variants: CreateVariantDto[]) {
     if (!variants.length) {
       throw new BadRequestException(
@@ -292,29 +396,37 @@ export class CatalogService {
       );
     }
 
-    return variants.map((variant) => ({
-      id: variant.id?.trim() || undefined,
-      sku: variant.sku?.trim() || '',
-      size: variant.size?.trim() || undefined,
-      color: variant.color.trim(),
-      imageUrl: variant.imageUrl.trim(),
-      salePrice: variant.salePrice,
-      minPrice: variant.minPrice,
-      comparePrice: variant.comparePrice,
-      costPrice: variant.costPrice,
-      taxRate: variant.taxRate,
-      stock: variant.stock ?? 0,
-      isActive: variant.isActive ?? true,
-    }));
+    return variants.map((variant) => {
+      const salePrice = this.resolveVariantSalePrice(variant);
+
+      return {
+        id: variant.id?.trim() || undefined,
+        sku: variant.sku?.trim() || '',
+        size: variant.size?.trim() || undefined,
+        color: variant.color.trim(),
+        imageUrl: variant.imageUrl.trim(),
+        salePrice,
+        netPrice: variant.netPrice,
+        minPrice: variant.minPrice,
+        comparePrice: variant.comparePrice,
+        costPrice: variant.costPrice,
+        totalCost: variant.totalCost,
+        taxRate: variant.taxRate,
+        stock: variant.stock ?? 0,
+        isActive: variant.isActive ?? true,
+      };
+    });
   }
 
   private calculateVariantFinancialBreakdown(variant: {
     salePrice: number | null;
     costPrice?: number | null;
+    totalCost?: number | null;
     taxRate?: DecimalInput;
   }) {
-    if (variant.salePrice === null) {
+    if (variant.salePrice === null || variant.salePrice === undefined) {
       return {
+        price: null,
         netSalePrice: null,
         netPrice: null,
         taxAmount: null,
@@ -331,14 +443,15 @@ export class CatalogService {
     const taxAmount = taxBreakdown.taxAmount;
 
     let marginPercentage: number | null = null;
-    if (variant.costPrice !== null && variant.costPrice !== undefined) {
+    const marginCost = variant.totalCost ?? variant.costPrice;
+    if (marginCost !== null && marginCost !== undefined) {
       marginPercentage = netPrice.isZero()
         ? // Zero net revenue cannot express a meaningful percentage margin.
           0
         : decimalToNumber(
             roundMoney(
               netPrice
-                .minus(toDecimal(variant.costPrice))
+                .minus(toDecimal(marginCost))
                 .div(netPrice)
                 .mul(new Decimal(100)),
             ),
@@ -346,6 +459,7 @@ export class CatalogService {
     }
 
     return {
+      price: variant.salePrice,
       netSalePrice: decimalToNumber(netPrice),
       netPrice: decimalToNumber(netPrice),
       taxAmount: decimalToNumber(taxAmount),
@@ -479,9 +593,30 @@ export class CatalogService {
         );
       }
 
+      if (variant.totalCost !== undefined && variant.totalCost < 0) {
+        throw new BadRequestException(
+          `El costo total de la variante ${variant.sku} no puede ser negativo.`,
+        );
+      }
+
+      if (variant.netPrice !== undefined && variant.netPrice <= 0) {
+        throw new BadRequestException(
+          `La venta neta de la variante ${variant.sku} debe ser mayor a 0.`,
+        );
+      }
+
       if (variant.salePrice < 0) {
         throw new BadRequestException(
           `El precio de venta de la variante ${variant.sku} no puede ser negativo.`,
+        );
+      }
+
+      if (
+        variant.taxRate !== undefined &&
+        (variant.taxRate < 0 || variant.taxRate > 1)
+      ) {
+        throw new BadRequestException(
+          `La tarifa IVA de la variante ${variant.sku} debe estar entre 0 y 1.`,
         );
       }
 
@@ -914,7 +1049,6 @@ export class CatalogService {
           productId,
           status: BatchStatus.IN_STOCK,
           quantityRemaining: { gt: 0 },
-          variantId: { not: null },
         },
       }),
       this.prisma.variant.count({
@@ -928,10 +1062,60 @@ export class CatalogService {
     return activeBatchesCount > 0 || variantsWithStockCount > 0;
   }
 
+  private async assertVariantsCanBeDeactivated(
+    tx: Prisma.TransactionClient,
+    variantIds: string[],
+  ) {
+    if (!variantIds.length) {
+      return;
+    }
+
+    const [variantsWithStock, activeBatches] = await Promise.all([
+      tx.variant.findMany({
+        where: {
+          id: { in: variantIds },
+          stock: { gt: 0 },
+        },
+        select: {
+          sku: true,
+        },
+      }),
+      tx.purchaseBatch.findMany({
+        where: {
+          variantId: { in: variantIds },
+          status: BatchStatus.IN_STOCK,
+          quantityRemaining: { gt: 0 },
+        },
+        select: {
+          variant: {
+            select: {
+              sku: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    const blockedSkus = Array.from(
+      new Set([
+        ...variantsWithStock.map((variant) => variant.sku),
+        ...activeBatches
+          .map((batch) => batch.variant?.sku)
+          .filter((sku): sku is string => !!sku),
+      ]),
+    );
+
+    if (blockedSkus.length > 0) {
+      throw new BadRequestException(
+        `No puedes desactivar variantes con stock activo: ${blockedSkus.join(', ')}.`,
+      );
+    }
+  }
+
   async update(
     id: string,
     updateProductDto: UpdateProductDto,
-  ): Promise<ProductWithRelations> {
+  ): Promise<ProductWithCalculatedVariantPricing> {
     const {
       variants,
       images,
@@ -1095,6 +1279,27 @@ export class CatalogService {
             (variant) => !matchedCurrentVariantIds.has(variant.id),
           );
 
+          const variantIdsToDeactivate = new Set(
+            variantsToDeactivate
+              .filter((variant) => variant.isActive)
+              .map((variant) => variant.id),
+          );
+
+          for (const variant of generatedVariants) {
+            const existingVariant = variant.id
+              ? currentVariantById.get(variant.id)
+              : currentVariantBySku.get(this.normalizeLabel(variant.sku));
+
+            if (existingVariant?.isActive && !variant.isActive) {
+              variantIdsToDeactivate.add(existingVariant.id);
+            }
+          }
+
+          await this.assertVariantsCanBeDeactivated(
+            tx,
+            Array.from(variantIdsToDeactivate),
+          );
+
           if (variantsToDeactivate.length > 0) {
             await tx.variant.updateMany({
               where: {
@@ -1121,6 +1326,7 @@ export class CatalogService {
                   minPrice: variant.minPrice,
                   comparePrice: variant.comparePrice,
                   costPrice: variant.costPrice,
+                  totalCost: variant.totalCost,
                   taxRate: variant.taxRate,
                   isActive: variant.isActive,
                 },
@@ -1137,6 +1343,7 @@ export class CatalogService {
                   minPrice: variant.minPrice,
                   comparePrice: variant.comparePrice,
                   costPrice: variant.costPrice,
+                  totalCost: variant.totalCost,
                   taxRate: variant.taxRate,
                   stock: 0,
                   isActive: variant.isActive,
@@ -1160,7 +1367,7 @@ export class CatalogService {
       });
 
       await this.cacheManager.del(this.CACHE_KEY);
-      return updatedProduct;
+      return this.withCalculatedVariantPricing(updatedProduct);
     } catch (error: unknown) {
       this.mapCatalogWriteError(error);
     }
@@ -1195,7 +1402,7 @@ export class CatalogService {
 
   async create(
     createProductDto: CreateProductDto,
-  ): Promise<ProductWithRelations> {
+  ): Promise<ProductWithCalculatedVariantPricing> {
     const {
       variants,
       collectionId,
@@ -1267,6 +1474,7 @@ export class CatalogService {
                 minPrice: variant.minPrice,
                 comparePrice: variant.comparePrice,
                 costPrice: variant.costPrice,
+                totalCost: variant.totalCost,
                 taxRate: variant.taxRate,
                 stock: 0,
                 isActive: variant.isActive,
@@ -1303,7 +1511,7 @@ export class CatalogService {
       });
 
       await this.cacheManager.del(this.CACHE_KEY);
-      return product;
+      return this.withCalculatedVariantPricing(product);
     } catch (error: unknown) {
       console.error('Error creating product:', error);
       if (error instanceof InternalServerErrorException) {

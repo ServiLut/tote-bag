@@ -14,6 +14,7 @@ import {
 import { CatalogService } from './catalog.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { VariantPricePreviewDto } from './dto/variant-price-preview.dto';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 
 @Controller('catalog')
@@ -51,6 +52,17 @@ export class CatalogController {
       minPrice: minPrice ? Number(minPrice) : undefined,
       maxPrice: maxPrice ? Number(maxPrice) : undefined,
       search,
+    });
+  }
+
+  @Post('admin/products/variants/price-preview')
+  @RequirePermissions({ resource: 'products', action: 'update' })
+  previewVariantPrice(@Body() dto: VariantPricePreviewDto) {
+    return this.catalogService.previewVariantPrice({
+      netPrice: dto.netPrice,
+      taxRate: dto.taxRate,
+      costPrice: dto.costPrice ?? dto.cost,
+      totalCost: dto.totalCost ?? dto.costTotal,
     });
   }
 

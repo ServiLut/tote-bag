@@ -31,6 +31,7 @@ interface Variant {
   taxRate?: number | string | null;
   minPrice?: number | null;
   costPrice?: number | null;
+  totalCost?: number | null;
   comparePrice?: number | null;
   isActive?: boolean;
 }

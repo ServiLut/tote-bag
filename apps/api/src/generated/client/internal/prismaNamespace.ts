@@ -3501,6 +3501,7 @@ export const VariantScalarFieldEnum = {
   minPrice: 'minPrice',
   comparePrice: 'comparePrice',
   costPrice: 'costPrice',
+  totalCost: 'totalCost',
   taxRate: 'taxRate',
   stock: 'stock',
   isActive: 'isActive',

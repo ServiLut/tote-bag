@@ -80,6 +80,7 @@ model Variant {
   minPrice                Float?                   @map("min_price")
   comparePrice            Float?                   @map("compare_price")
   costPrice               Float?                   @map("cost_price")
+  totalCost               Float?                   @map("total_cost")
   taxRate                 Decimal                  @default(0.19) @map("tax_rate") @db.Decimal(4, 2)
   stock                   Int                      @default(0) @map("stock")
   isActive                Boolean                  @default(true) @map("is_active")

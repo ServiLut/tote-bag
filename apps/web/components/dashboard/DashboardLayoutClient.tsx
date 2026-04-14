@@ -29,6 +29,7 @@ export default function DashboardLayoutClient({
   );
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [hasLoadedSidebarPreference, setHasLoadedSidebarPreference] = useState(false);
   const supabase = createClient();
   const { theme, setTheme } = useTheme();
 
@@ -40,10 +41,11 @@ export default function DashboardLayoutClient({
     const persistedValue =
       window.localStorage.getItem('dashboard-sidebar-collapsed') === 'true';
     setIsSidebarCollapsed(persistedValue);
+    setHasLoadedSidebarPreference(true);
   }, [mounted]);
 
   useEffect(() => {
-    if (!mounted) {
+    if (!mounted || !hasLoadedSidebarPreference) {
       return;
     }
 
@@ -51,7 +53,7 @@ export default function DashboardLayoutClient({
       'dashboard-sidebar-collapsed',
       isSidebarCollapsed ? 'true' : 'false',
     );
-  }, [isSidebarCollapsed, mounted]);
+  }, [hasLoadedSidebarPreference, isSidebarCollapsed, mounted]);
 
   const handleLogout = async () => {
     let clientError: unknown = null;
@@ -97,9 +99,10 @@ export default function DashboardLayoutClient({
           isMobileMenuOpen={isMobileMenuOpen}
           setIsMobileMenuOpen={setIsMobileMenuOpen}
           isCollapsed={isSidebarCollapsed}
+          shouldAnimate={hasLoadedSidebarPreference}
         />
 
-        <main className={`flex-1 flex min-h-screen flex-col bg-base transition-[margin] duration-300 ${isSidebarCollapsed ? 'md:ml-24' : 'md:ml-72'}`}>
+        <main className={`flex-1 flex min-h-screen flex-col bg-base ${hasLoadedSidebarPreference ? 'transition-[margin] duration-300 ease-in-out' : 'transition-none'} ${isSidebarCollapsed ? 'md:ml-24' : 'md:ml-72'}`}>
           <header className="sticky top-0 z-10 border-b border-zinc-200 bg-surface/85 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/85">
             <div className="hidden items-center justify-between gap-6 px-6 py-4 md:flex">
               <div className="flex min-w-0 flex-1 items-center gap-4">

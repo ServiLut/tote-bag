@@ -61,7 +61,15 @@ export class CreateVariantDto {
 
   @IsNumber()
   @Min(0)
-  salePrice: number;
+  @Type(() => Number)
+  @IsOptional()
+  salePrice?: number;
+
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  @IsOptional()
+  netPrice?: number;
 
   @IsNumber()
   @Min(0)
@@ -78,7 +86,14 @@ export class CreateVariantDto {
 
   @IsNumber()
   @Min(0)
+  @Type(() => Number)
+  @IsOptional()
+  totalCost?: number;
+
+  @IsNumber()
+  @Min(0)
   @Max(1)
+  @Type(() => Number)
   @IsOptional()
   taxRate?: number;
 

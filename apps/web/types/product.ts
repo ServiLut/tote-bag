@@ -10,12 +10,17 @@ export interface Variant {
   size?: string;
   color: string;
   imageUrl: string;
+  price?: number | null;
   salePrice?: number;
   netSalePrice?: number | null;
+  netPrice?: number | null;
+  taxAmount?: number | null;
+  marginPercentage?: number | null;
   taxRate?: number | string;
   minPrice?: number;
   comparePrice?: number;
   costPrice?: number;
+  totalCost?: number | null;
   stock: number;
   isActive?: boolean;
 }

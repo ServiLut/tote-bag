@@ -2,6 +2,7 @@ import {
   createCurrencyInputState,
   formatCurrencyInput,
   normalizeCurrencyInput,
+  normalizeTaxRateValue,
   parseCurrencyInput,
   sanitizeDecimalInput,
 } from '../numeric-input';
@@ -25,5 +26,12 @@ describe('numeric input helpers', () => {
       normalizedValue: '12345,67',
       numericValue: 12345.67,
     });
+  });
+
+  it('normaliza tarifas IVA a fraccion decimal', () => {
+    expect(normalizeTaxRateValue('0.19')).toBe(0.19);
+    expect(normalizeTaxRateValue('0,19')).toBe(0.19);
+    expect(normalizeTaxRateValue('19%')).toBe(0.19);
+    expect(normalizeTaxRateValue(19)).toBe(0.19);
   });
 });
