@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '../../generated/client/client';
 import { DebugRoleContextService } from '../../common/context/debug-role-context.service';
+import { isProtectedAdminEmail } from '../../common/utils/protected-admin.util';
+import { Role } from '../../generated/client/enums';
 
 @Injectable()
 export class ProfilesService {
@@ -9,6 +11,22 @@ export class ProfilesService {
     private readonly prisma: PrismaService,
     private readonly debugRoleContext: DebugRoleContextService,
   ) {}
+
+  private applyProtectedAdminProfile<
+    T extends { email?: string | null; user?: { role?: Role | null } | null },
+  >(profile: T) {
+    if (!profile.user || !isProtectedAdminEmail(profile.email)) {
+      return profile;
+    }
+
+    return {
+      ...profile,
+      user: {
+        ...profile.user,
+        role: Role.ADMIN,
+      },
+    };
+  }
 
   async findAll(
     filters: {
@@ -60,7 +78,10 @@ export class ProfilesService {
     };
 
     if (!shouldPaginate) {
-      return this.prisma.profile.findMany(queryOptions);
+      const profiles = await this.prisma.profile.findMany(queryOptions);
+      return profiles.map((profile) =>
+        this.applyProtectedAdminProfile(profile),
+      );
     }
 
     const safePage = page;
@@ -77,7 +98,7 @@ export class ProfilesService {
     ]);
 
     return {
-      items,
+      items: items.map((profile) => this.applyProtectedAdminProfile(profile)),
       pagination: {
         page: safePage,
         pageSize: safePageSize,
@@ -107,8 +128,22 @@ export class ProfilesService {
       include: { user: true },
     });
 
+    if (!profile || !profile.user) {
+      return profile;
+    }
+
+    if (isProtectedAdminEmail(profile.email)) {
+      return {
+        ...profile,
+        user: {
+          ...profile.user,
+          role: Role.ADMIN,
+        },
+      };
+    }
+
     const debugRole = this.debugRoleContext.getDebugRole();
-    if (!profile || !profile.user || !debugRole) {
+    if (!debugRole) {
       return profile;
     }
 

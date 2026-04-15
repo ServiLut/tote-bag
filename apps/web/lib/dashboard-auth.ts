@@ -8,6 +8,9 @@ export const DASHBOARD_DEBUG_ROLE_ALLOWED_EMAILS = [
   'deybisasprilla@gmail.com',
   'admin@tote-bag.com',
 ] as const;
+export const DASHBOARD_PROTECTED_ADMIN_EMAILS = [
+  'deybisasprilla@gmail.com',
+] as const;
 
 export const DASHBOARD_DEBUG_ROLE_OPTIONS: readonly DashboardRole[] = [
   'ADMIN',
@@ -37,6 +40,22 @@ export function parseDashboardDebugRoleCookie(value: string | null | undefined) 
   return normalizeDashboardRole(value);
 }
 
+export function normalizeEmail(email: string | null | undefined) {
+  return email?.trim().toLowerCase() || null;
+}
+
+export function getLockedDashboardRoleForEmail(
+  email: string | null | undefined,
+): DashboardRole | null {
+  const normalizedEmail = normalizeEmail(email);
+  return normalizedEmail &&
+    DASHBOARD_PROTECTED_ADMIN_EMAILS.includes(
+      normalizedEmail as (typeof DASHBOARD_PROTECTED_ADMIN_EMAILS)[number],
+    )
+    ? 'ADMIN'
+    : null;
+}
+
 export function getDashboardRoleLabel(role: DashboardRole | null | undefined) {
   if (!role) {
     return 'CUSTOMER';
@@ -55,11 +74,15 @@ export function canUseDashboardDebugRole(
   email: string | null | undefined,
   nodeEnv: string | undefined = process.env.NODE_ENV,
 ) {
+  if (getLockedDashboardRoleForEmail(email)) {
+    return false;
+  }
+
   if (nodeEnv === 'development') {
     return true;
   }
 
-  const normalizedEmail = email?.trim().toLowerCase();
+  const normalizedEmail = normalizeEmail(email);
   return !!normalizedEmail && DASHBOARD_DEBUG_ROLE_ALLOWED_EMAILS.includes(
     normalizedEmail as (typeof DASHBOARD_DEBUG_ROLE_ALLOWED_EMAILS)[number],
   );

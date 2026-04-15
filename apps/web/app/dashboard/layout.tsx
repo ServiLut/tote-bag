@@ -6,6 +6,7 @@ import {
   extractRoleFromProfilePayload,
   getApiCandidates,
   DASHBOARD_DEBUG_ROLE_COOKIE_NAME,
+  getLockedDashboardRoleForEmail,
   parseDashboardDebugRoleCookie,
   type DashboardRole,
 } from '@/lib/dashboard-auth';
@@ -58,9 +59,12 @@ export default async function DashboardLayout({
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  const debugRole = parseDashboardDebugRoleCookie(
-    cookieStore.get(DASHBOARD_DEBUG_ROLE_COOKIE_NAME)?.value,
-  );
+  const lockedRole = getLockedDashboardRoleForEmail(session?.user.email);
+  const debugRole = lockedRole
+    ? null
+    : parseDashboardDebugRoleCookie(
+        cookieStore.get(DASHBOARD_DEBUG_ROLE_COOKIE_NAME)?.value,
+      );
 
   const sessionRedirect = resolveDashboardLayoutRedirect({
     hasSession: !!session,
@@ -75,7 +79,8 @@ export default async function DashboardLayout({
     redirect('/login');
   }
 
-  const role = (await getCurrentRole(session.access_token, debugRole)) ?? null;
+  const role =
+    lockedRole ?? (await getCurrentRole(session.access_token, debugRole)) ?? null;
 
   const roleRedirect = resolveDashboardLayoutRedirect({
     hasSession: true,

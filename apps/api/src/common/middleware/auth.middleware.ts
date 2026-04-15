@@ -4,13 +4,13 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Role } from '../../generated/client/enums';
-import { WHITELISTED_OPERATOR_EMAILS } from '../constants/whitelisted-operator-emails';
 import { DebugRoleContextService } from '../context/debug-role-context.service';
 import {
   canUseDebugRole,
   DEBUG_ROLE_HEADER,
   getDebugRoleFromHeader,
 } from '../utils/debug-role.util';
+import { getOperatorRoleForEmail } from '../utils/protected-admin.util';
 
 type RequestUser = {
   id: string;
@@ -53,15 +53,6 @@ export class AuthMiddleware implements NestMiddleware {
     this.supabase = createClient(supabaseUrl, supabaseKey);
   }
 
-  private resolveRoleByEmail(email?: string | null): Role {
-    const normalizedEmail = email?.trim().toLowerCase();
-    if (normalizedEmail && WHITELISTED_OPERATOR_EMAILS.has(normalizedEmail)) {
-      return Role.MANAGER;
-    }
-
-    return Role.CUSTOMER;
-  }
-
   private async syncAuthenticatedUser(user: {
     id: string;
     email?: string | null;
@@ -78,11 +69,8 @@ export class AuthMiddleware implements NestMiddleware {
         select: { role: true },
       });
 
-      const resolvedRoleByEmail = this.resolveRoleByEmail(normalizedEmail);
-      const resolvedRole =
-        resolvedRoleByEmail === Role.MANAGER
-          ? Role.MANAGER
-          : (existingUser?.role ?? resolvedRoleByEmail);
+      const roleOverride = getOperatorRoleForEmail(normalizedEmail);
+      const resolvedRole = roleOverride ?? existingUser?.role ?? Role.CUSTOMER;
 
       await tx.user.upsert({
         where: { id: user.id },

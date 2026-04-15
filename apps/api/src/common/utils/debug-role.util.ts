@@ -1,4 +1,5 @@
 import { Role } from '../../generated/client/enums';
+import { isProtectedAdminEmail } from './protected-admin.util';
 
 export const DEBUG_ROLE_HEADER = 'x-debug-role';
 export const DEBUG_ROLE_ALLOWED_EMAILS = new Set([
@@ -27,6 +28,10 @@ export function getAvailableDebugRoles(): Role[] {
 }
 
 export function canUseDebugRole(email?: string | null, nodeEnv?: string) {
+  if (isProtectedAdminEmail(email)) {
+    return false;
+  }
+
   if (nodeEnv === 'development') {
     return true;
   }

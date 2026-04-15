@@ -8,7 +8,12 @@ import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 import { getDashboardDebugRoleHeader } from '@/utils/supabase/auth';
 import { resolvePostLoginRedirectPath } from '@/lib/frontend-routing';
-import { extractRoleFromProfilePayload, getApiCandidates, type DashboardRole } from '@/lib/dashboard-auth';
+import {
+  extractRoleFromProfilePayload,
+  getApiCandidates,
+  getLockedDashboardRoleForEmail,
+  type DashboardRole,
+} from '@/lib/dashboard-auth';
 
 type LoginPayload = {
   session?: {
@@ -133,7 +138,8 @@ function LoginPageContent() {
 
       const payload = await loginAgainstApi(normalizedEmail, password);
       const session = payload.session;
-      let role = payload.role ?? null;
+      let role =
+        getLockedDashboardRoleForEmail(normalizedEmail) ?? payload.role ?? null;
 
       if (!session?.access_token || !session.refresh_token) {
         throw new Error(

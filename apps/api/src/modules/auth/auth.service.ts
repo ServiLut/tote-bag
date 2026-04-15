@@ -15,6 +15,7 @@ import {
   canUseDebugRole,
   getAvailableDebugRoles,
 } from '../../common/utils/debug-role.util';
+import { getOperatorRoleForEmail } from '../../common/utils/protected-admin.util';
 
 @Injectable()
 export class AuthService {
@@ -84,7 +85,7 @@ export class AuthService {
     }
 
     try {
-      const initialRole = 'CUSTOMER';
+      const initialRole = getOperatorRoleForEmail(email) ?? Role.CUSTOMER;
 
       await this.prisma.$transaction(async (tx) => {
         await tx.user.create({
@@ -145,6 +146,7 @@ export class AuthService {
     }
 
     const user = data.user;
+    const requiredRole = getOperatorRoleForEmail(user.email) ?? Role.CUSTOMER;
 
     let userInDb = await this.prisma.user.findUnique({
       where: { id: user.id },
@@ -158,7 +160,7 @@ export class AuthService {
           data: {
             id: user.id,
             email: user.email!,
-            role: 'CUSTOMER',
+            role: requiredRole,
             profile: {
               create: {
                 email: user.email!,
@@ -186,11 +188,24 @@ export class AuthService {
       }
     }
 
+    const roleOverride = getOperatorRoleForEmail(user.email);
+    if (userInDb && roleOverride && userInDb.role !== roleOverride) {
+      try {
+        userInDb = await this.prisma.user.update({
+          where: { id: userInDb.id },
+          data: { role: roleOverride },
+          include: { profile: true },
+        });
+      } catch (err) {
+        console.error('Failed to enforce protected/operator role on login', err);
+      }
+    }
+
     return {
       message: 'Inicio de sesion exitoso',
       user: data.user,
       session: data.session,
-      role: userInDb?.role || 'CUSTOMER',
+      role: roleOverride ?? userInDb?.role ?? Role.CUSTOMER,
     };
   }
 

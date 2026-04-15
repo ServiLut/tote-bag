@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { getPermissionsForRole } from '../../common/utils/role-permissions.util';
 import { DebugRoleContextService } from '../../common/context/debug-role-context.service';
 import { Role } from '../../generated/client/enums';
+import { getProtectedAdminRoleForEmail } from '../../common/utils/protected-admin.util';
 
 @Injectable()
 export class RolesService {
@@ -18,10 +19,11 @@ export class RolesService {
     });
 
     const debugRole = this.debugRoleContext.getDebugRole();
+    const protectedAdminRole = getProtectedAdminRoleForEmail(user?.email);
 
     return {
       user,
-      effectiveRole: debugRole ?? user?.role ?? null,
+      effectiveRole: protectedAdminRole ?? debugRole ?? user?.role ?? null,
       debugRole,
     };
   }

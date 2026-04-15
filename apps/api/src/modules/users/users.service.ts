@@ -6,13 +6,17 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Role } from '../../generated/client/enums';
+import {
+  applyProtectedAdminRole,
+  isProtectedAdminEmail,
+} from '../../common/utils/protected-admin.util';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll() {
-    return this.prisma.user.findMany({
+    const users = await this.prisma.user.findMany({
       select: {
         id: true,
         email: true,
@@ -30,6 +34,8 @@ export class UsersService {
         createdAt: 'desc',
       },
     });
+
+    return users.map((user) => applyProtectedAdminRole(user));
   }
 
   async updateUserRole(userId: string, newRole: Role, actorUserId?: string) {
@@ -43,6 +49,12 @@ export class UsersService {
 
     if (!user) {
       throw new NotFoundException(`Usuario con ID ${userId} no encontrado`);
+    }
+
+    if (isProtectedAdminEmail(user.email) && newRole !== Role.ADMIN) {
+      throw new ForbiddenException(
+        'Esta cuenta siempre debe conservar el rol ADMIN',
+      );
     }
 
     if (

@@ -128,4 +128,44 @@ describe('AuthMiddleware', () => {
     expect(upsertArg.create.role).toBe(Role.MANAGER);
     expect(next).toHaveBeenCalled();
   });
+
+  it('fuerza ADMIN para la cuenta protegida e ignora rol QA', async () => {
+    getUserMock.mockResolvedValue({
+      data: {
+        user: {
+          id: 'user-3',
+          email: 'deybisasprilla@gmail.com',
+        },
+      },
+      error: null,
+    });
+    tx.user.findUnique.mockResolvedValue({ role: Role.CUSTOMER });
+    tx.user.upsert.mockResolvedValue({});
+
+    const req = {
+      method: 'GET',
+      url: '/profiles/me',
+      headers: {
+        authorization: 'Bearer valid-token',
+        'x-debug-role': Role.CUSTOMER,
+      },
+    } as unknown as Request;
+    const next = jest.fn() as NextFunction;
+
+    await middleware.use(req, {} as Response, next);
+
+    const protectedAdminUpsertCalls = tx.user.upsert.mock.calls as Array<
+      [{ update: { role: Role }; create: { role: Role } }]
+    >;
+    const upsertArg = protectedAdminUpsertCalls[0][0];
+
+    expect(upsertArg).toBeDefined();
+    expect(upsertArg.update.role).toBe(Role.ADMIN);
+    expect(upsertArg.create.role).toBe(Role.ADMIN);
+    expect(debugRoleContext.run).toHaveBeenCalledWith(
+      null,
+      expect.any(Function),
+    );
+    expect(next).toHaveBeenCalled();
+  });
 });

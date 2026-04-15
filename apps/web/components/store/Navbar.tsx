@@ -28,7 +28,10 @@ import { useTranslation } from 'react-i18next';
 import { getProfileNavigationPath } from '@/lib/frontend-routing';
 import { apiFetch } from '@/utils/api';
 import { DashboardRoleSwitcher } from '@/components/dashboard/DashboardRoleSwitcher';
-import { normalizeDashboardRole } from '@/lib/dashboard-auth';
+import {
+  getLockedDashboardRoleForEmail,
+  normalizeDashboardRole,
+} from '@/lib/dashboard-auth';
 
 interface SearchSuggestion {
   id: string;
@@ -117,7 +120,9 @@ export default function Navbar() {
       } = await supabase.auth.getSession();
       setIsLoggedIn(!!session);
       if (session) {
-        setProfileEmail(session.user.email || '');
+        const sessionEmail = session.user.email || '';
+        const lockedRole = getLockedDashboardRoleForEmail(sessionEmail);
+        setProfileEmail(sessionEmail);
 
         try {
           const res = await apiFetch('/profiles/me', {
@@ -130,19 +135,20 @@ export default function Navbar() {
             const profile = body.data || body;
             const fullName = `${profile?.firstName || ''} ${profile?.lastName || ''}`.trim();
             const apiRole =
+              lockedRole ??
               normalizeDashboardRole(profile?.user?.role) ??
               normalizeDashboardRole(profile?.role);
             setUserRole(apiRole || 'CUSTOMER');
-            setProfileName(fullName || session.user.email || '');
+            setProfileName(fullName || sessionEmail);
           } else {
             const storedRole = localStorage.getItem('user_role');
-            setUserRole(storedRole || 'CUSTOMER');
-            setProfileName(session.user.email || '');
+            setUserRole(lockedRole || storedRole || 'CUSTOMER');
+            setProfileName(sessionEmail);
           }
         } catch {
           const storedRole = localStorage.getItem('user_role');
-          setUserRole(storedRole || 'CUSTOMER');
-          setProfileName(session.user.email || '');
+          setUserRole(lockedRole || storedRole || 'CUSTOMER');
+          setProfileName(sessionEmail);
         }
       } else {
         setProfileEmail('');
@@ -164,9 +170,14 @@ export default function Navbar() {
         localStorage.removeItem('user_role');
       } else {
         const storedRole = localStorage.getItem('user_role');
-        setUserRole(storedRole || 'CUSTOMER');
-        setProfileEmail(session.user.email || '');
-        setProfileName(session.user.email || '');
+        const sessionEmail = session.user.email || '';
+        setUserRole(
+          getLockedDashboardRoleForEmail(sessionEmail) ||
+            storedRole ||
+            'CUSTOMER',
+        );
+        setProfileEmail(sessionEmail);
+        setProfileName(sessionEmail);
       }
       },
     );
@@ -567,4 +578,3 @@ export default function Navbar() {
     </>
   );
 }
-
