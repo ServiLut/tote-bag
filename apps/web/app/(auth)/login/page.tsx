@@ -5,12 +5,12 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Mail, Lock, Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
+import { apiFetch } from '@/utils/api';
 import { createClient } from '@/utils/supabase/client';
 import { getDashboardDebugRoleHeader } from '@/utils/supabase/auth';
 import { resolvePostLoginRedirectPath } from '@/lib/frontend-routing';
 import {
   extractRoleFromProfilePayload,
-  getApiCandidates,
   getLockedDashboardRoleForEmail,
   type DashboardRole,
 } from '@/lib/dashboard-auth';
@@ -37,82 +37,60 @@ async function parseJsonSafely(response: Response) {
 }
 
 async function loginAgainstApi(email: string, password: string) {
-  const attempts: string[] = [];
+  const response = await apiFetch('/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
 
-  for (const apiUrl of getApiCandidates()) {
-    try {
-      const response = await fetch(`${apiUrl}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+  const body = await parseJsonSafely(response);
 
-      const body = await parseJsonSafely(response);
+  if (!response.ok) {
+    const message =
+      body &&
+      typeof body === 'object' &&
+      'message' in body &&
+      typeof body.message === 'string'
+        ? body.message
+        : `Login failed with status ${response.status}`;
 
-      if (!response.ok) {
-        const message =
-          body &&
-          typeof body === 'object' &&
-          'message' in body &&
-          typeof body.message === 'string'
-            ? body.message
-            : `Login failed with status ${response.status}`;
-
-        attempts.push(`${apiUrl}: ${message}`);
-        continue;
-      }
-
-      const payload =
-        body &&
-        typeof body === 'object' &&
-        'data' in body &&
-        body.data &&
-        typeof body.data === 'object'
-          ? (body.data as LoginPayload)
-          : (body as LoginPayload | null);
-
-      if (!payload?.session?.access_token || !payload?.session?.refresh_token) {
-        attempts.push(`${apiUrl}: missing session tokens`);
-        continue;
-      }
-
-      return payload;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown login error';
-      attempts.push(`${apiUrl}: ${message}`);
-    }
+    throw new Error(message);
   }
 
-  throw new Error(
-    attempts[0] || 'No fue posible contactar el servicio de autenticacion.',
-  );
+  const payload =
+    body &&
+    typeof body === 'object' &&
+    'data' in body &&
+    body.data &&
+    typeof body.data === 'object'
+      ? (body.data as LoginPayload)
+      : (body as LoginPayload | null);
+
+  if (!payload?.session?.access_token || !payload?.session?.refresh_token) {
+    throw new Error('No se recibio una sesion valida.');
+  }
+
+  return payload;
 }
 
 async function resolveRoleFromApi(accessToken: string) {
-  for (const apiUrl of getApiCandidates()) {
-    try {
-      const response = await fetch(`${apiUrl}/profiles/me`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          ...getDashboardDebugRoleHeader(),
-        },
-      });
+  try {
+    const response = await apiFetch('/profiles/me', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        ...getDashboardDebugRoleHeader(),
+      },
+    });
 
-      if (!response.ok) {
-        continue;
-      }
-
-      const body = await parseJsonSafely(response);
-      const role = extractRoleFromProfilePayload(body);
-      if (role) {
-        return role;
-      }
-    } catch {
-      continue;
+    if (!response.ok) {
+      return null;
     }
-  }
 
-  return null;
+    const body = await parseJsonSafely(response);
+    return extractRoleFromProfilePayload(body);
+  } catch {
+    return null;
+  }
 }
 
 function LoginPageContent() {
