@@ -197,7 +197,10 @@ export class AuthService {
           include: { profile: true },
         });
       } catch (err) {
-        console.error('Failed to enforce protected/operator role on login', err);
+        console.error(
+          'Failed to enforce protected/operator role on login',
+          err,
+        );
       }
     }
 
