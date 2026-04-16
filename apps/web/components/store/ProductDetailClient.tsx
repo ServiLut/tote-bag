@@ -8,6 +8,7 @@ import { apiFetch } from '@/utils/api';
 import { Minus, Plus, ShoppingBag, Truck, ShieldCheck, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { formatWholeCurrency } from '@/lib/numeric-input';
 
 interface ProductDetailClientProps {
   product: Product;
@@ -268,14 +269,14 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
           <div className="flex items-center gap-4 mb-8 border-b border-theme pb-6">
             <div className="flex flex-col">
               <span className="text-3xl font-bold text-primary">
-                ${calculatedPrice.toLocaleString('es-CO')}
+                {formatWholeCurrency(calculatedPrice)}
               </span>
               <span className="text-[10px] font-bold uppercase tracking-wide text-muted">
                 IVA incluido
               </span>
               {selectedVariant.comparePrice && selectedVariant.comparePrice > calculatedPrice && (
                 <span className="text-sm text-muted line-through">
-                  ${selectedVariant.comparePrice.toLocaleString('es-CO')}
+                  {formatWholeCurrency(selectedVariant.comparePrice)}
                 </span>
               )}
               {isPricingLoading && <div className="flex items-center gap-1 text-[10px] text-muted animate-pulse mt-1"><Loader2 size={10} className="animate-spin" /> {t('product_updating_price')}</div>}
@@ -364,7 +365,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                           isSelected ? 'bg-secondary border-secondary text-white shadow-md' : 'bg-white border-theme text-muted hover:border-secondary hover:text-secondary'
                         }`}
                       >
-                        {opt.name} (+${opt.basePrice.toLocaleString()})
+                        {opt.name} (+{formatWholeCurrency(opt.basePrice)})
                       </button>
                     );
                   })}

@@ -1,6 +1,7 @@
 import {
   createCurrencyInputState,
   formatCurrencyInput,
+  formatWholeCurrency,
   normalizeCurrencyInput,
   normalizeTaxRateValue,
   parseCurrencyInput,
@@ -33,5 +34,11 @@ describe('numeric input helpers', () => {
     expect(normalizeTaxRateValue('0,19')).toBe(0.19);
     expect(normalizeTaxRateValue('19%')).toBe(0.19);
     expect(normalizeTaxRateValue(19)).toBe(0.19);
+  });
+
+  it('formatea moneda comercial sin decimales', () => {
+    expect(formatWholeCurrency(1234.56)).toBe('$1.235');
+    expect(formatWholeCurrency(1234)).toBe('$1.234');
+    expect(formatWholeCurrency(null, 'N/A')).toBe('N/A');
   });
 });

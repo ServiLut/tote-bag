@@ -8,6 +8,7 @@ import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { formatWholeCurrency } from '@/lib/numeric-input';
 
 interface ProductCardProps {
   product: Product;
@@ -117,14 +118,14 @@ export default function ProductCard({
 
           <div className="flex items-center gap-2 text-sm">
             <span className="font-semibold text-primary">
-              ${variantSalePrice.toLocaleString('es-CO')}
+              {formatWholeCurrency(variantSalePrice)}
             </span>
             <span className="text-[10px] font-bold uppercase tracking-wide text-muted">
               IVA incluido
             </span>
             {variantComparePrice && (
               <span className="text-muted line-through text-xs">
-                ${variantComparePrice.toLocaleString('es-CO')}
+                {formatWholeCurrency(variantComparePrice)}
               </span>
             )}
           </div>

@@ -4,6 +4,9 @@ const INTEGER_REGEX = /^\d*$/;
 const THOUSANDS_FORMATTER = new Intl.NumberFormat('es-CO', {
   maximumFractionDigits: 0,
 });
+const WHOLE_CURRENCY_FORMATTER = new Intl.NumberFormat('es-CO', {
+  maximumFractionDigits: 0,
+});
 
 export interface CurrencyInputState {
   formattedValue: string;
@@ -272,4 +275,13 @@ export function normalizeTaxRateValue(
   }
 
   return parsedValue > 1 ? parsedValue / 100 : parsedValue;
+}
+
+export function formatWholeCurrency(
+  value: number | null | undefined,
+  fallback = '',
+) {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? `$${WHOLE_CURRENCY_FORMATTER.format(value)}`
+    : fallback;
 }

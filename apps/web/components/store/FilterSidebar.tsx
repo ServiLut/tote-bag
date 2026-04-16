@@ -260,14 +260,14 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
                   <label className="text-[9px] font-black uppercase text-muted tracking-widest opacity-60">{t('filters_min')}</label>
                   <div className="relative">
                     <span className="absolute left-3 top-2 text-[10px] font-bold text-muted">$</span>
-                    <input type="text" name="minPrice" inputMode="numeric" value={filters.minPrice === 0 ? '' : formatCurrencyInput(String(filters.minPrice))} onChange={handlePriceChange} className="w-full pl-6 py-2 border border-theme bg-base text-primary text-xs font-bold focus:border-primary outline-none transition-all rounded-lg" placeholder="0" />
+                    <input type="text" name="minPrice" inputMode="decimal" value={filters.minPrice === 0 ? '' : formatCurrencyInput(String(filters.minPrice))} onChange={handlePriceChange} className="w-full pl-6 py-2 border border-theme bg-base text-primary text-xs font-bold focus:border-primary outline-none transition-all rounded-lg" placeholder="0" />
                   </div>
                 </div>
                 <div className="space-y-1.5 flex-1">
                   <label className="text-[9px] font-black uppercase text-muted tracking-widest opacity-60">{t('filters_max')}</label>
                   <div className="relative">
                     <span className="absolute left-3 top-2 text-[10px] font-bold text-muted">$</span>
-                    <input type="text" name="maxPrice" inputMode="numeric" value={filters.maxPrice === 0 ? '' : formatCurrencyInput(String(filters.maxPrice))} onChange={handlePriceChange} className="w-full pl-6 py-2 border border-theme bg-base text-primary text-xs font-bold focus:border-primary outline-none transition-all rounded-lg" placeholder="999..." />
+                    <input type="text" name="maxPrice" inputMode="decimal" value={filters.maxPrice === 0 ? '' : formatCurrencyInput(String(filters.maxPrice))} onChange={handlePriceChange} className="w-full pl-6 py-2 border border-theme bg-base text-primary text-xs font-bold focus:border-primary outline-none transition-all rounded-lg" placeholder="999..." />
                   </div>
                 </div>
               </div>
