@@ -9,7 +9,7 @@ describe('UsersService', () => {
         findMany: jest.fn().mockResolvedValue([
           {
             id: 'user-1',
-            email: 'deybisasprilla@gmail.com',
+            email: 'deybisasprilla@gmail.co',
             role: Role.CUSTOMER,
             isActive: true,
             createdAt: new Date('2026-04-15T00:00:00.000Z'),
@@ -21,7 +21,7 @@ describe('UsersService', () => {
 
     await expect(service.findAll()).resolves.toMatchObject([
       {
-        email: 'deybisasprilla@gmail.com',
+        email: 'deybisasprilla@gmail.co',
         role: Role.ADMIN,
       },
     ]);
@@ -32,7 +32,7 @@ describe('UsersService', () => {
       user: {
         findUnique: jest.fn().mockResolvedValue({
           id: 'user-1',
-          email: 'deybisasprilla@gmail.com',
+          email: 'deybisasprilla@gmail.co',
           role: Role.ADMIN,
           isActive: true,
         }),

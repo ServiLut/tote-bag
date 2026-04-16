@@ -28,10 +28,7 @@ import { useTranslation } from 'react-i18next';
 import { getProfileNavigationPath } from '@/lib/frontend-routing';
 import { apiFetch } from '@/utils/api';
 import { DashboardRoleSwitcher } from '@/components/dashboard/DashboardRoleSwitcher';
-import {
-  getLockedDashboardRoleForEmail,
-  normalizeDashboardRole,
-} from '@/lib/dashboard-auth';
+import { normalizeDashboardRole } from '@/lib/dashboard-auth';
 
 interface SearchSuggestion {
   id: string;
@@ -59,6 +56,7 @@ export default function Navbar() {
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [profileName, setProfileName] = useState('');
   const [profileEmail, setProfileEmail] = useState('');
+  const [debugRoleAllowed, setDebugRoleAllowed] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [supabase] = useState(() => createClient());
   const { theme, setTheme } = useTheme();
@@ -121,7 +119,6 @@ export default function Navbar() {
       setIsLoggedIn(!!session);
       if (session) {
         const sessionEmail = session.user.email || '';
-        const lockedRole = getLockedDashboardRoleForEmail(sessionEmail);
         setProfileEmail(sessionEmail);
 
         try {
@@ -135,24 +132,27 @@ export default function Navbar() {
             const profile = body.data || body;
             const fullName = `${profile?.firstName || ''} ${profile?.lastName || ''}`.trim();
             const apiRole =
-              lockedRole ??
               normalizeDashboardRole(profile?.user?.role) ??
               normalizeDashboardRole(profile?.role);
             setUserRole(apiRole || 'CUSTOMER');
+            setDebugRoleAllowed(profile?.debugRoleAllowed === true);
             setProfileName(fullName || sessionEmail);
           } else {
             const storedRole = localStorage.getItem('user_role');
-            setUserRole(lockedRole || storedRole || 'CUSTOMER');
+            setUserRole(storedRole || 'CUSTOMER');
+            setDebugRoleAllowed(false);
             setProfileName(sessionEmail);
           }
         } catch {
           const storedRole = localStorage.getItem('user_role');
-          setUserRole(lockedRole || storedRole || 'CUSTOMER');
+          setUserRole(storedRole || 'CUSTOMER');
+          setDebugRoleAllowed(false);
           setProfileName(sessionEmail);
         }
       } else {
         setProfileEmail('');
         setProfileName('');
+        setDebugRoleAllowed(false);
       }
     };
     checkUser();
@@ -167,15 +167,13 @@ export default function Navbar() {
         setUserRole(null);
         setProfileEmail('');
         setProfileName('');
+        setDebugRoleAllowed(false);
         localStorage.removeItem('user_role');
       } else {
         const storedRole = localStorage.getItem('user_role');
         const sessionEmail = session.user.email || '';
-        setUserRole(
-          getLockedDashboardRoleForEmail(sessionEmail) ||
-            storedRole ||
-            'CUSTOMER',
-        );
+        setUserRole(storedRole || 'CUSTOMER');
+        setDebugRoleAllowed(false);
         setProfileEmail(sessionEmail);
         setProfileName(sessionEmail);
       }
@@ -446,7 +444,7 @@ export default function Navbar() {
                             <DashboardRoleSwitcher
                               role={resolvedRole}
                               accessToken={null}
-                              email={profileEmail}
+                              debugRoleAllowed={debugRoleAllowed}
                             />
                           </div>
                         ) : null}
@@ -547,7 +545,7 @@ export default function Navbar() {
                     <DashboardRoleSwitcher
                       role={resolvedRole}
                       accessToken={null}
-                      email={profileEmail}
+                      debugRoleAllowed={debugRoleAllowed}
                     />
                   ) : null}
                 </div>

@@ -174,7 +174,7 @@ export default function Sidebar({
         return;
       }
 
-      const response = await apiFetch('/pqrs?status=NUEVO', {
+      const response = await apiFetch('/pqrs/count?status=NUEVO', {
         headers,
       });
 
@@ -184,8 +184,12 @@ export default function Sidebar({
       }
 
       const body = await response.json();
-      const tickets = body.data || body || [];
-      setNewPqrsCount(Array.isArray(tickets) ? tickets.length : 0);
+      const payload = body.data || body || {};
+      const count =
+        payload && typeof payload === 'object' && 'count' in payload
+          ? Number((payload as { count: unknown }).count)
+          : 0;
+      setNewPqrsCount(Number.isFinite(count) ? count : 0);
     } catch (error) {
       console.error('Error loading PQRS count:', error);
       setNewPqrsCount(0);
@@ -229,28 +233,8 @@ export default function Sidebar({
       },
     );
 
-    const intervalId = window.setInterval(() => {
-      void loadPqrsCount();
-    }, 30000);
-
-    const handleWindowFocus = () => {
-      void loadPqrsCount();
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        void loadPqrsCount();
-      }
-    };
-
-    window.addEventListener('focus', handleWindowFocus);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
     return () => {
       subscription.unsubscribe();
-      window.clearInterval(intervalId);
-      window.removeEventListener('focus', handleWindowFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [loadPqrsCount, supabase.auth]);
 

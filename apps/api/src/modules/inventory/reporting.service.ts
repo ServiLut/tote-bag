@@ -7,10 +7,10 @@ import {
   BatchStatus,
 } from '../../generated/client/enums';
 import Decimal from 'decimal.js';
-import * as ExcelJS from 'exceljs';
 import PDFDocument from 'pdfkit';
 import { format } from 'date-fns';
 import { decimalToNumber, toDecimal } from '../../common/utils/sales-tax.util';
+import { createSimpleXlsxBuffer } from '../../common/utils/simple-xlsx.util';
 
 @Injectable()
 export class ReportingService {
@@ -125,10 +125,38 @@ export class ReportingService {
   ): Promise<Buffer> {
     this.validateDateRange(startDate, endDate);
     const data = await this.getAccountingReport(startDate, endDate);
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet('Reporte Contable');
+    const rows: Array<Array<string | number | null>> = [
+      ['TOTE BAG CO.', null, null],
+      ['ESTADO DE RESULTADOS OFICIAL', null, null],
+      [
+        `Periodo: ${format(startDate, 'dd/MM/yyyy')} - ${format(
+          endDate,
+          'dd/MM/yyyy',
+        )}`,
+        null,
+        null,
+      ],
+      [null, null, null],
+      ['CONCEPTO', 'TIPO', 'MONTO (COP)'],
+      ['Ingresos Operacionales (Ventas)', 'INGRESO', data.totalIncome],
+      ['Costo de Ventas (COGS - FIFO)', 'COSTO', -data.totalCOGS],
+      ['UTILIDAD BRUTA', 'RESULTADO', data.totalIncome - data.totalCOGS],
+      ['Gastos Operativos (OpEx)', 'GASTO', -data.totalOpex],
+      ['Impuestos Estimados (19%)', 'IMPUESTO', -data.estimatedTaxes],
+      ['UTILIDAD NETA DEL PERIODO', 'FINAL', data.netProfit],
+      [null, null, null],
+      ['DESGLOSE DE GASTOS DETALLADO', null, null],
+      ...Object.entries(data.opexByCategory).map(([category, amount]) => [
+        `- ${category}`,
+        'OpEx',
+        -amount,
+      ]),
+    ];
 
-    // Branding & Header
+    return createSimpleXlsxBuffer('Reporte Contable', rows);
+
+    /*
+    // Legacy styled ExcelJS export retained temporarily for reference.
     sheet.mergeCells('A1:C1');
     const titleCell = sheet.getCell('A1');
     titleCell.value = 'TOTE BAG CO.';
@@ -259,6 +287,7 @@ export class ReportingService {
 
     const buffer = await workbook.xlsx.writeBuffer();
     return Buffer.from(buffer);
+    */
   }
 
   async generateAccountingPDF(startDate: Date, endDate: Date): Promise<Buffer> {

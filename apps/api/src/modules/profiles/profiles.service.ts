@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '../../generated/client/client';
 import { DebugRoleContextService } from '../../common/context/debug-role-context.service';
 import { isProtectedAdminEmail } from '../../common/utils/protected-admin.util';
+import { canUseDebugRole } from '../../common/utils/debug-role.util';
 import { Role } from '../../generated/client/enums';
 
 @Injectable()
@@ -10,22 +12,64 @@ export class ProfilesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly debugRoleContext: DebugRoleContextService,
+    private readonly configService: ConfigService,
   ) {}
+
+  private appendAuthFlags<T extends { email?: string | null }>(profile: T) {
+    return {
+      ...profile,
+      debugRoleAllowed: canUseDebugRole(
+        profile.email,
+        this.configService.get<string>('NODE_ENV'),
+      ),
+    };
+  }
 
   private applyProtectedAdminProfile<
     T extends { email?: string | null; user?: { role?: Role | null } | null },
   >(profile: T) {
     if (!profile.user || !isProtectedAdminEmail(profile.email)) {
-      return profile;
+      return this.appendAuthFlags(profile);
     }
 
-    return {
+    return this.appendAuthFlags({
       ...profile,
       user: {
         ...profile.user,
         role: Role.ADMIN,
       },
-    };
+    });
+  }
+
+  private applyCurrentUserProfileRole<
+    T extends { email?: string | null; user?: { role?: Role | null } | null },
+  >(profile: T) {
+    if (!profile.user) {
+      return this.appendAuthFlags(profile);
+    }
+
+    if (isProtectedAdminEmail(profile.email)) {
+      return this.appendAuthFlags({
+        ...profile,
+        user: {
+          ...profile.user,
+          role: Role.ADMIN,
+        },
+      });
+    }
+
+    const debugRole = this.debugRoleContext.getDebugRole();
+    if (!debugRole) {
+      return this.appendAuthFlags(profile);
+    }
+
+    return this.appendAuthFlags({
+      ...profile,
+      user: {
+        ...profile.user,
+        role: debugRole,
+      },
+    });
   }
 
   async findAll(
@@ -128,32 +172,28 @@ export class ProfilesService {
       include: { user: true },
     });
 
-    if (!profile || !profile.user) {
-      return profile;
+    if (profile) {
+      return this.applyCurrentUserProfileRole(profile);
     }
 
-    if (isProtectedAdminEmail(profile.email)) {
-      return {
-        ...profile,
-        user: {
-          ...profile.user,
-          role: Role.ADMIN,
-        },
-      };
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true },
+    });
+
+    if (!user) {
+      return null;
     }
 
-    const debugRole = this.debugRoleContext.getDebugRole();
-    if (!debugRole) {
-      return profile;
-    }
-
-    return {
-      ...profile,
-      user: {
-        ...profile.user,
-        role: debugRole,
+    const createdProfile = await this.prisma.profile.create({
+      data: {
+        email: user.email,
+        userId: user.id,
       },
-    };
+      include: { user: true },
+    });
+
+    return this.applyCurrentUserProfileRole(createdProfile);
   }
 
   async update(userId: string, data: Prisma.ProfileUpdateInput) {

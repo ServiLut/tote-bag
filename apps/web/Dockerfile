@@ -31,7 +31,7 @@ ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 # Build
-RUN pnpm run build --filter=web
+RUN pnpm --filter=web build
 
 # 3. Runner
 FROM node:22-alpine AS runner

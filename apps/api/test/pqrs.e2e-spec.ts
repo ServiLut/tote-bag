@@ -15,6 +15,7 @@ describe('PqrsController (e2e)', () => {
   const pqrsService = {
     create: jest.fn(),
     findAll: jest.fn(),
+    countByStatus: jest.fn(),
     update: jest.fn(),
   };
 
@@ -91,6 +92,25 @@ describe('PqrsController (e2e)', () => {
     expect(pqrsService.findAll).toHaveBeenCalledWith('NUEVO');
   });
 
+  it('GET /api/v1/pqrs/count devuelve conteo para el badge del dashboard', async () => {
+    pqrsService.countByStatus.mockResolvedValue({ count: 2 });
+
+    await request(getTestServer(app))
+      .get('/api/v1/pqrs/count?status=NUEVO')
+      .set('x-test-user-id', 'admin-1')
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual({ count: 2 });
+      });
+
+    expect(rolesService.hasPermission).toHaveBeenCalledWith(
+      'admin-1',
+      'orders',
+      'read',
+    );
+    expect(pqrsService.countByStatus).toHaveBeenCalledWith('NUEVO');
+  });
+
   it('GET /api/v1/pqrs permite acceso a operadores whitelisteados aunque el RBAC local aun no este sincronizado', async () => {
     rolesService.hasPermission.mockResolvedValue(false);
     pqrsService.findAll.mockResolvedValue([{ id: 'pqrs-4', status: 'NUEVO' }]);
@@ -102,6 +122,24 @@ describe('PqrsController (e2e)', () => {
       .expect(200);
 
     expect(pqrsService.findAll).toHaveBeenCalledWith(undefined);
+    expect(rolesService.hasPermission).not.toHaveBeenCalled();
+  });
+
+  it('GET /api/v1/pqrs/count evita RBAC para operadores whitelisteados', async () => {
+    rolesService.hasPermission.mockRejectedValue(new Error('rbac unavailable'));
+    pqrsService.countByStatus.mockResolvedValue({ count: 3 });
+
+    await request(getTestServer(app))
+      .get('/api/v1/pqrs/count?status=NUEVO')
+      .set('x-test-user-id', 'sync-pending-user')
+      .set('x-test-user-email', 'deybisasprilla@gmail.com')
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual({ count: 3 });
+      });
+
+    expect(rolesService.hasPermission).not.toHaveBeenCalled();
+    expect(pqrsService.countByStatus).toHaveBeenCalledWith('NUEVO');
   });
 
   it('GET /api/v1/pqrs rechaza estados invalidos para no romper la bandeja', async () => {

@@ -4,21 +4,21 @@ import { createClient } from '@/utils/supabase/server';
 import DashboardLayoutClient from '@/components/dashboard/DashboardLayoutClient';
 import {
   extractRoleFromProfilePayload,
+  extractDebugRoleAllowedFromProfilePayload,
+  getDashboardRoleForOperatorEmail,
   getApiCandidates,
   DASHBOARD_DEBUG_ROLE_COOKIE_NAME,
-  getLockedDashboardRoleForEmail,
   parseDashboardDebugRoleCookie,
   type DashboardRole,
 } from '@/lib/dashboard-auth';
 import {
-  getDashboardRoleFallback,
   resolveDashboardLayoutRedirect,
 } from '@/lib/frontend-routing';
 
-async function getCurrentRole(
+async function getCurrentRoleContext(
   accessToken: string,
   debugRole: DashboardRole | null,
-): Promise<DashboardRole | null> {
+): Promise<{ role: DashboardRole | null; debugRoleAllowed: boolean }> {
   for (const apiUrl of getApiCandidates()) {
     try {
       const res = await fetch(`${apiUrl}/profiles/me`, {
@@ -38,14 +38,17 @@ async function getCurrentRole(
       const body = await res.json();
       const role = extractRoleFromProfilePayload(body);
       if (role) {
-        return role;
+        return {
+          role,
+          debugRoleAllowed: extractDebugRoleAllowedFromProfilePayload(body),
+        };
       }
     } catch {
       continue;
     }
   }
 
-  return debugRole ?? null;
+  return { role: null, debugRoleAllowed: false };
 }
 
 export default async function DashboardLayout({
@@ -59,12 +62,9 @@ export default async function DashboardLayout({
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  const lockedRole = getLockedDashboardRoleForEmail(session?.user.email);
-  const debugRole = lockedRole
-    ? null
-    : parseDashboardDebugRoleCookie(
-        cookieStore.get(DASHBOARD_DEBUG_ROLE_COOKIE_NAME)?.value,
-      );
+  const debugRole = parseDashboardDebugRoleCookie(
+    cookieStore.get(DASHBOARD_DEBUG_ROLE_COOKIE_NAME)?.value,
+  );
 
   const sessionRedirect = resolveDashboardLayoutRedirect({
     hasSession: !!session,
@@ -79,8 +79,12 @@ export default async function DashboardLayout({
     redirect('/login');
   }
 
+  const roleContext = await getCurrentRoleContext(
+    session.access_token,
+    debugRole,
+  );
   const role =
-    lockedRole ?? (await getCurrentRole(session.access_token, debugRole)) ?? null;
+    roleContext.role ?? getDashboardRoleForOperatorEmail(session.user.email);
 
   const roleRedirect = resolveDashboardLayoutRedirect({
     hasSession: true,
@@ -91,12 +95,15 @@ export default async function DashboardLayout({
     redirect(roleRedirect);
   }
 
-  const effectiveRole = role ?? getDashboardRoleFallback();
+  if (!role) {
+    redirect('/login?redirect=/dashboard');
+  }
 
   return (
     <DashboardLayoutClient
       userEmail={session.user.email}
-      role={effectiveRole}
+      role={role}
+      debugRoleAllowed={roleContext.debugRoleAllowed}
       accessToken={session.access_token}
     >
       {children}

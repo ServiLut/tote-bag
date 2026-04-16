@@ -1,7 +1,8 @@
 import {
   canUseDashboardDebugRole,
+  extractDebugRoleAllowedFromProfilePayload,
   extractRoleFromProfilePayload,
-  getLockedDashboardRoleForEmail,
+  getDashboardRoleForOperatorEmail,
 } from '../dashboard-auth';
 
 describe('dashboard auth', () => {
@@ -20,12 +21,28 @@ describe('dashboard auth', () => {
     expect(extractRoleFromProfilePayload(null)).toBeNull();
   });
 
-  it('mantiene a la cuenta protegida como ADMIN sin selector QA', () => {
-    expect(getLockedDashboardRoleForEmail(' DeybisAsprilla@gmail.com ')).toBe(
+  it('resuelve roles operativos por correo como fallback del dashboard', () => {
+    expect(getDashboardRoleForOperatorEmail('deybisasprilla@gmail.co')).toBe(
       'ADMIN',
     );
+    expect(getDashboardRoleForOperatorEmail('admin@tote-bag.com')).toBe(
+      'MANAGER',
+    );
+    expect(getDashboardRoleForOperatorEmail('cliente@example.com')).toBeNull();
+  });
+
+  it('lee si el backend habilito el selector QA', () => {
     expect(
-      canUseDashboardDebugRole('deybisasprilla@gmail.com', 'development'),
-    ).toBe(false);
+      extractDebugRoleAllowedFromProfilePayload({
+        data: { debugRoleAllowed: true },
+      }),
+    ).toBe(true);
+    expect(extractDebugRoleAllowedFromProfilePayload({})).toBe(false);
+  });
+
+  it('deshabilita el selector QA fuera de desarrollo o sin permiso backend', () => {
+    expect(canUseDashboardDebugRole(true, 'production')).toBe(false);
+    expect(canUseDashboardDebugRole(false, 'development')).toBe(false);
+    expect(canUseDashboardDebugRole(true, 'development')).toBe(true);
   });
 });

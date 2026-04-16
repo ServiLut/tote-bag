@@ -15,6 +15,10 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Build caches and generated task logs
+.turbo/
+apps/*/.turbo/
+
 # General
 .DS_Store
 Thumbs.db

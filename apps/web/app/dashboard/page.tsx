@@ -17,6 +17,12 @@ import {
 import { ApiResponse } from '@/types/api';
 import { apiFetch } from '@/utils/api';
 import { createClient } from '@/utils/supabase/server';
+import {
+  extractRoleFromProfilePayload,
+  getDashboardRoleForOperatorEmail,
+  type DashboardRole,
+} from '@/lib/dashboard-auth';
+import { canAccessDashboardPath } from '@/lib/frontend-routing';
 
 interface DashboardStats {
   dailyProduction: number;
@@ -44,6 +50,43 @@ interface DashboardStats {
     unitsSold: number;
     imageUrl: string | null;
   } | null;
+}
+
+type DashboardStatsResult = DashboardStats & {
+  loadError?: string;
+};
+
+function getFallbackDashboardStats(loadError: string): DashboardStatsResult {
+  return {
+    loadError,
+    dailyProduction: 0,
+    lowStockCount: 0,
+    pendingQuotes: 0,
+    newPqrsCount: 0,
+    pendingPaymentOrders: 0,
+    inProductionOrders: 0,
+    pendingShipments: 0,
+    pendingPersonalizationRequests: 0,
+    inReviewPersonalizationRequests: 0,
+    approvedPersonalizationRequests: 0,
+    staleBatches: 0,
+    supplierPendingBalance: 0,
+    monthlyCashFlowNet: 0,
+    topSellingProduct: null,
+    lowestSellingProduct: null,
+  };
+}
+
+function getDashboardStatsErrorMessage(error: unknown) {
+  if (!(error instanceof Error)) {
+    return 'No fue posible cargar las metricas del dashboard.';
+  }
+
+  if (error.message.startsWith('No fue posible conectar con la API.')) {
+    return 'No fue posible conectar con la API local. Verifica que el backend este ejecutandose en el puerto 4004 y vuelve a cargar el dashboard.';
+  }
+
+  return error.message;
 }
 
 function isProductSalesBadge(
@@ -157,7 +200,7 @@ function formatCurrency(amount: number) {
   }).format(amount);
 }
 
-async function getDashboardStats() {
+async function getDashboardStats(): Promise<DashboardStatsResult> {
   const supabase = await createClient();
   const {
     data: { session },
@@ -174,69 +217,84 @@ async function getDashboardStats() {
     });
 
     if (statsRes.status === 401 || statsRes.status === 403) {
-      return {
-        loadError: 'No tienes permisos para ver el dashboard operativo.',
-        dailyProduction: 0,
-        lowStockCount: 0,
-        pendingQuotes: 0,
-        newPqrsCount: 0,
-        pendingPaymentOrders: 0,
-        inProductionOrders: 0,
-        pendingShipments: 0,
-        pendingPersonalizationRequests: 0,
-        inReviewPersonalizationRequests: 0,
-        approvedPersonalizationRequests: 0,
-        staleBatches: 0,
-        supplierPendingBalance: 0,
-        monthlyCashFlowNet: 0,
-        topSellingProduct: null,
-        lowestSellingProduct: null,
-      };
+      return getFallbackDashboardStats(
+        'No tienes permisos para ver el dashboard operativo.',
+      );
     }
 
     if (!statsRes.ok) {
-      throw new Error(`Dashboard stats request failed with status ${statsRes.status}`);
+      return getFallbackDashboardStats(
+        `No fue posible cargar las metricas del dashboard. La API respondio con estado ${statsRes.status}.`,
+      );
     }
 
-    const statsBody = (await statsRes.json()) as ApiResponse<DashboardStats> | DashboardStats;
+    const statsBody = (await statsRes.json()) as
+      | ApiResponse<DashboardStats>
+      | DashboardStats;
     const payload =
-      'data' in statsBody ? (statsBody as ApiResponse<DashboardStats>).data : statsBody;
+      'data' in statsBody
+        ? (statsBody as ApiResponse<DashboardStats>).data
+        : statsBody;
 
     const normalizedPayload = normalizeDashboardStats(payload);
 
     if (!normalizedPayload) {
-      throw new Error('Invalid dashboard stats response');
+      return getFallbackDashboardStats(
+        'La API devolvio metricas del dashboard en un formato invalido.',
+      );
     }
 
     return normalizedPayload;
   } catch (error) {
-    console.error('Error fetching dashboard stats:', error);
-    return {
-      loadError:
-        error instanceof Error
-          ? error.message
-          : 'No fue posible cargar las metricas del dashboard.',
-      dailyProduction: 0,
-      lowStockCount: 0,
-      pendingQuotes: 0,
-      newPqrsCount: 0,
-      pendingPaymentOrders: 0,
-      inProductionOrders: 0,
-      pendingShipments: 0,
-      pendingPersonalizationRequests: 0,
-      inReviewPersonalizationRequests: 0,
-      approvedPersonalizationRequests: 0,
-      staleBatches: 0,
-      supplierPendingBalance: 0,
-      monthlyCashFlowNet: 0,
-      topSellingProduct: null,
-      lowestSellingProduct: null,
-    };
+    return getFallbackDashboardStats(getDashboardStatsErrorMessage(error));
   }
 }
 
+async function getCurrentDashboardRole(): Promise<DashboardRole | null> {
+  const supabase = await createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session?.access_token) {
+    return null;
+  }
+
+  try {
+    const response = await apiFetch('/profiles/me', {
+      cache: 'no-store',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
+
+    if (response.ok) {
+      const body = await response.json();
+      return (
+        extractRoleFromProfilePayload(body) ??
+        getDashboardRoleForOperatorEmail(session.user.email)
+      );
+    }
+  } catch {
+    // The layout already protects the dashboard; keep the page resilient.
+  }
+
+  return getDashboardRoleForOperatorEmail(session.user.email);
+}
+
+function getAccessibleDashboardHref(
+  role: DashboardRole | null,
+  href: string,
+  fallback = '/dashboard',
+) {
+  return canAccessDashboardPath(role, href) ? href : fallback;
+}
+
 export default async function DashboardPage() {
-  const stats = await getDashboardStats();
+  const [stats, role] = await Promise.all([
+    getDashboardStats(),
+    getCurrentDashboardRole(),
+  ]);
   const todayLabel = new Date().toLocaleDateString('es-CO', {
     weekday: 'long',
     year: 'numeric',
@@ -264,7 +322,7 @@ export default async function DashboardPage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(107,122,74,0.16),_transparent_32%),radial-gradient(circle_at_top_right,_rgba(59,130,246,0.12),_transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,248,250,0.98))] dark:bg-[radial-gradient(circle_at_top_left,_rgba(141,161,104,0.18),_transparent_32%),radial-gradient(circle_at_top_right,_rgba(96,165,250,0.14),_transparent_28%),linear-gradient(180deg,rgba(34,34,34,0.96),rgba(28,28,28,0.96))]" />
         <div className="relative grid gap-6 p-6 md:p-8 xl:grid-cols-[minmax(0,1.35fr)_360px]">
           <div className="space-y-6">
-            {'loadError' in stats && stats.loadError ? (
+            {stats.loadError ? (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
                 {stats.loadError}
               </div>
@@ -393,7 +451,10 @@ export default async function DashboardPage() {
                 <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
                   <p className="text-sm font-medium text-base-color/70">{todayLabel}</p>
                   <Link
-                    href="/dashboard/finanzas/cash-flow"
+                    href={getAccessibleDashboardHref(
+                      role,
+                      '/dashboard/finanzas/cash-flow',
+                    )}
                     className="inline-flex items-center gap-2 text-sm font-black text-base-color transition-transform hover:translate-x-0.5"
                   >
                     Ver finanzas
@@ -508,7 +569,11 @@ export default async function DashboardPage() {
               label="Lotes estancados"
               value={String(stats.staleBatches)}
               icon={<Boxes className="h-4 w-4" />}
-              href="/dashboard/logistica/inventario"
+              href={getAccessibleDashboardHref(
+                role,
+                '/dashboard/logistica/inventario',
+                '/dashboard/products',
+              )}
               tone={stats.staleBatches > 0 ? 'warning' : 'default'}
             />
             <div className="grid gap-3 rounded-[24px] border border-theme bg-white/70 p-4 shadow-sm dark:bg-white/5">

@@ -28,13 +28,22 @@ class EnvironmentVariables {
   DATABASE_URL: string;
 
   @IsString()
+  @IsOptional()
   DIRECT_URL: string;
 
   @IsUrl({ require_tld: false })
   NEXT_PUBLIC_SUPABASE_URL: string;
 
+  @IsUrl({ require_tld: false })
+  @IsOptional()
+  SUPABASE_URL: string;
+
   @IsString()
   NEXT_PUBLIC_SUPABASE_ANON_KEY: string;
+
+  @IsString()
+  @IsOptional()
+  SUPABASE_ANON_KEY: string;
 
   @IsString()
   SERVICE_ROLE: string;
@@ -73,6 +82,18 @@ class EnvironmentVariables {
   @IsString()
   @IsOptional()
   CORS_ORIGINS: string;
+
+  @IsString()
+  @IsOptional()
+  ENABLE_SENTRY_DEBUG: string;
+
+  @IsString()
+  @IsOptional()
+  DATABASE_SSL: string;
+
+  @IsString()
+  @IsOptional()
+  DATABASE_SSL_REJECT_UNAUTHORIZED: string;
 
   @IsUrl({ require_tld: false })
   @IsOptional()

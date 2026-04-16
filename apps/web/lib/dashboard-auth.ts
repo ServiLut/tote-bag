@@ -4,13 +4,6 @@ export type DashboardRole = 'ADMIN' | 'MANAGER' | 'CUSTOMER';
 
 export const DASHBOARD_DEBUG_ROLE_COOKIE_NAME = 'dashboard_debug_role';
 export const DASHBOARD_DEBUG_ROLE_HEADER_NAME = 'x-debug-role';
-export const DASHBOARD_DEBUG_ROLE_ALLOWED_EMAILS = [
-  'deybisasprilla@gmail.com',
-  'admin@tote-bag.com',
-] as const;
-export const DASHBOARD_PROTECTED_ADMIN_EMAILS = [
-  'deybisasprilla@gmail.com',
-] as const;
 
 export const DASHBOARD_DEBUG_ROLE_OPTIONS: readonly DashboardRole[] = [
   'ADMIN',
@@ -23,6 +16,17 @@ const DASHBOARD_ROLE_LABELS: Record<DashboardRole, string> = {
   MANAGER: 'MANAGER',
   CUSTOMER: 'CUSTOMER',
 };
+
+const PROTECTED_DASHBOARD_ADMIN_EMAILS = new Set([
+  'deybisasprilla@gmail.co',
+  'deybisasprilla@gmail.com',
+]);
+
+const DASHBOARD_OPERATOR_EMAILS = new Set([
+  'admin@tote-bag.com',
+  'deybisasprilla@gmail.co',
+  'deybisasprilla@gmail.com',
+]);
 
 export function normalizeDashboardRole(role: unknown): DashboardRole | null {
   if (role === 'ADMIN' || role === 'MANAGER' || role === 'CUSTOMER') {
@@ -44,16 +48,23 @@ export function normalizeEmail(email: string | null | undefined) {
   return email?.trim().toLowerCase() || null;
 }
 
-export function getLockedDashboardRoleForEmail(
+export function getDashboardRoleForOperatorEmail(
   email: string | null | undefined,
 ): DashboardRole | null {
   const normalizedEmail = normalizeEmail(email);
-  return normalizedEmail &&
-    DASHBOARD_PROTECTED_ADMIN_EMAILS.includes(
-      normalizedEmail as (typeof DASHBOARD_PROTECTED_ADMIN_EMAILS)[number],
-    )
-    ? 'ADMIN'
-    : null;
+  if (!normalizedEmail) {
+    return null;
+  }
+
+  if (PROTECTED_DASHBOARD_ADMIN_EMAILS.has(normalizedEmail)) {
+    return 'ADMIN';
+  }
+
+  if (DASHBOARD_OPERATOR_EMAILS.has(normalizedEmail)) {
+    return 'MANAGER';
+  }
+
+  return null;
 }
 
 export function getDashboardRoleLabel(role: DashboardRole | null | undefined) {
@@ -71,21 +82,10 @@ export function isDashboardPrivilegedRole(
 }
 
 export function canUseDashboardDebugRole(
-  email: string | null | undefined,
+  debugRoleAllowed: boolean | null | undefined,
   nodeEnv: string | undefined = process.env.NODE_ENV,
 ) {
-  if (getLockedDashboardRoleForEmail(email)) {
-    return false;
-  }
-
-  if (nodeEnv === 'development') {
-    return true;
-  }
-
-  const normalizedEmail = normalizeEmail(email);
-  return !!normalizedEmail && DASHBOARD_DEBUG_ROLE_ALLOWED_EMAILS.includes(
-    normalizedEmail as (typeof DASHBOARD_DEBUG_ROLE_ALLOWED_EMAILS)[number],
-  );
+  return nodeEnv === 'development' && debugRoleAllowed === true;
 }
 
 export function getApiCandidates() {
@@ -112,5 +112,23 @@ export function extractRoleFromProfilePayload(body: unknown): DashboardRole | nu
       payload?.user?.role ??
       payload?.role ??
       null,
+  );
+}
+
+export function extractDebugRoleAllowedFromProfilePayload(body: unknown) {
+  if (!body || typeof body !== 'object') {
+    return false;
+  }
+
+  const payload = body as {
+    debugRoleAllowed?: unknown;
+    data?: {
+      debugRoleAllowed?: unknown;
+    };
+  };
+
+  return (
+    payload?.data?.debugRoleAllowed === true ||
+    payload?.debugRoleAllowed === true
   );
 }

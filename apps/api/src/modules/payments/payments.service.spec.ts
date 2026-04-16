@@ -1,4 +1,4 @@
-import { ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHash } from 'crypto';
 import { PaymentsService } from './payments.service';
@@ -217,5 +217,75 @@ describe('PaymentsService', () => {
       success: true,
       duplicate: true,
     });
+  });
+
+  it('rechaza webhook aprobado cuando el monto no coincide con la orden', async () => {
+    (configService.get as jest.Mock).mockImplementation((key: string) => {
+      if (key === 'WOMPI_EVENTS_SECRET') return 'events-secret';
+      return undefined;
+    });
+
+    const event: WompiEvent = {
+      event: 'transaction.updated',
+      data: {
+        transaction: {
+          id: 'txn-2',
+          created_at: '2026-03-24T00:00:00.000Z',
+          amount_in_cents: 1000,
+          reference: 'order-2',
+          status: 'APPROVED',
+          currency: 'COP',
+          payment_method_type: 'CARD',
+          status_message: null,
+          redirect_url: null,
+          payment_source_id: null,
+          payment_link_id: null,
+          bill_id: null,
+        },
+      },
+      signature: {
+        properties: ['transaction.id', 'transaction.status'],
+        checksum: '',
+      },
+      timestamp: 1710000000,
+      environment: 'test',
+      sent_at: '2026-03-24T00:00:00.000Z',
+    };
+
+    event.signature.checksum = buildChecksum(event, 'events-secret');
+
+    prisma.webhookEvent.findUnique.mockResolvedValueOnce(null);
+    prisma.webhookEvent.create.mockResolvedValueOnce({ id: 'webhook-2' });
+
+    const tx = {
+      order: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'order-2',
+          orderNumber: 102,
+          totalAmount: 35_000,
+          status: 'PENDIENTE_PAGO',
+        }),
+      },
+      webhookEvent: {
+        update: jest.fn().mockResolvedValue({}),
+      },
+    };
+
+    prisma.$transaction.mockImplementation(
+      (callback: (client: typeof tx) => Promise<unknown>) => callback(tx),
+    );
+
+    await expect(service.handleWompiEvent(event)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+    expect(ordersService.confirmPendingOrderPayment).not.toHaveBeenCalled();
+    expect(prisma.webhookEvent.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'webhook-2' },
+        data: expect.objectContaining({
+          status: 'FAILED',
+        }) as Record<string, unknown>,
+      }),
+    );
   });
 });

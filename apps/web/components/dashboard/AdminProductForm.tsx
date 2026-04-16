@@ -287,6 +287,11 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
       ? `$${value.toLocaleString('es-CO')}`
       : 'Se calcula al guardar';
 
+  const formatBackendWholeCurrency = (value?: number | null) =>
+    typeof value === 'number' && Number.isFinite(value)
+      ? `$${value.toLocaleString('es-CO', { maximumFractionDigits: 0 })}`
+      : 'Se calcula al guardar';
+
   const formatBackendPercentage = (value?: number | null) =>
     typeof value === 'number' && Number.isFinite(value)
       ? `${value.toFixed(2)}%`
@@ -1617,7 +1622,7 @@ const addVariant = () => {
                     <div className="space-y-1">
                       <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">Precio de venta / PVP con IVA</p>
                       <p className="text-lg font-black text-primary">
-                        {previewState?.isLoading ? 'Calculando...' : formatBackendCurrency(variant.salePrice)}
+                        {previewState?.isLoading ? 'Calculando...' : formatBackendWholeCurrency(variant.salePrice)}
                       </p>
                     </div>
                     <div className="space-y-1">

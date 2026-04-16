@@ -11,7 +11,10 @@ import Image from 'next/image';
 import { ApiResponse } from '@/types/api';
 import { useDashboardAuth } from '@/components/dashboard/DashboardAuthContext';
 import { apiFetch } from '@/utils/api';
-import { isDashboardReadOnlyRole } from '@/lib/frontend-routing';
+import {
+  canAccessDashboardPath,
+  isDashboardReadOnlyRole,
+} from '@/lib/frontend-routing';
 
 function cn(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
@@ -119,6 +122,10 @@ export default function ProductsTable() {
   const supabase = createClient();
 
   const isReadOnly = isDashboardReadOnlyRole(role);
+  const canOpenPurchaseReception = canAccessDashboardPath(
+    role,
+    '/dashboard/compras/recepcion',
+  );
 
   const fetchProducts = useCallback(async () => {
     setError(null);
@@ -287,6 +294,15 @@ export default function ProductsTable() {
     }).format(val);
   };
 
+  const formatWholeCurrency = (val: number) => {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(val);
+  };
+
   const formatOptionalCurrency = (val?: number | null) => {
     return typeof val === 'number' && Number.isFinite(val)
       ? formatCurrency(val)
@@ -390,7 +406,7 @@ export default function ProductsTable() {
                     <div className="text-[10px] text-muted font-bold">Costo inventario</div>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <div className="font-black text-primary">{formatCurrency(referenceSalePrice)}</div>
+                    <div className="font-black text-primary">{formatWholeCurrency(referenceSalePrice)}</div>
                     <div className="text-[10px] text-muted font-bold">IVA incluido</div>
                   </td>
                   <td className="px-6 py-4 text-right">
@@ -547,7 +563,7 @@ export default function ProductsTable() {
                     <p className="text-[10px] text-muted font-black uppercase tracking-widest mb-1 flex items-center gap-1.5">
                       <DollarSign className="w-3 h-3" /> Precio público
                     </p>
-                    <p className="text-xl font-black text-primary">{formatCurrency(selectedReferenceSalePrice)}</p>
+                    <p className="text-xl font-black text-primary">{formatWholeCurrency(selectedReferenceSalePrice)}</p>
                   </div>
                   <div className="p-4 bg-surface rounded-2xl border border-theme shadow-sm">
                     <p className="text-[10px] text-muted font-black uppercase tracking-widest mb-1 flex items-center gap-1.5">
@@ -599,7 +615,7 @@ export default function ProductsTable() {
                                   {formatOptionalCurrency(v.costPrice)}
                                 </td>
                                 <td className="px-4 py-2.5 text-right font-black text-primary">
-                                  {formatCurrency(v.salePrice ?? selectedReferenceSalePrice)}
+                                  {formatWholeCurrency(v.salePrice ?? selectedReferenceSalePrice)}
                                 </td>
                                 <td className="px-4 py-2.5 text-right font-black text-secondary">
                                   {formatOptionalCurrency(v.netPrice)}
@@ -612,13 +628,15 @@ export default function ProductsTable() {
                                     <span className="font-black text-primary bg-base/50 px-2 py-0.5 rounded-md border border-theme/30" title="Stock actual (solo lectura)">
                                       {v.stock}
                                     </span>
-                                    <Link
-                                      href={`/dashboard/compras/recepcion?search=${v.sku}`}
-                                      className="p-1.5 text-muted hover:text-primary hover:bg-primary/10 rounded-lg transition-all opacity-0 group-hover/row:opacity-100"
-                                      title="Ver historial de lotes"
-                                    >
-                                      <Database className="w-3.5 h-3.5" />
-                                    </Link>
+                                    {canOpenPurchaseReception ? (
+                                      <Link
+                                        href={`/dashboard/compras/recepcion?search=${v.sku}`}
+                                        className="p-1.5 text-muted hover:text-primary hover:bg-primary/10 rounded-lg transition-all opacity-0 group-hover/row:opacity-100"
+                                        title="Ver historial de lotes"
+                                      >
+                                        <Database className="w-3.5 h-3.5" />
+                                      </Link>
+                                    ) : null}
                                   </div>
                                 </td>
                               </tr>

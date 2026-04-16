@@ -25,6 +25,8 @@ type RequestWithUser = Request & {
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {
   private supabase: SupabaseClient<any, any, any, any>;
+  private readonly syncedUserCache = new Map<string, number>();
+  private readonly userSyncTtlMs = 5 * 60 * 1000;
 
   constructor(
     private readonly configService: ConfigService,
@@ -35,13 +37,15 @@ export class AuthMiddleware implements NestMiddleware {
       str?.replace(/^["']|["']$/g, '') || '';
 
     const supabaseUrl = stripQuotes(
-      this.configService.get<string>('SUPABASE_URL') ||
+      this.configService.get<string>('auth.supabaseUrl') ||
+        this.configService.get<string>('SUPABASE_URL') ||
         this.configService.get<string>('NEXT_PUBLIC_SUPABASE_URL'),
     );
     const supabaseKey = stripQuotes(
-      this.configService.get<string>('SUPABASE_ANON_KEY') ||
-        this.configService.get<string>('SERVICE_ROLE') ||
-        this.configService.get<string>('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
+      this.configService.get<string>('auth.supabaseKey') ||
+        this.configService.get<string>('SUPABASE_ANON_KEY') ||
+        this.configService.get<string>('NEXT_PUBLIC_SUPABASE_ANON_KEY') ||
+        this.configService.get<string>('SERVICE_ROLE'),
     );
 
     if (!supabaseUrl || !supabaseKey) {
@@ -63,14 +67,31 @@ export class AuthMiddleware implements NestMiddleware {
       return;
     }
 
+    const cacheKey = `${user.id}:${normalizedEmail.toLowerCase()}`;
+    const cachedUntil = this.syncedUserCache.get(cacheKey);
+    const now = Date.now();
+
+    if (cachedUntil && cachedUntil > now) {
+      return;
+    }
+
     await this.prisma.$transaction(async (tx) => {
       const existingUser = await tx.user.findUnique({
         where: { id: user.id },
-        select: { role: true },
+        select: { email: true, role: true, isActive: true },
       });
 
       const roleOverride = getOperatorRoleForEmail(normalizedEmail);
       const resolvedRole = roleOverride ?? existingUser?.role ?? Role.CUSTOMER;
+
+      if (
+        existingUser &&
+        existingUser.email === normalizedEmail &&
+        existingUser.role === resolvedRole &&
+        existingUser.isActive === true
+      ) {
+        return;
+      }
 
       await tx.user.upsert({
         where: { id: user.id },
@@ -87,6 +108,8 @@ export class AuthMiddleware implements NestMiddleware {
         },
       });
     });
+
+    this.syncedUserCache.set(cacheKey, now + this.userSyncTtlMs);
   }
 
   async use(req: RequestWithUser, _res: Response, next: NextFunction) {

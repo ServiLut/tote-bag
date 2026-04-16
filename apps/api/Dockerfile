@@ -30,7 +30,7 @@ COPY --from=base /app/out/full/ .
 RUN pnpm --filter=api exec prisma generate
 
 # Construir la API
-RUN pnpm run build --filter=api
+RUN pnpm --filter=api build
 
 # 3. Runner
 FROM node:22-alpine AS runner

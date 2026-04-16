@@ -6,6 +6,7 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
@@ -21,10 +22,17 @@ import { getOperatorRoleForEmail } from '../../common/utils/protected-admin.util
 export class AuthService {
   private readonly supabase: { auth: SupabaseClient['auth'] } | null;
 
-  constructor(private prisma: PrismaService) {
-    const supabaseUrl = process.env.SUPABASE_URL;
+  constructor(
+    private prisma: PrismaService,
+    private configService: ConfigService,
+  ) {
+    const supabaseUrl =
+      this.configService.get<string>('SUPABASE_URL') ||
+      this.configService.get<string>('NEXT_PUBLIC_SUPABASE_URL');
     const supabaseKey =
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SERVICE_ROLE;
+      this.configService.get<string>('SUPABASE_ANON_KEY') ||
+      this.configService.get<string>('NEXT_PUBLIC_SUPABASE_ANON_KEY') ||
+      this.configService.get<string>('SERVICE_ROLE');
 
     this.supabase =
       supabaseUrl && supabaseKey
@@ -216,7 +224,7 @@ export class AuthService {
     const supabaseAuth = this.getSupabaseAuth();
 
     const { error } = await supabaseAuth.resetPasswordForEmail(email, {
-      redirectTo: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password`,
+      redirectTo: `${this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000'}/reset-password`,
     });
 
     if (error) {

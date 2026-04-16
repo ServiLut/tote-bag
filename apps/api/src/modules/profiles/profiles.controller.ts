@@ -64,12 +64,14 @@ export class ProfilesController {
     const normalizedPageSize =
       typeof pageSize === 'number' && pageSize > 0 ? pageSize : undefined;
 
-    const canReadUsers = await this.rolesService.hasPermission(
-      user.id,
-      'users',
-      'read',
-    );
-    if (!canReadUsers) {
+    const [canReadUsers, canCreateOrders] = await Promise.all([
+      this.rolesService.hasPermission(user.id, 'users', 'read'),
+      this.rolesService.hasPermission(user.id, 'orders', 'create'),
+    ]);
+    const canReadCustomerProfilesForManualOrders =
+      role === 'CUSTOMER' && canCreateOrders;
+
+    if (!canReadUsers && !canReadCustomerProfilesForManualOrders) {
       throw new ForbiddenException('Insufficient permissions');
     }
 

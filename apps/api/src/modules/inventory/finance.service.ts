@@ -251,6 +251,33 @@ export class FinanceService {
     return roundMoney(this.extractCogsFromPayload(payload));
   }
 
+  private isMissingFinanceStorageError(error: unknown) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      return error.code === 'P2021' || error.code === 'P2022';
+    }
+
+    if (error instanceof Error) {
+      return /financial_transactions|FinancialTransaction|does not exist|column .* does not exist/i.test(
+        error.message,
+      );
+    }
+
+    return false;
+  }
+
+  private buildEmptyFinancialSummary() {
+    return {
+      kpis: {
+        totalIncome: 0,
+        totalOpex: 0,
+        totalPurchases: 0,
+        totalCOGS: null,
+      },
+      cashFlowChart: [],
+      recentTransactions: [],
+    };
+  }
+
   private parseFixedExpenses(dto: BreakEvenSimulationDto) {
     const fixedExpenses = dto.fixedExpenses ?? [];
     const listedExpenses = fixedExpenses.reduce(
@@ -1310,10 +1337,22 @@ export class FinanceService {
       whereClause.createdAt = createdAtFilter;
     }
 
-    const transactions = await this.prisma.financialTransaction.findMany({
-      where: whereClause,
-      orderBy: { createdAt: 'asc' },
-    });
+    let transactions: Awaited<
+      ReturnType<typeof this.prisma.financialTransaction.findMany>
+    >;
+
+    try {
+      transactions = await this.prisma.financialTransaction.findMany({
+        where: whereClause,
+        orderBy: { createdAt: 'asc' },
+      });
+    } catch (error) {
+      if (this.isMissingFinanceStorageError(error)) {
+        return [];
+      }
+
+      throw error;
+    }
 
     const flowMap: Record<
       string,
@@ -1367,58 +1406,85 @@ export class FinanceService {
       whereClause.createdAt = createdAtFilter;
     }
 
-    const [
-      income,
-      opex,
-      purchases,
-      purchaseReversals,
-      transactions,
-      recentTransactions,
-    ] = await Promise.all([
-      this.prisma.financialTransaction.aggregate({
-        where: {
-          ...whereClause,
-          type: TransactionType.INCOME,
-          category: TransactionCategory.SALE,
-        },
-        _sum: { amount: true },
-      }),
-      this.prisma.financialTransaction.aggregate({
-        where: {
-          ...whereClause,
-          type: TransactionType.EXPENSE,
-          category: {
-            in: [TransactionCategory.OPEX, TransactionCategory.PAYROLL],
+    let income: Awaited<
+      ReturnType<typeof this.prisma.financialTransaction.aggregate>
+    >;
+    let opex: Awaited<
+      ReturnType<typeof this.prisma.financialTransaction.aggregate>
+    >;
+    let purchases: Awaited<
+      ReturnType<typeof this.prisma.financialTransaction.aggregate>
+    >;
+    let purchaseReversals: Awaited<
+      ReturnType<typeof this.prisma.financialTransaction.aggregate>
+    >;
+    let transactions: Awaited<
+      ReturnType<typeof this.prisma.financialTransaction.findMany>
+    >;
+    let recentTransactions: Awaited<
+      ReturnType<typeof this.prisma.financialTransaction.findMany>
+    >;
+
+    try {
+      [
+        income,
+        opex,
+        purchases,
+        purchaseReversals,
+        transactions,
+        recentTransactions,
+      ] = await Promise.all([
+        this.prisma.financialTransaction.aggregate({
+          where: {
+            ...whereClause,
+            type: TransactionType.INCOME,
+            category: TransactionCategory.SALE,
           },
-        },
-        _sum: { amount: true },
-      }),
-      this.prisma.financialTransaction.aggregate({
-        where: {
-          ...whereClause,
-          type: TransactionType.EXPENSE,
-          category: TransactionCategory.PURCHASE,
-        },
-        _sum: { amount: true },
-      }),
-      this.prisma.financialTransaction.aggregate({
-        where: {
-          ...whereClause,
-          type: TransactionType.INCOME,
-          category: TransactionCategory.PURCHASE,
-        },
-        _sum: { amount: true },
-      }),
-      this.prisma.financialTransaction.findMany({
-        where: whereClause,
-        orderBy: { createdAt: 'asc' },
-      }),
-      this.prisma.financialTransaction.findMany({
-        where: whereClause,
-        orderBy: { createdAt: 'desc' },
-        take: 10,
-      }),
-    ]);
+          _sum: { amount: true },
+        }),
+        this.prisma.financialTransaction.aggregate({
+          where: {
+            ...whereClause,
+            type: TransactionType.EXPENSE,
+            category: {
+              in: [TransactionCategory.OPEX, TransactionCategory.PAYROLL],
+            },
+          },
+          _sum: { amount: true },
+        }),
+        this.prisma.financialTransaction.aggregate({
+          where: {
+            ...whereClause,
+            type: TransactionType.EXPENSE,
+            category: TransactionCategory.PURCHASE,
+          },
+          _sum: { amount: true },
+        }),
+        this.prisma.financialTransaction.aggregate({
+          where: {
+            ...whereClause,
+            type: TransactionType.INCOME,
+            category: TransactionCategory.PURCHASE,
+          },
+          _sum: { amount: true },
+        }),
+        this.prisma.financialTransaction.findMany({
+          where: whereClause,
+          orderBy: { createdAt: 'asc' },
+        }),
+        this.prisma.financialTransaction.findMany({
+          where: whereClause,
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        }),
+      ]);
+    } catch (error) {
+      if (this.isMissingFinanceStorageError(error)) {
+        return this.buildEmptyFinancialSummary();
+      }
+
+      throw error;
+    }
 
     let totalCOGS: number | null = null;
 
@@ -1460,10 +1526,10 @@ export class FinanceService {
 
     return {
       kpis: {
-        totalIncome: this.toMoneyNumber(income._sum.amount),
-        totalOpex: this.toMoneyNumber(opex._sum.amount),
+        totalIncome: this.toMoneyNumber(income._sum?.amount),
+        totalOpex: this.toMoneyNumber(opex._sum?.amount),
         totalPurchases:
-          this.toMoneyNumber(purchases._sum.amount) -
+          this.toMoneyNumber(purchases._sum?.amount) -
           this.toMoneyNumber(purchaseReversals?._sum?.amount),
         totalCOGS,
       },
@@ -1561,58 +1627,85 @@ export class FinanceService {
       whereClause.createdAt = createdAtFilter;
     }
 
-    const [
-      income,
-      opex,
-      purchases,
-      purchaseReversals,
-      transactions,
-      recentTransactions,
-    ] = await Promise.all([
-      this.prisma.financialTransaction.aggregate({
-        where: {
-          ...whereClause,
-          type: TransactionType.INCOME,
-          category: TransactionCategory.SALE,
-        },
-        _sum: { amount: true },
-      }),
-      this.prisma.financialTransaction.aggregate({
-        where: {
-          ...whereClause,
-          type: TransactionType.EXPENSE,
-          category: {
-            in: [TransactionCategory.OPEX, TransactionCategory.PAYROLL],
+    let income: Awaited<
+      ReturnType<typeof this.prisma.financialTransaction.aggregate>
+    >;
+    let opex: Awaited<
+      ReturnType<typeof this.prisma.financialTransaction.aggregate>
+    >;
+    let purchases: Awaited<
+      ReturnType<typeof this.prisma.financialTransaction.aggregate>
+    >;
+    let purchaseReversals: Awaited<
+      ReturnType<typeof this.prisma.financialTransaction.aggregate>
+    >;
+    let transactions: Awaited<
+      ReturnType<typeof this.prisma.financialTransaction.findMany>
+    >;
+    let recentTransactions: Awaited<
+      ReturnType<typeof this.prisma.financialTransaction.findMany>
+    >;
+
+    try {
+      [
+        income,
+        opex,
+        purchases,
+        purchaseReversals,
+        transactions,
+        recentTransactions,
+      ] = await Promise.all([
+        this.prisma.financialTransaction.aggregate({
+          where: {
+            ...whereClause,
+            type: TransactionType.INCOME,
+            category: TransactionCategory.SALE,
           },
-        },
-        _sum: { amount: true },
-      }),
-      this.prisma.financialTransaction.aggregate({
-        where: {
-          ...whereClause,
-          type: TransactionType.EXPENSE,
-          category: TransactionCategory.PURCHASE,
-        },
-        _sum: { amount: true },
-      }),
-      this.prisma.financialTransaction.aggregate({
-        where: {
-          ...whereClause,
-          type: TransactionType.INCOME,
-          category: TransactionCategory.PURCHASE,
-        },
-        _sum: { amount: true },
-      }),
-      this.prisma.financialTransaction.findMany({
-        where: whereClause,
-        orderBy: { createdAt: 'asc' },
-      }),
-      this.prisma.financialTransaction.findMany({
-        where: whereClause,
-        orderBy: { createdAt: 'desc' },
-        take: 10,
-      }),
-    ]);
+          _sum: { amount: true },
+        }),
+        this.prisma.financialTransaction.aggregate({
+          where: {
+            ...whereClause,
+            type: TransactionType.EXPENSE,
+            category: {
+              in: [TransactionCategory.OPEX, TransactionCategory.PAYROLL],
+            },
+          },
+          _sum: { amount: true },
+        }),
+        this.prisma.financialTransaction.aggregate({
+          where: {
+            ...whereClause,
+            type: TransactionType.EXPENSE,
+            category: TransactionCategory.PURCHASE,
+          },
+          _sum: { amount: true },
+        }),
+        this.prisma.financialTransaction.aggregate({
+          where: {
+            ...whereClause,
+            type: TransactionType.INCOME,
+            category: TransactionCategory.PURCHASE,
+          },
+          _sum: { amount: true },
+        }),
+        this.prisma.financialTransaction.findMany({
+          where: whereClause,
+          orderBy: { createdAt: 'asc' },
+        }),
+        this.prisma.financialTransaction.findMany({
+          where: whereClause,
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        }),
+      ]);
+    } catch (error) {
+      if (this.isMissingFinanceStorageError(error)) {
+        return this.buildEmptyFinancialSummary();
+      }
+
+      throw error;
+    }
 
     let totalCOGS: number | null = null;
 
@@ -1656,10 +1749,10 @@ export class FinanceService {
 
     return {
       kpis: {
-        totalIncome: this.toMoneyNumber(income._sum.amount),
-        totalOpex: this.toMoneyNumber(opex._sum.amount),
+        totalIncome: this.toMoneyNumber(income._sum?.amount),
+        totalOpex: this.toMoneyNumber(opex._sum?.amount),
         totalPurchases:
-          this.toMoneyNumber(purchases._sum.amount) -
+          this.toMoneyNumber(purchases._sum?.amount) -
           this.toMoneyNumber(purchaseReversals?._sum?.amount),
         totalCOGS,
       },

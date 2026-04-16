@@ -2,17 +2,20 @@
 
 import { Menu, Sun, Moon, Bell, PanelLeftClose, PanelLeftOpen, Search, UserCircle } from 'lucide-react';
 import { useState, useEffect, useSyncExternalStore } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useTheme } from 'next-themes';
 import Sidebar from '@/components/dashboard/Sidebar';
 import { DashboardAuthProvider, type DashboardRole } from '@/components/dashboard/DashboardAuthContext';
 import { DashboardRoleSwitcher } from '@/components/dashboard/DashboardRoleSwitcher';
 import { DASHBOARD_DEBUG_ROLE_COOKIE_NAME } from '@/lib/dashboard-auth';
+import { resolveDashboardLayoutRedirect } from '@/lib/frontend-routing';
 
 interface DashboardLayoutClientProps {
   children: React.ReactNode;
   userEmail?: string | null;
   role: DashboardRole;
+  debugRoleAllowed: boolean;
   accessToken: string | null;
 }
 
@@ -20,8 +23,11 @@ export default function DashboardLayoutClient({
   children,
   userEmail,
   role,
+  debugRoleAllowed,
   accessToken,
 }: DashboardLayoutClientProps) {
+  const pathname = usePathname();
+  const router = useRouter();
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -32,6 +38,17 @@ export default function DashboardLayoutClient({
   const [hasLoadedSidebarPreference, setHasLoadedSidebarPreference] = useState(false);
   const supabase = createClient();
   const { theme, setTheme } = useTheme();
+  const accessRedirect = resolveDashboardLayoutRedirect({
+    hasSession: !!accessToken,
+    role,
+    pathname,
+  });
+
+  useEffect(() => {
+    if (accessRedirect) {
+      router.replace(accessRedirect);
+    }
+  }, [accessRedirect, router]);
 
   useEffect(() => {
     if (!mounted) {
@@ -88,6 +105,10 @@ export default function DashboardLayoutClient({
       window.location.replace('/login');
     }
   };
+
+  if (accessRedirect) {
+    return null;
+  }
 
   return (
     <DashboardAuthProvider role={role} accessToken={accessToken}>
@@ -157,7 +178,7 @@ export default function DashboardLayoutClient({
                   <DashboardRoleSwitcher
                     role={role}
                     accessToken={accessToken}
-                    email={userEmail}
+                    debugRoleAllowed={debugRoleAllowed}
                   />
                 </div>
               </div>

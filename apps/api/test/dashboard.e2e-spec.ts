@@ -2,6 +2,8 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { DashboardController } from '../src/modules/dashboard/dashboard.controller';
 import { DashboardService } from '../src/modules/dashboard/dashboard.service';
+import { Role } from '../src/generated/client/enums';
+import { RolesService } from '../src/modules/roles/roles.service';
 import {
   closeTestApp,
   createTestApp,
@@ -13,6 +15,9 @@ describe('DashboardController (e2e)', () => {
 
   const dashboardService = {
     getStats: jest.fn(),
+  };
+  const rolesService = {
+    getEffectiveRole: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -34,6 +39,9 @@ describe('DashboardController (e2e)', () => {
       topSellingProduct: null,
       lowestSellingProduct: null,
     });
+    rolesService.getEffectiveRole.mockResolvedValue({
+      effectiveRole: Role.ADMIN,
+    });
 
     const setup = await createTestApp({
       controllers: [DashboardController],
@@ -41,6 +49,10 @@ describe('DashboardController (e2e)', () => {
         {
           provide: DashboardService,
           useValue: dashboardService,
+        },
+        {
+          provide: RolesService,
+          useValue: rolesService,
         },
       ],
     });
@@ -55,16 +67,37 @@ describe('DashboardController (e2e)', () => {
   it('GET /api/v1/dashboard/stats usa threshold por defecto', async () => {
     await request(getTestServer(app))
       .get('/api/v1/dashboard/stats')
+      .set('x-test-user-id', 'admin-1')
       .expect(200);
 
-    expect(dashboardService.getStats).toHaveBeenCalledWith(10);
+    expect(dashboardService.getStats).toHaveBeenCalledWith(10, {
+      includeAdminMetrics: true,
+    });
   });
 
   it('GET /api/v1/dashboard/stats hace fallback a 10 si query no es numerica', async () => {
     await request(getTestServer(app))
       .get('/api/v1/dashboard/stats?lowStockThreshold=abc')
+      .set('x-test-user-id', 'admin-1')
       .expect(200);
 
-    expect(dashboardService.getStats).toHaveBeenCalledWith(10);
+    expect(dashboardService.getStats).toHaveBeenCalledWith(10, {
+      includeAdminMetrics: true,
+    });
+  });
+
+  it('GET /api/v1/dashboard/stats no incluye metricas admin para manager', async () => {
+    rolesService.getEffectiveRole.mockResolvedValueOnce({
+      effectiveRole: Role.MANAGER,
+    });
+
+    await request(getTestServer(app))
+      .get('/api/v1/dashboard/stats')
+      .set('x-test-user-id', 'manager-1')
+      .expect(200);
+
+    expect(dashboardService.getStats).toHaveBeenCalledWith(10, {
+      includeAdminMetrics: false,
+    });
   });
 });

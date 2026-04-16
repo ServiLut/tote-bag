@@ -130,7 +130,7 @@ export default function NewManualOrderPage() {
       };
 
       const [profilesRes, productsRes, providersRes, departmentsRes] = await Promise.all([
-        apiFetch('/profiles', {
+        apiFetch('/profiles?role=CUSTOMER', {
           headers: authHeaders,
         }),
         apiFetch('/catalog/admin/products', {

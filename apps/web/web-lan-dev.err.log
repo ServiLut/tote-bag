@@ -1,0 +1,67 @@
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+[browser] Error fetching products: Error: Failed to fetch products (502)
+    at ProductsTable.useCallback[fetchProducts] (components/dashboard/ProductsTable.tsx:151:26)
+  149 |       }
+  150 |
+> 151 |       if (!res.ok) throw new Error(`Failed to fetch products (${res.status})`);
+      |                          ^
+  152 |
+  153 |       const responseBody: ApiResponse<Product[]> = await res.json();
+  154 |       setProducts(responseBody.data); (components/dashboard/ProductsTable.tsx:156:15)
+[browser] Error fetching products: Error: Failed to fetch products (502)
+    at ProductsTable.useCallback[fetchProducts] (components/dashboard/ProductsTable.tsx:151:26)
+  149 |       }
+  150 |
+> 151 |       if (!res.ok) throw new Error(`Failed to fetch products (${res.status})`);
+      |                          ^
+  152 |
+  153 |       const responseBody: ApiResponse<Product[]> = await res.json();
+  154 |       setProducts(responseBody.data); (components/dashboard/ProductsTable.tsx:156:15)
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+⚠ Blocked cross-origin request to Next.js dev resource /_next/webpack-hmr from "192.168.1.54".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['192.168.1.54'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+[browser] Error: Error al cargar productos
+    at Home.useEffect.fetchProducts (app/(store)/page.tsx:27:28)
+  25 |       try {
+  26 |         const res = await apiFetch('/catalog/products');
+> 27 |         if (!res.ok) throw new Error(t('home_load_error'));
+     |                            ^
+  28 |         const responseBody: ApiResponse<Product[]> = await res.json();
+  29 |         setProducts(responseBody.data);
+  30 |       } catch (err) { (app/(store)
+[browser] Image with src "https://supabase.servilutioncrm.cloud/storage/v1/object/public/product-images/products/1776268485392-nsibm.jfif" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[browser] Image with src "https://supabase.servilutioncrm.cloud/storage/v1/object/public/product-images/products/1775738274581-liccap.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[browser] Image with src "https://supabase.servilutioncrm.cloud/storage/v1/object/public/product-images/products/1775738274582-82icdq.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[browser] Image with src "https://supabase.servilutioncrm.cloud/storage/v1/object/public/product-images/products/1775738274582-0ozfk.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[browser] Image with src "https://supabase.servilutioncrm.cloud/storage/v1/object/public/product-images/products/1776268485392-nsibm.jfif" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[browser] Image with src "https://supabase.servilutioncrm.cloud/storage/v1/object/public/product-images/products/1776268493436-rydf.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[browser] Image with src "https://supabase.servilutioncrm.cloud/storage/v1/object/public/product-images/products/1776268493436-qj94j.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[browser] Image with src "https://supabase.servilutioncrm.cloud/storage/v1/object/public/product-images/variants/1776269076299-8jvuh.jfif" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.

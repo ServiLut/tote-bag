@@ -99,6 +99,23 @@ export class PaymentsService {
     ].join(':');
   }
 
+  private getOrderAmountInCents(totalAmount: number) {
+    return Math.round(totalAmount * 100);
+  }
+
+  private assertWompiAmountMatchesOrder(
+    transactionAmountInCents: number,
+    order: { id: string; totalAmount: number },
+  ) {
+    const expectedAmountInCents = this.getOrderAmountInCents(order.totalAmount);
+
+    if (transactionAmountInCents !== expectedAmountInCents) {
+      throw new BadRequestException(
+        `Wompi amount mismatch for order ${order.id}`,
+      );
+    }
+  }
+
   validateWompiEventSignature(event: WompiEvent, checksumHeader?: string) {
     const eventsSecret = this.getWompiEventsSecret();
 
@@ -203,7 +220,13 @@ export class PaymentsService {
   async handleWompiEvent(event: WompiEvent, checksumHeader?: string) {
     const checksum = this.validateWompiEventSignature(event, checksumHeader);
     const { event: eventType, data } = event;
-    const { id: transactionId, reference, status, currency } = data.transaction;
+    const {
+      id: transactionId,
+      reference,
+      status,
+      currency,
+      amount_in_cents: amountInCents,
+    } = data.transaction;
     const webhookEventKey = this.buildWebhookEventKey(event);
 
     if (currency !== 'COP') {
@@ -318,6 +341,8 @@ export class PaymentsService {
           });
           return;
         }
+
+        this.assertWompiAmountMatchesOrder(amountInCents, existingOrder);
 
         const order =
           newStatus === OrderStatus.PAGADA

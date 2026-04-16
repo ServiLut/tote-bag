@@ -17,6 +17,10 @@ export function getApiCandidates() {
   const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
 
   if (configuredApiUrl) {
+    if (process.env.NODE_ENV === 'production') {
+      return [configuredApiUrl];
+    }
+
     return Array.from(
       new Set([configuredApiUrl, ...LOCAL_API_CANDIDATES]),
     ) as string[];

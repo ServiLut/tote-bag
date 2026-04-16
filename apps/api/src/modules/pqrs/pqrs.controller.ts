@@ -43,11 +43,26 @@ export class PqrsController {
     return this.pqrsService.create(dto);
   }
 
+  @Get('count')
+  async count(@Req() req: RequestWithUser, @Query() query: FindPqrsDto) {
+    await this.ensureReadAccess(req);
+    return this.pqrsService.countByStatus(query.status);
+  }
+
   @Get()
   async findAll(@Req() req: RequestWithUser, @Query() query: FindPqrsDto) {
+    await this.ensureReadAccess(req);
+    return this.pqrsService.findAll(query.status);
+  }
+
+  private async ensureReadAccess(req: RequestWithUser) {
     const user = req.user;
     if (!user?.id) {
       throw new UnauthorizedException();
+    }
+
+    if (this.isWhitelistedOperator(req)) {
+      return;
     }
 
     const [canReadOrders, canUpdateOrders] = await Promise.all([
@@ -55,15 +70,9 @@ export class PqrsController {
       this.rolesService.hasPermission(user.id, 'orders', 'update'),
     ]);
 
-    if (
-      !canReadOrders &&
-      !canUpdateOrders &&
-      !this.isWhitelistedOperator(req)
-    ) {
+    if (!canReadOrders && !canUpdateOrders) {
       throw new ForbiddenException('Insufficient permissions');
     }
-
-    return this.pqrsService.findAll(query.status);
   }
 
   @Patch(':id')
@@ -77,13 +86,17 @@ export class PqrsController {
       throw new UnauthorizedException();
     }
 
+    if (this.isWhitelistedOperator(req)) {
+      return this.pqrsService.update(id, dto);
+    }
+
     const canUpdateOrders = await this.rolesService.hasPermission(
       user.id,
       'orders',
       'update',
     );
 
-    if (!canUpdateOrders && !this.isWhitelistedOperator(req)) {
+    if (!canUpdateOrders) {
       throw new ForbiddenException('Insufficient permissions');
     }
 

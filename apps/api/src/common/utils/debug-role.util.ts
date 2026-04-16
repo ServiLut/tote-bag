@@ -3,6 +3,7 @@ import { isProtectedAdminEmail } from './protected-admin.util';
 
 export const DEBUG_ROLE_HEADER = 'x-debug-role';
 export const DEBUG_ROLE_ALLOWED_EMAILS = new Set([
+  'deybisasprilla@gmail.co',
   'deybisasprilla@gmail.com',
   'admin@tote-bag.com',
 ]);
@@ -32,10 +33,5 @@ export function canUseDebugRole(email?: string | null, nodeEnv?: string) {
     return false;
   }
 
-  if (nodeEnv === 'development') {
-    return true;
-  }
-
-  const normalizedEmail = email?.trim().toLowerCase();
-  return !!normalizedEmail && DEBUG_ROLE_ALLOWED_EMAILS.has(normalizedEmail);
+  return nodeEnv === 'development';
 }

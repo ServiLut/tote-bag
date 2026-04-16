@@ -42,6 +42,7 @@ export class PersonalizationsController {
   @Get()
   @Header('Deprecation', 'true')
   @Header('Sunset', 'Tue, 30 Jun 2026 23:59:59 GMT')
+  @RequirePermissions({ resource: 'personalizations', action: 'manage' })
   async findAll() {
     return this.personalizationsService.findAll();
   }
@@ -49,6 +50,7 @@ export class PersonalizationsController {
   @Post()
   @Header('Deprecation', 'true')
   @Header('Sunset', 'Tue, 30 Jun 2026 23:59:59 GMT')
+  @RequirePermissions({ resource: 'personalizations', action: 'manage' })
   async create(@Body() data: CreatePersonalizationDto) {
     return this.personalizationsService.create(data);
   }
@@ -124,6 +126,7 @@ export class PersonalizationsController {
   @Put(':id')
   @Header('Deprecation', 'true')
   @Header('Sunset', 'Tue, 30 Jun 2026 23:59:59 GMT')
+  @RequirePermissions({ resource: 'personalizations', action: 'manage' })
   async update(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body() data: UpdatePersonalizationDto,
@@ -134,6 +137,7 @@ export class PersonalizationsController {
   @Delete(':id')
   @Header('Deprecation', 'true')
   @Header('Sunset', 'Tue, 30 Jun 2026 23:59:59 GMT')
+  @RequirePermissions({ resource: 'personalizations', action: 'manage' })
   async remove(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
     return this.personalizationsService.remove(id);
   }

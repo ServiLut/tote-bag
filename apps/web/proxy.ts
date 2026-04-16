@@ -3,15 +3,13 @@ import { createServerClient } from '@supabase/ssr';
 import {
   extractRoleFromProfilePayload,
   DASHBOARD_DEBUG_ROLE_COOKIE_NAME,
+  DASHBOARD_DEBUG_ROLE_HEADER_NAME,
   getApiCandidates,
   parseDashboardDebugRoleCookie,
   type DashboardRole,
 } from '@/lib/dashboard-auth';
 import { tryGetSupabaseEnv } from '@/lib/env';
-import {
-  getDashboardRoleFallback,
-  resolveProxyAccess,
-} from '@/lib/frontend-routing';
+import { resolveProxyAccess } from '@/lib/frontend-routing';
 
 async function getRoleFromApi(
   accessToken: string,
@@ -24,7 +22,7 @@ async function getRoleFromApi(
           Authorization: `Bearer ${accessToken}`,
           ...(debugRole
             ? {
-                'x-debug-role': debugRole,
+                [DASHBOARD_DEBUG_ROLE_HEADER_NAME]: debugRole,
               }
             : {}),
         },
@@ -43,7 +41,7 @@ async function getRoleFromApi(
     }
   }
 
-  return debugRole ?? null;
+  return null;
 }
 
 export async function proxy(request: NextRequest) {
@@ -58,7 +56,7 @@ export async function proxy(request: NextRequest) {
     const redirectPath = resolveProxyAccess({
       pathname: request.nextUrl.pathname,
       hasUser: false,
-      role: getDashboardRoleFallback(),
+      role: null,
       requestedRedirect: request.nextUrl.searchParams.get('redirect'),
     });
 

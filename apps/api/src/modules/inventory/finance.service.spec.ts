@@ -248,6 +248,53 @@ describe('FinanceService PDF rendering', () => {
     ]);
   });
 
+  it('returns an empty summary when financial transaction storage is missing', async () => {
+    const missingTableError = new Prisma.PrismaClientKnownRequestError(
+      'financial_transactions table missing',
+      {
+        code: 'P2021',
+        clientVersion: 'test',
+      },
+    );
+    const service = new FinanceService({
+      financialTransaction: {
+        aggregate: jest.fn().mockRejectedValue(missingTableError),
+        findMany: jest.fn(),
+      },
+      auditLog: {
+        findMany: jest.fn(),
+      },
+    } as never);
+
+    await expect(service.getFinancialSummaryLocalized()).resolves.toEqual({
+      kpis: {
+        totalIncome: 0,
+        totalOpex: 0,
+        totalPurchases: 0,
+        totalCOGS: null,
+      },
+      cashFlowChart: [],
+      recentTransactions: [],
+    });
+  });
+
+  it('returns empty cash flow data when financial transaction storage is missing', async () => {
+    const missingColumnError = new Prisma.PrismaClientKnownRequestError(
+      'financial_transactions supplier_id column missing',
+      {
+        code: 'P2022',
+        clientVersion: 'test',
+      },
+    );
+    const service = new FinanceService({
+      financialTransaction: {
+        findMany: jest.fn().mockRejectedValue(missingColumnError),
+      },
+    } as never);
+
+    await expect(service.getCashFlowData('monthly')).resolves.toEqual([]);
+  });
+
   it('rejects inverted date ranges before querying Prisma', async () => {
     const service = new FinanceService({
       financialTransaction: {

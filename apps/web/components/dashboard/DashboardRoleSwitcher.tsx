@@ -25,18 +25,18 @@ function setSessionCookie(name: string, value: string) {
 interface DashboardRoleSwitcherProps {
   role: DashboardRole;
   accessToken: string | null;
-  email?: string | null;
+  debugRoleAllowed: boolean;
 }
 
 export function DashboardRoleSwitcher({
   role,
   accessToken,
-  email,
+  debugRoleAllowed,
 }: DashboardRoleSwitcherProps) {
   const [isSaving, setIsSaving] = useState(false);
   const supabase = createClient();
 
-  if (!canUseDashboardDebugRole(email)) {
+  if (!canUseDashboardDebugRole(debugRoleAllowed)) {
     return null;
   }
 

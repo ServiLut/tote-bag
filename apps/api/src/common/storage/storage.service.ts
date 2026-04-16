@@ -23,6 +23,7 @@ export class StorageService implements OnModuleInit, OnModuleDestroy {
     private readonly prisma: PrismaService,
   ) {
     const supabaseUrl =
+      this.configService.get<string>('auth.supabaseUrl') ||
       this.configService.get<string>('SUPABASE_URL') ||
       this.configService.get<string>('NEXT_PUBLIC_SUPABASE_URL');
     const supabaseKey =

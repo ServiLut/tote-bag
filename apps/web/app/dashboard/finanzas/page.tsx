@@ -357,17 +357,20 @@ export default function FinanceDashboardPage() {
         if (!active) return;
 
         if (!summaryRes.ok || !previewRes.ok || !receivablesRes.ok) {
-          const firstErrorResponse = [
-            summaryRes,
-            previewRes,
-            receivablesRes,
-          ].find((response) => !response.ok)!;
+          const firstError = [
+            { label: 'Resumen financiero', response: summaryRes },
+            { label: 'Reporte financiero', response: previewRes },
+            { label: 'Cuentas por cobrar', response: receivablesRes },
+          ].find(({ response }) => !response.ok)!;
+          const firstErrorResponse = firstError.response;
           const errorText = await firstErrorResponse.text();
+          const requestMessage = parseRequestErrorMessage(
+            errorText,
+            'No fue posible cargar el dashboard financiero.',
+          );
+
           throw new Error(
-            parseRequestErrorMessage(
-              errorText,
-              'No fue posible cargar el dashboard financiero.',
-            ),
+            `${firstError.label}: ${requestMessage} (${firstErrorResponse.status})`,
           );
         }
 

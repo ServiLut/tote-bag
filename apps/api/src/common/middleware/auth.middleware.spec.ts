@@ -43,8 +43,11 @@ describe('AuthMiddleware', () => {
     ),
   };
 
+  const debugRoleRun = jest.fn(
+    (_debugRole: Role | null, callback: () => void) => callback(),
+  );
   const debugRoleContext = {
-    run: jest.fn((_debugRole: Role | null, callback: () => void) => callback()),
+    run: debugRoleRun,
   } as unknown as DebugRoleContextService;
 
   let middleware: AuthMiddleware;
@@ -134,7 +137,7 @@ describe('AuthMiddleware', () => {
       data: {
         user: {
           id: 'user-3',
-          email: 'deybisasprilla@gmail.com',
+          email: 'deybisasprilla@gmail.co',
         },
       },
       error: null,
@@ -162,10 +165,36 @@ describe('AuthMiddleware', () => {
     expect(upsertArg).toBeDefined();
     expect(upsertArg.update.role).toBe(Role.ADMIN);
     expect(upsertArg.create.role).toBe(Role.ADMIN);
-    expect(debugRoleContext.run).toHaveBeenCalledWith(
-      null,
-      expect.any(Function),
-    );
+    expect(debugRoleRun).toHaveBeenCalledWith(null, expect.any(Function));
+    expect(next).toHaveBeenCalled();
+  });
+
+  it('ignora x-debug-role fuera de development', async () => {
+    getUserMock.mockResolvedValue({
+      data: {
+        user: {
+          id: 'user-4',
+          email: 'admin@tote-bag.com',
+        },
+      },
+      error: null,
+    });
+    tx.user.findUnique.mockResolvedValue({ role: Role.MANAGER });
+    tx.user.upsert.mockResolvedValue({});
+
+    const req = {
+      method: 'GET',
+      url: '/profiles/me',
+      headers: {
+        authorization: 'Bearer valid-token',
+        'x-debug-role': Role.ADMIN,
+      },
+    } as unknown as Request;
+    const next = jest.fn() as NextFunction;
+
+    await middleware.use(req, {} as Response, next);
+
+    expect(debugRoleRun).toHaveBeenCalledWith(null, expect.any(Function));
     expect(next).toHaveBeenCalled();
   });
 });

@@ -7,14 +7,16 @@ export declare function Popover({ open: controlledOpen, onOpenChange, children, 
 export declare function PopoverTrigger({ children, }: {
     children: React.ReactElement<{
         onClick?: (event: React.MouseEvent) => void;
+        ref?: React.Ref<HTMLElement>;
     }>;
 }): React.ReactElement<{
     onClick?: (event: React.MouseEvent) => void;
+    ref?: React.Ref<HTMLElement>;
 }, string | React.JSXElementConstructor<any>>;
 export declare function PopoverContent({ children, className, align, side, }: {
     children: React.ReactNode;
     className?: string;
     align?: "start" | "center" | "end";
     side?: "top" | "bottom";
-}): import("react/jsx-runtime").JSX.Element | null;
+}): React.ReactPortal | null;
 //# sourceMappingURL=Popover.d.ts.map

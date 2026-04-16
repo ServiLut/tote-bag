@@ -37,6 +37,33 @@ describe('ProfilesController', () => {
     expect(profilesService.findAll).not.toHaveBeenCalled();
   });
 
+  it('allows order creators to list customer profiles for manual orders', async () => {
+    rolesService.hasPermission.mockImplementation(
+      (_userId: string, resource: string, action: string) =>
+        Promise.resolve(resource === 'orders' && action === 'create'),
+    );
+    profilesService.findAll.mockResolvedValue([]);
+
+    await controller.findAll(
+      { user: { id: 'manager-1' } } as never,
+      'CUSTOMER',
+      undefined,
+      undefined,
+      undefined,
+      0,
+      0,
+    );
+
+    expect(profilesService.findAll).toHaveBeenCalledWith({
+      role: 'CUSTOMER',
+      department: undefined,
+      municipality: undefined,
+      search: undefined,
+      page: undefined,
+      pageSize: undefined,
+    });
+  });
+
   it('forwards paginated filters when the actor can read users', async () => {
     rolesService.hasPermission.mockResolvedValue(true);
     profilesService.findAll.mockResolvedValue({ items: [], pagination: {} });
