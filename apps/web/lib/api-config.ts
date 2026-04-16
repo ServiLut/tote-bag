@@ -13,6 +13,42 @@ const LOCAL_API_CANDIDATES = [
 
 const RETRYABLE_API_RESPONSE_STATUSES = new Set([502, 503, 504]);
 
+function isPrivateIpv4(hostname: string) {
+  const parts = hostname.split('.').map((part) => Number(part));
+  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part))) {
+    return false;
+  }
+
+  const [first, second] = parts;
+  return (
+    first === 10 ||
+    (first === 172 && second >= 16 && second <= 31) ||
+    (first === 192 && second === 168)
+  );
+}
+
+function getLoopbackCandidatesForConfiguredUrl(configuredApiUrl: string) {
+  try {
+    const url = new URL(configuredApiUrl);
+    if (
+      url.hostname === 'localhost' ||
+      url.hostname === '127.0.0.1' ||
+      !isPrivateIpv4(url.hostname)
+    ) {
+      return [];
+    }
+
+    const port = url.port ? `:${url.port}` : '';
+    const path = url.pathname.replace(/\/$/, '');
+    return [
+      `${url.protocol}//localhost${port}${path}`,
+      `${url.protocol}//127.0.0.1${port}${path}`,
+    ];
+  } catch {
+    return [];
+  }
+}
+
 export function getApiCandidates() {
   const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
 
@@ -22,7 +58,11 @@ export function getApiCandidates() {
     }
 
     return Array.from(
-      new Set([configuredApiUrl, ...LOCAL_API_CANDIDATES]),
+      new Set([
+        ...getLoopbackCandidatesForConfiguredUrl(configuredApiUrl),
+        configuredApiUrl,
+        ...LOCAL_API_CANDIDATES,
+      ]),
     ) as string[];
   }
 

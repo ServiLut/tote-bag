@@ -1604,3 +1604,58 @@ RolesService: shipping permission check user=25390d0e-9744-4ec3-85f4-6e926f5d0a5
 [Nest] 2026-04-16T16:06:53.236Z [32minfo[39m [HTTP]  +215ms
 [Nest] 2026-04-16T16:07:07.984Z [32minfo[39m [HTTP]  +15s
 [Nest] 2026-04-16T16:07:08.192Z [32minfo[39m [HTTP]  +208ms
+[Nest] 2026-04-16T16:07:22.983Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-16T16:07:23.212Z [32minfo[39m [HTTP]  +229ms
+[Nest] 2026-04-16T16:07:37.889Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-16T16:07:38.072Z [32minfo[39m [HTTP]  +183ms
+[Nest] 2026-04-16T16:07:52.904Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-16T16:07:53.105Z [32minfo[39m [HTTP]  +201ms
+[Nest] 2026-04-16T16:08:07.942Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-16T16:08:08.138Z [32minfo[39m [HTTP]  +196ms
+[Nest] 2026-04-16T16:08:23.031Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-16T16:08:23.239Z [32minfo[39m [HTTP]  +208ms
+[Nest] 2026-04-16T16:08:37.990Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-16T16:08:38.195Z [32minfo[39m [HTTP]  +205ms
+[Nest] 2026-04-16T16:08:52.977Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-16T16:08:53.199Z [32minfo[39m [HTTP]  +222ms
+[Nest] 2026-04-16T16:09:08.061Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-16T16:09:08.278Z [32minfo[39m [HTTP]  +217ms
+[Nest] 2026-04-16T16:09:23.068Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-16T16:09:23.285Z [32minfo[39m [HTTP]  +217ms
+[Nest] 2026-04-16T16:09:37.987Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-16T16:09:38.191Z [32minfo[39m [HTTP]  +204ms
+[Nest] 2026-04-16T16:09:52.944Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-16T16:09:53.149Z [32minfo[39m [HTTP]  +205ms
+[Nest] 2026-04-16T16:10:08.056Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-16T16:10:08.275Z [32minfo[39m [HTTP]  +219ms
+[Nest] 2026-04-16T16:10:23.016Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-16T16:10:23.245Z [32minfo[39m [HTTP]  +229ms
+[Nest] 2026-04-16T16:10:38.145Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-16T16:10:38.361Z [32minfo[39m [HTTP]  +216ms
+[Nest] 2026-04-16T16:10:52.980Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-16T16:10:53.198Z [32minfo[39m [HTTP]  +218ms
+[Nest] 2026-04-16T16:11:08.027Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-16T16:11:08.549Z [32minfo[39m [HTTP]  +522ms
+[Nest] 2026-04-16T16:11:22.909Z [32minfo[39m [HTTP]  +14s
+[Nest] 2026-04-16T16:11:23.114Z [32minfo[39m [HTTP]  +205ms
+[Nest] 2026-04-16T16:11:38.003Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-16T16:11:38.206Z [32minfo[39m [HTTP]  +203ms
+[Nest] 2026-04-16T16:11:52.842Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-16T16:11:53.053Z [32minfo[39m [HTTP]  +211ms
+[Nest] 2026-04-16T16:12:07.961Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-16T16:12:08.156Z [32minfo[39m [HTTP]  +195ms
+[Nest] 2026-04-16T16:12:22.995Z [32minfo[39m [HTTP]  +15s
+[Nest] 2026-04-16T16:12:23.196Z [32minfo[39m [HTTP]  +201ms
+[2J[3J[H[[90m11:12:33 a. m.[0m] File change detected. Starting incremental compilation...
+
+[Nest] 2026-04-16T16:12:33.904Z [32minfo[39m [HTTP]  +11s
+[Nest] 2026-04-16T16:12:33.981Z [32minfo[39m [HTTP]  +77ms
+[[90m11:12:34 a. m.[0m] Found 0 errors. Watching for file changes.
+
+[2J[3J[H[[90m11:12:38 a. m.[0m] File change detected. Starting incremental compilation...
+
+[[90m11:12:40 a. m.[0m] Found 0 errors. Watching for file changes.
+
+C:\Users\user\Desktop\deybis\tote-bag\apps\api:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  api@0.0.1 dev: `nest start --watch`
+Exit status 1

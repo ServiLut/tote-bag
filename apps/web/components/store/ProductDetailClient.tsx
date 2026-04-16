@@ -231,13 +231,26 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-start">
         <div className="space-y-4">
           <div className="relative aspect-[3/4] bg-surface rounded-sm overflow-hidden">
-            <Image src={currentImageUrl} alt={product.name} fill className="object-cover" priority />
+            <Image
+              src={currentImageUrl}
+              alt={product.name}
+              fill
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="object-cover"
+              priority
+            />
           </div>
           {allImages.length > 1 && (
             <div className="flex gap-4 overflow-x-auto pb-2">
               {allImages.map((img, idx) => (
                 <button key={idx} onClick={() => setCurrentImageIndex(idx)} className={`relative w-20 h-20 shrink-0 border-2 ${currentImageIndex === idx ? 'border-primary' : 'border-transparent'}`}>
-                  <Image src={img.url} alt={`Thumb ${idx}`} fill className="object-cover" />
+                  <Image
+                    src={img.url}
+                    alt={`Thumb ${idx}`}
+                    fill
+                    sizes="80px"
+                    className="object-cover"
+                  />
                 </button>
               ))}
             </div>

@@ -10,18 +10,23 @@ import {
 } from '@/lib/dashboard-auth';
 
 function buildForwardHeaders(request: NextRequest) {
-  const headers = new Headers(request.headers);
+  const headers = new Headers();
   const debugRole = parseDashboardDebugRoleCookie(
     request.cookies.get(DASHBOARD_DEBUG_ROLE_COOKIE_NAME)?.value,
   );
 
-  headers.delete('host');
-  headers.delete('connection');
-  headers.delete('content-length');
-  headers.delete('cookie');
-  headers.delete('accept-encoding');
-  headers.delete('origin');
-  headers.delete('referer');
+  for (const name of [
+    'accept',
+    'accept-language',
+    'authorization',
+    'content-type',
+    'user-agent',
+  ]) {
+    const value = request.headers.get(name);
+    if (value) {
+      headers.set(name, value);
+    }
+  }
 
   if (debugRole) {
     headers.set(DASHBOARD_DEBUG_ROLE_HEADER_NAME, debugRole);
