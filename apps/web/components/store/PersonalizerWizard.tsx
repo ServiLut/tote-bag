@@ -145,7 +145,7 @@ const resolveProductSelection = (product?: Partial<Product> | null): ProductReso
 
 export default function PersonalizerWizard({
   productId,
-  productSlug = 'tote-bag-clasica',
+  productSlug = 'tote-bag-clsica',
 }: PersonalizerWizardProps) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -1051,6 +1051,7 @@ export default function PersonalizerWizard({
                           src={canvasImage}
                           alt="Tote Mockup"
                           fill
+                          sizes="(max-width: 1024px) 100vw, 384px"
                           className="object-cover transition-opacity duration-500"
                         />
                       );

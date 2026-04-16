@@ -20,8 +20,7 @@ export default async function ConfiguradorPage() {
 
   return (
     <div className="bg-base min-h-screen py-12 md:py-20 px-4">
-      <PersonalizerWizard productSlug="tote-bag-clasica" />
+      <PersonalizerWizard productSlug="tote-bag-clsica" />
     </div>
   );
 }
-
