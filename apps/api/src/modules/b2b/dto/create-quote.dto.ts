@@ -22,6 +22,8 @@ export enum B2BPackage {
   EVENTO = 'Evento',
 }
 
+export const B2B_MINIMUM_QUANTITY = 50;
+
 export class CreateQuoteItemDto {
   @IsString()
   @IsNotEmpty()
@@ -40,7 +42,7 @@ export class CreateQuoteItemDto {
 export class CreateQuoteDto {
   @Type(() => Number)
   @IsInt()
-  @Min(1)
+  @Min(B2B_MINIMUM_QUANTITY)
   quantity: number;
 
   @IsString()

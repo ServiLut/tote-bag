@@ -9,6 +9,7 @@ import { sanitizeIntegerInput } from '@/lib/numeric-input';
 import { apiFetch } from '@/utils/api';
 
 const SHOW_QR_PERSONALIZATION_SECTION = false;
+const B2B_MINIMUM_QUANTITY = 50;
 
 interface Department {
   id: string;
@@ -26,7 +27,7 @@ const PACKAGES = [
   {
     id: 'Empresa',
     label: 'Empresa',
-    min: 30,
+    min: B2B_MINIMUM_QUANTITY,
     icon: Briefcase,
     activeClass: 'bg-purple-50 dark:bg-purple-900/30 ring-2 ring-purple-600 dark:ring-purple-500',
     iconClass: 'text-purple-600 dark:text-purple-400',
@@ -77,7 +78,7 @@ export default function B2BQuoteForm() {
     material: string;
   }>({
     businessName: '',
-    quantity: 30,
+    quantity: B2B_MINIMUM_QUANTITY,
     department: '',
     municipality: '',
     neighborhood: '',
@@ -175,6 +176,19 @@ export default function B2BQuoteForm() {
       ...prev,
       quantity: sanitizedValue,
     }));
+  };
+
+  const handleQuantityBlur = () => {
+    const currentPkg = PACKAGES.find(p => p.id === formData.package);
+    const minimumQuantity = currentPkg?.min ?? B2B_MINIMUM_QUANTITY;
+    const quantity = Number(formData.quantity || 0);
+
+    if (quantity < minimumQuantity) {
+      setFormData((prev) => ({
+        ...prev,
+        quantity: String(minimumQuantity),
+      }));
+    }
   };
 
   const handlePackageChange = (pkgId: PackageType) => {
@@ -290,7 +304,7 @@ export default function B2BQuoteForm() {
         <button
           onClick={() => {
             setSuccess(false);
-            setFormData({ businessName: '', quantity: '30', department: '', municipality: '', neighborhood: '', address: '', contactPhone: '', qrType: 'WHATSAPP', qrData: '', package: 'Empresa', size: '', material: '' });
+            setFormData({ businessName: '', quantity: String(B2B_MINIMUM_QUANTITY), department: '', municipality: '', neighborhood: '', address: '', contactPhone: '', qrType: 'WHATSAPP', qrData: '', package: 'Empresa', size: '', material: '' });
             setLogoFile(null);
             setSelectedDeptId('');
             setMunicipalities([]);
@@ -303,7 +317,7 @@ export default function B2BQuoteForm() {
     );
   }
 
-  const currentMin = PACKAGES.find(p => p.id === formData.package)?.min || 30;
+  const currentMin = PACKAGES.find(p => p.id === formData.package)?.min || B2B_MINIMUM_QUANTITY;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 bg-surface p-8 rounded-2xl shadow-sm border border-theme">
@@ -359,6 +373,7 @@ export default function B2BQuoteForm() {
               inputMode="numeric"
               value={formData.quantity}
               onChange={handleQuantityChange}
+              onBlur={handleQuantityBlur}
               required
               className="w-full p-3 bg-base/50 border border-theme rounded-lg focus:ring-2 focus:ring-primary focus:bg-surface transition-all outline-none text-primary placeholder:text-muted/50"
               placeholder={`Mínimo ${currentMin} unidades`}
@@ -568,7 +583,6 @@ export default function B2BQuoteForm() {
     </form>
   );
 }
-
 
 
 

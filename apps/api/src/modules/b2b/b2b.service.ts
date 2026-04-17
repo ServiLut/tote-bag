@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateQuoteDto, B2BPackage } from './dto/create-quote.dto';
+import {
+  CreateQuoteDto,
+  B2BPackage,
+  B2B_MINIMUM_QUANTITY,
+} from './dto/create-quote.dto';
 import { PricingService } from '../pricing/pricing.service';
 import { PriceRuleScope } from '../../generated/client/enums';
 import { Prisma } from '../../generated/client/client';
@@ -43,7 +47,8 @@ export class B2bService {
       const qty = createQuoteDto.quantity;
 
       let isValid = false;
-      if (pkg === B2BPackage.EMPRESA && qty >= 30) isValid = true;
+      if (pkg === B2BPackage.EMPRESA && qty >= B2B_MINIMUM_QUANTITY)
+        isValid = true;
       if (pkg === B2BPackage.EVENTO && qty >= 100) isValid = true;
 
       if (isValid) {
