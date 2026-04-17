@@ -61,7 +61,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     || product.variants[0]
     || ({} as Variant);
   const fallbackVariantPrice = fallbackVariant.salePrice ?? product.basePrice;
-  const [activeTab, setActiveTab] = useState<'description' | 'reviews' | 'shipping'>('description');
+  const [activeTab, setActiveTab] = useState<'description' | 'shipping'>('description');
   const [config, setConfig] = useState<ProductConfig | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<Variant>(fallbackVariant);
 
@@ -169,14 +169,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
       ...prev,
       size: selectedVariant.size || prev.size,
     }));
-
-    if (selectedVariant.imageUrl) {
-      const variantImageIndex = allImagesRef(selectedVariant.imageUrl, product);
-      if (variantImageIndex >= 0) {
-        setCurrentImageIndex(variantImageIndex);
-      }
-    }
-  }, [product, selectedVariant]);
+  }, [selectedVariant.size]);
 
   const handleAddToCart = () => {
     if (!selectedVariant.sku) return;
@@ -208,7 +201,9 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     });
   };
 
-  const mainImages = (product.images || []).map(img => ({ url: img.url, id: img.id || Math.random().toString() }));
+  const mainImages = [...(product.images || [])]
+    .sort((left, right) => left.position - right.position)
+    .map(img => ({ url: img.url, id: img.id || Math.random().toString() }));
   const variantImages = activeVariants
     .map(v => v.imageUrl ? { url: v.imageUrl, id: v.sku } : null)
     .filter(Boolean) as Array<{ url: string, id: string }>;
@@ -386,6 +381,13 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                           ...prev,
                           size: variant.size || prev.size,
                         }));
+
+                        if (variant.imageUrl) {
+                          const variantImageIndex = allImagesRef(variant.imageUrl, product);
+                          if (variantImageIndex >= 0) {
+                            setCurrentImageIndex(variantImageIndex);
+                          }
+                        }
                       }}
                       className={`w-8 h-8 rounded-full border border-theme ring-2 ring-offset-2 transition-all ${
                         selectedVariant.sku === variant.sku ? 'ring-primary' : 'ring-transparent'
@@ -447,13 +449,6 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('reviews')}
-            className={`text-2xl md:text-4xl transition-colors ${activeTab === 'reviews' ? 'text-secondary' : 'text-primary hover:text-secondary'}`}
-          >
-            Opiniones
-          </button>
-          <button
-            type="button"
             onClick={() => setActiveTab('shipping')}
             className={`text-2xl md:text-4xl transition-colors ${activeTab === 'shipping' ? 'text-secondary' : 'text-primary hover:text-secondary'}`}
           >
@@ -465,16 +460,6 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
           {activeTab === 'description' && (
             <div className="max-w-4xl whitespace-pre-line leading-7">
               {productDescription}
-            </div>
-          )}
-
-          {activeTab === 'reviews' && (
-            <div className="max-w-3xl space-y-4 leading-7">
-              <p className="text-primary font-semibold">Aun no hay opiniones publicadas para este producto.</p>
-              <p>
-                Cuando empecemos a recibir reseñas verificadas de clientes, se mostrarán aquí para ayudar a comparar
-                materiales, acabados y experiencia de compra.
-              </p>
             </div>
           )}
 
@@ -505,7 +490,9 @@ function getVariantColorHex(colorName: string): string {
 }
 
 function allImagesRef(imageUrl: string, product: Product) {
-  const mainImages = (product.images || []).map((img) => img.url);
+  const mainImages = [...(product.images || [])]
+    .sort((left, right) => left.position - right.position)
+    .map((img) => img.url);
   const variantImages = (product.variants || [])
     .filter((variant) => variant.isActive !== false)
     .map((variant) => variant.imageUrl)
