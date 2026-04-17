@@ -46,7 +46,6 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
     collection: true,
     line: true,
     attributes: true,
-    availability: true,
   });
 
   const updateURL = useCallback((newFilters: FilterState) => {
@@ -55,7 +54,6 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
     if (newFilters.lines.length > 0) params.set('lines', newFilters.lines.join(','));
     if (newFilters.sizes.length > 0) params.set('sizes', newFilters.sizes.join(','));
     if (newFilters.materials.length > 0) params.set('materials', newFilters.materials.join(','));
-    if (newFilters.status.length > 0) params.set('status', newFilters.status.join(','));
     if (newFilters.minPrice > 0) params.set('minPrice', newFilters.minPrice.toString());
     if (newFilters.maxPrice < 1000000) params.set('maxPrice', newFilters.maxPrice.toString());
 
@@ -67,7 +65,7 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
     const newFilters = { ...filters };
     let hasChanges = false;
 
-    const sync = (key: string, field: Extract<keyof FilterState, 'collections' | 'lines' | 'sizes' | 'materials' | 'status'>) => {
+    const sync = (key: string, field: Extract<keyof FilterState, 'collections' | 'lines' | 'sizes' | 'materials'>) => {
       const val = searchParams.get(key);
       if (val) {
         (newFilters[field] as string[]) = val.split(',');
@@ -79,7 +77,6 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
     sync('lines', 'lines');
     sync('sizes', 'sizes');
     sync('materials', 'materials');
-    sync('status', 'status');
 
     const minP = searchParams.get('minPrice');
     if (minP) {
@@ -274,8 +271,6 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
             </div>
           )}
         </div>
-
-        {renderCheckboxGroup(t('filters_availability'), 'status', ['DISPONIBLE', 'BAJO_PEDIDO'], 'availability')}
       </aside>
     </>
   );

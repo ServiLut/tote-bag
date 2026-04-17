@@ -87,7 +87,6 @@ function CatalogPageContent() {
         if (filters.lines.length > 0) params.append('lines', filters.lines.join(','));
         if (filters.sizes.length > 0) params.append('sizes', filters.sizes.join(','));
         if (filters.materials.length > 0) params.append('materials', filters.materials.join(','));
-        if (filters.status.length > 0) params.append('status', filters.status[0]);
         if (filters.minPrice > 0) params.append('minPrice', filters.minPrice.toString());
         if (filters.maxPrice < 1000000) params.append('maxPrice', filters.maxPrice.toString());
         if (searchTerm) params.append('search', searchTerm);
