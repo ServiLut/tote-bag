@@ -1,36 +1,130 @@
-node:internal/modules/cjs/loader:1451
-  throw err;
-  ^
-
-Error: Cannot find module 'C:\Users\user\Desktop\deybis\tote-bag\apps\api\dist\main'
-    at Module._resolveFilename (node:internal/modules/cjs/loader:1448:15)
-    at defaultResolveImpl (node:internal/modules/cjs/loader:1059:19)
-    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1064:22)
-    at Module._load (node:internal/modules/cjs/loader:1234:25)
-    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)
-    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
-    at node:internal/main/run_main_module:33:47 {
-  code: 'MODULE_NOT_FOUND',
-  requireStack: []
+Error: listen EADDRINUSE: address already in use 0.0.0.0:4004
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:89:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4004
 }
+Error: listen EADDRINUSE: address already in use 0.0.0.0:4004
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:89:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4004
+}
+Error: listen EADDRINUSE: address already in use 0.0.0.0:4004
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:89:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4004
+}
+Error: listen EADDRINUSE: address already in use 0.0.0.0:4004
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:89:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4004
+}
+Error: listen EADDRINUSE: address already in use 0.0.0.0:4004
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:89:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4004
+}
+Error: listen EADDRINUSE: address already in use 0.0.0.0:4004
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:89:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4004
+}
+ERROR: el proceso con PID 11528 (proceso secundario de PID 1672)
+no se pudo terminar.
+Motivo: No hay ninguna instancia activa de la tarea.
+ERROR: el proceso con PID 1672 (proceso secundario de PID 3492)
+no se pudo terminar.
+Motivo: No hay ninguna instancia activa de la tarea.
+ERROR: no se encontr¢ el proceso "1672".
+node:child_process:1000
+    throw err;
+    ^
 
-Node.js v24.13.1
-node:internal/modules/cjs/loader:1451
-  throw err;
-  ^
+Error: Command failed: taskkill /pid 1672 /T /F
+ERROR: el proceso con PID 11528 (proceso secundario de PID 1672)
+no se pudo terminar.
+Motivo: No hay ninguna instancia activa de la tarea.
+ERROR: el proceso con PID 1672 (proceso secundario de PID 3492)
+no se pudo terminar.
+Motivo: No hay ninguna instancia activa de la tarea.
 
-Error: Cannot find module 'C:\Users\user\Desktop\deybis\tote-bag\apps\api\dist\main'
-    at Module._resolveFilename (node:internal/modules/cjs/loader:1448:15)
-    at defaultResolveImpl (node:internal/modules/cjs/loader:1059:19)
-    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1064:22)
-    at Module._load (node:internal/modules/cjs/loader:1234:25)
-    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)
-    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
-    at node:internal/main/run_main_module:33:47 {
-  code: 'MODULE_NOT_FOUND',
-  requireStack: []
+    at genericNodeError (node:internal/errors:985:15)
+    at wrappedFn (node:internal/errors:539:14)
+    at checkExecSyncError (node:child_process:925:11)
+    at execSync (node:child_process:997:15)
+    at treeKillSync (C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\@nestjs+cli@11.0.16_@types+node@22.19.8\node_modules\@nestjs\cli\lib\utils\tree-kill.js:7:38)
+    at C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\@nestjs+cli@11.0.16_@types+node@22.19.8\node_modules\@nestjs\cli\actions\start.action.js:68:46
+    at Object.onWatchStatusChange (C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\@nestjs+cli@11.0.16_@types+node@22.19.8\node_modules\@nestjs\cli\lib\compiler\watch-compiler.js:83:17)
+    at C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\typescript@5.9.3\node_modules\typescript\lib\typescript.js:133916:30
+    at emitFilesAndReportErrors (C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\typescript@5.9.3\node_modules\typescript\lib\typescript.js:133737:5)
+    at result.afterProgramCreate (C:\Users\user\Desktop\deybis\tote-bag\node_modules\.pnpm\typescript@5.9.3\node_modules\typescript\lib\typescript.js:133912:5) {
+  status: 128,
+  signal: null,
+  output: [
+    null,
+    Buffer(0) [Uint8Array] [],
+    Buffer(285) [Uint8Array] [
+       69,  82,  82,  79,  82,  58,  32, 101, 108,  32, 112, 114,
+      111,  99, 101, 115, 111,  32,  99, 111, 110,  32,  80,  73,
+       68,  32,  49,  49,  53,  50,  56,  32,  40, 112, 114, 111,
+       99, 101, 115, 111,  32, 115, 101,  99, 117, 110, 100,  97,
+      114, 105, 111,  32, 100, 101,  32,  80,  73,  68,  32,  49,
+       54,  55,  50,  41,  13,  10, 110, 111,  32, 115, 101,  32,
+      112, 117, 100, 111,  32, 116, 101, 114, 109, 105, 110,  97,
+      114,  46,  13,  10,  77, 111, 116, 105, 118, 111,  58,  32,
+       78, 111,  32, 104,
+      ... 185 more items
+    ]
+  ],
+  pid: 700,
+  stdout: Buffer(0) [Uint8Array] [],
+  stderr: Buffer(285) [Uint8Array] [
+     69,  82,  82,  79,  82,  58,  32, 101, 108,  32, 112, 114,
+    111,  99, 101, 115, 111,  32,  99, 111, 110,  32,  80,  73,
+     68,  32,  49,  49,  53,  50,  56,  32,  40, 112, 114, 111,
+     99, 101, 115, 111,  32, 115, 101,  99, 117, 110, 100,  97,
+    114, 105, 111,  32, 100, 101,  32,  80,  73,  68,  32,  49,
+     54,  55,  50,  41,  13,  10, 110, 111,  32, 115, 101,  32,
+    112, 117, 100, 111,  32, 116, 101, 114, 109, 105, 110,  97,
+    114,  46,  13,  10,  77, 111, 116, 105, 118, 111,  58,  32,
+     78, 111,  32, 104,
+    ... 185 more items
+  ]
 }
 
 Node.js v24.13.1

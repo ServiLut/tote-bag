@@ -4,7 +4,7 @@ import { Menu, Sun, Moon, Bell, PanelLeftClose, PanelLeftOpen, Search, UserCircl
 import { useState, useEffect, useSyncExternalStore } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import { useTheme } from 'next-themes';
+import { useTheme } from '@/components/theme-provider';
 import Sidebar from '@/components/dashboard/Sidebar';
 import { DashboardAuthProvider, type DashboardRole } from '@/components/dashboard/DashboardAuthContext';
 import { DashboardRoleSwitcher } from '@/components/dashboard/DashboardRoleSwitcher';

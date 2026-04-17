@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { createClient } from '@/utils/supabase/server';
 import DashboardLayoutClient from '@/components/dashboard/DashboardLayoutClient';
+import { ThemeProvider } from '@/components/theme-provider';
 import {
   extractRoleFromProfilePayload,
   extractDebugRoleAllowedFromProfilePayload,
@@ -100,13 +101,20 @@ export default async function DashboardLayout({
   }
 
   return (
-    <DashboardLayoutClient
-      userEmail={session.user.email}
-      role={role}
-      debugRoleAllowed={roleContext.debugRoleAllowed}
-      accessToken={session.access_token}
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
     >
-      {children}
-    </DashboardLayoutClient>
+      <DashboardLayoutClient
+        userEmail={session.user.email}
+        role={role}
+        debugRoleAllowed={roleContext.debugRoleAllowed}
+        accessToken={session.access_token}
+      >
+        {children}
+      </DashboardLayoutClient>
+    </ThemeProvider>
   );
 }

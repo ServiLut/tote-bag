@@ -26,7 +26,7 @@ export default function Home() {
         const res = await apiFetch('/catalog/products');
         if (!res.ok) throw new Error(t('home_load_error'));
         const responseBody: ApiResponse<Product[]> = await res.json();
-        setProducts(responseBody.data);
+        setProducts(responseBody.data.slice(0, 4));
       } catch (err) {
         console.error(err);
         setError(t('home_products_unavailable'));

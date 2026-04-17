@@ -41,6 +41,7 @@ describe('CatalogService', () => {
       count: jest.fn(),
     },
     product: {
+      findMany: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
     },
@@ -52,6 +53,7 @@ describe('CatalogService', () => {
     jest.clearAllMocks();
     prisma.purchaseBatch.count.mockResolvedValue(0);
     prisma.variant.count.mockResolvedValue(0);
+    prisma.product.findMany.mockResolvedValue([]);
     tx.purchaseBatch.findMany.mockResolvedValue([]);
     service = new CatalogService(prisma as never, cacheManager as never);
   });
@@ -108,6 +110,23 @@ describe('CatalogService', () => {
         taxRate: 0.19,
       }),
     ).toThrow(BadRequestException);
+  });
+
+  it('filters by any selected collection when multiple collection ids are provided', async () => {
+    await service.findAllAdmin({
+      collectionId: 'collection-deportes,collection-mujeres',
+    });
+
+    expect(prisma.product.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          isActive: true,
+          collectionId: {
+            in: ['collection-deportes', 'collection-mujeres'],
+          },
+        },
+      }),
+    );
   });
 
   it('auto-generates the SKU for an existing variant during product updates', async () => {

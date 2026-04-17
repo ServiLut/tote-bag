@@ -96,12 +96,14 @@ function formatCurrency(value: string | number | null | undefined) {
       : typeof value === 'string'
         ? Number(value)
         : 0;
+  const safeAmount = Number.isFinite(amount) ? amount : 0;
+  const sign = safeAmount < 0 ? '-' : '';
+  const absoluteAmount = Math.abs(safeAmount);
+  const fixedAmount = absoluteAmount.toFixed(2);
+  const [integerPart, decimalPart] = fixedAmount.split('.');
+  const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    maximumFractionDigits: 2,
-  }).format(Number.isFinite(amount) ? amount : 0);
+  return `${sign}$\u00a0${formattedInteger},${decimalPart}`;
 }
 
 function getNumericAmount(value: string | number | null | undefined) {

@@ -181,6 +181,15 @@ export class CatalogService {
     );
   }
 
+  private splitFilterValues(value?: string) {
+    return (
+      value
+        ?.split(',')
+        .map((item) => item.trim())
+        .filter(Boolean) ?? []
+    );
+  }
+
   private buildAutomaticSku(
     productName: string,
     collectionName: string,
@@ -1554,7 +1563,11 @@ export class CatalogService {
     };
 
     if (collectionId) {
-      where.collectionId = collectionId;
+      const collectionIds = this.splitFilterValues(collectionId);
+      if (collectionIds.length > 0) {
+        where.collectionId =
+          collectionIds.length === 1 ? collectionIds[0] : { in: collectionIds };
+      }
     }
 
     if (status) {
@@ -1578,7 +1591,7 @@ export class CatalogService {
     const andFilters: Prisma.ProductWhereInput[] = [];
 
     if (line) {
-      const values = line.split(',');
+      const values = this.splitFilterValues(line);
       andFilters.push({
         attributes: {
           some: { type: 'LINE', value: { in: values, mode: 'insensitive' } },
@@ -1587,7 +1600,7 @@ export class CatalogService {
     }
 
     if (size) {
-      const values = size.split(',');
+      const values = this.splitFilterValues(size);
       andFilters.push({
         OR: [
           {
@@ -1604,7 +1617,7 @@ export class CatalogService {
     }
 
     if (quality) {
-      const values = quality.split(',');
+      const values = this.splitFilterValues(quality);
       andFilters.push({
         attributes: {
           some: { type: 'QUALITY', value: { in: values, mode: 'insensitive' } },
@@ -1613,7 +1626,7 @@ export class CatalogService {
     }
 
     if (material) {
-      const values = material.split(',');
+      const values = this.splitFilterValues(material);
       andFilters.push({
         attributes: {
           some: {

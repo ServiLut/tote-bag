@@ -33,6 +33,11 @@ type ResolvedBatchLine = {
   rawLineTotal: Decimal;
 };
 
+const PURCHASE_BATCH_TRANSACTION_OPTIONS = {
+  maxWait: 10_000,
+  timeout: 20_000,
+} as const;
+
 @Injectable()
 export class InventoryService {
   constructor(private readonly prisma: PrismaService) {}
@@ -605,7 +610,9 @@ export class InventoryService {
           await tx.variant.update({
             where: { id: resolved.variant.id },
             data: {
-              stock: { increment: this.quantityToLegacyInt(resolved.quantity) },
+              stock: {
+                increment: this.quantityToLegacyInt(resolved.quantity),
+              },
               costPrice: landedUnitCostNumber,
             },
           });
@@ -694,7 +701,7 @@ export class InventoryService {
       });
 
       return this.serializeBatchMoney(updatedBatch);
-    });
+    }, PURCHASE_BATCH_TRANSACTION_OPTIONS);
   }
 
   async getDetailedInventory() {

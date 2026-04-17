@@ -38,6 +38,7 @@ function getImageRemotePatterns(): NonNullable<NextConfig['images']>['remotePatt
 }
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ['192.168.1.54'],
   transpilePackages: ['@tote-bag/ui'],
   distDir: process.env.NEXT_DIST_DIR || '.next',
   output: 'standalone',

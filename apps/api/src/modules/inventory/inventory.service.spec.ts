@@ -696,4 +696,30 @@ describe('InventoryService', () => {
     expect(tx.variant.update).not.toHaveBeenCalled();
     expect(tx.purchaseBatch.update).not.toHaveBeenCalled();
   });
+
+  it('usa un timeout extendido para registrar recepciones con varias operaciones', async () => {
+    mockCreateBatchBase();
+
+    await service.createPurchaseBatch({
+      supplierId: 'supplier-1',
+      totalCost: 45000,
+      status: 'RECIBIDO',
+      purchaseDate: '2026-04-14',
+      userId: 'admin-1',
+      items: [
+        {
+          itemType: 'TOOL',
+          itemName: 'Tijeras industriales',
+          cantidad: 1,
+          unitOfMeasure: 'und',
+          costoUnitario: 45000,
+        },
+      ],
+    });
+
+    expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+      maxWait: 10000,
+      timeout: 20000,
+    });
+  });
 });

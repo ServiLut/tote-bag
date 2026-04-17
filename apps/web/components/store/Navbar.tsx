@@ -21,7 +21,7 @@ import Link from 'next/link';
 import { useEffect, useState, useRef } from 'react';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { createClient } from '@/utils/supabase/client';
-import { useTheme } from 'next-themes';
+import { useTheme } from '@/components/theme-provider';
 import { useRouter } from 'next/navigation';
 import { ApiResponse } from '@/types/api';
 import { useTranslation } from 'react-i18next';
