@@ -203,6 +203,16 @@ export type ShipmentSupplyUsage = Prisma.ShipmentSupplyUsageModel
  */
 export type ShipmentSupplyUsageAllocation = Prisma.ShipmentSupplyUsageAllocationModel
 /**
+ * Model InventoryAdjustment
+ * 
+ */
+export type InventoryAdjustment = Prisma.InventoryAdjustmentModel
+/**
+ * Model InventoryMovement
+ * 
+ */
+export type InventoryMovement = Prisma.InventoryMovementModel
+/**
  * Model PurchaseInvoice
  * 
  */

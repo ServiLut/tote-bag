@@ -170,6 +170,37 @@ export const SupplyItemType = {
 export type SupplyItemType = (typeof SupplyItemType)[keyof typeof SupplyItemType]
 
 
+export const InventoryAdjustmentItemType = {
+  VARIANT: 'VARIANT',
+  SUPPLY: 'SUPPLY'
+} as const
+
+export type InventoryAdjustmentItemType = (typeof InventoryAdjustmentItemType)[keyof typeof InventoryAdjustmentItemType]
+
+
+export const InventoryAdjustmentReason = {
+  ENTRADA_MAQUILA: 'ENTRADA_MAQUILA',
+  SALIDA_MUESTRA_PUBLICIDAD: 'SALIDA_MUESTRA_PUBLICIDAD',
+  SALIDA_AVERIA: 'SALIDA_AVERIA',
+  AJUSTE_VENTA_EXTERNA: 'AJUSTE_VENTA_EXTERNA'
+} as const
+
+export type InventoryAdjustmentReason = (typeof InventoryAdjustmentReason)[keyof typeof InventoryAdjustmentReason]
+
+
+export const InventoryMovementReason = {
+  PURCHASE_RECEIPT: 'PURCHASE_RECEIPT',
+  SALE_CONSUMPTION: 'SALE_CONSUMPTION',
+  RETURN_TO_STOCK: 'RETURN_TO_STOCK',
+  MANUAL_ADJUSTMENT: 'MANUAL_ADJUSTMENT',
+  STOCK_COMMITMENT: 'STOCK_COMMITMENT',
+  STOCK_COMMITMENT_RELEASE: 'STOCK_COMMITMENT_RELEASE',
+  SHIPMENT_SUPPLY_USAGE: 'SHIPMENT_SUPPLY_USAGE'
+} as const
+
+export type InventoryMovementReason = (typeof InventoryMovementReason)[keyof typeof InventoryMovementReason]
+
+
 export const PurchaseInvoiceStatus = {
   PENDING: 'PENDING',
   PARTIAL: 'PARTIAL',
@@ -185,6 +216,50 @@ export const PurchaseDocumentType = {
 } as const
 
 export type PurchaseDocumentType = (typeof PurchaseDocumentType)[keyof typeof PurchaseDocumentType]
+
+
+export const SaleLegalRequirement = {
+  PENDING_STOCK_ASSIGNMENT: 'PENDING_STOCK_ASSIGNMENT',
+  ELECTRONIC_INVOICE_REQUIRED: 'ELECTRONIC_INVOICE_REQUIRED',
+  INTERNAL_DOCUMENT_ALLOWED: 'INTERNAL_DOCUMENT_ALLOWED'
+} as const
+
+export type SaleLegalRequirement = (typeof SaleLegalRequirement)[keyof typeof SaleLegalRequirement]
+
+
+export const SaleLegalStatus = {
+  PENDING: 'PENDING',
+  COMPLETED: 'COMPLETED',
+  NOT_REQUIRED: 'NOT_REQUIRED'
+} as const
+
+export type SaleLegalStatus = (typeof SaleLegalStatus)[keyof typeof SaleLegalStatus]
+
+
+export const SaleLegalDocumentType = {
+  ELECTRONIC_INVOICE: 'ELECTRONIC_INVOICE',
+  INTERNAL_DELIVERY_NOTE: 'INTERNAL_DELIVERY_NOTE'
+} as const
+
+export type SaleLegalDocumentType = (typeof SaleLegalDocumentType)[keyof typeof SaleLegalDocumentType]
+
+
+export const B2BQuoteItemType = {
+  STANDARD_STOCK: 'STANDARD_STOCK',
+  MANUAL_EXTERNAL_PRODUCTION: 'MANUAL_EXTERNAL_PRODUCTION'
+} as const
+
+export type B2BQuoteItemType = (typeof B2BQuoteItemType)[keyof typeof B2BQuoteItemType]
+
+
+export const B2BReservationStatus = {
+  NONE: 'NONE',
+  ACTIVE: 'ACTIVE',
+  RELEASED: 'RELEASED',
+  EXPIRED: 'EXPIRED'
+} as const
+
+export type B2BReservationStatus = (typeof B2BReservationStatus)[keyof typeof B2BReservationStatus]
 
 
 export const TransactionType = {

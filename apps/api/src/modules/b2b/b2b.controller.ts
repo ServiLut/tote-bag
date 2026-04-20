@@ -24,7 +24,21 @@ export class B2bController {
     @UploadedFile() logo: Express.Multer.File,
   ) {
     // Note: logo validation might be relaxed for testing if file upload not fully set up in client
-    return this.b2bService.createQuote(createQuoteDto, logo);
+    return this.b2bService.createQuote(createQuoteDto, logo, {
+      allowManualItems: false,
+    });
+  }
+
+  @Post('quotes/manual')
+  @RequirePermissions({ resource: 'b2b', action: 'manage' })
+  @UseInterceptors(FileInterceptor('logo'))
+  createManualQuote(
+    @Body() createQuoteDto: CreateQuoteDto,
+    @UploadedFile() logo: Express.Multer.File,
+  ) {
+    return this.b2bService.createQuote(createQuoteDto, logo, {
+      allowManualItems: true,
+    });
   }
 
   @Get('quotes')

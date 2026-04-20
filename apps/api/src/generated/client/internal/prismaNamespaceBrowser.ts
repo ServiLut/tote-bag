@@ -88,6 +88,8 @@ export const ModelName = {
   PurchaseBatchLine: 'PurchaseBatchLine',
   ShipmentSupplyUsage: 'ShipmentSupplyUsage',
   ShipmentSupplyUsageAllocation: 'ShipmentSupplyUsageAllocation',
+  InventoryAdjustment: 'InventoryAdjustment',
+  InventoryMovement: 'InventoryMovement',
   PurchaseInvoice: 'PurchaseInvoice',
   PurchasePayment: 'PurchasePayment',
   FinancialTransaction: 'FinancialTransaction',
@@ -177,6 +179,8 @@ export const VariantScalarFieldEnum = {
   totalCost: 'totalCost',
   taxRate: 'taxRate',
   stock: 'stock',
+  stockCommitted: 'stockCommitted',
+  reorderPoint: 'reorderPoint',
   isActive: 'isActive',
   productId: 'productId'
 } as const
@@ -204,6 +208,13 @@ export const OrderScalarFieldEnum = {
   isB2B: 'isB2B',
   isManual: 'isManual',
   paymentReceiptUrl: 'paymentReceiptUrl',
+  saleLegalRequirement: 'saleLegalRequirement',
+  saleLegalStatus: 'saleLegalStatus',
+  saleLegalDocumentType: 'saleLegalDocumentType',
+  saleLegalDocumentReference: 'saleLegalDocumentReference',
+  saleLegalTrace: 'saleLegalTrace',
+  saleLegalResolvedAt: 'saleLegalResolvedAt',
+  saleLegalCompletedAt: 'saleLegalCompletedAt',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   profileId: 'profileId'
@@ -453,6 +464,10 @@ export const B2BQuoteScalarFieldEnum = {
   package: 'package',
   status: 'status',
   paymentReceiptUrl: 'paymentReceiptUrl',
+  expiresAt: 'expiresAt',
+  reservationStatus: 'reservationStatus',
+  reservationHours: 'reservationHours',
+  reservationReleasedAt: 'reservationReleasedAt',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   material: 'material',
@@ -593,13 +608,22 @@ export const B2BQuoteItemScalarFieldEnum = {
   id: 'id',
   quoteId: 'quoteId',
   productId: 'productId',
+  variantId: 'variantId',
   quantity: 'quantity',
   unitPrice: 'unitPrice',
   totalPrice: 'totalPrice',
   configurationJson: 'configurationJson',
   pricingJson: 'pricingJson',
   notes: 'notes',
-  targetUnitPrice: 'targetUnitPrice'
+  targetUnitPrice: 'targetUnitPrice',
+  itemType: 'itemType',
+  manualSize: 'manualSize',
+  manualSpecs: 'manualSpecs',
+  externalUnitCost: 'externalUnitCost',
+  agreedUnitPrice: 'agreedUnitPrice',
+  reservedQuantity: 'reservedQuantity',
+  reservationExpiresAt: 'reservationExpiresAt',
+  reservationReleasedAt: 'reservationReleasedAt'
 } as const
 
 export type B2BQuoteItemScalarFieldEnum = (typeof B2BQuoteItemScalarFieldEnum)[keyof typeof B2BQuoteItemScalarFieldEnum]
@@ -650,6 +674,7 @@ export const SupplyItemScalarFieldEnum = {
   unitOfMeasure: 'unitOfMeasure',
   cost: 'cost',
   stock: 'stock',
+  stockCommitted: 'stockCommitted',
   minStock: 'minStock',
   isActive: 'isActive',
   deletedAt: 'deletedAt',
@@ -724,6 +749,43 @@ export const ShipmentSupplyUsageAllocationScalarFieldEnum = {
 } as const
 
 export type ShipmentSupplyUsageAllocationScalarFieldEnum = (typeof ShipmentSupplyUsageAllocationScalarFieldEnum)[keyof typeof ShipmentSupplyUsageAllocationScalarFieldEnum]
+
+
+export const InventoryAdjustmentScalarFieldEnum = {
+  id: 'id',
+  reason: 'reason',
+  itemType: 'itemType',
+  quantityDelta: 'quantityDelta',
+  notes: 'notes',
+  userId: 'userId',
+  variantId: 'variantId',
+  supplyItemId: 'supplyItemId',
+  purchaseBatchId: 'purchaseBatchId',
+  purchaseBatchLineId: 'purchaseBatchLineId',
+  createdAt: 'createdAt'
+} as const
+
+export type InventoryAdjustmentScalarFieldEnum = (typeof InventoryAdjustmentScalarFieldEnum)[keyof typeof InventoryAdjustmentScalarFieldEnum]
+
+
+export const InventoryMovementScalarFieldEnum = {
+  id: 'id',
+  reason: 'reason',
+  itemType: 'itemType',
+  quantity: 'quantity',
+  balanceAfter: 'balanceAfter',
+  userId: 'userId',
+  variantId: 'variantId',
+  supplyItemId: 'supplyItemId',
+  purchaseBatchId: 'purchaseBatchId',
+  purchaseBatchLineId: 'purchaseBatchLineId',
+  orderId: 'orderId',
+  adjustmentId: 'adjustmentId',
+  metadata: 'metadata',
+  createdAt: 'createdAt'
+} as const
+
+export type InventoryMovementScalarFieldEnum = (typeof InventoryMovementScalarFieldEnum)[keyof typeof InventoryMovementScalarFieldEnum]
 
 
 export const PurchaseInvoiceScalarFieldEnum = {

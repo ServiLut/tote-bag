@@ -509,14 +509,6 @@ export type PricingRuleUncheckedUpdateManyWithoutProductNestedInput = {
   deleteMany?: Prisma.PricingRuleScalarWhereInput | Prisma.PricingRuleScalarWhereInput[]
 }
 
-export type NullableIntFieldUpdateOperationsInput = {
-  set?: number | null
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
 export type EnumPriceRuleScopeFieldUpdateOperationsInput = {
   set?: $Enums.PriceRuleScope
 }

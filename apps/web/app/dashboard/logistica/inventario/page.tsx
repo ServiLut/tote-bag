@@ -42,6 +42,9 @@ type InventoryProduct = {
   slug: string;
   image?: string | null;
   totalStock: number;
+  stockPhysical?: number;
+  stockCommitted?: number;
+  stockAvailable?: number;
   totalValuation: number;
   weightedAvgCost: number;
   batches: InventoryBatch[];
@@ -49,11 +52,41 @@ type InventoryProduct = {
 
 type InventoryMovement = {
   id: string;
-  action: string;
-  entity: string;
+  action?: string;
+  entity?: string;
   entityId?: string | null;
+  reason?: string;
+  itemType?: string;
+  quantity?: number;
+  balanceAfter?: number;
+  variant?: {
+    sku?: string | null;
+    product?: { name?: string | null } | null;
+  } | null;
+  supplyItem?: {
+    name?: string | null;
+    sku?: string | null;
+  } | null;
   createdAt: string;
   payload?: Record<string, unknown> | null;
+};
+
+type ReorderAlert = {
+  itemType: 'VARIANT' | 'SUPPLY';
+  id: string;
+  sku?: string | null;
+  name: string;
+  stockPhysical: number;
+  stockCommitted: number;
+  stockAvailable: number;
+  reorderPoint: number;
+  unitOfMeasure?: string;
+};
+
+type ReorderAlertsResponse = {
+  count: number;
+  variants: ReorderAlert[];
+  supplies: ReorderAlert[];
 };
 
 function formatCurrency(amount: number) {
@@ -80,6 +113,11 @@ function formatDate(value: string) {
 export default function InventoryDashboardPage() {
   const [products, setProducts] = useState<InventoryProduct[]>([]);
   const [movements, setMovements] = useState<InventoryMovement[]>([]);
+  const [reorderAlerts, setReorderAlerts] = useState<ReorderAlertsResponse>({
+    count: 0,
+    variants: [],
+    supplies: [],
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'current' | 'movements'>('current');
@@ -101,24 +139,29 @@ export default function InventoryDashboardPage() {
 
       try {
         const headers = await getAuthHeaders();
-        const [inventoryRes, movementsRes] = await Promise.all([
+        const [inventoryRes, movementsRes, reorderRes] = await Promise.all([
           apiFetch('/inventory/detailed', { headers }),
           apiFetch('/inventory/movements', { headers }),
+          apiFetch('/inventory/reorder-alerts', { headers }),
         ]);
 
         if (!active) {
           return;
         }
 
-        const [inventoryBody, movementsBody] = await Promise.all([
+        const [inventoryBody, movementsBody, reorderBody] = await Promise.all([
           inventoryRes.ok ? inventoryRes.json() : Promise.resolve([]),
           movementsRes.ok ? movementsRes.json() : Promise.resolve([]),
+          reorderRes.ok
+            ? reorderRes.json()
+            : Promise.resolve({ count: 0, variants: [], supplies: [] }),
         ]);
 
         setProducts(inventoryBody.data || inventoryBody || []);
         setMovements(movementsBody.data || movementsBody || []);
+        setReorderAlerts(reorderBody.data || reorderBody);
 
-        if (!inventoryRes.ok || !movementsRes.ok) {
+        if (!inventoryRes.ok || !movementsRes.ok || !reorderRes.ok) {
           setError('La vista cargo parcialmente. Algunos datos de inventario no estuvieron disponibles.');
         }
       } catch (fetchError) {
@@ -129,6 +172,7 @@ export default function InventoryDashboardPage() {
 
         setProducts([]);
         setMovements([]);
+        setReorderAlerts({ count: 0, variants: [], supplies: [] });
         setError('No fue posible conectar con la API de inventario.');
       } finally {
         if (active) {
@@ -149,13 +193,20 @@ export default function InventoryDashboardPage() {
       (acc, product) => {
         acc.skus += 1;
         acc.units += product.totalStock;
+        acc.committed += product.stockCommitted ?? 0;
+        acc.available += product.stockAvailable ?? product.totalStock;
         acc.valuation += product.totalValuation;
         acc.batches += product.batches.length;
         return acc;
       },
-      { skus: 0, units: 0, valuation: 0, batches: 0 },
+      { skus: 0, units: 0, committed: 0, available: 0, valuation: 0, batches: 0 },
     );
   }, [products]);
+
+  const allReorderAlerts = useMemo(
+    () => [...reorderAlerts.variants, ...reorderAlerts.supplies],
+    [reorderAlerts],
+  );
 
   const topProducts = useMemo(
     () =>
@@ -318,8 +369,8 @@ export default function InventoryDashboardPage() {
               tone="emerald"
             />
             <MetricCard
-              label="Stock Total"
-              value={`${formatUnits(totals.units)} und`}
+              label="Stock Disponible"
+              value={`${formatUnits(totals.available)} und`}
               icon={<Package className="h-5 w-5" />}
               tone="amber"
             />
@@ -367,6 +418,36 @@ export default function InventoryDashboardPage() {
             </div>
           ) : null}
 
+          {allReorderAlerts.length > 0 ? (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+              <div className="mb-4 flex items-center gap-2 text-amber-700">
+                <AlertCircle className="h-5 w-5" />
+                <h2 className="text-sm font-black uppercase tracking-widest">
+                  Alertas de reabastecimiento
+                </h2>
+              </div>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {allReorderAlerts.slice(0, 6).map((alert) => (
+                  <div
+                    key={`${alert.itemType}-${alert.id}`}
+                    className="rounded-lg border border-amber-200 bg-white px-4 py-3"
+                  >
+                    <p className="text-sm font-black text-primary">{alert.name}</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-amber-700">
+                      {alert.itemType === 'VARIANT' ? 'Variante' : 'Insumo'}
+                      {alert.sku ? ` | ${alert.sku}` : ''}
+                    </p>
+                    <p className="mt-2 text-xs font-bold text-muted">
+                      Disponible {formatUnits(alert.stockAvailable)} / Reorden{' '}
+                      {formatUnits(alert.reorderPoint)}
+                      {alert.unitOfMeasure ? ` ${alert.unitOfMeasure}` : ''}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
           <div className="overflow-hidden rounded-3xl border border-theme bg-surface shadow-sm">
             <table className="w-full border-collapse text-left">
               <thead>
@@ -388,7 +469,12 @@ export default function InventoryDashboardPage() {
                 ) : (
                   topProducts.map((product) => {
                     const isExpanded = expandedRows.includes(product.id);
-                    const isLowStock = product.totalStock < 10;
+                    const stockPhysical = product.stockPhysical ?? product.totalStock;
+                    const stockCommitted = product.stockCommitted ?? 0;
+                    const stockAvailable = product.stockAvailable ?? product.totalStock;
+                    const isLowStock = allReorderAlerts.some(
+                      (alert) => alert.name === product.name,
+                    );
 
                     return (
                       <Fragment key={product.id}>
@@ -429,14 +515,18 @@ export default function InventoryDashboardPage() {
                                   isLowStock ? 'text-rose-600' : 'text-primary'
                                 }`}
                               >
-                                {formatUnits(product.totalStock)}
+                                {formatUnits(stockAvailable)}
                               </span>
                               {isLowStock ? (
                                 <span className="rounded-md border border-rose-100 bg-rose-50 px-2 py-0.5 text-[8px] font-black uppercase tracking-tighter text-rose-600">
-                                  Stock Bajo
+                                  Reorden
                                 </span>
                               ) : null}
                             </div>
+                            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-muted">
+                              Fisico {formatUnits(stockPhysical)} | Comprometido{' '}
+                              {formatUnits(stockCommitted)}
+                            </p>
                           </td>
                           <td className="px-8 py-5 text-sm font-bold text-muted">
                             {formatCurrency(product.weightedAvgCost)}
@@ -534,10 +624,28 @@ export default function InventoryDashboardPage() {
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
             <SecondaryMetricCard
+              label="Stock fisico"
+              value={formatUnits(totals.units)}
+              icon={<Boxes className="h-5 w-5" />}
+            />
+            <SecondaryMetricCard
+              label="Stock comprometido"
+              value={formatUnits(totals.committed)}
+              icon={<Package className="h-5 w-5" />}
+            />
+            <SecondaryMetricCard
+              label="Alertas reorden"
+              value={formatUnits(reorderAlerts.count)}
+              icon={<AlertCircle className="h-5 w-5" />}
+            />
+            <SecondaryMetricCard
               label="Productos activos"
               value={String(totals.skus)}
               icon={<Boxes className="h-5 w-5" />}
             />
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
             <SecondaryMetricCard
               label="Lotes en stock"
               value={formatUnits(totals.batches)}
@@ -587,29 +695,43 @@ export default function InventoryDashboardPage() {
                     </td>
                   </tr>
                 ) : (
-                  movements.slice(0, 20).map((movement) => (
-                    <tr key={movement.id} className="text-sm transition-colors hover:bg-primary/5">
-                      <td className="px-8 py-5 font-medium text-muted">
-                        {formatDate(movement.createdAt)}
-                      </td>
-                      <td className="px-8 py-5">
-                        <span className="rounded-full border border-theme bg-theme/50 px-3 py-1 text-[10px] font-black uppercase text-primary">
-                          {movement.action}
-                        </span>
-                      </td>
-                      <td className="px-8 py-5">
-                        <div className="flex items-center gap-3 font-bold text-primary">
-                          <ArrowRight className="h-4 w-4 text-rose-500" />
-                          {movement.entity}
-                        </div>
-                        <p className="mt-1 text-[10px] font-medium uppercase tracking-wider text-muted">
-                          {movement.entityId
-                            ? `Lote afectado: ${movement.entityId.substring(0, 8)}`
-                            : 'Sin entidad asociada'}
-                        </p>
-                      </td>
-                    </tr>
-                  ))
+                  movements.slice(0, 20).map((movement) => {
+                    const movementLabel = movement.reason || movement.action || 'MOVIMIENTO';
+                    const itemName =
+                      movement.variant?.product?.name ||
+                      movement.variant?.sku ||
+                      movement.supplyItem?.name ||
+                      movement.supplyItem?.sku ||
+                      movement.entity ||
+                      'Inventario';
+                    const quantity =
+                      typeof movement.quantity === 'number'
+                        ? movement.quantity
+                        : Number(movement.payload?.quantityReduced || 0);
+
+                    return (
+                      <tr key={movement.id} className="text-sm transition-colors hover:bg-primary/5">
+                        <td className="px-8 py-5 font-medium text-muted">
+                          {formatDate(movement.createdAt)}
+                        </td>
+                        <td className="px-8 py-5">
+                          <span className="rounded-full border border-theme bg-theme/50 px-3 py-1 text-[10px] font-black uppercase text-primary">
+                            {movementLabel}
+                          </span>
+                        </td>
+                        <td className="px-8 py-5">
+                          <div className="flex items-center gap-3 font-bold text-primary">
+                            <ArrowRight className="h-4 w-4 text-rose-500" />
+                            {itemName}
+                          </div>
+                          <p className="mt-1 text-[10px] font-medium uppercase tracking-wider text-muted">
+                            Cantidad {formatUnits(quantity)} | Saldo{' '}
+                            {formatUnits(movement.balanceAfter ?? 0)}
+                          </p>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

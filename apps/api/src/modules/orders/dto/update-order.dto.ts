@@ -1,5 +1,8 @@
 import { IsEnum, IsOptional, IsString } from 'class-validator';
-import { OrderStatus } from '../../../generated/client/enums';
+import {
+  OrderStatus,
+  SaleLegalDocumentType,
+} from '../../../generated/client/enums';
 
 export class UpdateOrderDto {
   @IsEnum(OrderStatus)
@@ -13,4 +16,12 @@ export class UpdateOrderDto {
   @IsString()
   @IsOptional()
   carrier?: string;
+
+  @IsEnum(SaleLegalDocumentType)
+  @IsOptional()
+  saleLegalDocumentType?: SaleLegalDocumentType;
+
+  @IsString()
+  @IsOptional()
+  saleLegalDocumentReference?: string;
 }

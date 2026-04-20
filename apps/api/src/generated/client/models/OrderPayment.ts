@@ -202,7 +202,7 @@ export type OrderPaymentGroupByOutputType = {
   orderId: string
   amount: runtime.Decimal
   paymentDate: Date
-  proofUrl: string | null
+  proofUrl: string
   notes: string | null
   deletedAt: Date | null
   createdAt: Date
@@ -236,7 +236,7 @@ export type OrderPaymentWhereInput = {
   orderId?: Prisma.StringFilter<"OrderPayment"> | string
   amount?: Prisma.DecimalFilter<"OrderPayment"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentDate?: Prisma.DateTimeFilter<"OrderPayment"> | Date | string
-  proofUrl?: Prisma.StringNullableFilter<"OrderPayment"> | string | null
+  proofUrl?: Prisma.StringFilter<"OrderPayment"> | string
   notes?: Prisma.StringNullableFilter<"OrderPayment"> | string | null
   deletedAt?: Prisma.DateTimeNullableFilter<"OrderPayment"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"OrderPayment"> | Date | string
@@ -248,7 +248,7 @@ export type OrderPaymentOrderByWithRelationInput = {
   orderId?: Prisma.SortOrder
   amount?: Prisma.SortOrder
   paymentDate?: Prisma.SortOrder
-  proofUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  proofUrl?: Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -263,7 +263,7 @@ export type OrderPaymentWhereUniqueInput = Prisma.AtLeast<{
   orderId?: Prisma.StringFilter<"OrderPayment"> | string
   amount?: Prisma.DecimalFilter<"OrderPayment"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentDate?: Prisma.DateTimeFilter<"OrderPayment"> | Date | string
-  proofUrl?: Prisma.StringNullableFilter<"OrderPayment"> | string | null
+  proofUrl?: Prisma.StringFilter<"OrderPayment"> | string
   notes?: Prisma.StringNullableFilter<"OrderPayment"> | string | null
   deletedAt?: Prisma.DateTimeNullableFilter<"OrderPayment"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"OrderPayment"> | Date | string
@@ -275,7 +275,7 @@ export type OrderPaymentOrderByWithAggregationInput = {
   orderId?: Prisma.SortOrder
   amount?: Prisma.SortOrder
   paymentDate?: Prisma.SortOrder
-  proofUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  proofUrl?: Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -294,7 +294,7 @@ export type OrderPaymentScalarWhereWithAggregatesInput = {
   orderId?: Prisma.StringWithAggregatesFilter<"OrderPayment"> | string
   amount?: Prisma.DecimalWithAggregatesFilter<"OrderPayment"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentDate?: Prisma.DateTimeWithAggregatesFilter<"OrderPayment"> | Date | string
-  proofUrl?: Prisma.StringNullableWithAggregatesFilter<"OrderPayment"> | string | null
+  proofUrl?: Prisma.StringWithAggregatesFilter<"OrderPayment"> | string
   notes?: Prisma.StringNullableWithAggregatesFilter<"OrderPayment"> | string | null
   deletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"OrderPayment"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"OrderPayment"> | Date | string
@@ -304,7 +304,7 @@ export type OrderPaymentCreateInput = {
   id?: string
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentDate: Date | string
-  proofUrl?: string | null
+  proofUrl: string
   notes?: string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
@@ -316,7 +316,7 @@ export type OrderPaymentUncheckedCreateInput = {
   orderId: string
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentDate: Date | string
-  proofUrl?: string | null
+  proofUrl: string
   notes?: string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
@@ -326,7 +326,7 @@ export type OrderPaymentUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  proofUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  proofUrl?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -338,7 +338,7 @@ export type OrderPaymentUncheckedUpdateInput = {
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  proofUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  proofUrl?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -349,7 +349,7 @@ export type OrderPaymentCreateManyInput = {
   orderId: string
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentDate: Date | string
-  proofUrl?: string | null
+  proofUrl: string
   notes?: string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
@@ -359,7 +359,7 @@ export type OrderPaymentUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  proofUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  proofUrl?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -370,7 +370,7 @@ export type OrderPaymentUncheckedUpdateManyInput = {
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  proofUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  proofUrl?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -473,7 +473,7 @@ export type OrderPaymentCreateWithoutOrderInput = {
   id?: string
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentDate: Date | string
-  proofUrl?: string | null
+  proofUrl: string
   notes?: string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
@@ -483,7 +483,7 @@ export type OrderPaymentUncheckedCreateWithoutOrderInput = {
   id?: string
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentDate: Date | string
-  proofUrl?: string | null
+  proofUrl: string
   notes?: string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
@@ -523,7 +523,7 @@ export type OrderPaymentScalarWhereInput = {
   orderId?: Prisma.StringFilter<"OrderPayment"> | string
   amount?: Prisma.DecimalFilter<"OrderPayment"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentDate?: Prisma.DateTimeFilter<"OrderPayment"> | Date | string
-  proofUrl?: Prisma.StringNullableFilter<"OrderPayment"> | string | null
+  proofUrl?: Prisma.StringFilter<"OrderPayment"> | string
   notes?: Prisma.StringNullableFilter<"OrderPayment"> | string | null
   deletedAt?: Prisma.DateTimeNullableFilter<"OrderPayment"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"OrderPayment"> | Date | string
@@ -533,7 +533,7 @@ export type OrderPaymentCreateManyOrderInput = {
   id?: string
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentDate: Date | string
-  proofUrl?: string | null
+  proofUrl: string
   notes?: string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
@@ -543,7 +543,7 @@ export type OrderPaymentUpdateWithoutOrderInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  proofUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  proofUrl?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -553,7 +553,7 @@ export type OrderPaymentUncheckedUpdateWithoutOrderInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  proofUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  proofUrl?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -563,7 +563,7 @@ export type OrderPaymentUncheckedUpdateManyWithoutOrderInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  proofUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  proofUrl?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -639,7 +639,7 @@ export type $OrderPaymentPayload<ExtArgs extends runtime.Types.Extensions.Intern
     orderId: string
     amount: runtime.Decimal
     paymentDate: Date
-    proofUrl: string | null
+    proofUrl: string
     notes: string | null
     deletedAt: Date | null
     createdAt: Date

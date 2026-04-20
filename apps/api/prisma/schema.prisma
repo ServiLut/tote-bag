@@ -83,8 +83,13 @@ model Variant {
   totalCost               Float?                   @map("total_cost")
   taxRate                 Decimal                  @default(0.19) @map("tax_rate") @db.Decimal(4, 2)
   stock                   Int                      @default(0) @map("stock")
+  stockCommitted          Int                      @default(0) @map("stock_committed")
+  reorderPoint            Int?                     @map("reorder_point")
   isActive                Boolean                  @default(true) @map("is_active")
   productId               String                   @map("product_id")
+  inventoryAdjustments    InventoryAdjustment[]
+  inventoryMovements      InventoryMovement[]
+  b2BQuoteItems           B2BQuoteItem[]
   orderItems              OrderItem[]
   personalizationRequests PersonalizationRequest[]
   product                 Product                  @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -117,12 +122,20 @@ model Order {
   isB2B             Boolean              @default(false) @map("is_b2b")
   isManual          Boolean              @default(false) @map("is_manual")
   paymentReceiptUrl String?              @map("payment_receipt_url")
+  saleLegalRequirement SaleLegalRequirement @default(PENDING_STOCK_ASSIGNMENT) @map("sale_legal_requirement")
+  saleLegalStatus   SaleLegalStatus      @default(PENDING) @map("sale_legal_status")
+  saleLegalDocumentType SaleLegalDocumentType? @map("sale_legal_document_type")
+  saleLegalDocumentReference String?     @map("sale_legal_document_reference")
+  saleLegalTrace    Json?                @map("sale_legal_trace")
+  saleLegalResolvedAt DateTime?          @map("sale_legal_resolved_at")
+  saleLegalCompletedAt DateTime?         @map("sale_legal_completed_at")
   deletedAt         DateTime?            @map("deleted_at")
   createdAt         DateTime             @default(now()) @map("created_at")
   profileId         String?              @map("profile_id")
   items             OrderItem[]
   payments          OrderPayment[]
   idempotencyRecord OrderIdempotencyKey?
+  inventoryMovements InventoryMovement[]
   statusHistory     OrderStatusHistory[]
   profile           Profile?             @relation(fields: [profileId], references: [id])
   shipment          Shipment?
@@ -198,7 +211,7 @@ model OrderPayment {
   orderId     String   @map("order_id")
   amount      Decimal  @map("amount") @db.Decimal(18, 2)
   paymentDate DateTime @map("payment_date")
-  proofUrl    String?  @map("proof_url")
+  proofUrl    String   @map("proof_url")
   notes       String?  @map("notes")
   deletedAt   DateTime? @map("deleted_at")
   createdAt   DateTime @default(now()) @map("created_at")
@@ -241,6 +254,8 @@ model User {
   updatedAt                       DateTime                 @updatedAt @map("updated_at")
   auditLogs                       AuditLog[]
   financialTransactions           FinancialTransaction[]
+  inventoryAdjustments            InventoryAdjustment[]
+  inventoryMovements              InventoryMovement[]
   profile                         Profile?
   personalizationRequests         PersonalizationRequest[] @relation("PersonalizationRequestUser")
   reviewedPersonalizationRequests PersonalizationRequest[] @relation("PersonalizationRequestReviewedBy")
@@ -419,6 +434,10 @@ model B2BQuote {
   package           String         @map("package")
   status            String         @default("PENDIENTE") @map("status")
   paymentReceiptUrl String?        @map("payment_receipt_url")
+  expiresAt         DateTime?      @map("expires_at")
+  reservationStatus B2BReservationStatus @default(NONE) @map("reservation_status")
+  reservationHours  Int?           @map("reservation_hours")
+  reservationReleasedAt DateTime?  @map("reservation_released_at")
   deletedAt         DateTime?      @map("deleted_at")
   createdAt         DateTime       @default(now()) @map("created_at")
   material          String?        @map("material")
@@ -578,19 +597,32 @@ model PricingRule {
 }
 
 model B2BQuoteItem {
-  id                String   @id @default(uuid()) @map("id")
-  quoteId           String   @map("quote_id")
-  productId         String   @map("product_id")
-  quantity          Int      @map("quantity")
-  unitPrice         Float    @default(0) @map("unit_price")
-  totalPrice        Float    @default(0) @map("total_price")
-  configurationJson Json     @map("configuration_json")
-  pricingJson       Json?    @map("pricing_json")
-  notes             String?  @map("notes")
-  targetUnitPrice   Float?   @map("target_unit_price")
-  product           Product  @relation(fields: [productId], references: [id])
-  quote             B2BQuote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  id                    String           @id @default(uuid()) @map("id")
+  quoteId               String           @map("quote_id")
+  productId             String           @map("product_id")
+  variantId             String?          @map("variant_id")
+  quantity              Int              @map("quantity")
+  unitPrice             Float            @default(0) @map("unit_price")
+  totalPrice            Float            @default(0) @map("total_price")
+  configurationJson     Json             @map("configuration_json")
+  pricingJson           Json?            @map("pricing_json")
+  notes                 String?          @map("notes")
+  targetUnitPrice       Float?           @map("target_unit_price")
+  itemType              B2BQuoteItemType @default(STANDARD_STOCK) @map("item_type")
+  manualSize            String?          @map("manual_size")
+  manualSpecs           Json?            @map("manual_specs")
+  externalUnitCost      Float?           @map("external_unit_cost")
+  agreedUnitPrice       Float?           @map("agreed_unit_price")
+  reservedQuantity      Int              @default(0) @map("reserved_quantity")
+  reservationExpiresAt  DateTime?        @map("reservation_expires_at")
+  reservationReleasedAt DateTime?        @map("reservation_released_at")
+  product               Product          @relation(fields: [productId], references: [id])
+  quote                 B2BQuote         @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  variant               Variant?         @relation(fields: [variantId], references: [id], onDelete: Restrict)
 
+  @@index([variantId])
+  @@index([itemType])
+  @@index([reservationExpiresAt])
   @@map("b2b_quote_items")
   @@schema("tote-bag")
 }
@@ -643,11 +675,14 @@ model SupplyItem {
   unitOfMeasure      String                @map("unit_of_measure")
   cost               Decimal               @default(0) @map("cost") @db.Decimal(18, 2)
   stock              Decimal               @default(0) @map("stock") @db.Decimal(18, 3)
+  stockCommitted     Decimal               @default(0) @map("stock_committed") @db.Decimal(18, 3)
   minStock           Decimal?              @map("min_stock") @db.Decimal(18, 3)
   isActive           Boolean               @default(true) @map("is_active")
   deletedAt          DateTime?             @map("deleted_at")
   createdAt          DateTime              @default(now()) @map("created_at")
   updatedAt          DateTime              @updatedAt @map("updated_at")
+  inventoryAdjustments InventoryAdjustment[]
+  inventoryMovements InventoryMovement[]
   purchaseBatchLines PurchaseBatchLine[]
   shipmentUsages     ShipmentSupplyUsage[]
 
@@ -675,6 +710,8 @@ model PurchaseBatch {
   createdAt         DateTime               @default(now()) @map("created_at")
   updatedAt         DateTime               @updatedAt @map("updated_at")
   lines             PurchaseBatchLine[]
+  inventoryAdjustments InventoryAdjustment[]
+  inventoryMovements InventoryMovement[]
   transactions      FinancialTransaction[]
   invoices          PurchaseInvoice[]
   product           Product?               @relation(fields: [productId], references: [id])
@@ -706,6 +743,8 @@ model PurchaseBatchLine {
   variant                  Variant?                        @relation(fields: [variantId], references: [id], onDelete: SetNull)
   supplyItem               SupplyItem?                     @relation(fields: [supplyItemId], references: [id], onDelete: SetNull)
   shipmentUsageAllocations ShipmentSupplyUsageAllocation[]
+  inventoryAdjustments     InventoryAdjustment[]
+  inventoryMovements       InventoryMovement[]
 
   @@index([purchaseBatchId])
   @@index([itemType])
@@ -745,6 +784,68 @@ model ShipmentSupplyUsageAllocation {
   @@index([shipmentSupplyUsageId])
   @@index([purchaseBatchLineId])
   @@map("shipment_supply_usage_allocations")
+  @@schema("tote-bag")
+}
+
+model InventoryAdjustment {
+  id                  String                     @id @default(uuid()) @map("id")
+  reason              InventoryAdjustmentReason  @map("reason")
+  itemType            InventoryAdjustmentItemType @map("item_type")
+  quantityDelta       Decimal                    @map("quantity_delta") @db.Decimal(18, 3)
+  notes               String?                    @map("notes")
+  userId              String?                    @map("user_id")
+  variantId           String?                    @map("variant_id")
+  supplyItemId        String?                    @map("supply_item_id")
+  purchaseBatchId     String?                    @map("purchase_batch_id")
+  purchaseBatchLineId String?                    @map("purchase_batch_line_id")
+  createdAt           DateTime                   @default(now()) @map("created_at")
+  user                User?                      @relation(fields: [userId], references: [id])
+  variant             Variant?                   @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  supplyItem          SupplyItem?                @relation(fields: [supplyItemId], references: [id], onDelete: SetNull)
+  purchaseBatch       PurchaseBatch?             @relation(fields: [purchaseBatchId], references: [id], onDelete: SetNull)
+  purchaseBatchLine   PurchaseBatchLine?         @relation(fields: [purchaseBatchLineId], references: [id], onDelete: SetNull)
+  movement            InventoryMovement?
+
+  @@index([reason, createdAt])
+  @@index([variantId])
+  @@index([supplyItemId])
+  @@index([purchaseBatchId])
+  @@index([purchaseBatchLineId])
+  @@map("inventory_adjustments")
+  @@schema("tote-bag")
+}
+
+model InventoryMovement {
+  id                  String                     @id @default(uuid()) @map("id")
+  reason              InventoryMovementReason    @map("reason")
+  itemType            InventoryAdjustmentItemType @map("item_type")
+  quantity            Decimal                    @map("quantity") @db.Decimal(18, 3)
+  balanceAfter        Decimal                    @map("balance_after") @db.Decimal(18, 3)
+  userId              String?                    @map("user_id")
+  variantId           String?                    @map("variant_id")
+  supplyItemId        String?                    @map("supply_item_id")
+  purchaseBatchId     String?                    @map("purchase_batch_id")
+  purchaseBatchLineId String?                    @map("purchase_batch_line_id")
+  orderId             String?                    @map("order_id")
+  adjustmentId        String?                    @unique @map("adjustment_id")
+  metadata            Json?                      @map("metadata")
+  createdAt           DateTime                   @default(now()) @map("created_at")
+  user                User?                      @relation(fields: [userId], references: [id])
+  variant             Variant?                   @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  supplyItem          SupplyItem?                @relation(fields: [supplyItemId], references: [id], onDelete: SetNull)
+  purchaseBatch       PurchaseBatch?             @relation(fields: [purchaseBatchId], references: [id], onDelete: SetNull)
+  purchaseBatchLine   PurchaseBatchLine?         @relation(fields: [purchaseBatchLineId], references: [id], onDelete: SetNull)
+  order               Order?                     @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  adjustment          InventoryAdjustment?       @relation(fields: [adjustmentId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([reason])
+  @@index([variantId])
+  @@index([supplyItemId])
+  @@index([purchaseBatchId])
+  @@index([purchaseBatchLineId])
+  @@index([orderId])
+  @@map("inventory_movements")
   @@schema("tote-bag")
 }
 
@@ -1073,6 +1174,34 @@ enum SupplyItemType {
   @@schema("tote-bag")
 }
 
+enum InventoryAdjustmentItemType {
+  VARIANT
+  SUPPLY
+
+  @@schema("tote-bag")
+}
+
+enum InventoryAdjustmentReason {
+  ENTRADA_MAQUILA
+  SALIDA_MUESTRA_PUBLICIDAD
+  SALIDA_AVERIA
+  AJUSTE_VENTA_EXTERNA
+
+  @@schema("tote-bag")
+}
+
+enum InventoryMovementReason {
+  PURCHASE_RECEIPT
+  SALE_CONSUMPTION
+  RETURN_TO_STOCK
+  MANUAL_ADJUSTMENT
+  STOCK_COMMITMENT
+  STOCK_COMMITMENT_RELEASE
+  SHIPMENT_SUPPLY_USAGE
+
+  @@schema("tote-bag")
+}
+
 enum PurchaseInvoiceStatus {
   PENDING
   PARTIAL
@@ -1084,6 +1213,45 @@ enum PurchaseInvoiceStatus {
 enum PurchaseDocumentType {
   INVOICE
   DELIVERY_NOTE
+
+  @@schema("tote-bag")
+}
+
+enum SaleLegalRequirement {
+  PENDING_STOCK_ASSIGNMENT
+  ELECTRONIC_INVOICE_REQUIRED
+  INTERNAL_DOCUMENT_ALLOWED
+
+  @@schema("tote-bag")
+}
+
+enum SaleLegalStatus {
+  PENDING
+  COMPLETED
+  NOT_REQUIRED
+
+  @@schema("tote-bag")
+}
+
+enum SaleLegalDocumentType {
+  ELECTRONIC_INVOICE
+  INTERNAL_DELIVERY_NOTE
+
+  @@schema("tote-bag")
+}
+
+enum B2BQuoteItemType {
+  STANDARD_STOCK
+  MANUAL_EXTERNAL_PRODUCTION
+
+  @@schema("tote-bag")
+}
+
+enum B2BReservationStatus {
+  NONE
+  ACTIVE
+  RELEASED
+  EXPIRED
 
   @@schema("tote-bag")
 }

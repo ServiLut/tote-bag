@@ -421,6 +421,8 @@ export const ModelName = {
   PurchaseBatchLine: 'PurchaseBatchLine',
   ShipmentSupplyUsage: 'ShipmentSupplyUsage',
   ShipmentSupplyUsageAllocation: 'ShipmentSupplyUsageAllocation',
+  InventoryAdjustment: 'InventoryAdjustment',
+  InventoryMovement: 'InventoryMovement',
   PurchaseInvoice: 'PurchaseInvoice',
   PurchasePayment: 'PurchasePayment',
   FinancialTransaction: 'FinancialTransaction',
@@ -444,7 +446,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "product" | "productImage" | "collection" | "variant" | "order" | "shippingProvider" | "shipment" | "orderStatusHistory" | "orderIdempotencyKey" | "orderPayment" | "orderItem" | "user" | "roleModel" | "permission" | "rolePermission" | "userRole" | "webhookEvent" | "pqrsTicket" | "profile" | "department" | "municipality" | "b2BQuote" | "auditLog" | "address" | "productAttribute" | "personalizationOption" | "personalizationRule" | "personalizationRequest" | "pricingRule" | "b2BQuoteItem" | "wizardOption" | "supplier" | "supplyItem" | "purchaseBatch" | "purchaseBatchLine" | "shipmentSupplyUsage" | "shipmentSupplyUsageAllocation" | "purchaseInvoice" | "purchasePayment" | "financialTransaction" | "payrollWorker" | "payrollShift" | "payrollBillingStatement" | "opexCategory" | "managerApproval"
+    modelProps: "product" | "productImage" | "collection" | "variant" | "order" | "shippingProvider" | "shipment" | "orderStatusHistory" | "orderIdempotencyKey" | "orderPayment" | "orderItem" | "user" | "roleModel" | "permission" | "rolePermission" | "userRole" | "webhookEvent" | "pqrsTicket" | "profile" | "department" | "municipality" | "b2BQuote" | "auditLog" | "address" | "productAttribute" | "personalizationOption" | "personalizationRule" | "personalizationRequest" | "pricingRule" | "b2BQuoteItem" | "wizardOption" | "supplier" | "supplyItem" | "purchaseBatch" | "purchaseBatchLine" | "shipmentSupplyUsage" | "shipmentSupplyUsageAllocation" | "inventoryAdjustment" | "inventoryMovement" | "purchaseInvoice" | "purchasePayment" | "financialTransaction" | "payrollWorker" | "payrollShift" | "payrollBillingStatement" | "opexCategory" | "managerApproval"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -3186,6 +3188,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    InventoryAdjustment: {
+      payload: Prisma.$InventoryAdjustmentPayload<ExtArgs>
+      fields: Prisma.InventoryAdjustmentFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.InventoryAdjustmentFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryAdjustmentPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.InventoryAdjustmentFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryAdjustmentPayload>
+        }
+        findFirst: {
+          args: Prisma.InventoryAdjustmentFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryAdjustmentPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.InventoryAdjustmentFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryAdjustmentPayload>
+        }
+        findMany: {
+          args: Prisma.InventoryAdjustmentFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryAdjustmentPayload>[]
+        }
+        create: {
+          args: Prisma.InventoryAdjustmentCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryAdjustmentPayload>
+        }
+        createMany: {
+          args: Prisma.InventoryAdjustmentCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.InventoryAdjustmentCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryAdjustmentPayload>[]
+        }
+        delete: {
+          args: Prisma.InventoryAdjustmentDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryAdjustmentPayload>
+        }
+        update: {
+          args: Prisma.InventoryAdjustmentUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryAdjustmentPayload>
+        }
+        deleteMany: {
+          args: Prisma.InventoryAdjustmentDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.InventoryAdjustmentUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.InventoryAdjustmentUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryAdjustmentPayload>[]
+        }
+        upsert: {
+          args: Prisma.InventoryAdjustmentUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryAdjustmentPayload>
+        }
+        aggregate: {
+          args: Prisma.InventoryAdjustmentAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateInventoryAdjustment>
+        }
+        groupBy: {
+          args: Prisma.InventoryAdjustmentGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.InventoryAdjustmentGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.InventoryAdjustmentCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.InventoryAdjustmentCountAggregateOutputType> | number
+        }
+      }
+    }
+    InventoryMovement: {
+      payload: Prisma.$InventoryMovementPayload<ExtArgs>
+      fields: Prisma.InventoryMovementFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.InventoryMovementFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryMovementPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.InventoryMovementFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryMovementPayload>
+        }
+        findFirst: {
+          args: Prisma.InventoryMovementFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryMovementPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.InventoryMovementFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryMovementPayload>
+        }
+        findMany: {
+          args: Prisma.InventoryMovementFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryMovementPayload>[]
+        }
+        create: {
+          args: Prisma.InventoryMovementCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryMovementPayload>
+        }
+        createMany: {
+          args: Prisma.InventoryMovementCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.InventoryMovementCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryMovementPayload>[]
+        }
+        delete: {
+          args: Prisma.InventoryMovementDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryMovementPayload>
+        }
+        update: {
+          args: Prisma.InventoryMovementUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryMovementPayload>
+        }
+        deleteMany: {
+          args: Prisma.InventoryMovementDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.InventoryMovementUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.InventoryMovementUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryMovementPayload>[]
+        }
+        upsert: {
+          args: Prisma.InventoryMovementUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryMovementPayload>
+        }
+        aggregate: {
+          args: Prisma.InventoryMovementAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateInventoryMovement>
+        }
+        groupBy: {
+          args: Prisma.InventoryMovementGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.InventoryMovementGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.InventoryMovementCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.InventoryMovementCountAggregateOutputType> | number
+        }
+      }
+    }
     PurchaseInvoice: {
       payload: Prisma.$PurchaseInvoicePayload<ExtArgs>
       fields: Prisma.PurchaseInvoiceFieldRefs
@@ -3880,6 +4030,8 @@ export const VariantScalarFieldEnum = {
   totalCost: 'totalCost',
   taxRate: 'taxRate',
   stock: 'stock',
+  stockCommitted: 'stockCommitted',
+  reorderPoint: 'reorderPoint',
   isActive: 'isActive',
   productId: 'productId'
 } as const
@@ -3907,6 +4059,13 @@ export const OrderScalarFieldEnum = {
   isB2B: 'isB2B',
   isManual: 'isManual',
   paymentReceiptUrl: 'paymentReceiptUrl',
+  saleLegalRequirement: 'saleLegalRequirement',
+  saleLegalStatus: 'saleLegalStatus',
+  saleLegalDocumentType: 'saleLegalDocumentType',
+  saleLegalDocumentReference: 'saleLegalDocumentReference',
+  saleLegalTrace: 'saleLegalTrace',
+  saleLegalResolvedAt: 'saleLegalResolvedAt',
+  saleLegalCompletedAt: 'saleLegalCompletedAt',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   profileId: 'profileId'
@@ -4156,6 +4315,10 @@ export const B2BQuoteScalarFieldEnum = {
   package: 'package',
   status: 'status',
   paymentReceiptUrl: 'paymentReceiptUrl',
+  expiresAt: 'expiresAt',
+  reservationStatus: 'reservationStatus',
+  reservationHours: 'reservationHours',
+  reservationReleasedAt: 'reservationReleasedAt',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   material: 'material',
@@ -4296,13 +4459,22 @@ export const B2BQuoteItemScalarFieldEnum = {
   id: 'id',
   quoteId: 'quoteId',
   productId: 'productId',
+  variantId: 'variantId',
   quantity: 'quantity',
   unitPrice: 'unitPrice',
   totalPrice: 'totalPrice',
   configurationJson: 'configurationJson',
   pricingJson: 'pricingJson',
   notes: 'notes',
-  targetUnitPrice: 'targetUnitPrice'
+  targetUnitPrice: 'targetUnitPrice',
+  itemType: 'itemType',
+  manualSize: 'manualSize',
+  manualSpecs: 'manualSpecs',
+  externalUnitCost: 'externalUnitCost',
+  agreedUnitPrice: 'agreedUnitPrice',
+  reservedQuantity: 'reservedQuantity',
+  reservationExpiresAt: 'reservationExpiresAt',
+  reservationReleasedAt: 'reservationReleasedAt'
 } as const
 
 export type B2BQuoteItemScalarFieldEnum = (typeof B2BQuoteItemScalarFieldEnum)[keyof typeof B2BQuoteItemScalarFieldEnum]
@@ -4353,6 +4525,7 @@ export const SupplyItemScalarFieldEnum = {
   unitOfMeasure: 'unitOfMeasure',
   cost: 'cost',
   stock: 'stock',
+  stockCommitted: 'stockCommitted',
   minStock: 'minStock',
   isActive: 'isActive',
   deletedAt: 'deletedAt',
@@ -4427,6 +4600,43 @@ export const ShipmentSupplyUsageAllocationScalarFieldEnum = {
 } as const
 
 export type ShipmentSupplyUsageAllocationScalarFieldEnum = (typeof ShipmentSupplyUsageAllocationScalarFieldEnum)[keyof typeof ShipmentSupplyUsageAllocationScalarFieldEnum]
+
+
+export const InventoryAdjustmentScalarFieldEnum = {
+  id: 'id',
+  reason: 'reason',
+  itemType: 'itemType',
+  quantityDelta: 'quantityDelta',
+  notes: 'notes',
+  userId: 'userId',
+  variantId: 'variantId',
+  supplyItemId: 'supplyItemId',
+  purchaseBatchId: 'purchaseBatchId',
+  purchaseBatchLineId: 'purchaseBatchLineId',
+  createdAt: 'createdAt'
+} as const
+
+export type InventoryAdjustmentScalarFieldEnum = (typeof InventoryAdjustmentScalarFieldEnum)[keyof typeof InventoryAdjustmentScalarFieldEnum]
+
+
+export const InventoryMovementScalarFieldEnum = {
+  id: 'id',
+  reason: 'reason',
+  itemType: 'itemType',
+  quantity: 'quantity',
+  balanceAfter: 'balanceAfter',
+  userId: 'userId',
+  variantId: 'variantId',
+  supplyItemId: 'supplyItemId',
+  purchaseBatchId: 'purchaseBatchId',
+  purchaseBatchLineId: 'purchaseBatchLineId',
+  orderId: 'orderId',
+  adjustmentId: 'adjustmentId',
+  metadata: 'metadata',
+  createdAt: 'createdAt'
+} as const
+
+export type InventoryMovementScalarFieldEnum = (typeof InventoryMovementScalarFieldEnum)[keyof typeof InventoryMovementScalarFieldEnum]
 
 
 export const PurchaseInvoiceScalarFieldEnum = {
@@ -4781,6 +4991,48 @@ export type ListEnumOrderSourceFieldRefInput<$PrismaModel> = FieldRefInputType<$
 
 
 /**
+ * Reference to a field of type 'SaleLegalRequirement'
+ */
+export type EnumSaleLegalRequirementFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SaleLegalRequirement'>
+    
+
+
+/**
+ * Reference to a field of type 'SaleLegalRequirement[]'
+ */
+export type ListEnumSaleLegalRequirementFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SaleLegalRequirement[]'>
+    
+
+
+/**
+ * Reference to a field of type 'SaleLegalStatus'
+ */
+export type EnumSaleLegalStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SaleLegalStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'SaleLegalStatus[]'
+ */
+export type ListEnumSaleLegalStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SaleLegalStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'SaleLegalDocumentType'
+ */
+export type EnumSaleLegalDocumentTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SaleLegalDocumentType'>
+    
+
+
+/**
+ * Reference to a field of type 'SaleLegalDocumentType[]'
+ */
+export type ListEnumSaleLegalDocumentTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SaleLegalDocumentType[]'>
+    
+
+
+/**
  * Reference to a field of type 'ShipmentStatus'
  */
 export type EnumShipmentStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ShipmentStatus'>
@@ -4851,6 +5103,20 @@ export type ListEnumPqrsStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$P
 
 
 /**
+ * Reference to a field of type 'B2BReservationStatus'
+ */
+export type EnumB2BReservationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'B2BReservationStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'B2BReservationStatus[]'
+ */
+export type ListEnumB2BReservationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'B2BReservationStatus[]'>
+    
+
+
+/**
  * Reference to a field of type 'AttributeType'
  */
 export type EnumAttributeTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AttributeType'>
@@ -4889,6 +5155,20 @@ export type EnumPriceRuleScopeFieldRefInput<$PrismaModel> = FieldRefInputType<$P
  * Reference to a field of type 'PriceRuleScope[]'
  */
 export type ListEnumPriceRuleScopeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PriceRuleScope[]'>
+    
+
+
+/**
+ * Reference to a field of type 'B2BQuoteItemType'
+ */
+export type EnumB2BQuoteItemTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'B2BQuoteItemType'>
+    
+
+
+/**
+ * Reference to a field of type 'B2BQuoteItemType[]'
+ */
+export type ListEnumB2BQuoteItemTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'B2BQuoteItemType[]'>
     
 
 
@@ -4959,6 +5239,48 @@ export type EnumPurchaseBatchItemTypeFieldRefInput<$PrismaModel> = FieldRefInput
  * Reference to a field of type 'PurchaseBatchItemType[]'
  */
 export type ListEnumPurchaseBatchItemTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PurchaseBatchItemType[]'>
+    
+
+
+/**
+ * Reference to a field of type 'InventoryAdjustmentReason'
+ */
+export type EnumInventoryAdjustmentReasonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'InventoryAdjustmentReason'>
+    
+
+
+/**
+ * Reference to a field of type 'InventoryAdjustmentReason[]'
+ */
+export type ListEnumInventoryAdjustmentReasonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'InventoryAdjustmentReason[]'>
+    
+
+
+/**
+ * Reference to a field of type 'InventoryAdjustmentItemType'
+ */
+export type EnumInventoryAdjustmentItemTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'InventoryAdjustmentItemType'>
+    
+
+
+/**
+ * Reference to a field of type 'InventoryAdjustmentItemType[]'
+ */
+export type ListEnumInventoryAdjustmentItemTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'InventoryAdjustmentItemType[]'>
+    
+
+
+/**
+ * Reference to a field of type 'InventoryMovementReason'
+ */
+export type EnumInventoryMovementReasonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'InventoryMovementReason'>
+    
+
+
+/**
+ * Reference to a field of type 'InventoryMovementReason[]'
+ */
+export type ListEnumInventoryMovementReasonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'InventoryMovementReason[]'>
     
 
 
@@ -5205,6 +5527,8 @@ export type GlobalOmitConfig = {
   purchaseBatchLine?: Prisma.PurchaseBatchLineOmit
   shipmentSupplyUsage?: Prisma.ShipmentSupplyUsageOmit
   shipmentSupplyUsageAllocation?: Prisma.ShipmentSupplyUsageAllocationOmit
+  inventoryAdjustment?: Prisma.InventoryAdjustmentOmit
+  inventoryMovement?: Prisma.InventoryMovementOmit
   purchaseInvoice?: Prisma.PurchaseInvoiceOmit
   purchasePayment?: Prisma.PurchasePaymentOmit
   financialTransaction?: Prisma.FinancialTransactionOmit

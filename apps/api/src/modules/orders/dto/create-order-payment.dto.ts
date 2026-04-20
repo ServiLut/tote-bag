@@ -4,7 +4,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUrl,
   Matches,
 } from 'class-validator';
 import { normalizeDecimalInput } from '../../purchases/dto/decimal-input.util';
@@ -33,14 +32,13 @@ export class CreateOrderPaymentDto {
   @IsISO8601()
   paymentDate: string;
 
-  @IsOptional()
   @Transform(({ value }) => normalizeOptionalText(value))
   @IsString()
-  @IsUrl(
-    { require_protocol: true },
-    { message: 'proofUrl debe ser una URL valida' },
-  )
-  proofUrl?: string;
+  @IsNotEmpty()
+  @Matches(/^(https?:\/\/|private:\/\/).+/, {
+    message: 'proofUrl debe ser una URL valida o referencia privada',
+  })
+  proofUrl: string;
 
   @IsOptional()
   @Transform(({ value }) => normalizeOptionalText(value))

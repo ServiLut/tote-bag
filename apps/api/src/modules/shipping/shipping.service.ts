@@ -27,6 +27,10 @@ import {
   Role,
   PurchaseBatchItemType,
   SupplyItemType,
+  InventoryAdjustmentItemType,
+  InventoryMovementReason,
+  SaleLegalRequirement,
+  SaleLegalStatus,
 } from '../../generated/client/client';
 
 const RETURN_ACTION = 'PROCESS_SHIPMENT_RETURN';
@@ -130,6 +134,31 @@ export class ShippingService {
   private isShipmentPastDispatch(status: ShipmentStatus | undefined) {
     return (
       this.isDispatchedStatus(status) || status === ShipmentStatus.DELIVERED
+    );
+  }
+
+  private assertSaleLegalClosureAllowed(order: {
+    saleLegalRequirement: SaleLegalRequirement;
+    saleLegalStatus: SaleLegalStatus;
+  }) {
+    if (order.saleLegalStatus === SaleLegalStatus.COMPLETED) {
+      return;
+    }
+
+    if (
+      order.saleLegalRequirement ===
+      SaleLegalRequirement.PENDING_STOCK_ASSIGNMENT
+    ) {
+      throw new ForbiddenException(
+        'La orden no puede despacharse sin asignacion FIFO real de lote',
+      );
+    }
+
+    throw new ForbiddenException(
+      order.saleLegalRequirement ===
+        SaleLegalRequirement.ELECTRONIC_INVOICE_REQUIRED
+        ? 'La orden usa stock de lote con factura y exige factura electronica antes del despacho'
+        : 'La orden usa stock de lote con remision y exige registrar factura o remision interna antes del despacho',
     );
   }
 
@@ -371,6 +400,28 @@ export class ShippingService {
         'El stock consolidado de bolsas no coincide con los lotes disponibles. Revisa inventario antes de despachar.',
       );
     }
+
+    const updatedSupplyItem = await tx.supplyItem.findUnique({
+      where: { id: params.supplyItemId },
+      select: { stock: true },
+    });
+
+    await tx.inventoryMovement.create({
+      data: {
+        reason: InventoryMovementReason.SHIPMENT_SUPPLY_USAGE,
+        itemType: InventoryAdjustmentItemType.SUPPLY,
+        quantity: params.quantity.negated(),
+        balanceAfter: updatedSupplyItem?.stock ?? 0,
+        userId: params.userId ?? null,
+        supplyItemId: params.supplyItemId,
+        orderId: params.orderId,
+        metadata: {
+          shipmentId: params.shipmentId,
+          usageId: usage.id,
+          allocations,
+        },
+      },
+    });
 
     await tx.auditLog.create({
       data: {
@@ -668,6 +719,12 @@ export class ShippingService {
     let totalRestocked = 0;
     const reconstructionMode =
       exactReductions.length > 0 ? 'exact_inventory_consumption' : 'estimated';
+    const movementEntries: Array<{
+      batchId: string;
+      batchLineId: string;
+      quantity: number;
+      unitCost: number;
+    }> = [];
 
     for (const reduction of reductions) {
       if (reduction.quantity <= 0) {
@@ -689,7 +746,7 @@ export class ShippingService {
         },
       });
 
-      await tx.purchaseBatchLine.create({
+      const batchLine = await tx.purchaseBatchLine.create({
         data: {
           purchaseBatchId: batch.id,
           itemType: PurchaseBatchItemType.VARIANT,
@@ -703,15 +760,47 @@ export class ShippingService {
           notes: 'Linea generada por reingreso de devolucion',
         },
       });
+
+      movementEntries.push({
+        batchId: batch.id,
+        batchLineId: batchLine.id,
+        quantity: reduction.quantity,
+        unitCost: reduction.unitCost,
+      });
     }
 
     if (totalRestocked > 0) {
-      await tx.variant.update({
+      const updatedVariant = await tx.variant.update({
         where: { id: item.variantId },
         data: {
           stock: { increment: totalRestocked },
         },
       });
+      let runningBalance = updatedVariant.stock - totalRestocked;
+
+      for (const movementEntry of movementEntries) {
+        runningBalance += movementEntry.quantity;
+
+        await tx.inventoryMovement.create({
+          data: {
+            reason: InventoryMovementReason.RETURN_TO_STOCK,
+            itemType: InventoryAdjustmentItemType.VARIANT,
+            quantity: movementEntry.quantity,
+            balanceAfter: runningBalance,
+            userId,
+            variantId: item.variantId,
+            purchaseBatchId: movementEntry.batchId,
+            purchaseBatchLineId: movementEntry.batchLineId,
+            orderId: order.id,
+            metadata: {
+              shipmentId: order.shipmentId,
+              reason,
+              reconstructionMode,
+              unitCost: movementEntry.unitCost,
+            },
+          },
+        });
+      }
     }
 
     await tx.auditLog.create({
@@ -981,6 +1070,8 @@ export class ShippingService {
             trackingNumber: true,
             carrier: true,
             balanceDue: true,
+            saleLegalRequirement: true,
+            saleLegalStatus: true,
           },
         });
 
@@ -1009,6 +1100,10 @@ export class ShippingService {
         const receivedBagFields =
           shippingBagSupplyItemId !== undefined ||
           shippingBagQuantityUsed !== undefined;
+
+        if (willMovePastDispatch) {
+          this.assertSaleLegalClosureAllowed(order);
+        }
 
         if (shouldConsumeBags && !shippingBagSupplyItemId?.trim()) {
           throw new BadRequestException(

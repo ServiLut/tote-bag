@@ -132,6 +132,10 @@ type PublicVariant = {
   salePrice: number | null;
   comparePrice: number | null;
   stock: number;
+  stockPhysical: number;
+  stockCommitted: number;
+  stockAvailable: number;
+  reorderPoint: number | null;
   isActive: boolean;
 };
 
@@ -499,8 +503,12 @@ export class CatalogService {
     salePrice: number | null;
     comparePrice: number | null;
     stock: number;
+    stockCommitted: number;
+    reorderPoint: number | null;
     isActive: boolean;
   }): PublicVariant {
+    const stockAvailable = Math.max(variant.stock - variant.stockCommitted, 0);
+
     return {
       id: variant.id,
       sku: variant.sku,
@@ -509,7 +517,11 @@ export class CatalogService {
       imageUrl: variant.imageUrl,
       salePrice: variant.salePrice,
       comparePrice: variant.comparePrice,
-      stock: variant.stock,
+      stock: stockAvailable,
+      stockPhysical: variant.stock,
+      stockCommitted: variant.stockCommitted,
+      stockAvailable,
+      reorderPoint: variant.reorderPoint,
       isActive: variant.isActive,
     };
   }

@@ -22,7 +22,15 @@ import {
 } from '../../generated/client/client';
 import { ShippingSyncService } from '../shipping/shipping-sync.service';
 import { OrdersService } from '../orders/orders.service';
+import { InventoryService } from '../inventory/inventory.service';
 import { WompiEvent } from './interfaces/wompi-event.interface';
+
+export type PaymentSupportEntityType =
+  | 'order'
+  | 'order-payment'
+  | 'b2b'
+  | 'batch'
+  | 'purchase-invoice';
 
 @Injectable()
 export class PaymentsService {
@@ -34,6 +42,7 @@ export class PaymentsService {
     private storageService: StorageService,
     private shippingSyncService: ShippingSyncService,
     private ordersService: OrdersService,
+    private inventoryService: InventoryService,
   ) {}
 
   private getWompiPublicKey() {
@@ -106,6 +115,10 @@ export class PaymentsService {
     return Math.round(totalAmount * 100);
   }
 
+  private buildWompiPaymentProofUrl(transactionId: string) {
+    return `https://wompi.com/transactions/${encodeURIComponent(transactionId)}`;
+  }
+
   private assertWompiAmountMatchesOrder(
     transactionAmountInCents: number,
     order: { id: string; totalAmount: number },
@@ -150,7 +163,7 @@ export class PaymentsService {
 
   async uploadPaymentReceipt(
     entityId: string,
-    entityType: 'order' | 'b2b' | 'batch' | 'purchase-invoice',
+    entityType: PaymentSupportEntityType,
     file: Express.Multer.File,
   ) {
     const fileName = `receipts/${entityType}/${entityId}-${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`;
@@ -176,6 +189,15 @@ export class PaymentsService {
         where: { id: entityId },
         data: { paymentReceiptUrl: uploaded.storageRef },
       });
+    } else if (entityType === 'order-payment') {
+      const order = await this.prisma.order.findFirst({
+        where: { id: entityId, deletedAt: null },
+        select: { id: true },
+      });
+
+      if (!order) {
+        throw new BadRequestException('Orden no encontrada');
+      }
     } else if (entityType === 'b2b') {
       updatedEntity = await this.prisma.b2BQuote.update({
         where: { id: entityId },
@@ -207,12 +229,20 @@ export class PaymentsService {
 
   async getSupportSignedUrl(
     entityId: string,
-    entityType: 'order' | 'b2b' | 'batch' | 'purchase-invoice',
+    entityType: PaymentSupportEntityType,
   ) {
     const storageRef = await this.getEntitySupportRef(entityId, entityType);
 
     if (!storageRef) {
       throw new BadRequestException('La entidad no tiene soporte asociado.');
+    }
+
+    if (/^https?:\/\//i.test(storageRef)) {
+      return {
+        storageRef,
+        signedUrl: storageRef,
+        expiresInSeconds: null,
+      };
     }
 
     const location = this.storageService.resolveStorageLocation(
@@ -242,7 +272,7 @@ export class PaymentsService {
 
   private async getEntitySupportRef(
     entityId: string,
-    entityType: 'order' | 'b2b' | 'batch' | 'purchase-invoice',
+    entityType: PaymentSupportEntityType,
   ) {
     if (entityType === 'order') {
       const order = await this.prisma.order.findFirst({
@@ -250,6 +280,14 @@ export class PaymentsService {
         select: { paymentReceiptUrl: true },
       });
       return order?.paymentReceiptUrl ?? null;
+    }
+
+    if (entityType === 'order-payment') {
+      const payment = await this.prisma.orderPayment.findFirst({
+        where: { id: entityId, deletedAt: null },
+        select: { proofUrl: true },
+      });
+      return payment?.proofUrl ?? null;
     }
 
     if (entityType === 'b2b') {
@@ -417,6 +455,14 @@ export class PaymentsService {
             orderNumber: true,
             totalAmount: true,
             status: true,
+            items: {
+              select: {
+                id: true,
+                variantId: true,
+                quantity: true,
+                pricingJson: true,
+              },
+            },
           },
         });
 
@@ -442,23 +488,60 @@ export class PaymentsService {
                 existingOrder.id,
                 undefined,
                 tx,
+                this.buildWompiPaymentProofUrl(transactionId),
               )
             : existingOrder.status === newStatus
               ? existingOrder
-              : await tx.order.update({
-                  where: { id: reference },
-                  data: {
-                    status: newStatus,
-                    statusHistory: {
-                      create: {
-                        status: newStatus,
-                        oldStatus: existingOrder.status,
-                        newStatus,
-                        userId: null,
+              : await (async () => {
+                  if (newStatus === OrderStatus.CANCELADA) {
+                    for (const item of existingOrder.items) {
+                      if (
+                        item.variantId &&
+                        item.pricingJson &&
+                        typeof item.pricingJson === 'object' &&
+                        !Array.isArray(item.pricingJson) &&
+                        'inventoryCommitment' in item.pricingJson
+                      ) {
+                        await this.inventoryService.releaseCommittedStock(
+                          item.variantId,
+                          item.quantity,
+                          undefined,
+                          existingOrder.id,
+                          tx,
+                        );
+
+                        const pricingJsonRest = {
+                          ...(item.pricingJson as Record<string, unknown>),
+                        };
+                        delete pricingJsonRest.inventoryCommitment;
+
+                        await tx.orderItem.update({
+                          where: { id: item.id },
+                          data: {
+                            pricingJson: Object.keys(pricingJsonRest).length
+                              ? (pricingJsonRest as Prisma.InputJsonValue)
+                              : (null as unknown as Prisma.InputJsonValue),
+                          },
+                        });
+                      }
+                    }
+                  }
+
+                  return tx.order.update({
+                    where: { id: reference },
+                    data: {
+                      status: newStatus,
+                      statusHistory: {
+                        create: {
+                          status: newStatus,
+                          oldStatus: existingOrder.status,
+                          newStatus,
+                          userId: null,
+                        },
                       },
                     },
-                  },
-                });
+                  });
+                })();
 
         await this.shippingSyncService.ensureShipmentForOrder(order.id, tx);
 

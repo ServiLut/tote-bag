@@ -17,6 +17,10 @@ import {
   PriceRuleScope,
   OrderStatus,
   OrderSource,
+  PurchaseDocumentType,
+  SaleLegalDocumentType,
+  SaleLegalRequirement,
+  SaleLegalStatus,
 } from '../../generated/client/enums';
 import {
   ConfigurationSnapshot,
@@ -33,10 +37,24 @@ import {
 } from '../../common/utils/sales-tax.util';
 
 type InventoryConsumptionReduction = {
+  purchaseBatchLineId: string | null;
   batchId: string;
   supplierId: string;
   quantity: number;
   unitCost: number;
+  documentType: PurchaseDocumentType;
+};
+
+type InventoryConsumptionSnapshot = {
+  totalCOGS: number;
+  reductions: InventoryConsumptionReduction[];
+};
+
+type SaleLegalResolution = {
+  saleLegalRequirement: SaleLegalRequirement;
+  saleLegalStatus: SaleLegalStatus;
+  saleLegalTrace: Prisma.InputJsonValue;
+  saleLegalResolvedAt: Date | null;
 };
 
 type ResolvedCommercialVariant = {
@@ -111,6 +129,15 @@ export class OrdersService {
     );
   }
 
+  private hasInventoryCommitment(pricingJson: Prisma.JsonValue | null) {
+    return (
+      !!pricingJson &&
+      typeof pricingJson === 'object' &&
+      !Array.isArray(pricingJson) &&
+      'inventoryCommitment' in pricingJson
+    );
+  }
+
   private isPendingPaymentStatus(status: OrderStatus) {
     const pendingPaymentStatuses: OrderStatus[] = [
       OrderStatus.PENDIENTE_PAGO,
@@ -124,14 +151,219 @@ export class OrdersService {
   private isFullyPaidOperationalStatus(status: OrderStatus) {
     const fullyPaidOperationalStatuses: OrderStatus[] = [
       OrderStatus.PAGADA,
-      OrderStatus.EN_PRODUCCION,
-      OrderStatus.IN_PRODUCTION,
       OrderStatus.READY_FOR_DISPATCH,
       OrderStatus.ENVIADA,
       OrderStatus.ENTREGADA,
     ];
 
     return fullyPaidOperationalStatuses.includes(status);
+  }
+
+  private isInventoryAssignedOperationalStatus(status: OrderStatus) {
+    const inventoryAssignedOperationalStatuses: OrderStatus[] = [
+      OrderStatus.EN_PRODUCCION,
+      OrderStatus.IN_PRODUCTION,
+      OrderStatus.PAGADA,
+      OrderStatus.READY_FOR_DISPATCH,
+      OrderStatus.ENVIADA,
+      OrderStatus.ENTREGADA,
+    ];
+
+    return inventoryAssignedOperationalStatuses.includes(status);
+  }
+
+  private requiresCompletedSaleLegalDocument(status: OrderStatus) {
+    const closureStatuses: OrderStatus[] = [
+      OrderStatus.READY_FOR_DISPATCH,
+      OrderStatus.ENVIADA,
+      OrderStatus.ENTREGADA,
+    ];
+
+    return closureStatuses.includes(status);
+  }
+
+  private extractInventoryConsumption(
+    pricingJson: Prisma.JsonValue | null,
+  ): InventoryConsumptionSnapshot | null {
+    if (
+      !pricingJson ||
+      typeof pricingJson !== 'object' ||
+      Array.isArray(pricingJson)
+    ) {
+      return null;
+    }
+
+    const inventoryConsumption = (pricingJson as Record<string, unknown>)
+      .inventoryConsumption;
+
+    if (
+      !inventoryConsumption ||
+      typeof inventoryConsumption !== 'object' ||
+      Array.isArray(inventoryConsumption)
+    ) {
+      return null;
+    }
+
+    const rawConsumption = inventoryConsumption as Record<string, unknown>;
+    const reductions = rawConsumption.reductions;
+
+    if (!Array.isArray(reductions)) {
+      return null;
+    }
+
+    const parsedReductions = reductions.flatMap((reduction) => {
+      if (
+        !reduction ||
+        typeof reduction !== 'object' ||
+        Array.isArray(reduction)
+      ) {
+        return [];
+      }
+
+      const candidate = reduction as Record<string, unknown>;
+      if (
+        typeof candidate.batchId !== 'string' ||
+        typeof candidate.supplierId !== 'string' ||
+        typeof candidate.quantity !== 'number' ||
+        typeof candidate.unitCost !== 'number' ||
+        (candidate.documentType !== PurchaseDocumentType.INVOICE &&
+          candidate.documentType !== PurchaseDocumentType.DELIVERY_NOTE)
+      ) {
+        return [];
+      }
+
+      return [
+        {
+          purchaseBatchLineId:
+            typeof candidate.purchaseBatchLineId === 'string'
+              ? candidate.purchaseBatchLineId
+              : null,
+          batchId: candidate.batchId,
+          supplierId: candidate.supplierId,
+          quantity: candidate.quantity,
+          unitCost: candidate.unitCost,
+          documentType: candidate.documentType,
+        },
+      ];
+    });
+
+    if (parsedReductions.length === 0) {
+      return null;
+    }
+
+    return {
+      totalCOGS:
+        typeof rawConsumption.totalCOGS === 'number'
+          ? rawConsumption.totalCOGS
+          : 0,
+      reductions: parsedReductions,
+    };
+  }
+
+  private resolveSaleLegalRequirement(
+    items: Array<{
+      id?: string;
+      sku?: string;
+      quantity: number;
+      inventoryConsumption: InventoryConsumptionSnapshot | null;
+    }>,
+  ): SaleLegalResolution {
+    const lots = items.flatMap((item) =>
+      (item.inventoryConsumption?.reductions ?? []).map((reduction) => ({
+        orderItemId: item.id ?? null,
+        sku: item.sku ?? null,
+        itemQuantity: item.quantity,
+        purchaseBatchLineId: reduction.purchaseBatchLineId,
+        batchId: reduction.batchId,
+        supplierId: reduction.supplierId,
+        quantity: reduction.quantity,
+        unitCost: reduction.unitCost,
+        documentType: reduction.documentType,
+      })),
+    );
+
+    if (lots.length === 0) {
+      return {
+        saleLegalRequirement: SaleLegalRequirement.PENDING_STOCK_ASSIGNMENT,
+        saleLegalStatus: SaleLegalStatus.PENDING,
+        saleLegalResolvedAt: null,
+        saleLegalTrace: {
+          reason: 'Sin consumo FIFO asignado todavia',
+          lots: [],
+        },
+      };
+    }
+
+    const hasInvoiceLot = lots.some(
+      (lot) => lot.documentType === PurchaseDocumentType.INVOICE,
+    );
+    const requirement = hasInvoiceLot
+      ? SaleLegalRequirement.ELECTRONIC_INVOICE_REQUIRED
+      : SaleLegalRequirement.INTERNAL_DOCUMENT_ALLOWED;
+
+    return {
+      saleLegalRequirement: requirement,
+      saleLegalStatus: SaleLegalStatus.PENDING,
+      saleLegalResolvedAt: new Date(),
+      saleLegalTrace: {
+        requirement,
+        requiredDocumentType: hasInvoiceLot
+          ? SaleLegalDocumentType.ELECTRONIC_INVOICE
+          : null,
+        allowedDocumentTypes: hasInvoiceLot
+          ? [SaleLegalDocumentType.ELECTRONIC_INVOICE]
+          : [
+              SaleLegalDocumentType.ELECTRONIC_INVOICE,
+              SaleLegalDocumentType.INTERNAL_DELIVERY_NOTE,
+            ],
+        lots,
+      },
+    };
+  }
+
+  private validateSaleLegalDocumentType(
+    requirement: SaleLegalRequirement,
+    documentType: SaleLegalDocumentType,
+  ) {
+    if (requirement === SaleLegalRequirement.PENDING_STOCK_ASSIGNMENT) {
+      throw new BadRequestException(
+        'No se puede registrar documento legal antes de asignar stock real por lote',
+      );
+    }
+
+    if (
+      requirement === SaleLegalRequirement.ELECTRONIC_INVOICE_REQUIRED &&
+      documentType !== SaleLegalDocumentType.ELECTRONIC_INVOICE
+    ) {
+      throw new BadRequestException(
+        'El stock usado proviene de lote con factura; el cierre exige factura electronica',
+      );
+    }
+  }
+
+  private assertSaleLegalClosureAllowed(order: {
+    saleLegalRequirement: SaleLegalRequirement;
+    saleLegalStatus: SaleLegalStatus;
+  }) {
+    if (order.saleLegalStatus === SaleLegalStatus.COMPLETED) {
+      return;
+    }
+
+    if (
+      order.saleLegalRequirement ===
+      SaleLegalRequirement.PENDING_STOCK_ASSIGNMENT
+    ) {
+      throw new ForbiddenException(
+        'La orden no puede cerrarse sin asignacion FIFO real de lote',
+      );
+    }
+
+    throw new ForbiddenException(
+      order.saleLegalRequirement ===
+        SaleLegalRequirement.ELECTRONIC_INVOICE_REQUIRED
+        ? 'La orden usa stock de lote con factura y exige factura electronica antes del cierre'
+        : 'La orden usa stock de lote con remision y exige registrar factura o remision interna antes del cierre',
+    );
   }
 
   private parsePositiveMoney(value: DecimalInput, errorMessage: string) {
@@ -160,6 +392,66 @@ export class OrdersService {
     return parsed;
   }
 
+  private async lockOrderForPayment(
+    tx: Prisma.TransactionClient,
+    orderId: string,
+  ) {
+    await tx.$queryRaw`
+      SELECT "id"
+      FROM "tote-bag"."orders"
+      WHERE "id" = ${orderId}
+        AND "deleted_at" IS NULL
+      FOR UPDATE
+    `;
+  }
+
+  private async getActiveOrderPaymentTotal(
+    tx: Prisma.TransactionClient,
+    orderId: string,
+  ) {
+    const aggregate = await tx.orderPayment.aggregate({
+      where: {
+        orderId,
+        deletedAt: null,
+      },
+      _sum: {
+        amount: true,
+      },
+    });
+
+    return roundMoney(aggregate._sum.amount ?? 0);
+  }
+
+  private getRequiredDepositAmount(totalAmount: Decimal) {
+    return roundMoney(totalAmount.mul(0.7));
+  }
+
+  private resolveStatusAfterOrderPayment(input: {
+    currentStatus: OrderStatus;
+    totalAmount: Decimal;
+    nextPaid: Decimal;
+    nextBalanceDue: Decimal;
+  }) {
+    if (input.nextBalanceDue.isZero()) {
+      return OrderStatus.PAGADA;
+    }
+
+    if (
+      this.isPendingPaymentStatus(input.currentStatus) &&
+      input.nextPaid.greaterThanOrEqualTo(
+        this.getRequiredDepositAmount(input.totalAmount),
+      )
+    ) {
+      return OrderStatus.EN_PRODUCCION;
+    }
+
+    if (this.isPendingPaymentStatus(input.currentStatus)) {
+      return OrderStatus.PENDING_DEPOSIT;
+    }
+
+    return input.currentStatus;
+  }
+
   private async buildInventoryConsumption(
     tx: Prisma.TransactionClient,
     item: {
@@ -169,7 +461,7 @@ export class OrdersService {
       quantity: number;
     },
     userId?: string,
-  ) {
+  ): Promise<InventoryConsumptionSnapshot> {
     const targetVariant = await this.resolveCommercialVariant(tx, item);
     const stockReduction = await this.inventoryService.reduceStockFIFO(
       targetVariant.id,
@@ -182,6 +474,103 @@ export class OrdersService {
       totalCOGS: stockReduction.totalCOGS,
       reductions: stockReduction.reductions,
     };
+  }
+
+  private async assignOrderInventoryAndResolveSaleLegal(
+    tx: Prisma.TransactionClient,
+    order: {
+      id: string;
+      items: Array<{
+        id: string;
+        productId: string;
+        variantId: string | null;
+        sku: string;
+        quantity: number;
+        pricingJson: Prisma.JsonValue | null;
+      }>;
+    },
+    userId?: string,
+  ) {
+    const saleLegalItems: Array<{
+      id: string;
+      sku: string;
+      quantity: number;
+      inventoryConsumption: InventoryConsumptionSnapshot | null;
+    }> = [];
+
+    for (const item of order.items) {
+      const existingConsumption = this.extractInventoryConsumption(
+        item.pricingJson,
+      );
+
+      if (existingConsumption) {
+        saleLegalItems.push({
+          id: item.id,
+          sku: item.sku,
+          quantity: item.quantity,
+          inventoryConsumption: existingConsumption,
+        });
+        continue;
+      }
+
+      if (this.hasInventoryConsumption(item.pricingJson)) {
+        throw new BadRequestException(
+          `La orden ${order.id} tiene consumo FIFO legacy sin tipo documental de lote.`,
+        );
+      }
+
+      if (!item.variantId) {
+        throw new BadRequestException(
+          `La orden ${order.id} contiene items legacy sin variantId. Debe regularizarse antes de descontar inventario.`,
+        );
+      }
+
+      if (this.hasInventoryCommitment(item.pricingJson)) {
+        await this.inventoryService.releaseCommittedStock(
+          item.variantId,
+          item.quantity,
+          userId,
+          order.id,
+          tx,
+        );
+      }
+
+      const inventoryConsumption = await this.buildInventoryConsumption(
+        tx,
+        {
+          ...item,
+          variantId: item.variantId,
+        },
+        userId,
+      );
+      saleLegalItems.push({
+        id: item.id,
+        sku: item.sku,
+        quantity: item.quantity,
+        inventoryConsumption,
+      });
+
+      const basePricingJson =
+        item.pricingJson &&
+        typeof item.pricingJson === 'object' &&
+        !Array.isArray(item.pricingJson)
+          ? (item.pricingJson as Record<string, unknown>)
+          : {};
+      const pricingJsonRest = { ...basePricingJson };
+      delete pricingJsonRest.inventoryCommitment;
+
+      await tx.orderItem.update({
+        where: { id: item.id },
+        data: {
+          pricingJson: {
+            ...pricingJsonRest,
+            inventoryConsumption,
+          } as Prisma.InputJsonValue,
+        },
+      });
+    }
+
+    return this.resolveSaleLegalRequirement(saleLegalItems);
   }
 
   private buildOrderRequestHash(
@@ -531,6 +920,7 @@ export class OrdersService {
               configurationJson:
                 configurationJson ?? (null as unknown as Prisma.InputJsonValue),
               pricingJson,
+              inventoryConsumption,
             };
           }),
         );
@@ -599,6 +989,18 @@ export class OrdersService {
 
         netAmount = roundMoney(netAmount);
         taxTotal = roundMoney(taxTotal);
+        const saleLegalResolution = this.resolveSaleLegalRequirement(
+          taxAdjustedItems.map((item) => ({
+            sku: item.sku,
+            quantity: item.quantity,
+            inventoryConsumption: item.inventoryConsumption,
+          })),
+        );
+
+        if (this.requiresCompletedSaleLegalDocument(statusToSet)) {
+          this.assertSaleLegalClosureAllowed(saleLegalResolution);
+        }
+
         const initialAmountPaid = this.isFullyPaidOperationalStatus(statusToSet)
           ? totalAmount
           : new Decimal(0);
@@ -657,6 +1059,10 @@ export class OrdersService {
             taxTotal,
             amountPaid: initialAmountPaid,
             balanceDue: initialBalanceDue,
+            saleLegalRequirement: saleLegalResolution.saleLegalRequirement,
+            saleLegalStatus: saleLegalResolution.saleLegalStatus,
+            saleLegalTrace: saleLegalResolution.saleLegalTrace,
+            saleLegalResolvedAt: saleLegalResolution.saleLegalResolvedAt,
             statusHistory: {
               create: {
                 status: statusToSet,
@@ -690,6 +1096,45 @@ export class OrdersService {
           },
           include: { items: true, statusHistory: true, shipment: true },
         });
+
+        if (!shouldReduceInventory) {
+          for (const item of createdOrder.items) {
+            if (!item.variantId) {
+              throw new BadRequestException(
+                `La orden ${createdOrder.id} contiene items sin variantId para reservar inventario.`,
+              );
+            }
+
+            await this.inventoryService.commitStock(
+              item.variantId,
+              item.quantity,
+              userId,
+              createdOrder.id,
+              tx,
+            );
+
+            const basePricingJson =
+              item.pricingJson &&
+              typeof item.pricingJson === 'object' &&
+              !Array.isArray(item.pricingJson)
+                ? (item.pricingJson as Record<string, unknown>)
+                : {};
+
+            await tx.orderItem.update({
+              where: { id: item.id },
+              data: {
+                pricingJson: {
+                  ...basePricingJson,
+                  inventoryCommitment: {
+                    variantId: item.variantId,
+                    quantity: item.quantity,
+                    committedAt: new Date().toISOString(),
+                  },
+                } as Prisma.InputJsonValue,
+              },
+            });
+          }
+        }
 
         if (idempotencyKey) {
           await tx.orderIdempotencyKey.update({
@@ -741,8 +1186,11 @@ export class OrdersService {
     orderId: string,
     userId?: string,
     txClient?: Prisma.TransactionClient,
+    proofUrl?: string,
   ) {
     const execute = async (tx: Prisma.TransactionClient) => {
+      await this.lockOrderForPayment(tx, orderId);
+
       const order = await tx.order.findFirst({
         where: { id: orderId, deletedAt: null },
         include: {
@@ -772,67 +1220,48 @@ export class OrdersService {
       }
 
       const totalAmount = roundMoney(order.totalAmount);
-      const amountPaid = roundMoney(order.amountPaid);
-      const balanceDue = roundMoney(order.balanceDue);
-      const paymentDelta = balanceDue.greaterThan(0)
-        ? balanceDue
-        : Decimal.max(totalAmount.minus(amountPaid), 0);
+      const storedPaid = roundMoney(order.amountPaid);
+      const recordedPaid = await this.getActiveOrderPaymentTotal(tx, orderId);
+      const currentPaid = Decimal.max(storedPaid, recordedPaid);
+      const paymentDelta = roundMoney(totalAmount.minus(currentPaid));
+
+      if (currentPaid.greaterThan(totalAmount) || paymentDelta.lessThan(0)) {
+        throw new BadRequestException(
+          'Los abonos registrados superan el total de la orden',
+        );
+      }
 
       if (paymentDelta.greaterThan(0)) {
+        const normalizedProofUrl =
+          proofUrl?.trim() || order.paymentReceiptUrl?.trim();
+
+        if (!normalizedProofUrl) {
+          throw new BadRequestException('Debes adjuntar soporte del pago');
+        }
+
         await tx.orderPayment.create({
           data: {
             orderId,
             amount: paymentDelta,
             paymentDate: new Date(),
+            proofUrl: normalizedProofUrl,
             notes: 'Pago completo confirmado por integracion de pagos',
           },
         });
       }
 
-      for (const item of order.items) {
-        if (this.hasInventoryConsumption(item.pricingJson)) {
-          continue;
-        }
-
-        if (!item.variantId) {
-          throw new BadRequestException(
-            `La orden ${order.id} contiene items legacy sin variantId. Debe regularizarse antes de descontar inventario.`,
-          );
-        }
-
-        const inventoryConsumption = await this.buildInventoryConsumption(
-          tx,
-          {
-            ...item,
-            variantId: item.variantId,
-          },
-          userId,
-        );
-
-        const basePricingJson =
-          item.pricingJson &&
-          typeof item.pricingJson === 'object' &&
-          !Array.isArray(item.pricingJson)
-            ? (item.pricingJson as Record<string, unknown>)
-            : {};
-
-        await tx.orderItem.update({
-          where: { id: item.id },
-          data: {
-            pricingJson: {
-              ...basePricingJson,
-              inventoryConsumption,
-            } as Prisma.InputJsonValue,
-          },
-        });
-      }
-
+      const saleLegalResolution =
+        await this.assignOrderInventoryAndResolveSaleLegal(tx, order, userId);
       const updatedOrder = await tx.order.update({
         where: { id: orderId },
         data: {
           status: OrderStatus.PAGADA,
           amountPaid: totalAmount,
           balanceDue: new Decimal(0),
+          saleLegalRequirement: saleLegalResolution.saleLegalRequirement,
+          saleLegalStatus: saleLegalResolution.saleLegalStatus,
+          saleLegalTrace: saleLegalResolution.saleLegalTrace,
+          saleLegalResolvedAt: saleLegalResolution.saleLegalResolvedAt,
           statusHistory: {
             create: {
               status: OrderStatus.PAGADA,
@@ -870,6 +1299,14 @@ export class OrdersService {
         select: {
           id: true,
           status: true,
+          items: {
+            select: {
+              id: true,
+              variantId: true,
+              quantity: true,
+              pricingJson: true,
+            },
+          },
         },
       });
 
@@ -878,6 +1315,36 @@ export class OrdersService {
       }
 
       for (const order of expiredCandidates) {
+        for (const item of order.items) {
+          if (item.variantId && this.hasInventoryCommitment(item.pricingJson)) {
+            await this.inventoryService.releaseCommittedStock(
+              item.variantId,
+              item.quantity,
+              actorUserId,
+              order.id,
+              tx,
+            );
+
+            const basePricingJson =
+              item.pricingJson &&
+              typeof item.pricingJson === 'object' &&
+              !Array.isArray(item.pricingJson)
+                ? (item.pricingJson as Record<string, unknown>)
+                : {};
+            const pricingJsonRest = { ...basePricingJson };
+            delete pricingJsonRest.inventoryCommitment;
+
+            await tx.orderItem.update({
+              where: { id: item.id },
+              data: {
+                pricingJson: Object.keys(pricingJsonRest).length
+                  ? (pricingJsonRest as Prisma.InputJsonValue)
+                  : (null as unknown as Prisma.InputJsonValue),
+              },
+            });
+          }
+        }
+
         await tx.order.update({
           where: { id: order.id },
           data: {
@@ -1120,18 +1587,28 @@ export class OrdersService {
       data.paymentDate,
       'La fecha del abono es invalida',
     );
-    const proofUrl = data.proofUrl?.trim() || null;
+    const proofUrl = data.proofUrl?.trim();
+    if (!proofUrl) {
+      throw new BadRequestException('Debes adjuntar soporte del pago');
+    }
     const notes = data.notes?.trim() || null;
 
     return this.prisma.$transaction(async (tx) => {
+      await this.lockOrderForPayment(tx, orderId);
+
       const order = await tx.order.findFirst({
         where: { id: orderId, deletedAt: null },
-        select: {
-          id: true,
-          status: true,
-          totalAmount: true,
-          amountPaid: true,
-          balanceDue: true,
+        include: {
+          items: {
+            select: {
+              id: true,
+              productId: true,
+              variantId: true,
+              sku: true,
+              quantity: true,
+              pricingJson: true,
+            },
+          },
         },
       });
 
@@ -1140,8 +1617,19 @@ export class OrdersService {
       }
 
       const totalAmount = roundMoney(order.totalAmount);
-      const currentPaid = roundMoney(order.amountPaid);
-      const currentBalanceDue = roundMoney(order.balanceDue);
+      const storedPaid = roundMoney(order.amountPaid);
+      const recordedPaid = await this.getActiveOrderPaymentTotal(tx, orderId);
+      const currentPaid = Decimal.max(storedPaid, recordedPaid);
+      const currentBalanceDue = roundMoney(totalAmount.minus(currentPaid));
+
+      if (
+        currentPaid.greaterThan(totalAmount) ||
+        currentBalanceDue.lessThan(0)
+      ) {
+        throw new BadRequestException(
+          'Los abonos registrados superan el total de la orden',
+        );
+      }
 
       if (amount.greaterThan(currentBalanceDue)) {
         throw new BadRequestException(
@@ -1149,7 +1637,23 @@ export class OrdersService {
         );
       }
 
-      const nextPaid = roundMoney(currentPaid.plus(amount));
+      const payment = await tx.orderPayment.create({
+        data: {
+          orderId,
+          amount,
+          paymentDate,
+          proofUrl,
+          notes,
+        },
+      });
+
+      const recordedPaidAfterPayment = await this.getActiveOrderPaymentTotal(
+        tx,
+        orderId,
+      );
+      const nextPaid = roundMoney(
+        Decimal.max(recordedPaidAfterPayment, currentPaid.plus(amount)),
+      );
       const nextBalanceDue = roundMoney(totalAmount.minus(nextPaid));
 
       if (nextPaid.greaterThan(totalAmount)) {
@@ -1164,27 +1668,33 @@ export class OrdersService {
         );
       }
 
-      const payment = await tx.orderPayment.create({
-        data: {
-          orderId,
-          amount,
-          paymentDate,
-          proofUrl,
-          notes,
-        },
+      const nextStatus = this.resolveStatusAfterOrderPayment({
+        currentStatus: order.status,
+        totalAmount,
+        nextPaid,
+        nextBalanceDue,
       });
 
-      const nextStatus =
-        nextBalanceDue.isZero() || !this.isPendingPaymentStatus(order.status)
-          ? order.status
-          : OrderStatus.PENDING_FINAL_PAYMENT;
+      const saleLegalResolution = this.isInventoryAssignedOperationalStatus(
+        nextStatus,
+      )
+        ? await this.assignOrderInventoryAndResolveSaleLegal(tx, order, userId)
+        : null;
 
-      await tx.order.update({
+      const updatedOrder = await tx.order.update({
         where: { id: orderId },
         data: {
           amountPaid: nextPaid,
           balanceDue: nextBalanceDue,
           status: nextStatus,
+          ...(saleLegalResolution
+            ? {
+                saleLegalRequirement: saleLegalResolution.saleLegalRequirement,
+                saleLegalStatus: saleLegalResolution.saleLegalStatus,
+                saleLegalTrace: saleLegalResolution.saleLegalTrace,
+                saleLegalResolvedAt: saleLegalResolution.saleLegalResolvedAt,
+              }
+            : {}),
           statusHistory:
             nextStatus !== order.status
               ? {
@@ -1197,22 +1707,20 @@ export class OrdersService {
                 }
               : undefined,
         },
+        include: {
+          items: true,
+          payments: {
+            where: { deletedAt: null },
+            orderBy: [{ paymentDate: 'desc' }, { createdAt: 'desc' }],
+          },
+          statusHistory: { orderBy: { createdAt: 'desc' } },
+          shipment: true,
+        },
       });
 
-      const updatedOrder = nextBalanceDue.isZero()
-        ? await this.confirmPendingOrderPayment(orderId, userId, tx)
-        : await tx.order.findUnique({
-            where: { id: orderId },
-            include: {
-              items: true,
-              payments: {
-                where: { deletedAt: null },
-                orderBy: [{ paymentDate: 'desc' }, { createdAt: 'desc' }],
-              },
-              statusHistory: { orderBy: { createdAt: 'desc' } },
-              shipment: true,
-            },
-          });
+      if (this.isInventoryAssignedOperationalStatus(nextStatus)) {
+        await this.shippingSyncService.ensureShipmentForOrder(orderId, tx);
+      }
 
       return {
         payment: {
@@ -1288,13 +1796,37 @@ export class OrdersService {
   }
 
   async update(id: string, updateOrderDto: UpdateOrderDto) {
-    const { status, ...data } = updateOrderDto;
+    const {
+      status,
+      saleLegalDocumentType,
+      saleLegalDocumentReference,
+      ...data
+    } = updateOrderDto;
+    const updatesSaleLegalDocument =
+      saleLegalDocumentType !== undefined ||
+      saleLegalDocumentReference !== undefined;
 
-    if (status) {
+    if (status || updatesSaleLegalDocument) {
       return this.prisma.$transaction(async (tx) => {
         const currentOrder = await tx.order.findFirst({
           where: { id, deletedAt: null },
-          select: { status: true, balanceDue: true },
+          select: {
+            status: true,
+            balanceDue: true,
+            saleLegalRequirement: true,
+            saleLegalStatus: true,
+            saleLegalDocumentType: true,
+            saleLegalDocumentReference: true,
+            items: {
+              select: {
+                id: true,
+                variantId: true,
+                sku: true,
+                quantity: true,
+                pricingJson: true,
+              },
+            },
+          },
         });
 
         if (!currentOrder) {
@@ -1308,13 +1840,112 @@ export class OrdersService {
           );
         }
 
+        const saleLegalItems = currentOrder.items.map((item) => ({
+          id: item.id,
+          sku: item.sku,
+          quantity: item.quantity,
+          inventoryConsumption: this.extractInventoryConsumption(
+            item.pricingJson,
+          ),
+        }));
+        const derivedSaleLegal =
+          currentOrder.saleLegalRequirement ===
+          SaleLegalRequirement.PENDING_STOCK_ASSIGNMENT
+            ? this.resolveSaleLegalRequirement(saleLegalItems)
+            : null;
+        const effectiveSaleLegal = {
+          saleLegalRequirement:
+            derivedSaleLegal?.saleLegalRequirement ??
+            currentOrder.saleLegalRequirement,
+          saleLegalStatus:
+            derivedSaleLegal?.saleLegalStatus ?? currentOrder.saleLegalStatus,
+          saleLegalDocumentType: currentOrder.saleLegalDocumentType,
+          saleLegalDocumentReference: currentOrder.saleLegalDocumentReference,
+          saleLegalTrace: derivedSaleLegal?.saleLegalTrace,
+          saleLegalResolvedAt: derivedSaleLegal?.saleLegalResolvedAt,
+        };
+
+        const saleLegalUpdate: Prisma.OrderUpdateInput = {};
+
+        if (derivedSaleLegal) {
+          saleLegalUpdate.saleLegalRequirement =
+            derivedSaleLegal.saleLegalRequirement;
+          saleLegalUpdate.saleLegalStatus = derivedSaleLegal.saleLegalStatus;
+          saleLegalUpdate.saleLegalTrace = derivedSaleLegal.saleLegalTrace;
+          saleLegalUpdate.saleLegalResolvedAt =
+            derivedSaleLegal.saleLegalResolvedAt;
+        }
+
+        if (saleLegalDocumentType) {
+          this.validateSaleLegalDocumentType(
+            effectiveSaleLegal.saleLegalRequirement,
+            saleLegalDocumentType,
+          );
+          effectiveSaleLegal.saleLegalDocumentType = saleLegalDocumentType;
+          effectiveSaleLegal.saleLegalStatus = SaleLegalStatus.COMPLETED;
+          saleLegalUpdate.saleLegalDocumentType = saleLegalDocumentType;
+          saleLegalUpdate.saleLegalStatus = SaleLegalStatus.COMPLETED;
+          saleLegalUpdate.saleLegalCompletedAt = new Date();
+        }
+
+        if (saleLegalDocumentReference !== undefined) {
+          const normalizedReference = saleLegalDocumentReference.trim();
+          effectiveSaleLegal.saleLegalDocumentReference =
+            normalizedReference || null;
+          saleLegalUpdate.saleLegalDocumentReference =
+            normalizedReference || null;
+        }
+
+        if (status && this.requiresCompletedSaleLegalDocument(status)) {
+          this.assertSaleLegalClosureAllowed(effectiveSaleLegal);
+        }
+
+        if (
+          status === OrderStatus.CANCELADA &&
+          this.isPendingPaymentStatus(currentOrder.status)
+        ) {
+          for (const item of currentOrder.items) {
+            if (
+              item.variantId &&
+              this.hasInventoryCommitment(item.pricingJson)
+            ) {
+              await this.inventoryService.releaseCommittedStock(
+                item.variantId,
+                item.quantity,
+                undefined,
+                id,
+                tx,
+              );
+
+              const basePricingJson =
+                item.pricingJson &&
+                typeof item.pricingJson === 'object' &&
+                !Array.isArray(item.pricingJson)
+                  ? (item.pricingJson as Record<string, unknown>)
+                  : {};
+              const pricingJsonRest = { ...basePricingJson };
+              delete pricingJsonRest.inventoryCommitment;
+
+              await tx.orderItem.update({
+                where: { id: item.id },
+                data: {
+                  pricingJson: Object.keys(pricingJsonRest).length
+                    ? (pricingJsonRest as Prisma.InputJsonValue)
+                    : (null as unknown as Prisma.InputJsonValue),
+                },
+              });
+            }
+          }
+        }
+
         const updatedOrder = await tx.order.update({
           where: { id },
           data: {
-            status,
+            ...(status ? { status } : {}),
             ...data,
+            ...saleLegalUpdate,
             statusHistory:
-              currentOrder.status === status
+              !status || currentOrder.status === status
                 ? undefined
                 : {
                     create: {
@@ -1327,7 +1958,9 @@ export class OrdersService {
           },
         });
 
-        await this.shippingSyncService.ensureShipmentForOrder(id, tx);
+        if (status || data.trackingNumber || data.carrier) {
+          await this.shippingSyncService.ensureShipmentForOrder(id, tx);
+        }
 
         return this.serializeOrderMoney(updatedOrder);
       });

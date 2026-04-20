@@ -4,6 +4,9 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma, Product } from '../../generated/client/client';
 import {
   BatchStatus,
+  InventoryAdjustmentItemType,
+  InventoryAdjustmentReason,
+  InventoryMovementReason,
   PurchaseDocumentType,
   PurchaseBatchItemType,
   TransactionType,
@@ -11,9 +14,11 @@ import {
 } from '../../generated/client/enums';
 import {
   BatchInputStatus,
+  CreateInventoryAdjustmentDto,
   CreatePurchaseBatchDto,
   CreateSupplyItemDto,
   PurchaseBatchItemDto,
+  UpdateReorderPointDto,
 } from './dto/create-purchase-batch.dto';
 import {
   decimalToNumber,
@@ -208,6 +213,38 @@ export class InventoryService {
     return result as T;
   }
 
+  private serializeStockFields<T extends Record<string, unknown> | null>(
+    item: T,
+  ): T {
+    if (!item) {
+      return item;
+    }
+
+    const result: Record<string, unknown> = { ...item };
+
+    if ('stock' in result) {
+      result.stockPhysical = this.quantityToNumber(
+        result.stock as Decimal.Value,
+      );
+    }
+
+    if ('stockCommitted' in result) {
+      result.stockCommitted = this.quantityToNumber(
+        result.stockCommitted as Decimal.Value,
+      );
+    }
+
+    if ('stock' in result || 'stockCommitted' in result) {
+      result.stockAvailable = Math.max(
+        this.quantityToNumber((result.stock as Decimal.Value) ?? 0) -
+          this.quantityToNumber((result.stockCommitted as Decimal.Value) ?? 0),
+        0,
+      );
+    }
+
+    return result as T;
+  }
+
   private serializeSupplyItem<T extends Record<string, unknown> | null>(
     supplyItem: T,
   ): T {
@@ -225,11 +262,57 @@ export class InventoryService {
       result.stock = this.quantityToNumber(result.stock as Decimal.Value);
     }
 
+    if ('stockCommitted' in result) {
+      result.stockCommitted = this.quantityToNumber(
+        result.stockCommitted as Decimal.Value,
+      );
+      result.stockAvailable = Math.max(
+        this.quantityToNumber((result.stock as Decimal.Value) ?? 0) -
+          this.quantityToNumber(result.stockCommitted as Decimal.Value),
+        0,
+      );
+    }
+
     if ('minStock' in result && result.minStock !== null) {
       result.minStock = this.quantityToNumber(result.minStock as Decimal.Value);
     }
 
     return result as T;
+  }
+
+  private async recordInventoryMovement(
+    tx: Prisma.TransactionClient,
+    input: {
+      reason: InventoryMovementReason;
+      itemType: InventoryAdjustmentItemType;
+      quantity: Decimal.Value;
+      balanceAfter: Decimal.Value;
+      userId?: string | null;
+      variantId?: string | null;
+      supplyItemId?: string | null;
+      purchaseBatchId?: string | null;
+      purchaseBatchLineId?: string | null;
+      orderId?: string | null;
+      adjustmentId?: string | null;
+      metadata?: Prisma.InputJsonValue;
+    },
+  ) {
+    return tx.inventoryMovement.create({
+      data: {
+        reason: input.reason,
+        itemType: input.itemType,
+        quantity: this.quantityToNumber(input.quantity),
+        balanceAfter: this.quantityToNumber(input.balanceAfter),
+        userId: input.userId ?? null,
+        variantId: input.variantId ?? null,
+        supplyItemId: input.supplyItemId ?? null,
+        purchaseBatchId: input.purchaseBatchId ?? null,
+        purchaseBatchLineId: input.purchaseBatchLineId ?? null,
+        orderId: input.orderId ?? null,
+        adjustmentId: input.adjustmentId ?? null,
+        metadata: input.metadata ?? undefined,
+      },
+    });
   }
 
   private async createPurchaseAdjustmentTransaction(
@@ -448,7 +531,7 @@ export class InventoryService {
         },
       });
 
-      await tx.purchaseBatchLine.create({
+      const batchLine = await tx.purchaseBatchLine.create({
         data: {
           purchaseBatchId: batch.id,
           itemType: PurchaseBatchItemType.VARIANT,
@@ -464,11 +547,26 @@ export class InventoryService {
       });
 
       if (this.isReceivedStatus(data.status)) {
-        await tx.variant.update({
+        const updatedVariant = await tx.variant.update({
           where: { id: data.variantId },
           data: {
             stock: { increment: quantity },
             costPrice: unitCostNumber,
+          },
+        });
+
+        await this.recordInventoryMovement(tx, {
+          reason: InventoryMovementReason.PURCHASE_RECEIPT,
+          itemType: InventoryAdjustmentItemType.VARIANT,
+          quantity,
+          balanceAfter: updatedVariant.stock,
+          userId: data.userId,
+          variantId: data.variantId,
+          purchaseBatchId: batch.id,
+          purchaseBatchLineId: batchLine.id,
+          metadata: {
+            endpoint: 'receive-batch',
+            documentType,
           },
         });
 
@@ -617,7 +715,7 @@ export class InventoryService {
           ? BatchStatus.IN_STOCK
           : BatchStatus.PENDING;
 
-        await tx.purchaseBatchLine.create({
+        const createdLine = await tx.purchaseBatchLine.create({
           data: {
             purchaseBatchId: batch.id,
             itemType: resolved.itemType,
@@ -644,13 +742,29 @@ export class InventoryService {
           resolved.itemType === PurchaseBatchItemType.VARIANT &&
           resolved.variant
         ) {
-          await tx.variant.update({
+          const updatedVariant = await tx.variant.update({
             where: { id: resolved.variant.id },
             data: {
               stock: {
                 increment: this.quantityToLegacyInt(resolved.quantity),
               },
               costPrice: landedUnitCostNumber,
+            },
+          });
+
+          await this.recordInventoryMovement(tx, {
+            reason: InventoryMovementReason.PURCHASE_RECEIPT,
+            itemType: InventoryAdjustmentItemType.VARIANT,
+            quantity: this.quantityToLegacyInt(resolved.quantity),
+            balanceAfter: updatedVariant.stock,
+            userId: data.userId,
+            variantId: resolved.variant.id,
+            purchaseBatchId: batch.id,
+            purchaseBatchLineId: createdLine.id,
+            metadata: {
+              documentType,
+              supplierId: data.supplierId,
+              unitCost: landedUnitCostNumber,
             },
           });
         }
@@ -660,11 +774,27 @@ export class InventoryService {
           resolved.itemType === PurchaseBatchItemType.SUPPLY &&
           resolved.supplyItem
         ) {
-          await tx.supplyItem.update({
+          const updatedSupplyItem = await tx.supplyItem.update({
             where: { id: resolved.supplyItem.id },
             data: {
               stock: { increment: quantityNumber },
               cost: landedUnitCostNumber,
+            },
+          });
+
+          await this.recordInventoryMovement(tx, {
+            reason: InventoryMovementReason.PURCHASE_RECEIPT,
+            itemType: InventoryAdjustmentItemType.SUPPLY,
+            quantity: quantityNumber,
+            balanceAfter: updatedSupplyItem.stock,
+            userId: data.userId,
+            supplyItemId: resolved.supplyItem.id,
+            purchaseBatchId: batch.id,
+            purchaseBatchLineId: createdLine.id,
+            metadata: {
+              documentType,
+              supplierId: data.supplierId,
+              unitCost: landedUnitCostNumber,
             },
           });
         }
@@ -778,6 +908,7 @@ export class InventoryService {
         name: string;
         slug: string;
         image?: string | null;
+        committedByVariant: Map<string, number>;
         batches: Array<Record<string, unknown>>;
       }
     >();
@@ -793,8 +924,14 @@ export class InventoryService {
         name: product.name,
         slug: product.slug,
         image: product.images[0]?.url,
+        committedByVariant: new Map<string, number>(),
         batches: [],
       };
+
+      current.committedByVariant.set(
+        line.variant.id,
+        line.variant.stockCommitted ?? 0,
+      );
 
       current.batches.push({
         id: line.purchaseBatchId,
@@ -816,6 +953,10 @@ export class InventoryService {
         (sum, batch) => sum + Number(batch.quantityRemaining || 0),
         0,
       );
+      const stockCommitted = Array.from(
+        product.committedByVariant.values(),
+      ).reduce((sum, committed) => sum + committed, 0);
+      const stockAvailable = Math.max(totalStock - stockCommitted, 0);
       const totalValuation = product.batches.reduce(
         (sum, batch) =>
           sum.plus(
@@ -834,6 +975,9 @@ export class InventoryService {
         slug: product.slug,
         image: product.image,
         totalStock,
+        stockPhysical: totalStock,
+        stockCommitted,
+        stockAvailable,
         totalValuation: decimalToNumber(totalValuation),
         weightedAvgCost: decimalToNumber(weightedAvgCost),
         batches: product.batches.map((batch) =>
@@ -844,15 +988,30 @@ export class InventoryService {
   }
 
   async getInventoryMovements() {
-    return this.prisma.auditLog.findMany({
-      where: {
-        action: {
-          in: ['REDUCE_STOCK_FIFO', 'RETURN_TO_STOCK'],
+    const movements = await this.prisma.inventoryMovement.findMany({
+      include: {
+        variant: {
+          select: {
+            sku: true,
+            product: { select: { name: true } },
+          },
+        },
+        supplyItem: {
+          select: {
+            name: true,
+            sku: true,
+          },
         },
       },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
+
+    return movements.map((movement) => ({
+      ...movement,
+      quantity: this.quantityToNumber(movement.quantity),
+      balanceAfter: this.quantityToNumber(movement.balanceAfter),
+    }));
   }
 
   async createBatch(data: {
@@ -910,7 +1069,7 @@ export class InventoryService {
         },
       });
 
-      await tx.purchaseBatchLine.create({
+      const batchLine = await tx.purchaseBatchLine.create({
         data: {
           purchaseBatchId: batch.id,
           itemType: PurchaseBatchItemType.VARIANT,
@@ -925,11 +1084,26 @@ export class InventoryService {
         },
       });
 
-      await tx.variant.update({
+      const updatedVariant = await tx.variant.update({
         where: { id: data.variantId },
         data: {
           stock: { increment: data.quantityReceived },
           costPrice: unitCostNumber,
+        },
+      });
+
+      await this.recordInventoryMovement(tx, {
+        reason: InventoryMovementReason.PURCHASE_RECEIPT,
+        itemType: InventoryAdjustmentItemType.VARIANT,
+        quantity: data.quantityReceived,
+        balanceAfter: updatedVariant.stock,
+        userId: data.userId,
+        variantId: data.variantId,
+        purchaseBatchId: batch.id,
+        purchaseBatchLineId: batchLine.id,
+        metadata: {
+          endpoint: 'batch',
+          documentType: data.documentType ?? PurchaseDocumentType.INVOICE,
         },
       });
 
@@ -1558,6 +1732,7 @@ export class InventoryService {
               id: true,
               supplierId: true,
               variantId: true,
+              documentType: true,
               createdAt: true,
             },
           },
@@ -1571,10 +1746,12 @@ export class InventoryService {
       let remainingToReduce = quantityToSell;
       let totalCOGS = new Decimal(0);
       const reductions: {
+        purchaseBatchLineId: string;
         batchId: string;
         supplierId: string;
         quantity: number;
         unitCost: number;
+        documentType: PurchaseDocumentType;
       }[] = [];
 
       for (const line of lines) {
@@ -1634,10 +1811,28 @@ export class InventoryService {
           },
         });
 
-        await tx.variant.update({
+        const updatedVariant = await tx.variant.update({
           where: { id: variantId },
           data: {
             stock: { decrement: amountFromThisBatch },
+          },
+        });
+
+        await this.recordInventoryMovement(tx, {
+          reason: InventoryMovementReason.SALE_CONSUMPTION,
+          itemType: InventoryAdjustmentItemType.VARIANT,
+          quantity: -amountFromThisBatch,
+          balanceAfter: updatedVariant.stock,
+          userId: userId ?? null,
+          variantId,
+          purchaseBatchId: line.purchaseBatchId,
+          purchaseBatchLineId: line.id,
+          metadata: {
+            previousRemaining,
+            newRemaining,
+            unitCost: decimalToNumber(unitCost),
+            documentType: line.purchaseBatch.documentType,
+            purchaseBatchLineId: line.id,
           },
         });
 
@@ -1648,21 +1843,25 @@ export class InventoryService {
             entityId: line.id,
             userId: userId ?? null,
             payload: {
+              purchaseBatchLineId: line.id,
               purchaseBatchId: line.purchaseBatchId,
               variantId,
               quantityReduced: amountFromThisBatch,
               previousRemaining,
               newRemaining,
               unitCost: decimalToNumber(unitCost),
+              documentType: line.purchaseBatch.documentType,
             },
           },
         });
 
         reductions.push({
+          purchaseBatchLineId: line.id,
           batchId: line.purchaseBatchId,
           supplierId: line.purchaseBatch.supplierId,
           quantity: amountFromThisBatch,
           unitCost: decimalToNumber(unitCost),
+          documentType: line.purchaseBatch.documentType,
         });
       }
 
@@ -1682,6 +1881,566 @@ export class InventoryService {
     return this.prisma.$transaction(async (tx) => {
       return execute(tx);
     });
+  }
+
+  async commitStock(
+    variantId: string,
+    quantityToCommit: number,
+    userId?: string,
+    orderId?: string,
+    txClient?: Prisma.TransactionClient,
+    stockCommitmentMetadata?: Record<string, unknown>,
+  ) {
+    const quantity = this.quantityToLegacyInt(quantityToCommit);
+
+    if (quantity <= 0) {
+      throw new BadRequestException(
+        'La cantidad a comprometer debe ser mayor a cero',
+      );
+    }
+
+    const execute = async (tx: Prisma.TransactionClient) => {
+      const updatedRows = await tx.$queryRaw<
+        Array<{ stockPhysical: number; stockCommitted: number }>
+      >(Prisma.sql`
+        UPDATE "tote-bag"."variants"
+        SET "stock_committed" = "stock_committed" + ${quantity}
+        WHERE "id" = ${variantId}
+          AND ("stock" - "stock_committed") >= ${quantity}
+        RETURNING "stock" AS "stockPhysical", "stock_committed" AS "stockCommitted"
+      `);
+
+      const updated = updatedRows[0];
+
+      if (!updated) {
+        throw new BadRequestException(
+          `Stock disponible insuficiente para la variante ${variantId}.`,
+        );
+      }
+
+      await this.recordInventoryMovement(tx, {
+        reason: InventoryMovementReason.STOCK_COMMITMENT,
+        itemType: InventoryAdjustmentItemType.VARIANT,
+        quantity,
+        balanceAfter: updated.stockPhysical - updated.stockCommitted,
+        userId: userId ?? null,
+        variantId,
+        orderId: orderId ?? null,
+        metadata: {
+          stockPhysical: updated.stockPhysical,
+          stockCommitted: updated.stockCommitted,
+          ...(stockCommitmentMetadata ?? {}),
+        },
+      });
+
+      return {
+        stockPhysical: updated.stockPhysical,
+        stockCommitted: updated.stockCommitted,
+        stockAvailable: Math.max(
+          updated.stockPhysical - updated.stockCommitted,
+          0,
+        ),
+      };
+    };
+
+    if (txClient) {
+      return execute(txClient);
+    }
+
+    return this.prisma.$transaction(async (tx) => execute(tx));
+  }
+
+  async releaseCommittedStock(
+    variantId: string,
+    quantityToRelease: number,
+    userId?: string,
+    orderId?: string,
+    txClient?: Prisma.TransactionClient,
+    stockCommitmentMetadata?: Record<string, unknown>,
+  ) {
+    const quantity = this.quantityToLegacyInt(quantityToRelease);
+
+    if (quantity <= 0) {
+      throw new BadRequestException(
+        'La cantidad a liberar debe ser mayor a cero',
+      );
+    }
+
+    const execute = async (tx: Prisma.TransactionClient) => {
+      const updatedRows = await tx.$queryRaw<
+        Array<{ stockPhysical: number; stockCommitted: number }>
+      >(Prisma.sql`
+        UPDATE "tote-bag"."variants"
+        SET "stock_committed" = GREATEST(0, "stock_committed" - ${quantity})
+        WHERE "id" = ${variantId}
+        RETURNING "stock" AS "stockPhysical", "stock_committed" AS "stockCommitted"
+      `);
+
+      const updated = updatedRows[0];
+
+      if (!updated) {
+        throw new BadRequestException(
+          `La variante ${variantId} no existe para liberar stock comprometido.`,
+        );
+      }
+
+      await this.recordInventoryMovement(tx, {
+        reason: InventoryMovementReason.STOCK_COMMITMENT_RELEASE,
+        itemType: InventoryAdjustmentItemType.VARIANT,
+        quantity: -quantity,
+        balanceAfter: updated.stockPhysical - updated.stockCommitted,
+        userId: userId ?? null,
+        variantId,
+        orderId: orderId ?? null,
+        metadata: {
+          stockPhysical: updated.stockPhysical,
+          stockCommitted: updated.stockCommitted,
+          ...(stockCommitmentMetadata ?? {}),
+        },
+      });
+
+      return {
+        stockPhysical: updated.stockPhysical,
+        stockCommitted: updated.stockCommitted,
+        stockAvailable: Math.max(
+          updated.stockPhysical - updated.stockCommitted,
+          0,
+        ),
+      };
+    };
+
+    if (txClient) {
+      return execute(txClient);
+    }
+
+    return this.prisma.$transaction(async (tx) => execute(tx));
+  }
+
+  async createInventoryAdjustment(
+    data: CreateInventoryAdjustmentDto & { userId: string },
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const quantityDelta = this.toQuantityDecimal(data.quantityDelta);
+
+      if (quantityDelta.isZero()) {
+        throw new BadRequestException('El ajuste debe modificar la cantidad');
+      }
+
+      const itemType = data.itemType as InventoryAdjustmentItemType;
+      const reason = data.reason as InventoryAdjustmentReason;
+      const line = await tx.purchaseBatchLine.findUnique({
+        where: { id: data.purchaseBatchLineId },
+        include: {
+          purchaseBatch: true,
+          variant: true,
+          supplyItem: true,
+        },
+      });
+
+      if (!line || line.purchaseBatch.deletedAt) {
+        throw new BadRequestException(
+          'La linea de lote no existe o fue anulada',
+        );
+      }
+
+      if (itemType === InventoryAdjustmentItemType.VARIANT) {
+        if (
+          !line.variantId ||
+          line.itemType !== PurchaseBatchItemType.VARIANT
+        ) {
+          throw new BadRequestException(
+            'La linea seleccionada no corresponde a una variante',
+          );
+        }
+
+        if (data.variantId && data.variantId !== line.variantId) {
+          throw new BadRequestException(
+            'La variante no coincide con la linea de lote',
+          );
+        }
+
+        if (!this.isWholeQuantity(quantityDelta)) {
+          throw new BadRequestException(
+            'Los ajustes de variantes deben ser cantidades enteras',
+          );
+        }
+
+        const delta = this.quantityToLegacyInt(quantityDelta);
+        const currentRemaining = this.quantityToNumber(line.quantityRemaining);
+        const nextRemaining = currentRemaining + delta;
+
+        if (nextRemaining < 0) {
+          throw new BadRequestException(
+            'El ajuste deja el lote con saldo negativo',
+          );
+        }
+
+        const variant = await tx.variant.findUnique({
+          where: { id: line.variantId },
+          select: { stock: true, stockCommitted: true },
+        });
+
+        if (!variant) {
+          throw new BadRequestException('La variante del lote no existe');
+        }
+
+        if (variant.stock + delta < variant.stockCommitted) {
+          throw new BadRequestException(
+            'El ajuste dejaria stock fisico por debajo del stock comprometido',
+          );
+        }
+
+        await tx.purchaseBatchLine.update({
+          where: { id: line.id },
+          data: {
+            quantity:
+              delta > 0
+                ? this.quantityToNumber(toDecimal(line.quantity).plus(delta))
+                : undefined,
+            quantityRemaining: nextRemaining,
+            status:
+              nextRemaining === 0 ? BatchStatus.DEPLETED : BatchStatus.IN_STOCK,
+          },
+        });
+
+        const remainingSummary = await tx.purchaseBatchLine.aggregate({
+          where: { purchaseBatchId: line.purchaseBatchId },
+          _sum: { quantityRemaining: true },
+        });
+        const nextBatchRemaining = this.quantityToLegacyInt(
+          remainingSummary._sum.quantityRemaining ?? 0,
+        );
+
+        await tx.purchaseBatch.update({
+          where: { id: line.purchaseBatchId },
+          data: {
+            quantityReceived:
+              line.purchaseBatch.variantId && delta > 0
+                ? { increment: delta }
+                : undefined,
+            quantityRemaining: line.purchaseBatch.variantId
+              ? nextBatchRemaining
+              : line.purchaseBatch.quantityRemaining,
+            status:
+              nextBatchRemaining === 0
+                ? BatchStatus.DEPLETED
+                : BatchStatus.IN_STOCK,
+          },
+        });
+
+        const updatedVariant = await tx.variant.update({
+          where: { id: line.variantId },
+          data: { stock: { increment: delta } },
+        });
+
+        const adjustment = await tx.inventoryAdjustment.create({
+          data: {
+            reason,
+            itemType,
+            quantityDelta: delta,
+            notes: this.sanitizeOptionalText(data.notes),
+            userId: data.userId,
+            variantId: line.variantId,
+            purchaseBatchId: line.purchaseBatchId,
+            purchaseBatchLineId: line.id,
+          },
+        });
+
+        const movement = await this.recordInventoryMovement(tx, {
+          reason: InventoryMovementReason.MANUAL_ADJUSTMENT,
+          itemType,
+          quantity: delta,
+          balanceAfter: updatedVariant.stock,
+          userId: data.userId,
+          variantId: line.variantId,
+          purchaseBatchId: line.purchaseBatchId,
+          purchaseBatchLineId: line.id,
+          adjustmentId: adjustment.id,
+          metadata: {
+            reason,
+            notes: this.sanitizeOptionalText(data.notes),
+            previousRemaining: currentRemaining,
+            nextRemaining,
+          },
+        });
+
+        await tx.auditLog.create({
+          data: {
+            action: 'CREATE_INVENTORY_ADJUSTMENT',
+            entity: 'InventoryAdjustment',
+            entityId: adjustment.id,
+            userId: data.userId,
+            payload: {
+              reason,
+              itemType,
+              quantityDelta: delta,
+              purchaseBatchLineId: line.id,
+              balanceAfter: updatedVariant.stock,
+            },
+          },
+        });
+
+        return {
+          ...adjustment,
+          quantityDelta: this.quantityToNumber(adjustment.quantityDelta),
+          movement: {
+            ...movement,
+            quantity: this.quantityToNumber(movement.quantity),
+            balanceAfter: this.quantityToNumber(movement.balanceAfter),
+          },
+        };
+      }
+
+      if (
+        !line.supplyItemId ||
+        line.itemType !== PurchaseBatchItemType.SUPPLY
+      ) {
+        throw new BadRequestException(
+          'La linea seleccionada no corresponde a un insumo',
+        );
+      }
+
+      if (data.supplyItemId && data.supplyItemId !== line.supplyItemId) {
+        throw new BadRequestException(
+          'El insumo no coincide con la linea de lote',
+        );
+      }
+
+      const currentRemaining = this.quantityToNumber(line.quantityRemaining);
+      const nextRemaining = this.quantityToNumber(
+        toDecimal(line.quantityRemaining).plus(quantityDelta),
+      );
+
+      if (nextRemaining < 0) {
+        throw new BadRequestException(
+          'El ajuste deja el lote con saldo negativo',
+        );
+      }
+
+      const supplyItem = await tx.supplyItem.findUnique({
+        where: { id: line.supplyItemId },
+        select: { stock: true, stockCommitted: true },
+      });
+
+      if (!supplyItem) {
+        throw new BadRequestException('El insumo del lote no existe');
+      }
+
+      if (
+        toDecimal(supplyItem.stock)
+          .plus(quantityDelta)
+          .lessThan(supplyItem.stockCommitted)
+      ) {
+        throw new BadRequestException(
+          'El ajuste dejaria stock fisico por debajo del stock comprometido',
+        );
+      }
+
+      await tx.purchaseBatchLine.update({
+        where: { id: line.id },
+        data: {
+          quantity: quantityDelta.greaterThan(0)
+            ? this.quantityToNumber(
+                toDecimal(line.quantity).plus(quantityDelta),
+              )
+            : undefined,
+          quantityRemaining: nextRemaining,
+          status:
+            nextRemaining === 0 ? BatchStatus.DEPLETED : BatchStatus.IN_STOCK,
+        },
+      });
+
+      const updatedSupplyItem = await tx.supplyItem.update({
+        where: { id: line.supplyItemId },
+        data: { stock: { increment: this.quantityToNumber(quantityDelta) } },
+      });
+
+      const adjustment = await tx.inventoryAdjustment.create({
+        data: {
+          reason,
+          itemType,
+          quantityDelta: this.quantityToNumber(quantityDelta),
+          notes: this.sanitizeOptionalText(data.notes),
+          userId: data.userId,
+          supplyItemId: line.supplyItemId,
+          purchaseBatchId: line.purchaseBatchId,
+          purchaseBatchLineId: line.id,
+        },
+      });
+
+      const movement = await this.recordInventoryMovement(tx, {
+        reason: InventoryMovementReason.MANUAL_ADJUSTMENT,
+        itemType,
+        quantity: quantityDelta,
+        balanceAfter: updatedSupplyItem.stock,
+        userId: data.userId,
+        supplyItemId: line.supplyItemId,
+        purchaseBatchId: line.purchaseBatchId,
+        purchaseBatchLineId: line.id,
+        adjustmentId: adjustment.id,
+        metadata: {
+          reason,
+          notes: this.sanitizeOptionalText(data.notes),
+          previousRemaining: currentRemaining,
+          nextRemaining,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          action: 'CREATE_INVENTORY_ADJUSTMENT',
+          entity: 'InventoryAdjustment',
+          entityId: adjustment.id,
+          userId: data.userId,
+          payload: {
+            reason,
+            itemType,
+            quantityDelta: this.quantityToNumber(quantityDelta),
+            purchaseBatchLineId: line.id,
+            balanceAfter: this.quantityToNumber(updatedSupplyItem.stock),
+          },
+        },
+      });
+
+      return {
+        ...adjustment,
+        quantityDelta: this.quantityToNumber(adjustment.quantityDelta),
+        movement: {
+          ...movement,
+          quantity: this.quantityToNumber(movement.quantity),
+          balanceAfter: this.quantityToNumber(movement.balanceAfter),
+        },
+      };
+    });
+  }
+
+  async updateVariantReorderPoint(
+    variantId: string,
+    data: UpdateReorderPointDto,
+  ) {
+    const reorderPoint =
+      data.reorderPoint === undefined || data.reorderPoint === null
+        ? null
+        : this.quantityToLegacyInt(data.reorderPoint);
+
+    if (reorderPoint !== null && reorderPoint < 0) {
+      throw new BadRequestException(
+        'El punto de reorden no puede ser negativo',
+      );
+    }
+
+    const variant = await this.prisma.variant.update({
+      where: { id: variantId },
+      data: { reorderPoint },
+    });
+
+    return this.serializeStockFields(variant);
+  }
+
+  async updateSupplyItemReorderPoint(
+    supplyItemId: string,
+    data: UpdateReorderPointDto,
+  ) {
+    const reorderPoint =
+      data.reorderPoint === undefined || data.reorderPoint === null
+        ? null
+        : this.toQuantityDecimal(data.reorderPoint);
+
+    if (reorderPoint !== null && reorderPoint.lessThan(0)) {
+      throw new BadRequestException(
+        'El punto de reorden no puede ser negativo',
+      );
+    }
+
+    const supplyItem = await this.prisma.supplyItem.update({
+      where: { id: supplyItemId },
+      data: {
+        minStock:
+          reorderPoint === null ? null : this.quantityToNumber(reorderPoint),
+      },
+    });
+
+    return this.serializeSupplyItem(supplyItem);
+  }
+
+  async getReorderAlerts() {
+    const [variants, supplyItems] = await Promise.all([
+      this.prisma.variant.findMany({
+        where: {
+          isActive: true,
+          reorderPoint: { not: null },
+        },
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+        },
+        orderBy: { sku: 'asc' },
+      }),
+      this.prisma.supplyItem.findMany({
+        where: {
+          isActive: true,
+          deletedAt: null,
+          minStock: { not: null },
+        },
+        orderBy: [{ category: 'asc' }, { name: 'asc' }],
+      }),
+    ]);
+
+    const variantAlerts = variants
+      .map((variant) => {
+        const stockPhysical = variant.stock;
+        const stockCommitted = variant.stockCommitted;
+        const stockAvailable = Math.max(stockPhysical - stockCommitted, 0);
+        const reorderPoint = variant.reorderPoint ?? 0;
+
+        return {
+          itemType: InventoryAdjustmentItemType.VARIANT,
+          id: variant.id,
+          sku: variant.sku,
+          name: variant.product.name,
+          product: variant.product,
+          stockPhysical,
+          stockCommitted,
+          stockAvailable,
+          reorderPoint,
+          shouldReorder: stockAvailable <= reorderPoint,
+        };
+      })
+      .filter((alert) => alert.shouldReorder);
+
+    const supplyAlerts = supplyItems
+      .map((item) => {
+        const stockPhysical = this.quantityToNumber(item.stock);
+        const stockCommitted = this.quantityToNumber(item.stockCommitted);
+        const stockAvailable = Math.max(stockPhysical - stockCommitted, 0);
+        const reorderPoint = this.quantityToNumber(item.minStock ?? 0);
+
+        return {
+          itemType: InventoryAdjustmentItemType.SUPPLY,
+          id: item.id,
+          sku: item.sku,
+          name: item.name,
+          category: item.category,
+          unitOfMeasure: item.unitOfMeasure,
+          stockPhysical,
+          stockCommitted,
+          stockAvailable,
+          reorderPoint,
+          shouldReorder: stockAvailable <= reorderPoint,
+        };
+      })
+      .filter((alert) => alert.shouldReorder);
+
+    return {
+      count: variantAlerts.length + supplyAlerts.length,
+      variants: variantAlerts,
+      supplies: supplyAlerts,
+    };
   }
 
   async getAverageCost(productId: string): Promise<number> {

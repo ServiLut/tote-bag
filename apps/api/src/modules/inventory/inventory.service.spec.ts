@@ -50,9 +50,13 @@ describe('InventoryService', () => {
     financialTransaction: {
       create: jest.fn(),
     },
+    inventoryMovement: {
+      create: jest.fn(),
+    },
     auditLog: {
       create: jest.fn(),
     },
+    $queryRaw: jest.fn(),
   };
 
   const prisma = {
@@ -82,6 +86,16 @@ describe('InventoryService', () => {
     managerApprovalsService.requireApproval.mockResolvedValue({
       id: 'approval-1',
     });
+    tx.variant.update.mockResolvedValue({ id: 'variant-1', stock: 100 });
+    tx.supplyItem.update.mockResolvedValue({ id: 'supply-1', stock: 100 });
+    tx.purchaseBatchLine.create.mockImplementation(
+      ({ data }: { data: Record<string, unknown> }) =>
+        Promise.resolve({ id: 'line-1', ...data }),
+    );
+    tx.inventoryMovement.create.mockImplementation(
+      ({ data }: { data: Record<string, unknown> }) =>
+        Promise.resolve({ id: 'movement-1', ...data, createdAt: new Date() }),
+    );
     service = new InventoryService(
       prisma as never,
       managerApprovalsService as never,
@@ -564,6 +578,9 @@ describe('InventoryService', () => {
         slug: 'tote-bag-crudo',
         image: 'https://example.com/crudo.jpg',
         totalStock: 60,
+        stockPhysical: 60,
+        stockCommitted: 0,
+        stockAvailable: 60,
         totalValuation: 924660,
         weightedAvgCost: 15411,
         batches: [
@@ -579,6 +596,61 @@ describe('InventoryService', () => {
             supplier: { id: 'supplier-1', name: 'Proveedor A' },
           },
         ],
+      },
+    ]);
+  });
+
+  it('incluye el origen documental del lote en la reduccion FIFO', async () => {
+    tx.purchaseBatchLine.findMany.mockResolvedValue([
+      {
+        id: 'line-1',
+        purchaseBatchId: 'batch-1',
+        quantityRemaining: 5,
+        unitCost: 12000,
+        purchaseBatch: {
+          id: 'batch-1',
+          supplierId: 'supplier-1',
+          variantId: 'variant-1',
+          documentType: 'DELIVERY_NOTE',
+          createdAt: new Date('2026-04-01T00:00:00.000Z'),
+        },
+      },
+    ]);
+    tx.purchaseBatchLine.update.mockResolvedValue({});
+    tx.purchaseBatchLine.count.mockResolvedValue(1);
+    tx.purchaseBatchLine.aggregate.mockResolvedValue({
+      _sum: { quantityRemaining: 3 },
+    });
+    tx.purchaseBatch.update.mockResolvedValue({});
+    tx.variant.update.mockResolvedValue({ id: 'variant-1', stock: 3 });
+    tx.auditLog.create.mockResolvedValue({});
+
+    const result = await service.reduceStockFIFO(
+      'variant-1',
+      2,
+      'admin-1',
+      tx as never,
+    );
+
+    expect(tx.purchaseBatchLine.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: {
+          purchaseBatch: {
+            select: expect.objectContaining({
+              documentType: true,
+            }) as unknown,
+          },
+        },
+      }) as unknown,
+    );
+    expect(result.reductions).toEqual([
+      {
+        purchaseBatchLineId: 'line-1',
+        batchId: 'batch-1',
+        supplierId: 'supplier-1',
+        quantity: 2,
+        unitCost: 12000,
+        documentType: 'DELIVERY_NOTE',
       },
     ]);
   });

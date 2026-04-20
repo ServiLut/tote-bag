@@ -1,6 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { OrderStatus, ShipmentStatus } from '../../generated/client/client';
+import { ReturnProductCondition, ReturnReason } from './dto/process-return.dto';
 import { ShippingService } from './shipping.service';
 
 describe('ShippingService', () => {
@@ -25,6 +30,9 @@ describe('ShippingService', () => {
       findUnique: jest.fn(),
       update: jest.fn(),
     },
+    user: {
+      findFirst: jest.fn(),
+    },
     shipment: {
       findUnique: jest.fn(),
       create: jest.fn(),
@@ -37,9 +45,12 @@ describe('ShippingService', () => {
       updateMany: jest.fn(),
     },
     purchaseBatch: {
+      create: jest.fn(),
+      findMany: jest.fn(),
       update: jest.fn(),
     },
     purchaseBatchLine: {
+      create: jest.fn(),
       findMany: jest.fn(),
       groupBy: jest.fn(),
       updateMany: jest.fn(),
@@ -54,6 +65,13 @@ describe('ShippingService', () => {
     },
     shipmentSupplyUsageAllocation: {
       create: jest.fn(),
+    },
+    variant: {
+      update: jest.fn(),
+    },
+    inventoryMovement: {
+      create: jest.fn(),
+      updateMany: jest.fn(),
     },
     auditLog: {
       findMany: jest.fn(),
@@ -128,6 +146,8 @@ describe('ShippingService', () => {
       trackingNumber: null,
       carrier: null,
       balanceDue: 0,
+      saleLegalRequirement: 'INTERNAL_DOCUMENT_ALLOWED',
+      saleLegalStatus: 'COMPLETED',
     });
     prisma.shipment.findUnique.mockResolvedValue(null);
     prisma.shippingProvider.findUnique.mockResolvedValue({
@@ -216,6 +236,8 @@ describe('ShippingService', () => {
       trackingNumber: null,
       carrier: null,
       balanceDue: 0,
+      saleLegalRequirement: 'INTERNAL_DOCUMENT_ALLOWED',
+      saleLegalStatus: 'COMPLETED',
     });
     prisma.shipment.findUnique.mockResolvedValue({
       id: 'shipment-1',
@@ -246,6 +268,8 @@ describe('ShippingService', () => {
       trackingNumber: null,
       carrier: null,
       balanceDue: 0,
+      saleLegalRequirement: 'INTERNAL_DOCUMENT_ALLOWED',
+      saleLegalStatus: 'COMPLETED',
     });
     prisma.shipment.findUnique.mockResolvedValue({
       id: 'shipment-1',
@@ -275,12 +299,38 @@ describe('ShippingService', () => {
     expect(prisma.order.update).not.toHaveBeenCalled();
   });
 
+  it('bloquea despacho si falta completar documento legal de venta', async () => {
+    prisma.order.findUnique.mockResolvedValue({
+      status: OrderStatus.PAGADA,
+      trackingNumber: null,
+      carrier: null,
+      balanceDue: 0,
+      saleLegalRequirement: 'ELECTRONIC_INVOICE_REQUIRED',
+      saleLegalStatus: 'PENDING',
+    });
+
+    await expect(
+      service.updateShipment('order-1', {
+        trackingNumber: 'TRK-1',
+        status: ShipmentStatus.SHIPPED,
+        shippingBagSupplyItemId: 'supply-1',
+        shippingBagQuantityUsed: 1,
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(prisma.shipment.update).not.toHaveBeenCalled();
+    expect(prisma.purchaseBatchLine.updateMany).not.toHaveBeenCalled();
+    expect(prisma.order.update).not.toHaveBeenCalled();
+  });
+
   it('consume bolsas desde varios lotes en orden FIFO', async () => {
     prisma.order.findUnique.mockResolvedValue({
       status: OrderStatus.PAGADA,
       trackingNumber: null,
       carrier: null,
       balanceDue: 0,
+      saleLegalRequirement: 'INTERNAL_DOCUMENT_ALLOWED',
+      saleLegalStatus: 'COMPLETED',
     });
     prisma.shipment.findUnique.mockResolvedValue({
       id: 'shipment-1',
@@ -387,6 +437,8 @@ describe('ShippingService', () => {
       trackingNumber: null,
       carrier: null,
       balanceDue: 0,
+      saleLegalRequirement: 'INTERNAL_DOCUMENT_ALLOWED',
+      saleLegalStatus: 'COMPLETED',
     });
     prisma.shipment.findUnique.mockResolvedValue({
       id: 'shipment-1',
@@ -414,5 +466,96 @@ describe('ShippingService', () => {
     expect(prisma.supplyItem.findUnique).not.toHaveBeenCalled();
     expect(prisma.purchaseBatchLine.updateMany).not.toHaveBeenCalled();
     expect(prisma.order.update).not.toHaveBeenCalled();
+  });
+
+  it('reingresa devoluciones con movimientos inmutables y saldo resultante', async () => {
+    prisma.order.findUnique.mockResolvedValue({
+      id: 'order-1',
+      orderNumber: 1001,
+      status: OrderStatus.ENTREGADA,
+      items: [
+        {
+          productId: 'product-1',
+          product: { name: 'Tote Bag' },
+          variantId: 'variant-1',
+          sku: 'TOT-001',
+          quantity: 3,
+          pricingJson: {
+            inventoryConsumption: {
+              reductions: [
+                {
+                  batchId: 'batch-old-1',
+                  supplierId: 'supplier-1',
+                  quantity: 1,
+                  unitCost: 12000,
+                },
+                {
+                  batchId: 'batch-old-2',
+                  supplierId: 'supplier-1',
+                  quantity: 2,
+                  unitCost: 13000,
+                },
+              ],
+            },
+          },
+        },
+      ],
+      shipment: {
+        id: 'shipment-1',
+        status: ShipmentStatus.RETURNED,
+      },
+    });
+    prisma.purchaseBatch.create
+      .mockResolvedValueOnce({ id: 'return-batch-1' })
+      .mockResolvedValueOnce({ id: 'return-batch-2' });
+    prisma.purchaseBatchLine.create
+      .mockResolvedValueOnce({ id: 'return-line-1' })
+      .mockResolvedValueOnce({ id: 'return-line-2' });
+    prisma.variant.update.mockResolvedValue({ stock: 12 });
+    prisma.shipment.update.mockResolvedValue({
+      id: 'shipment-1',
+      status: ShipmentStatus.RETURNED,
+    });
+    prisma.order.update.mockResolvedValue({});
+    prisma.auditLog.create.mockResolvedValue({});
+    prisma.inventoryMovement.create.mockResolvedValue({});
+
+    await service.processReturn(
+      'order-1',
+      {
+        productCondition: ReturnProductCondition.PERFECT,
+        restock: true,
+        reason: ReturnReason.CUSTOMER_REJECTED,
+      },
+      'admin-1',
+    );
+
+    expect(prisma.variant.update).toHaveBeenCalledWith({
+      where: { id: 'variant-1' },
+      data: {
+        stock: { increment: 3 },
+      },
+    });
+    expect(prisma.inventoryMovement.updateMany).not.toHaveBeenCalled();
+    expect(prisma.inventoryMovement.create).toHaveBeenNthCalledWith(1, {
+      data: expect.objectContaining({
+        reason: 'RETURN_TO_STOCK',
+        quantity: 1,
+        balanceAfter: 10,
+        purchaseBatchId: 'return-batch-1',
+        purchaseBatchLineId: 'return-line-1',
+        orderId: 'order-1',
+      }) as unknown,
+    });
+    expect(prisma.inventoryMovement.create).toHaveBeenNthCalledWith(2, {
+      data: expect.objectContaining({
+        reason: 'RETURN_TO_STOCK',
+        quantity: 2,
+        balanceAfter: 12,
+        purchaseBatchId: 'return-batch-2',
+        purchaseBatchLineId: 'return-line-2',
+        orderId: 'order-1',
+      }) as unknown,
+    });
   });
 });

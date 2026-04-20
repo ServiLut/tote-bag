@@ -192,6 +192,8 @@ export type UserWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   auditLogs?: Prisma.AuditLogListRelationFilter
   financialTransactions?: Prisma.FinancialTransactionListRelationFilter
+  inventoryAdjustments?: Prisma.InventoryAdjustmentListRelationFilter
+  inventoryMovements?: Prisma.InventoryMovementListRelationFilter
   profile?: Prisma.XOR<Prisma.ProfileNullableScalarRelationFilter, Prisma.ProfileWhereInput> | null
   personalizationRequests?: Prisma.PersonalizationRequestListRelationFilter
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestListRelationFilter
@@ -210,6 +212,8 @@ export type UserOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   auditLogs?: Prisma.AuditLogOrderByRelationAggregateInput
   financialTransactions?: Prisma.FinancialTransactionOrderByRelationAggregateInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentOrderByRelationAggregateInput
+  inventoryMovements?: Prisma.InventoryMovementOrderByRelationAggregateInput
   profile?: Prisma.ProfileOrderByWithRelationInput
   personalizationRequests?: Prisma.PersonalizationRequestOrderByRelationAggregateInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestOrderByRelationAggregateInput
@@ -231,6 +235,8 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   auditLogs?: Prisma.AuditLogListRelationFilter
   financialTransactions?: Prisma.FinancialTransactionListRelationFilter
+  inventoryAdjustments?: Prisma.InventoryAdjustmentListRelationFilter
+  inventoryMovements?: Prisma.InventoryMovementListRelationFilter
   profile?: Prisma.XOR<Prisma.ProfileNullableScalarRelationFilter, Prisma.ProfileWhereInput> | null
   personalizationRequests?: Prisma.PersonalizationRequestListRelationFilter
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestListRelationFilter
@@ -273,6 +279,8 @@ export type UserCreateInput = {
   updatedAt?: Date | string
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   financialTransactions?: Prisma.FinancialTransactionCreateNestedManyWithoutUserInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentCreateNestedManyWithoutUserInput
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutUserInput
   profile?: Prisma.ProfileCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutApprovedByInput
@@ -291,6 +299,8 @@ export type UserUncheckedCreateInput = {
   updatedAt?: Date | string
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   financialTransactions?: Prisma.FinancialTransactionUncheckedCreateNestedManyWithoutUserInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedCreateNestedManyWithoutUserInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutUserInput
   profile?: Prisma.ProfileUncheckedCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutApprovedByInput
@@ -309,6 +319,8 @@ export type UserUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   financialTransactions?: Prisma.FinancialTransactionUpdateManyWithoutUserNestedInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUpdateManyWithoutUserNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutUserNestedInput
   profile?: Prisma.ProfileUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutApprovedByNestedInput
@@ -327,6 +339,8 @@ export type UserUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   financialTransactions?: Prisma.FinancialTransactionUncheckedUpdateManyWithoutUserNestedInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedUpdateManyWithoutUserNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutUserNestedInput
   profile?: Prisma.ProfileUncheckedUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutApprovedByNestedInput
@@ -478,6 +492,38 @@ export type UserUpdateOneRequiredWithoutPersonalizationRequestsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutPersonalizationRequestsInput, Prisma.UserUpdateWithoutPersonalizationRequestsInput>, Prisma.UserUncheckedUpdateWithoutPersonalizationRequestsInput>
 }
 
+export type UserCreateNestedOneWithoutInventoryAdjustmentsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutInventoryAdjustmentsInput, Prisma.UserUncheckedCreateWithoutInventoryAdjustmentsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutInventoryAdjustmentsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneWithoutInventoryAdjustmentsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutInventoryAdjustmentsInput, Prisma.UserUncheckedCreateWithoutInventoryAdjustmentsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutInventoryAdjustmentsInput
+  upsert?: Prisma.UserUpsertWithoutInventoryAdjustmentsInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutInventoryAdjustmentsInput, Prisma.UserUpdateWithoutInventoryAdjustmentsInput>, Prisma.UserUncheckedUpdateWithoutInventoryAdjustmentsInput>
+}
+
+export type UserCreateNestedOneWithoutInventoryMovementsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutInventoryMovementsInput, Prisma.UserUncheckedCreateWithoutInventoryMovementsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutInventoryMovementsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneWithoutInventoryMovementsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutInventoryMovementsInput, Prisma.UserUncheckedCreateWithoutInventoryMovementsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutInventoryMovementsInput
+  upsert?: Prisma.UserUpsertWithoutInventoryMovementsInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutInventoryMovementsInput, Prisma.UserUpdateWithoutInventoryMovementsInput>, Prisma.UserUncheckedUpdateWithoutInventoryMovementsInput>
+}
+
 export type UserCreateNestedOneWithoutFinancialTransactionsInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutFinancialTransactionsInput, Prisma.UserUncheckedCreateWithoutFinancialTransactionsInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutFinancialTransactionsInput
@@ -547,6 +593,8 @@ export type UserCreateWithoutRolesInput = {
   updatedAt?: Date | string
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   financialTransactions?: Prisma.FinancialTransactionCreateNestedManyWithoutUserInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentCreateNestedManyWithoutUserInput
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutUserInput
   profile?: Prisma.ProfileCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutApprovedByInput
@@ -564,6 +612,8 @@ export type UserUncheckedCreateWithoutRolesInput = {
   updatedAt?: Date | string
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   financialTransactions?: Prisma.FinancialTransactionUncheckedCreateNestedManyWithoutUserInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedCreateNestedManyWithoutUserInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutUserInput
   profile?: Prisma.ProfileUncheckedCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutApprovedByInput
@@ -597,6 +647,8 @@ export type UserUpdateWithoutRolesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   financialTransactions?: Prisma.FinancialTransactionUpdateManyWithoutUserNestedInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUpdateManyWithoutUserNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutUserNestedInput
   profile?: Prisma.ProfileUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutApprovedByNestedInput
@@ -614,6 +666,8 @@ export type UserUncheckedUpdateWithoutRolesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   financialTransactions?: Prisma.FinancialTransactionUncheckedUpdateManyWithoutUserNestedInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedUpdateManyWithoutUserNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutUserNestedInput
   profile?: Prisma.ProfileUncheckedUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutApprovedByNestedInput
@@ -631,6 +685,8 @@ export type UserCreateWithoutProfileInput = {
   updatedAt?: Date | string
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   financialTransactions?: Prisma.FinancialTransactionCreateNestedManyWithoutUserInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentCreateNestedManyWithoutUserInput
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutApprovedByInput
   roles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
@@ -648,6 +704,8 @@ export type UserUncheckedCreateWithoutProfileInput = {
   updatedAt?: Date | string
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   financialTransactions?: Prisma.FinancialTransactionUncheckedCreateNestedManyWithoutUserInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedCreateNestedManyWithoutUserInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutApprovedByInput
   roles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
@@ -681,6 +739,8 @@ export type UserUpdateWithoutProfileInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   financialTransactions?: Prisma.FinancialTransactionUpdateManyWithoutUserNestedInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUpdateManyWithoutUserNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutApprovedByNestedInput
   roles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
@@ -698,6 +758,8 @@ export type UserUncheckedUpdateWithoutProfileInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   financialTransactions?: Prisma.FinancialTransactionUncheckedUpdateManyWithoutUserNestedInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedUpdateManyWithoutUserNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutApprovedByNestedInput
   roles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
@@ -714,6 +776,8 @@ export type UserCreateWithoutAuditLogsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   financialTransactions?: Prisma.FinancialTransactionCreateNestedManyWithoutUserInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentCreateNestedManyWithoutUserInput
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutUserInput
   profile?: Prisma.ProfileCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutApprovedByInput
@@ -731,6 +795,8 @@ export type UserUncheckedCreateWithoutAuditLogsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   financialTransactions?: Prisma.FinancialTransactionUncheckedCreateNestedManyWithoutUserInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedCreateNestedManyWithoutUserInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutUserInput
   profile?: Prisma.ProfileUncheckedCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutApprovedByInput
@@ -764,6 +830,8 @@ export type UserUpdateWithoutAuditLogsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   financialTransactions?: Prisma.FinancialTransactionUpdateManyWithoutUserNestedInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUpdateManyWithoutUserNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutUserNestedInput
   profile?: Prisma.ProfileUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutApprovedByNestedInput
@@ -781,6 +849,8 @@ export type UserUncheckedUpdateWithoutAuditLogsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   financialTransactions?: Prisma.FinancialTransactionUncheckedUpdateManyWithoutUserNestedInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedUpdateManyWithoutUserNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutUserNestedInput
   profile?: Prisma.ProfileUncheckedUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutApprovedByNestedInput
@@ -799,6 +869,8 @@ export type UserCreateWithoutReviewedPersonalizationRequestsInput = {
   updatedAt?: Date | string
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   financialTransactions?: Prisma.FinancialTransactionCreateNestedManyWithoutUserInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentCreateNestedManyWithoutUserInput
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutUserInput
   profile?: Prisma.ProfileCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutUserInput
   roles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
@@ -816,6 +888,8 @@ export type UserUncheckedCreateWithoutReviewedPersonalizationRequestsInput = {
   updatedAt?: Date | string
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   financialTransactions?: Prisma.FinancialTransactionUncheckedCreateNestedManyWithoutUserInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedCreateNestedManyWithoutUserInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutUserInput
   profile?: Prisma.ProfileUncheckedCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutUserInput
   roles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
@@ -838,6 +912,8 @@ export type UserCreateWithoutPersonalizationRequestsInput = {
   updatedAt?: Date | string
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   financialTransactions?: Prisma.FinancialTransactionCreateNestedManyWithoutUserInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentCreateNestedManyWithoutUserInput
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutUserInput
   profile?: Prisma.ProfileCreateNestedOneWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutApprovedByInput
   roles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
@@ -855,6 +931,8 @@ export type UserUncheckedCreateWithoutPersonalizationRequestsInput = {
   updatedAt?: Date | string
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   financialTransactions?: Prisma.FinancialTransactionUncheckedCreateNestedManyWithoutUserInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedCreateNestedManyWithoutUserInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutUserInput
   profile?: Prisma.ProfileUncheckedCreateNestedOneWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutApprovedByInput
   roles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
@@ -888,6 +966,8 @@ export type UserUpdateWithoutReviewedPersonalizationRequestsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   financialTransactions?: Prisma.FinancialTransactionUpdateManyWithoutUserNestedInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUpdateManyWithoutUserNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutUserNestedInput
   profile?: Prisma.ProfileUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutUserNestedInput
   roles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
@@ -905,6 +985,8 @@ export type UserUncheckedUpdateWithoutReviewedPersonalizationRequestsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   financialTransactions?: Prisma.FinancialTransactionUncheckedUpdateManyWithoutUserNestedInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedUpdateManyWithoutUserNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutUserNestedInput
   profile?: Prisma.ProfileUncheckedUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutUserNestedInput
   roles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
@@ -933,6 +1015,8 @@ export type UserUpdateWithoutPersonalizationRequestsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   financialTransactions?: Prisma.FinancialTransactionUpdateManyWithoutUserNestedInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUpdateManyWithoutUserNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutUserNestedInput
   profile?: Prisma.ProfileUpdateOneWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutApprovedByNestedInput
   roles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
@@ -950,7 +1034,193 @@ export type UserUncheckedUpdateWithoutPersonalizationRequestsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   financialTransactions?: Prisma.FinancialTransactionUncheckedUpdateManyWithoutUserNestedInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedUpdateManyWithoutUserNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutUserNestedInput
   profile?: Prisma.ProfileUncheckedUpdateOneWithoutUserNestedInput
+  reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+  roles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
+  managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutRequestedByNestedInput
+  managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutApprovedByNestedInput
+  managerApprovalsUsed?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutUsedByNestedInput
+}
+
+export type UserCreateWithoutInventoryAdjustmentsInput = {
+  id: string
+  email: string
+  role?: $Enums.Role
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
+  financialTransactions?: Prisma.FinancialTransactionCreateNestedManyWithoutUserInput
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutUserInput
+  profile?: Prisma.ProfileCreateNestedOneWithoutUserInput
+  personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutUserInput
+  reviewedPersonalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutApprovedByInput
+  roles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
+  managerApprovalsRequested?: Prisma.ManagerApprovalCreateNestedManyWithoutRequestedByInput
+  managerApprovalsApproved?: Prisma.ManagerApprovalCreateNestedManyWithoutApprovedByInput
+  managerApprovalsUsed?: Prisma.ManagerApprovalCreateNestedManyWithoutUsedByInput
+}
+
+export type UserUncheckedCreateWithoutInventoryAdjustmentsInput = {
+  id: string
+  email: string
+  role?: $Enums.Role
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
+  financialTransactions?: Prisma.FinancialTransactionUncheckedCreateNestedManyWithoutUserInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutUserInput
+  profile?: Prisma.ProfileUncheckedCreateNestedOneWithoutUserInput
+  personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutUserInput
+  reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutApprovedByInput
+  roles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
+  managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutRequestedByInput
+  managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutApprovedByInput
+  managerApprovalsUsed?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutUsedByInput
+}
+
+export type UserCreateOrConnectWithoutInventoryAdjustmentsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutInventoryAdjustmentsInput, Prisma.UserUncheckedCreateWithoutInventoryAdjustmentsInput>
+}
+
+export type UserUpsertWithoutInventoryAdjustmentsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutInventoryAdjustmentsInput, Prisma.UserUncheckedUpdateWithoutInventoryAdjustmentsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutInventoryAdjustmentsInput, Prisma.UserUncheckedCreateWithoutInventoryAdjustmentsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutInventoryAdjustmentsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutInventoryAdjustmentsInput, Prisma.UserUncheckedUpdateWithoutInventoryAdjustmentsInput>
+}
+
+export type UserUpdateWithoutInventoryAdjustmentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
+  financialTransactions?: Prisma.FinancialTransactionUpdateManyWithoutUserNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutUserNestedInput
+  profile?: Prisma.ProfileUpdateOneWithoutUserNestedInput
+  personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutUserNestedInput
+  reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutApprovedByNestedInput
+  roles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
+  managerApprovalsRequested?: Prisma.ManagerApprovalUpdateManyWithoutRequestedByNestedInput
+  managerApprovalsApproved?: Prisma.ManagerApprovalUpdateManyWithoutApprovedByNestedInput
+  managerApprovalsUsed?: Prisma.ManagerApprovalUpdateManyWithoutUsedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutInventoryAdjustmentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
+  financialTransactions?: Prisma.FinancialTransactionUncheckedUpdateManyWithoutUserNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutUserNestedInput
+  profile?: Prisma.ProfileUncheckedUpdateOneWithoutUserNestedInput
+  personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutUserNestedInput
+  reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+  roles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
+  managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutRequestedByNestedInput
+  managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutApprovedByNestedInput
+  managerApprovalsUsed?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutUsedByNestedInput
+}
+
+export type UserCreateWithoutInventoryMovementsInput = {
+  id: string
+  email: string
+  role?: $Enums.Role
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
+  financialTransactions?: Prisma.FinancialTransactionCreateNestedManyWithoutUserInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentCreateNestedManyWithoutUserInput
+  profile?: Prisma.ProfileCreateNestedOneWithoutUserInput
+  personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutUserInput
+  reviewedPersonalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutApprovedByInput
+  roles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
+  managerApprovalsRequested?: Prisma.ManagerApprovalCreateNestedManyWithoutRequestedByInput
+  managerApprovalsApproved?: Prisma.ManagerApprovalCreateNestedManyWithoutApprovedByInput
+  managerApprovalsUsed?: Prisma.ManagerApprovalCreateNestedManyWithoutUsedByInput
+}
+
+export type UserUncheckedCreateWithoutInventoryMovementsInput = {
+  id: string
+  email: string
+  role?: $Enums.Role
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
+  financialTransactions?: Prisma.FinancialTransactionUncheckedCreateNestedManyWithoutUserInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedCreateNestedManyWithoutUserInput
+  profile?: Prisma.ProfileUncheckedCreateNestedOneWithoutUserInput
+  personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutUserInput
+  reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutApprovedByInput
+  roles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
+  managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutRequestedByInput
+  managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutApprovedByInput
+  managerApprovalsUsed?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutUsedByInput
+}
+
+export type UserCreateOrConnectWithoutInventoryMovementsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutInventoryMovementsInput, Prisma.UserUncheckedCreateWithoutInventoryMovementsInput>
+}
+
+export type UserUpsertWithoutInventoryMovementsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutInventoryMovementsInput, Prisma.UserUncheckedUpdateWithoutInventoryMovementsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutInventoryMovementsInput, Prisma.UserUncheckedCreateWithoutInventoryMovementsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutInventoryMovementsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutInventoryMovementsInput, Prisma.UserUncheckedUpdateWithoutInventoryMovementsInput>
+}
+
+export type UserUpdateWithoutInventoryMovementsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
+  financialTransactions?: Prisma.FinancialTransactionUpdateManyWithoutUserNestedInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUpdateManyWithoutUserNestedInput
+  profile?: Prisma.ProfileUpdateOneWithoutUserNestedInput
+  personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutUserNestedInput
+  reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutApprovedByNestedInput
+  roles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
+  managerApprovalsRequested?: Prisma.ManagerApprovalUpdateManyWithoutRequestedByNestedInput
+  managerApprovalsApproved?: Prisma.ManagerApprovalUpdateManyWithoutApprovedByNestedInput
+  managerApprovalsUsed?: Prisma.ManagerApprovalUpdateManyWithoutUsedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutInventoryMovementsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
+  financialTransactions?: Prisma.FinancialTransactionUncheckedUpdateManyWithoutUserNestedInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedUpdateManyWithoutUserNestedInput
+  profile?: Prisma.ProfileUncheckedUpdateOneWithoutUserNestedInput
+  personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutApprovedByNestedInput
   roles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutRequestedByNestedInput
@@ -966,6 +1236,8 @@ export type UserCreateWithoutFinancialTransactionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentCreateNestedManyWithoutUserInput
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutUserInput
   profile?: Prisma.ProfileCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutApprovedByInput
@@ -983,6 +1255,8 @@ export type UserUncheckedCreateWithoutFinancialTransactionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedCreateNestedManyWithoutUserInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutUserInput
   profile?: Prisma.ProfileUncheckedCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutApprovedByInput
@@ -1016,6 +1290,8 @@ export type UserUpdateWithoutFinancialTransactionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUpdateManyWithoutUserNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutUserNestedInput
   profile?: Prisma.ProfileUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutApprovedByNestedInput
@@ -1033,6 +1309,8 @@ export type UserUncheckedUpdateWithoutFinancialTransactionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedUpdateManyWithoutUserNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutUserNestedInput
   profile?: Prisma.ProfileUncheckedUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutApprovedByNestedInput
@@ -1051,6 +1329,8 @@ export type UserCreateWithoutManagerApprovalsRequestedInput = {
   updatedAt?: Date | string
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   financialTransactions?: Prisma.FinancialTransactionCreateNestedManyWithoutUserInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentCreateNestedManyWithoutUserInput
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutUserInput
   profile?: Prisma.ProfileCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutApprovedByInput
@@ -1068,6 +1348,8 @@ export type UserUncheckedCreateWithoutManagerApprovalsRequestedInput = {
   updatedAt?: Date | string
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   financialTransactions?: Prisma.FinancialTransactionUncheckedCreateNestedManyWithoutUserInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedCreateNestedManyWithoutUserInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutUserInput
   profile?: Prisma.ProfileUncheckedCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutApprovedByInput
@@ -1090,6 +1372,8 @@ export type UserCreateWithoutManagerApprovalsApprovedInput = {
   updatedAt?: Date | string
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   financialTransactions?: Prisma.FinancialTransactionCreateNestedManyWithoutUserInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentCreateNestedManyWithoutUserInput
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutUserInput
   profile?: Prisma.ProfileCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutApprovedByInput
@@ -1107,6 +1391,8 @@ export type UserUncheckedCreateWithoutManagerApprovalsApprovedInput = {
   updatedAt?: Date | string
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   financialTransactions?: Prisma.FinancialTransactionUncheckedCreateNestedManyWithoutUserInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedCreateNestedManyWithoutUserInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutUserInput
   profile?: Prisma.ProfileUncheckedCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutApprovedByInput
@@ -1129,6 +1415,8 @@ export type UserCreateWithoutManagerApprovalsUsedInput = {
   updatedAt?: Date | string
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   financialTransactions?: Prisma.FinancialTransactionCreateNestedManyWithoutUserInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentCreateNestedManyWithoutUserInput
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutUserInput
   profile?: Prisma.ProfileCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutApprovedByInput
@@ -1146,6 +1434,8 @@ export type UserUncheckedCreateWithoutManagerApprovalsUsedInput = {
   updatedAt?: Date | string
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   financialTransactions?: Prisma.FinancialTransactionUncheckedCreateNestedManyWithoutUserInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedCreateNestedManyWithoutUserInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutUserInput
   profile?: Prisma.ProfileUncheckedCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutApprovedByInput
@@ -1179,6 +1469,8 @@ export type UserUpdateWithoutManagerApprovalsRequestedInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   financialTransactions?: Prisma.FinancialTransactionUpdateManyWithoutUserNestedInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUpdateManyWithoutUserNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutUserNestedInput
   profile?: Prisma.ProfileUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutApprovedByNestedInput
@@ -1196,6 +1488,8 @@ export type UserUncheckedUpdateWithoutManagerApprovalsRequestedInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   financialTransactions?: Prisma.FinancialTransactionUncheckedUpdateManyWithoutUserNestedInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedUpdateManyWithoutUserNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutUserNestedInput
   profile?: Prisma.ProfileUncheckedUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutApprovedByNestedInput
@@ -1224,6 +1518,8 @@ export type UserUpdateWithoutManagerApprovalsApprovedInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   financialTransactions?: Prisma.FinancialTransactionUpdateManyWithoutUserNestedInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUpdateManyWithoutUserNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutUserNestedInput
   profile?: Prisma.ProfileUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutApprovedByNestedInput
@@ -1241,6 +1537,8 @@ export type UserUncheckedUpdateWithoutManagerApprovalsApprovedInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   financialTransactions?: Prisma.FinancialTransactionUncheckedUpdateManyWithoutUserNestedInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedUpdateManyWithoutUserNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutUserNestedInput
   profile?: Prisma.ProfileUncheckedUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutApprovedByNestedInput
@@ -1269,6 +1567,8 @@ export type UserUpdateWithoutManagerApprovalsUsedInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   financialTransactions?: Prisma.FinancialTransactionUpdateManyWithoutUserNestedInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUpdateManyWithoutUserNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutUserNestedInput
   profile?: Prisma.ProfileUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutApprovedByNestedInput
@@ -1286,6 +1586,8 @@ export type UserUncheckedUpdateWithoutManagerApprovalsUsedInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   financialTransactions?: Prisma.FinancialTransactionUncheckedUpdateManyWithoutUserNestedInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedUpdateManyWithoutUserNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutUserNestedInput
   profile?: Prisma.ProfileUncheckedUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutApprovedByNestedInput
@@ -1302,6 +1604,8 @@ export type UserUncheckedUpdateWithoutManagerApprovalsUsedInput = {
 export type UserCountOutputType = {
   auditLogs: number
   financialTransactions: number
+  inventoryAdjustments: number
+  inventoryMovements: number
   personalizationRequests: number
   reviewedPersonalizationRequests: number
   roles: number
@@ -1313,6 +1617,8 @@ export type UserCountOutputType = {
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   auditLogs?: boolean | UserCountOutputTypeCountAuditLogsArgs
   financialTransactions?: boolean | UserCountOutputTypeCountFinancialTransactionsArgs
+  inventoryAdjustments?: boolean | UserCountOutputTypeCountInventoryAdjustmentsArgs
+  inventoryMovements?: boolean | UserCountOutputTypeCountInventoryMovementsArgs
   personalizationRequests?: boolean | UserCountOutputTypeCountPersonalizationRequestsArgs
   reviewedPersonalizationRequests?: boolean | UserCountOutputTypeCountReviewedPersonalizationRequestsArgs
   roles?: boolean | UserCountOutputTypeCountRolesArgs
@@ -1343,6 +1649,20 @@ export type UserCountOutputTypeCountAuditLogsArgs<ExtArgs extends runtime.Types.
  */
 export type UserCountOutputTypeCountFinancialTransactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.FinancialTransactionWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountInventoryAdjustmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.InventoryAdjustmentWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountInventoryMovementsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.InventoryMovementWhereInput
 }
 
 /**
@@ -1397,6 +1717,8 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   updatedAt?: boolean
   auditLogs?: boolean | Prisma.User$auditLogsArgs<ExtArgs>
   financialTransactions?: boolean | Prisma.User$financialTransactionsArgs<ExtArgs>
+  inventoryAdjustments?: boolean | Prisma.User$inventoryAdjustmentsArgs<ExtArgs>
+  inventoryMovements?: boolean | Prisma.User$inventoryMovementsArgs<ExtArgs>
   profile?: boolean | Prisma.User$profileArgs<ExtArgs>
   personalizationRequests?: boolean | Prisma.User$personalizationRequestsArgs<ExtArgs>
   reviewedPersonalizationRequests?: boolean | Prisma.User$reviewedPersonalizationRequestsArgs<ExtArgs>
@@ -1438,6 +1760,8 @@ export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = run
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   auditLogs?: boolean | Prisma.User$auditLogsArgs<ExtArgs>
   financialTransactions?: boolean | Prisma.User$financialTransactionsArgs<ExtArgs>
+  inventoryAdjustments?: boolean | Prisma.User$inventoryAdjustmentsArgs<ExtArgs>
+  inventoryMovements?: boolean | Prisma.User$inventoryMovementsArgs<ExtArgs>
   profile?: boolean | Prisma.User$profileArgs<ExtArgs>
   personalizationRequests?: boolean | Prisma.User$personalizationRequestsArgs<ExtArgs>
   reviewedPersonalizationRequests?: boolean | Prisma.User$reviewedPersonalizationRequestsArgs<ExtArgs>
@@ -1455,6 +1779,8 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   objects: {
     auditLogs: Prisma.$AuditLogPayload<ExtArgs>[]
     financialTransactions: Prisma.$FinancialTransactionPayload<ExtArgs>[]
+    inventoryAdjustments: Prisma.$InventoryAdjustmentPayload<ExtArgs>[]
+    inventoryMovements: Prisma.$InventoryMovementPayload<ExtArgs>[]
     profile: Prisma.$ProfilePayload<ExtArgs> | null
     personalizationRequests: Prisma.$PersonalizationRequestPayload<ExtArgs>[]
     reviewedPersonalizationRequests: Prisma.$PersonalizationRequestPayload<ExtArgs>[]
@@ -1866,6 +2192,8 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   readonly [Symbol.toStringTag]: "PrismaPromise"
   auditLogs<T extends Prisma.User$auditLogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$auditLogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AuditLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   financialTransactions<T extends Prisma.User$financialTransactionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$financialTransactionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FinancialTransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  inventoryAdjustments<T extends Prisma.User$inventoryAdjustmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$inventoryAdjustmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$InventoryAdjustmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  inventoryMovements<T extends Prisma.User$inventoryMovementsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$inventoryMovementsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$InventoryMovementPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   profile<T extends Prisma.User$profileArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$profileArgs<ExtArgs>>): Prisma.Prisma__ProfileClient<runtime.Types.Result.GetResult<Prisma.$ProfilePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   personalizationRequests<T extends Prisma.User$personalizationRequestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$personalizationRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PersonalizationRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   reviewedPersonalizationRequests<T extends Prisma.User$reviewedPersonalizationRequestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$reviewedPersonalizationRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PersonalizationRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -2341,6 +2669,54 @@ export type User$financialTransactionsArgs<ExtArgs extends runtime.Types.Extensi
   take?: number
   skip?: number
   distinct?: Prisma.FinancialTransactionScalarFieldEnum | Prisma.FinancialTransactionScalarFieldEnum[]
+}
+
+/**
+ * User.inventoryAdjustments
+ */
+export type User$inventoryAdjustmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the InventoryAdjustment
+   */
+  select?: Prisma.InventoryAdjustmentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the InventoryAdjustment
+   */
+  omit?: Prisma.InventoryAdjustmentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InventoryAdjustmentInclude<ExtArgs> | null
+  where?: Prisma.InventoryAdjustmentWhereInput
+  orderBy?: Prisma.InventoryAdjustmentOrderByWithRelationInput | Prisma.InventoryAdjustmentOrderByWithRelationInput[]
+  cursor?: Prisma.InventoryAdjustmentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.InventoryAdjustmentScalarFieldEnum | Prisma.InventoryAdjustmentScalarFieldEnum[]
+}
+
+/**
+ * User.inventoryMovements
+ */
+export type User$inventoryMovementsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the InventoryMovement
+   */
+  select?: Prisma.InventoryMovementSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the InventoryMovement
+   */
+  omit?: Prisma.InventoryMovementOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InventoryMovementInclude<ExtArgs> | null
+  where?: Prisma.InventoryMovementWhereInput
+  orderBy?: Prisma.InventoryMovementOrderByWithRelationInput | Prisma.InventoryMovementOrderByWithRelationInput[]
+  cursor?: Prisma.InventoryMovementWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.InventoryMovementScalarFieldEnum | Prisma.InventoryMovementScalarFieldEnum[]
 }
 
 /**

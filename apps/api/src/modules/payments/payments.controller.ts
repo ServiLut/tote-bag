@@ -11,7 +11,7 @@ import {
   UseInterceptors,
   UploadedFile,
 } from '@nestjs/common';
-import { PaymentsService } from './payments.service';
+import { PaymentsService, PaymentSupportEntityType } from './payments.service';
 import { WompiEvent } from './interfaces/wompi-event.interface';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { RolesService } from '../roles/roles.service';
@@ -58,7 +58,7 @@ export class PaymentsController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadReceipt(
     @Param('entityType')
-    entityType: 'order' | 'b2b' | 'batch' | 'purchase-invoice',
+    entityType: PaymentSupportEntityType,
     @Param('entityId') entityId: string,
     @UploadedFile() file: Express.Multer.File,
     @Request() req: RequestWithUser,
@@ -83,7 +83,7 @@ export class PaymentsController {
   @Get('supports/:entityType/:entityId/signed-url')
   async getSupportSignedUrl(
     @Param('entityType')
-    entityType: 'order' | 'b2b' | 'batch' | 'purchase-invoice',
+    entityType: PaymentSupportEntityType,
     @Param('entityId') entityId: string,
     @Request() req: RequestWithUser,
   ) {
@@ -97,9 +97,9 @@ export class PaymentsController {
 
   private async ensureUploadPermission(
     userId: string,
-    entityType: 'order' | 'b2b' | 'batch' | 'purchase-invoice',
+    entityType: PaymentSupportEntityType,
   ) {
-    if (entityType === 'order') {
+    if (entityType === 'order' || entityType === 'order-payment') {
       const hasPermission = await this.rolesService.hasPermission(
         userId,
         'orders',
@@ -155,7 +155,7 @@ export class PaymentsController {
 
   private async ensureSupportReadPermission(
     userId: string,
-    entityType: 'order' | 'b2b' | 'batch' | 'purchase-invoice',
+    entityType: PaymentSupportEntityType,
   ) {
     const { effectiveRole } = await this.rolesService.getEffectiveRole(userId);
 

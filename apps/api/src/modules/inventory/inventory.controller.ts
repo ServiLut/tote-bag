@@ -22,8 +22,10 @@ import { PurchaseDocumentType } from '../../generated/client/enums';
 import { InventoryService } from './inventory.service';
 import { FinanceService } from './finance.service';
 import {
+  CreateInventoryAdjustmentDto,
   CreatePurchaseBatchDto,
   CreateSupplyItemDto,
+  UpdateReorderPointDto,
 } from './dto/create-purchase-batch.dto';
 import { UpdatePurchaseBatchDto } from './dto/update-purchase-batch.dto';
 import { BreakEvenSimulationDto } from './dto/break-even-simulation.dto';
@@ -137,6 +139,12 @@ export class InventoryController {
   async getInventoryMovements(@Request() req: RequestWithUser) {
     await this.ensureAdmin(req.user?.id);
     return this.inventoryService.getInventoryMovements();
+  }
+
+  @Get('reorder-alerts')
+  async getReorderAlerts(@Request() req: RequestWithUser) {
+    await this.ensureAdmin(req.user?.id);
+    return this.inventoryService.getReorderAlerts();
   }
 
   @Get('products/:productId/average-cost')
@@ -270,6 +278,38 @@ export class InventoryController {
   ) {
     await this.ensureAdmin(req.user?.id);
     return this.inventoryService.createSupplyItem(body);
+  }
+
+  @Post('adjustments')
+  async createInventoryAdjustment(
+    @Body() body: CreateInventoryAdjustmentDto,
+    @Request() req: RequestWithUser,
+  ) {
+    await this.ensureAdmin(req.user?.id);
+    return this.inventoryService.createInventoryAdjustment({
+      ...body,
+      userId: req.user!.id,
+    });
+  }
+
+  @Patch('variants/:id/reorder-point')
+  async updateVariantReorderPoint(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() body: UpdateReorderPointDto,
+    @Request() req: RequestWithUser,
+  ) {
+    await this.ensureAdmin(req.user?.id);
+    return this.inventoryService.updateVariantReorderPoint(id, body);
+  }
+
+  @Patch('supply-items/:id/reorder-point')
+  async updateSupplyItemReorderPoint(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() body: UpdateReorderPointDto,
+    @Request() req: RequestWithUser,
+  ) {
+    await this.ensureAdmin(req.user?.id);
+    return this.inventoryService.updateSupplyItemReorderPoint(id, body);
   }
 
   @Patch('batches/:id')

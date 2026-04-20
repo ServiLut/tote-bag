@@ -27,6 +27,18 @@ export enum PurchaseBatchLineItemTypeInput {
   OTHER = 'OTHER',
 }
 
+export enum InventoryAdjustmentItemTypeInput {
+  VARIANT = 'VARIANT',
+  SUPPLY = 'SUPPLY',
+}
+
+export enum InventoryAdjustmentReasonInput {
+  ENTRADA_MAQUILA = 'ENTRADA_MAQUILA',
+  SALIDA_MUESTRA_PUBLICIDAD = 'SALIDA_MUESTRA_PUBLICIDAD',
+  SALIDA_AVERIA = 'SALIDA_AVERIA',
+  AJUSTE_VENTA_EXTERNA = 'AJUSTE_VENTA_EXTERNA',
+}
+
 export class PurchaseBatchItemDto {
   @IsString()
   @IsOptional()
@@ -152,4 +164,38 @@ export class CreateSupplyItemDto {
   @IsOptional()
   @Transform(({ value }) => parseLocalizedNumber(value))
   minStock?: number;
+}
+
+export class CreateInventoryAdjustmentDto {
+  @IsEnum(InventoryAdjustmentReasonInput)
+  reason: InventoryAdjustmentReasonInput;
+
+  @IsEnum(InventoryAdjustmentItemTypeInput)
+  itemType: InventoryAdjustmentItemTypeInput;
+
+  @IsString()
+  @IsOptional()
+  variantId?: string;
+
+  @IsString()
+  @IsOptional()
+  supplyItemId?: string;
+
+  @IsString()
+  purchaseBatchLineId: string;
+
+  @IsNumber()
+  @Transform(({ value }) => parseLocalizedNumber(value))
+  quantityDelta: number;
+
+  @IsString()
+  @IsOptional()
+  notes?: string;
+}
+
+export class UpdateReorderPointDto {
+  @IsNumber()
+  @IsOptional()
+  @Transform(({ value }) => parseLocalizedNumber(value))
+  reorderPoint?: number;
 }

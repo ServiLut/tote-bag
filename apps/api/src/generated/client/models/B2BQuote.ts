@@ -28,10 +28,12 @@ export type AggregateB2BQuote = {
 
 export type B2BQuoteAvgAggregateOutputType = {
   quantity: number | null
+  reservationHours: number | null
 }
 
 export type B2BQuoteSumAggregateOutputType = {
   quantity: number | null
+  reservationHours: number | null
 }
 
 export type B2BQuoteMinAggregateOutputType = {
@@ -49,6 +51,10 @@ export type B2BQuoteMinAggregateOutputType = {
   package: string | null
   status: string | null
   paymentReceiptUrl: string | null
+  expiresAt: Date | null
+  reservationStatus: $Enums.B2BReservationStatus | null
+  reservationHours: number | null
+  reservationReleasedAt: Date | null
   deletedAt: Date | null
   createdAt: Date | null
   material: string | null
@@ -70,6 +76,10 @@ export type B2BQuoteMaxAggregateOutputType = {
   package: string | null
   status: string | null
   paymentReceiptUrl: string | null
+  expiresAt: Date | null
+  reservationStatus: $Enums.B2BReservationStatus | null
+  reservationHours: number | null
+  reservationReleasedAt: Date | null
   deletedAt: Date | null
   createdAt: Date | null
   material: string | null
@@ -91,6 +101,10 @@ export type B2BQuoteCountAggregateOutputType = {
   package: number
   status: number
   paymentReceiptUrl: number
+  expiresAt: number
+  reservationStatus: number
+  reservationHours: number
+  reservationReleasedAt: number
   deletedAt: number
   createdAt: number
   material: number
@@ -101,10 +115,12 @@ export type B2BQuoteCountAggregateOutputType = {
 
 export type B2BQuoteAvgAggregateInputType = {
   quantity?: true
+  reservationHours?: true
 }
 
 export type B2BQuoteSumAggregateInputType = {
   quantity?: true
+  reservationHours?: true
 }
 
 export type B2BQuoteMinAggregateInputType = {
@@ -122,6 +138,10 @@ export type B2BQuoteMinAggregateInputType = {
   package?: true
   status?: true
   paymentReceiptUrl?: true
+  expiresAt?: true
+  reservationStatus?: true
+  reservationHours?: true
+  reservationReleasedAt?: true
   deletedAt?: true
   createdAt?: true
   material?: true
@@ -143,6 +163,10 @@ export type B2BQuoteMaxAggregateInputType = {
   package?: true
   status?: true
   paymentReceiptUrl?: true
+  expiresAt?: true
+  reservationStatus?: true
+  reservationHours?: true
+  reservationReleasedAt?: true
   deletedAt?: true
   createdAt?: true
   material?: true
@@ -164,6 +188,10 @@ export type B2BQuoteCountAggregateInputType = {
   package?: true
   status?: true
   paymentReceiptUrl?: true
+  expiresAt?: true
+  reservationStatus?: true
+  reservationHours?: true
+  reservationReleasedAt?: true
   deletedAt?: true
   createdAt?: true
   material?: true
@@ -272,6 +300,10 @@ export type B2BQuoteGroupByOutputType = {
   package: string
   status: string
   paymentReceiptUrl: string | null
+  expiresAt: Date | null
+  reservationStatus: $Enums.B2BReservationStatus
+  reservationHours: number | null
+  reservationReleasedAt: Date | null
   deletedAt: Date | null
   createdAt: Date
   material: string | null
@@ -316,6 +348,10 @@ export type B2BQuoteWhereInput = {
   package?: Prisma.StringFilter<"B2BQuote"> | string
   status?: Prisma.StringFilter<"B2BQuote"> | string
   paymentReceiptUrl?: Prisma.StringNullableFilter<"B2BQuote"> | string | null
+  expiresAt?: Prisma.DateTimeNullableFilter<"B2BQuote"> | Date | string | null
+  reservationStatus?: Prisma.EnumB2BReservationStatusFilter<"B2BQuote"> | $Enums.B2BReservationStatus
+  reservationHours?: Prisma.IntNullableFilter<"B2BQuote"> | number | null
+  reservationReleasedAt?: Prisma.DateTimeNullableFilter<"B2BQuote"> | Date | string | null
   deletedAt?: Prisma.DateTimeNullableFilter<"B2BQuote"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"B2BQuote"> | Date | string
   material?: Prisma.StringNullableFilter<"B2BQuote"> | string | null
@@ -338,6 +374,10 @@ export type B2BQuoteOrderByWithRelationInput = {
   package?: Prisma.SortOrder
   status?: Prisma.SortOrder
   paymentReceiptUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  expiresAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  reservationStatus?: Prisma.SortOrder
+  reservationHours?: Prisma.SortOrderInput | Prisma.SortOrder
+  reservationReleasedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   material?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -363,6 +403,10 @@ export type B2BQuoteWhereUniqueInput = Prisma.AtLeast<{
   package?: Prisma.StringFilter<"B2BQuote"> | string
   status?: Prisma.StringFilter<"B2BQuote"> | string
   paymentReceiptUrl?: Prisma.StringNullableFilter<"B2BQuote"> | string | null
+  expiresAt?: Prisma.DateTimeNullableFilter<"B2BQuote"> | Date | string | null
+  reservationStatus?: Prisma.EnumB2BReservationStatusFilter<"B2BQuote"> | $Enums.B2BReservationStatus
+  reservationHours?: Prisma.IntNullableFilter<"B2BQuote"> | number | null
+  reservationReleasedAt?: Prisma.DateTimeNullableFilter<"B2BQuote"> | Date | string | null
   deletedAt?: Prisma.DateTimeNullableFilter<"B2BQuote"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"B2BQuote"> | Date | string
   material?: Prisma.StringNullableFilter<"B2BQuote"> | string | null
@@ -385,6 +429,10 @@ export type B2BQuoteOrderByWithAggregationInput = {
   package?: Prisma.SortOrder
   status?: Prisma.SortOrder
   paymentReceiptUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  expiresAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  reservationStatus?: Prisma.SortOrder
+  reservationHours?: Prisma.SortOrderInput | Prisma.SortOrder
+  reservationReleasedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   material?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -414,6 +462,10 @@ export type B2BQuoteScalarWhereWithAggregatesInput = {
   package?: Prisma.StringWithAggregatesFilter<"B2BQuote"> | string
   status?: Prisma.StringWithAggregatesFilter<"B2BQuote"> | string
   paymentReceiptUrl?: Prisma.StringNullableWithAggregatesFilter<"B2BQuote"> | string | null
+  expiresAt?: Prisma.DateTimeNullableWithAggregatesFilter<"B2BQuote"> | Date | string | null
+  reservationStatus?: Prisma.EnumB2BReservationStatusWithAggregatesFilter<"B2BQuote"> | $Enums.B2BReservationStatus
+  reservationHours?: Prisma.IntNullableWithAggregatesFilter<"B2BQuote"> | number | null
+  reservationReleasedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"B2BQuote"> | Date | string | null
   deletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"B2BQuote"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"B2BQuote"> | Date | string
   material?: Prisma.StringNullableWithAggregatesFilter<"B2BQuote"> | string | null
@@ -435,6 +487,10 @@ export type B2BQuoteCreateInput = {
   package: string
   status?: string
   paymentReceiptUrl?: string | null
+  expiresAt?: Date | string | null
+  reservationStatus?: $Enums.B2BReservationStatus
+  reservationHours?: number | null
+  reservationReleasedAt?: Date | string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   material?: string | null
@@ -457,6 +513,10 @@ export type B2BQuoteUncheckedCreateInput = {
   package: string
   status?: string
   paymentReceiptUrl?: string | null
+  expiresAt?: Date | string | null
+  reservationStatus?: $Enums.B2BReservationStatus
+  reservationHours?: number | null
+  reservationReleasedAt?: Date | string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   material?: string | null
@@ -479,6 +539,10 @@ export type B2BQuoteUpdateInput = {
   package?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reservationStatus?: Prisma.EnumB2BReservationStatusFieldUpdateOperationsInput | $Enums.B2BReservationStatus
+  reservationHours?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  reservationReleasedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   material?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -501,6 +565,10 @@ export type B2BQuoteUncheckedUpdateInput = {
   package?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reservationStatus?: Prisma.EnumB2BReservationStatusFieldUpdateOperationsInput | $Enums.B2BReservationStatus
+  reservationHours?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  reservationReleasedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   material?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -523,6 +591,10 @@ export type B2BQuoteCreateManyInput = {
   package: string
   status?: string
   paymentReceiptUrl?: string | null
+  expiresAt?: Date | string | null
+  reservationStatus?: $Enums.B2BReservationStatus
+  reservationHours?: number | null
+  reservationReleasedAt?: Date | string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   material?: string | null
@@ -544,6 +616,10 @@ export type B2BQuoteUpdateManyMutationInput = {
   package?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reservationStatus?: Prisma.EnumB2BReservationStatusFieldUpdateOperationsInput | $Enums.B2BReservationStatus
+  reservationHours?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  reservationReleasedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   material?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -565,6 +641,10 @@ export type B2BQuoteUncheckedUpdateManyInput = {
   package?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reservationStatus?: Prisma.EnumB2BReservationStatusFieldUpdateOperationsInput | $Enums.B2BReservationStatus
+  reservationHours?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  reservationReleasedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   material?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -586,6 +666,10 @@ export type B2BQuoteCountOrderByAggregateInput = {
   package?: Prisma.SortOrder
   status?: Prisma.SortOrder
   paymentReceiptUrl?: Prisma.SortOrder
+  expiresAt?: Prisma.SortOrder
+  reservationStatus?: Prisma.SortOrder
+  reservationHours?: Prisma.SortOrder
+  reservationReleasedAt?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   material?: Prisma.SortOrder
@@ -594,6 +678,7 @@ export type B2BQuoteCountOrderByAggregateInput = {
 
 export type B2BQuoteAvgOrderByAggregateInput = {
   quantity?: Prisma.SortOrder
+  reservationHours?: Prisma.SortOrder
 }
 
 export type B2BQuoteMaxOrderByAggregateInput = {
@@ -611,6 +696,10 @@ export type B2BQuoteMaxOrderByAggregateInput = {
   package?: Prisma.SortOrder
   status?: Prisma.SortOrder
   paymentReceiptUrl?: Prisma.SortOrder
+  expiresAt?: Prisma.SortOrder
+  reservationStatus?: Prisma.SortOrder
+  reservationHours?: Prisma.SortOrder
+  reservationReleasedAt?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   material?: Prisma.SortOrder
@@ -632,6 +721,10 @@ export type B2BQuoteMinOrderByAggregateInput = {
   package?: Prisma.SortOrder
   status?: Prisma.SortOrder
   paymentReceiptUrl?: Prisma.SortOrder
+  expiresAt?: Prisma.SortOrder
+  reservationStatus?: Prisma.SortOrder
+  reservationHours?: Prisma.SortOrder
+  reservationReleasedAt?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   material?: Prisma.SortOrder
@@ -640,11 +733,16 @@ export type B2BQuoteMinOrderByAggregateInput = {
 
 export type B2BQuoteSumOrderByAggregateInput = {
   quantity?: Prisma.SortOrder
+  reservationHours?: Prisma.SortOrder
 }
 
 export type B2BQuoteScalarRelationFilter = {
   is?: Prisma.B2BQuoteWhereInput
   isNot?: Prisma.B2BQuoteWhereInput
+}
+
+export type EnumB2BReservationStatusFieldUpdateOperationsInput = {
+  set?: $Enums.B2BReservationStatus
 }
 
 export type B2BQuoteCreateNestedOneWithoutItemsInput = {
@@ -676,6 +774,10 @@ export type B2BQuoteCreateWithoutItemsInput = {
   package: string
   status?: string
   paymentReceiptUrl?: string | null
+  expiresAt?: Date | string | null
+  reservationStatus?: $Enums.B2BReservationStatus
+  reservationHours?: number | null
+  reservationReleasedAt?: Date | string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   material?: string | null
@@ -697,6 +799,10 @@ export type B2BQuoteUncheckedCreateWithoutItemsInput = {
   package: string
   status?: string
   paymentReceiptUrl?: string | null
+  expiresAt?: Date | string | null
+  reservationStatus?: $Enums.B2BReservationStatus
+  reservationHours?: number | null
+  reservationReleasedAt?: Date | string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   material?: string | null
@@ -734,6 +840,10 @@ export type B2BQuoteUpdateWithoutItemsInput = {
   package?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reservationStatus?: Prisma.EnumB2BReservationStatusFieldUpdateOperationsInput | $Enums.B2BReservationStatus
+  reservationHours?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  reservationReleasedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   material?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -755,6 +865,10 @@ export type B2BQuoteUncheckedUpdateWithoutItemsInput = {
   package?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reservationStatus?: Prisma.EnumB2BReservationStatusFieldUpdateOperationsInput | $Enums.B2BReservationStatus
+  reservationHours?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  reservationReleasedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   material?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -807,6 +921,10 @@ export type B2BQuoteSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   package?: boolean
   status?: boolean
   paymentReceiptUrl?: boolean
+  expiresAt?: boolean
+  reservationStatus?: boolean
+  reservationHours?: boolean
+  reservationReleasedAt?: boolean
   deletedAt?: boolean
   createdAt?: boolean
   material?: boolean
@@ -830,6 +948,10 @@ export type B2BQuoteSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   package?: boolean
   status?: boolean
   paymentReceiptUrl?: boolean
+  expiresAt?: boolean
+  reservationStatus?: boolean
+  reservationHours?: boolean
+  reservationReleasedAt?: boolean
   deletedAt?: boolean
   createdAt?: boolean
   material?: boolean
@@ -851,6 +973,10 @@ export type B2BQuoteSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   package?: boolean
   status?: boolean
   paymentReceiptUrl?: boolean
+  expiresAt?: boolean
+  reservationStatus?: boolean
+  reservationHours?: boolean
+  reservationReleasedAt?: boolean
   deletedAt?: boolean
   createdAt?: boolean
   material?: boolean
@@ -872,13 +998,17 @@ export type B2BQuoteSelectScalar = {
   package?: boolean
   status?: boolean
   paymentReceiptUrl?: boolean
+  expiresAt?: boolean
+  reservationStatus?: boolean
+  reservationHours?: boolean
+  reservationReleasedAt?: boolean
   deletedAt?: boolean
   createdAt?: boolean
   material?: boolean
   size?: boolean
 }
 
-export type B2BQuoteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "businessName" | "quantity" | "department" | "municipality" | "neighborhood" | "address" | "contactPhone" | "qrType" | "qrData" | "logoUrl" | "package" | "status" | "paymentReceiptUrl" | "deletedAt" | "createdAt" | "material" | "size", ExtArgs["result"]["b2BQuote"]>
+export type B2BQuoteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "businessName" | "quantity" | "department" | "municipality" | "neighborhood" | "address" | "contactPhone" | "qrType" | "qrData" | "logoUrl" | "package" | "status" | "paymentReceiptUrl" | "expiresAt" | "reservationStatus" | "reservationHours" | "reservationReleasedAt" | "deletedAt" | "createdAt" | "material" | "size", ExtArgs["result"]["b2BQuote"]>
 export type B2BQuoteInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   items?: boolean | Prisma.B2BQuote$itemsArgs<ExtArgs>
   _count?: boolean | Prisma.B2BQuoteCountOutputTypeDefaultArgs<ExtArgs>
@@ -906,6 +1036,10 @@ export type $B2BQuotePayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     package: string
     status: string
     paymentReceiptUrl: string | null
+    expiresAt: Date | null
+    reservationStatus: $Enums.B2BReservationStatus
+    reservationHours: number | null
+    reservationReleasedAt: Date | null
     deletedAt: Date | null
     createdAt: Date
     material: string | null
@@ -1348,6 +1482,10 @@ export interface B2BQuoteFieldRefs {
   readonly package: Prisma.FieldRef<"B2BQuote", 'String'>
   readonly status: Prisma.FieldRef<"B2BQuote", 'String'>
   readonly paymentReceiptUrl: Prisma.FieldRef<"B2BQuote", 'String'>
+  readonly expiresAt: Prisma.FieldRef<"B2BQuote", 'DateTime'>
+  readonly reservationStatus: Prisma.FieldRef<"B2BQuote", 'B2BReservationStatus'>
+  readonly reservationHours: Prisma.FieldRef<"B2BQuote", 'Int'>
+  readonly reservationReleasedAt: Prisma.FieldRef<"B2BQuote", 'DateTime'>
   readonly deletedAt: Prisma.FieldRef<"B2BQuote", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"B2BQuote", 'DateTime'>
   readonly material: Prisma.FieldRef<"B2BQuote", 'String'>

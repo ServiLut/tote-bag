@@ -33,6 +33,10 @@ describe('PaymentsService', () => {
     confirmPendingOrderPayment: jest.fn(),
   };
 
+  const inventoryService = {
+    releaseCommittedStock: jest.fn(),
+  };
+
   let service: PaymentsService;
 
   const buildChecksum = (event: WompiEvent, secret: string) => {
@@ -66,6 +70,7 @@ describe('PaymentsService', () => {
       storageService as never,
       shippingSyncService as never,
       ordersService as never,
+      inventoryService as never,
     );
   });
 
@@ -206,6 +211,7 @@ describe('PaymentsService', () => {
       'order-1',
       undefined,
       tx,
+      'https://wompi.com/transactions/txn-1',
     );
 
     prisma.webhookEvent.findUnique.mockResolvedValueOnce({

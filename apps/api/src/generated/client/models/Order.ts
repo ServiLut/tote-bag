@@ -63,6 +63,12 @@ export type OrderMinAggregateOutputType = {
   isB2B: boolean | null
   isManual: boolean | null
   paymentReceiptUrl: string | null
+  saleLegalRequirement: $Enums.SaleLegalRequirement | null
+  saleLegalStatus: $Enums.SaleLegalStatus | null
+  saleLegalDocumentType: $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference: string | null
+  saleLegalResolvedAt: Date | null
+  saleLegalCompletedAt: Date | null
   deletedAt: Date | null
   createdAt: Date | null
   profileId: string | null
@@ -87,6 +93,12 @@ export type OrderMaxAggregateOutputType = {
   isB2B: boolean | null
   isManual: boolean | null
   paymentReceiptUrl: string | null
+  saleLegalRequirement: $Enums.SaleLegalRequirement | null
+  saleLegalStatus: $Enums.SaleLegalStatus | null
+  saleLegalDocumentType: $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference: string | null
+  saleLegalResolvedAt: Date | null
+  saleLegalCompletedAt: Date | null
   deletedAt: Date | null
   createdAt: Date | null
   profileId: string | null
@@ -112,6 +124,13 @@ export type OrderCountAggregateOutputType = {
   isB2B: number
   isManual: number
   paymentReceiptUrl: number
+  saleLegalRequirement: number
+  saleLegalStatus: number
+  saleLegalDocumentType: number
+  saleLegalDocumentReference: number
+  saleLegalTrace: number
+  saleLegalResolvedAt: number
+  saleLegalCompletedAt: number
   deletedAt: number
   createdAt: number
   profileId: number
@@ -156,6 +175,12 @@ export type OrderMinAggregateInputType = {
   isB2B?: true
   isManual?: true
   paymentReceiptUrl?: true
+  saleLegalRequirement?: true
+  saleLegalStatus?: true
+  saleLegalDocumentType?: true
+  saleLegalDocumentReference?: true
+  saleLegalResolvedAt?: true
+  saleLegalCompletedAt?: true
   deletedAt?: true
   createdAt?: true
   profileId?: true
@@ -180,6 +205,12 @@ export type OrderMaxAggregateInputType = {
   isB2B?: true
   isManual?: true
   paymentReceiptUrl?: true
+  saleLegalRequirement?: true
+  saleLegalStatus?: true
+  saleLegalDocumentType?: true
+  saleLegalDocumentReference?: true
+  saleLegalResolvedAt?: true
+  saleLegalCompletedAt?: true
   deletedAt?: true
   createdAt?: true
   profileId?: true
@@ -205,6 +236,13 @@ export type OrderCountAggregateInputType = {
   isB2B?: true
   isManual?: true
   paymentReceiptUrl?: true
+  saleLegalRequirement?: true
+  saleLegalStatus?: true
+  saleLegalDocumentType?: true
+  saleLegalDocumentReference?: true
+  saleLegalTrace?: true
+  saleLegalResolvedAt?: true
+  saleLegalCompletedAt?: true
   deletedAt?: true
   createdAt?: true
   profileId?: true
@@ -317,6 +355,13 @@ export type OrderGroupByOutputType = {
   isB2B: boolean
   isManual: boolean
   paymentReceiptUrl: string | null
+  saleLegalRequirement: $Enums.SaleLegalRequirement
+  saleLegalStatus: $Enums.SaleLegalStatus
+  saleLegalDocumentType: $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference: string | null
+  saleLegalTrace: runtime.JsonValue | null
+  saleLegalResolvedAt: Date | null
+  saleLegalCompletedAt: Date | null
   deletedAt: Date | null
   createdAt: Date
   profileId: string | null
@@ -365,12 +410,20 @@ export type OrderWhereInput = {
   isB2B?: Prisma.BoolFilter<"Order"> | boolean
   isManual?: Prisma.BoolFilter<"Order"> | boolean
   paymentReceiptUrl?: Prisma.StringNullableFilter<"Order"> | string | null
+  saleLegalRequirement?: Prisma.EnumSaleLegalRequirementFilter<"Order"> | $Enums.SaleLegalRequirement
+  saleLegalStatus?: Prisma.EnumSaleLegalStatusFilter<"Order"> | $Enums.SaleLegalStatus
+  saleLegalDocumentType?: Prisma.EnumSaleLegalDocumentTypeNullableFilter<"Order"> | $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: Prisma.StringNullableFilter<"Order"> | string | null
+  saleLegalTrace?: Prisma.JsonNullableFilter<"Order">
+  saleLegalResolvedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
+  saleLegalCompletedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
   deletedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Order"> | Date | string
   profileId?: Prisma.StringNullableFilter<"Order"> | string | null
   items?: Prisma.OrderItemListRelationFilter
   payments?: Prisma.OrderPaymentListRelationFilter
   idempotencyRecord?: Prisma.XOR<Prisma.OrderIdempotencyKeyNullableScalarRelationFilter, Prisma.OrderIdempotencyKeyWhereInput> | null
+  inventoryMovements?: Prisma.InventoryMovementListRelationFilter
   statusHistory?: Prisma.OrderStatusHistoryListRelationFilter
   profile?: Prisma.XOR<Prisma.ProfileNullableScalarRelationFilter, Prisma.ProfileWhereInput> | null
   shipment?: Prisma.XOR<Prisma.ShipmentNullableScalarRelationFilter, Prisma.ShipmentWhereInput> | null
@@ -396,12 +449,20 @@ export type OrderOrderByWithRelationInput = {
   isB2B?: Prisma.SortOrder
   isManual?: Prisma.SortOrder
   paymentReceiptUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  saleLegalRequirement?: Prisma.SortOrder
+  saleLegalStatus?: Prisma.SortOrder
+  saleLegalDocumentType?: Prisma.SortOrderInput | Prisma.SortOrder
+  saleLegalDocumentReference?: Prisma.SortOrderInput | Prisma.SortOrder
+  saleLegalTrace?: Prisma.SortOrderInput | Prisma.SortOrder
+  saleLegalResolvedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  saleLegalCompletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   profileId?: Prisma.SortOrderInput | Prisma.SortOrder
   items?: Prisma.OrderItemOrderByRelationAggregateInput
   payments?: Prisma.OrderPaymentOrderByRelationAggregateInput
   idempotencyRecord?: Prisma.OrderIdempotencyKeyOrderByWithRelationInput
+  inventoryMovements?: Prisma.InventoryMovementOrderByRelationAggregateInput
   statusHistory?: Prisma.OrderStatusHistoryOrderByRelationAggregateInput
   profile?: Prisma.ProfileOrderByWithRelationInput
   shipment?: Prisma.ShipmentOrderByWithRelationInput
@@ -430,12 +491,20 @@ export type OrderWhereUniqueInput = Prisma.AtLeast<{
   isB2B?: Prisma.BoolFilter<"Order"> | boolean
   isManual?: Prisma.BoolFilter<"Order"> | boolean
   paymentReceiptUrl?: Prisma.StringNullableFilter<"Order"> | string | null
+  saleLegalRequirement?: Prisma.EnumSaleLegalRequirementFilter<"Order"> | $Enums.SaleLegalRequirement
+  saleLegalStatus?: Prisma.EnumSaleLegalStatusFilter<"Order"> | $Enums.SaleLegalStatus
+  saleLegalDocumentType?: Prisma.EnumSaleLegalDocumentTypeNullableFilter<"Order"> | $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: Prisma.StringNullableFilter<"Order"> | string | null
+  saleLegalTrace?: Prisma.JsonNullableFilter<"Order">
+  saleLegalResolvedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
+  saleLegalCompletedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
   deletedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Order"> | Date | string
   profileId?: Prisma.StringNullableFilter<"Order"> | string | null
   items?: Prisma.OrderItemListRelationFilter
   payments?: Prisma.OrderPaymentListRelationFilter
   idempotencyRecord?: Prisma.XOR<Prisma.OrderIdempotencyKeyNullableScalarRelationFilter, Prisma.OrderIdempotencyKeyWhereInput> | null
+  inventoryMovements?: Prisma.InventoryMovementListRelationFilter
   statusHistory?: Prisma.OrderStatusHistoryListRelationFilter
   profile?: Prisma.XOR<Prisma.ProfileNullableScalarRelationFilter, Prisma.ProfileWhereInput> | null
   shipment?: Prisma.XOR<Prisma.ShipmentNullableScalarRelationFilter, Prisma.ShipmentWhereInput> | null
@@ -461,6 +530,13 @@ export type OrderOrderByWithAggregationInput = {
   isB2B?: Prisma.SortOrder
   isManual?: Prisma.SortOrder
   paymentReceiptUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  saleLegalRequirement?: Prisma.SortOrder
+  saleLegalStatus?: Prisma.SortOrder
+  saleLegalDocumentType?: Prisma.SortOrderInput | Prisma.SortOrder
+  saleLegalDocumentReference?: Prisma.SortOrderInput | Prisma.SortOrder
+  saleLegalTrace?: Prisma.SortOrderInput | Prisma.SortOrder
+  saleLegalResolvedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  saleLegalCompletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   profileId?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -494,6 +570,13 @@ export type OrderScalarWhereWithAggregatesInput = {
   isB2B?: Prisma.BoolWithAggregatesFilter<"Order"> | boolean
   isManual?: Prisma.BoolWithAggregatesFilter<"Order"> | boolean
   paymentReceiptUrl?: Prisma.StringNullableWithAggregatesFilter<"Order"> | string | null
+  saleLegalRequirement?: Prisma.EnumSaleLegalRequirementWithAggregatesFilter<"Order"> | $Enums.SaleLegalRequirement
+  saleLegalStatus?: Prisma.EnumSaleLegalStatusWithAggregatesFilter<"Order"> | $Enums.SaleLegalStatus
+  saleLegalDocumentType?: Prisma.EnumSaleLegalDocumentTypeNullableWithAggregatesFilter<"Order"> | $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: Prisma.StringNullableWithAggregatesFilter<"Order"> | string | null
+  saleLegalTrace?: Prisma.JsonNullableWithAggregatesFilter<"Order">
+  saleLegalResolvedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
+  saleLegalCompletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
   deletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Order"> | Date | string
   profileId?: Prisma.StringNullableWithAggregatesFilter<"Order"> | string | null
@@ -519,11 +602,19 @@ export type OrderCreateInput = {
   isB2B?: boolean
   isManual?: boolean
   paymentReceiptUrl?: string | null
+  saleLegalRequirement?: $Enums.SaleLegalRequirement
+  saleLegalStatus?: $Enums.SaleLegalStatus
+  saleLegalDocumentType?: $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Date | string | null
+  saleLegalCompletedAt?: Date | string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   items?: Prisma.OrderItemCreateNestedManyWithoutOrderInput
   payments?: Prisma.OrderPaymentCreateNestedManyWithoutOrderInput
   idempotencyRecord?: Prisma.OrderIdempotencyKeyCreateNestedOneWithoutOrderInput
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutOrderInput
   statusHistory?: Prisma.OrderStatusHistoryCreateNestedManyWithoutOrderInput
   profile?: Prisma.ProfileCreateNestedOneWithoutOrdersInput
   shipment?: Prisma.ShipmentCreateNestedOneWithoutOrderInput
@@ -549,12 +640,20 @@ export type OrderUncheckedCreateInput = {
   isB2B?: boolean
   isManual?: boolean
   paymentReceiptUrl?: string | null
+  saleLegalRequirement?: $Enums.SaleLegalRequirement
+  saleLegalStatus?: $Enums.SaleLegalStatus
+  saleLegalDocumentType?: $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Date | string | null
+  saleLegalCompletedAt?: Date | string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   profileId?: string | null
   items?: Prisma.OrderItemUncheckedCreateNestedManyWithoutOrderInput
   payments?: Prisma.OrderPaymentUncheckedCreateNestedManyWithoutOrderInput
   idempotencyRecord?: Prisma.OrderIdempotencyKeyUncheckedCreateNestedOneWithoutOrderInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutOrderInput
   statusHistory?: Prisma.OrderStatusHistoryUncheckedCreateNestedManyWithoutOrderInput
   shipment?: Prisma.ShipmentUncheckedCreateNestedOneWithoutOrderInput
 }
@@ -578,11 +677,19 @@ export type OrderUpdateInput = {
   isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalRequirement?: Prisma.EnumSaleLegalRequirementFieldUpdateOperationsInput | $Enums.SaleLegalRequirement
+  saleLegalStatus?: Prisma.EnumSaleLegalStatusFieldUpdateOperationsInput | $Enums.SaleLegalStatus
+  saleLegalDocumentType?: Prisma.NullableEnumSaleLegalDocumentTypeFieldUpdateOperationsInput | $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  saleLegalCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   items?: Prisma.OrderItemUpdateManyWithoutOrderNestedInput
   payments?: Prisma.OrderPaymentUpdateManyWithoutOrderNestedInput
   idempotencyRecord?: Prisma.OrderIdempotencyKeyUpdateOneWithoutOrderNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutOrderNestedInput
   statusHistory?: Prisma.OrderStatusHistoryUpdateManyWithoutOrderNestedInput
   profile?: Prisma.ProfileUpdateOneWithoutOrdersNestedInput
   shipment?: Prisma.ShipmentUpdateOneWithoutOrderNestedInput
@@ -608,12 +715,20 @@ export type OrderUncheckedUpdateInput = {
   isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalRequirement?: Prisma.EnumSaleLegalRequirementFieldUpdateOperationsInput | $Enums.SaleLegalRequirement
+  saleLegalStatus?: Prisma.EnumSaleLegalStatusFieldUpdateOperationsInput | $Enums.SaleLegalStatus
+  saleLegalDocumentType?: Prisma.NullableEnumSaleLegalDocumentTypeFieldUpdateOperationsInput | $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  saleLegalCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   profileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   items?: Prisma.OrderItemUncheckedUpdateManyWithoutOrderNestedInput
   payments?: Prisma.OrderPaymentUncheckedUpdateManyWithoutOrderNestedInput
   idempotencyRecord?: Prisma.OrderIdempotencyKeyUncheckedUpdateOneWithoutOrderNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutOrderNestedInput
   statusHistory?: Prisma.OrderStatusHistoryUncheckedUpdateManyWithoutOrderNestedInput
   shipment?: Prisma.ShipmentUncheckedUpdateOneWithoutOrderNestedInput
 }
@@ -638,6 +753,13 @@ export type OrderCreateManyInput = {
   isB2B?: boolean
   isManual?: boolean
   paymentReceiptUrl?: string | null
+  saleLegalRequirement?: $Enums.SaleLegalRequirement
+  saleLegalStatus?: $Enums.SaleLegalStatus
+  saleLegalDocumentType?: $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Date | string | null
+  saleLegalCompletedAt?: Date | string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   profileId?: string | null
@@ -662,6 +784,13 @@ export type OrderUpdateManyMutationInput = {
   isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalRequirement?: Prisma.EnumSaleLegalRequirementFieldUpdateOperationsInput | $Enums.SaleLegalRequirement
+  saleLegalStatus?: Prisma.EnumSaleLegalStatusFieldUpdateOperationsInput | $Enums.SaleLegalStatus
+  saleLegalDocumentType?: Prisma.NullableEnumSaleLegalDocumentTypeFieldUpdateOperationsInput | $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  saleLegalCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -686,6 +815,13 @@ export type OrderUncheckedUpdateManyInput = {
   isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalRequirement?: Prisma.EnumSaleLegalRequirementFieldUpdateOperationsInput | $Enums.SaleLegalRequirement
+  saleLegalStatus?: Prisma.EnumSaleLegalStatusFieldUpdateOperationsInput | $Enums.SaleLegalStatus
+  saleLegalDocumentType?: Prisma.NullableEnumSaleLegalDocumentTypeFieldUpdateOperationsInput | $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  saleLegalCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   profileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -711,6 +847,13 @@ export type OrderCountOrderByAggregateInput = {
   isB2B?: Prisma.SortOrder
   isManual?: Prisma.SortOrder
   paymentReceiptUrl?: Prisma.SortOrder
+  saleLegalRequirement?: Prisma.SortOrder
+  saleLegalStatus?: Prisma.SortOrder
+  saleLegalDocumentType?: Prisma.SortOrder
+  saleLegalDocumentReference?: Prisma.SortOrder
+  saleLegalTrace?: Prisma.SortOrder
+  saleLegalResolvedAt?: Prisma.SortOrder
+  saleLegalCompletedAt?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   profileId?: Prisma.SortOrder
@@ -744,6 +887,12 @@ export type OrderMaxOrderByAggregateInput = {
   isB2B?: Prisma.SortOrder
   isManual?: Prisma.SortOrder
   paymentReceiptUrl?: Prisma.SortOrder
+  saleLegalRequirement?: Prisma.SortOrder
+  saleLegalStatus?: Prisma.SortOrder
+  saleLegalDocumentType?: Prisma.SortOrder
+  saleLegalDocumentReference?: Prisma.SortOrder
+  saleLegalResolvedAt?: Prisma.SortOrder
+  saleLegalCompletedAt?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   profileId?: Prisma.SortOrder
@@ -768,6 +917,12 @@ export type OrderMinOrderByAggregateInput = {
   isB2B?: Prisma.SortOrder
   isManual?: Prisma.SortOrder
   paymentReceiptUrl?: Prisma.SortOrder
+  saleLegalRequirement?: Prisma.SortOrder
+  saleLegalStatus?: Prisma.SortOrder
+  saleLegalDocumentType?: Prisma.SortOrder
+  saleLegalDocumentReference?: Prisma.SortOrder
+  saleLegalResolvedAt?: Prisma.SortOrder
+  saleLegalCompletedAt?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   profileId?: Prisma.SortOrder
@@ -808,6 +963,18 @@ export type EnumOrderStatusFieldUpdateOperationsInput = {
 
 export type EnumOrderSourceFieldUpdateOperationsInput = {
   set?: $Enums.OrderSource
+}
+
+export type EnumSaleLegalRequirementFieldUpdateOperationsInput = {
+  set?: $Enums.SaleLegalRequirement
+}
+
+export type EnumSaleLegalStatusFieldUpdateOperationsInput = {
+  set?: $Enums.SaleLegalStatus
+}
+
+export type NullableEnumSaleLegalDocumentTypeFieldUpdateOperationsInput = {
+  set?: $Enums.SaleLegalDocumentType | null
 }
 
 export type NullableDateTimeFieldUpdateOperationsInput = {
@@ -928,6 +1095,22 @@ export type OrderUncheckedUpdateManyWithoutProfileNestedInput = {
   deleteMany?: Prisma.OrderScalarWhereInput | Prisma.OrderScalarWhereInput[]
 }
 
+export type OrderCreateNestedOneWithoutInventoryMovementsInput = {
+  create?: Prisma.XOR<Prisma.OrderCreateWithoutInventoryMovementsInput, Prisma.OrderUncheckedCreateWithoutInventoryMovementsInput>
+  connectOrCreate?: Prisma.OrderCreateOrConnectWithoutInventoryMovementsInput
+  connect?: Prisma.OrderWhereUniqueInput
+}
+
+export type OrderUpdateOneWithoutInventoryMovementsNestedInput = {
+  create?: Prisma.XOR<Prisma.OrderCreateWithoutInventoryMovementsInput, Prisma.OrderUncheckedCreateWithoutInventoryMovementsInput>
+  connectOrCreate?: Prisma.OrderCreateOrConnectWithoutInventoryMovementsInput
+  upsert?: Prisma.OrderUpsertWithoutInventoryMovementsInput
+  disconnect?: Prisma.OrderWhereInput | boolean
+  delete?: Prisma.OrderWhereInput | boolean
+  connect?: Prisma.OrderWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.OrderUpdateToOneWithWhereWithoutInventoryMovementsInput, Prisma.OrderUpdateWithoutInventoryMovementsInput>, Prisma.OrderUncheckedUpdateWithoutInventoryMovementsInput>
+}
+
 export type OrderCreateWithoutShipmentInput = {
   id?: string
   orderNumber?: number
@@ -948,11 +1131,19 @@ export type OrderCreateWithoutShipmentInput = {
   isB2B?: boolean
   isManual?: boolean
   paymentReceiptUrl?: string | null
+  saleLegalRequirement?: $Enums.SaleLegalRequirement
+  saleLegalStatus?: $Enums.SaleLegalStatus
+  saleLegalDocumentType?: $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Date | string | null
+  saleLegalCompletedAt?: Date | string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   items?: Prisma.OrderItemCreateNestedManyWithoutOrderInput
   payments?: Prisma.OrderPaymentCreateNestedManyWithoutOrderInput
   idempotencyRecord?: Prisma.OrderIdempotencyKeyCreateNestedOneWithoutOrderInput
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutOrderInput
   statusHistory?: Prisma.OrderStatusHistoryCreateNestedManyWithoutOrderInput
   profile?: Prisma.ProfileCreateNestedOneWithoutOrdersInput
 }
@@ -977,12 +1168,20 @@ export type OrderUncheckedCreateWithoutShipmentInput = {
   isB2B?: boolean
   isManual?: boolean
   paymentReceiptUrl?: string | null
+  saleLegalRequirement?: $Enums.SaleLegalRequirement
+  saleLegalStatus?: $Enums.SaleLegalStatus
+  saleLegalDocumentType?: $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Date | string | null
+  saleLegalCompletedAt?: Date | string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   profileId?: string | null
   items?: Prisma.OrderItemUncheckedCreateNestedManyWithoutOrderInput
   payments?: Prisma.OrderPaymentUncheckedCreateNestedManyWithoutOrderInput
   idempotencyRecord?: Prisma.OrderIdempotencyKeyUncheckedCreateNestedOneWithoutOrderInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutOrderInput
   statusHistory?: Prisma.OrderStatusHistoryUncheckedCreateNestedManyWithoutOrderInput
 }
 
@@ -1021,11 +1220,19 @@ export type OrderUpdateWithoutShipmentInput = {
   isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalRequirement?: Prisma.EnumSaleLegalRequirementFieldUpdateOperationsInput | $Enums.SaleLegalRequirement
+  saleLegalStatus?: Prisma.EnumSaleLegalStatusFieldUpdateOperationsInput | $Enums.SaleLegalStatus
+  saleLegalDocumentType?: Prisma.NullableEnumSaleLegalDocumentTypeFieldUpdateOperationsInput | $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  saleLegalCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   items?: Prisma.OrderItemUpdateManyWithoutOrderNestedInput
   payments?: Prisma.OrderPaymentUpdateManyWithoutOrderNestedInput
   idempotencyRecord?: Prisma.OrderIdempotencyKeyUpdateOneWithoutOrderNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutOrderNestedInput
   statusHistory?: Prisma.OrderStatusHistoryUpdateManyWithoutOrderNestedInput
   profile?: Prisma.ProfileUpdateOneWithoutOrdersNestedInput
 }
@@ -1050,12 +1257,20 @@ export type OrderUncheckedUpdateWithoutShipmentInput = {
   isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalRequirement?: Prisma.EnumSaleLegalRequirementFieldUpdateOperationsInput | $Enums.SaleLegalRequirement
+  saleLegalStatus?: Prisma.EnumSaleLegalStatusFieldUpdateOperationsInput | $Enums.SaleLegalStatus
+  saleLegalDocumentType?: Prisma.NullableEnumSaleLegalDocumentTypeFieldUpdateOperationsInput | $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  saleLegalCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   profileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   items?: Prisma.OrderItemUncheckedUpdateManyWithoutOrderNestedInput
   payments?: Prisma.OrderPaymentUncheckedUpdateManyWithoutOrderNestedInput
   idempotencyRecord?: Prisma.OrderIdempotencyKeyUncheckedUpdateOneWithoutOrderNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutOrderNestedInput
   statusHistory?: Prisma.OrderStatusHistoryUncheckedUpdateManyWithoutOrderNestedInput
 }
 
@@ -1079,11 +1294,19 @@ export type OrderCreateWithoutStatusHistoryInput = {
   isB2B?: boolean
   isManual?: boolean
   paymentReceiptUrl?: string | null
+  saleLegalRequirement?: $Enums.SaleLegalRequirement
+  saleLegalStatus?: $Enums.SaleLegalStatus
+  saleLegalDocumentType?: $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Date | string | null
+  saleLegalCompletedAt?: Date | string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   items?: Prisma.OrderItemCreateNestedManyWithoutOrderInput
   payments?: Prisma.OrderPaymentCreateNestedManyWithoutOrderInput
   idempotencyRecord?: Prisma.OrderIdempotencyKeyCreateNestedOneWithoutOrderInput
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutOrderInput
   profile?: Prisma.ProfileCreateNestedOneWithoutOrdersInput
   shipment?: Prisma.ShipmentCreateNestedOneWithoutOrderInput
 }
@@ -1108,12 +1331,20 @@ export type OrderUncheckedCreateWithoutStatusHistoryInput = {
   isB2B?: boolean
   isManual?: boolean
   paymentReceiptUrl?: string | null
+  saleLegalRequirement?: $Enums.SaleLegalRequirement
+  saleLegalStatus?: $Enums.SaleLegalStatus
+  saleLegalDocumentType?: $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Date | string | null
+  saleLegalCompletedAt?: Date | string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   profileId?: string | null
   items?: Prisma.OrderItemUncheckedCreateNestedManyWithoutOrderInput
   payments?: Prisma.OrderPaymentUncheckedCreateNestedManyWithoutOrderInput
   idempotencyRecord?: Prisma.OrderIdempotencyKeyUncheckedCreateNestedOneWithoutOrderInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutOrderInput
   shipment?: Prisma.ShipmentUncheckedCreateNestedOneWithoutOrderInput
 }
 
@@ -1152,11 +1383,19 @@ export type OrderUpdateWithoutStatusHistoryInput = {
   isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalRequirement?: Prisma.EnumSaleLegalRequirementFieldUpdateOperationsInput | $Enums.SaleLegalRequirement
+  saleLegalStatus?: Prisma.EnumSaleLegalStatusFieldUpdateOperationsInput | $Enums.SaleLegalStatus
+  saleLegalDocumentType?: Prisma.NullableEnumSaleLegalDocumentTypeFieldUpdateOperationsInput | $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  saleLegalCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   items?: Prisma.OrderItemUpdateManyWithoutOrderNestedInput
   payments?: Prisma.OrderPaymentUpdateManyWithoutOrderNestedInput
   idempotencyRecord?: Prisma.OrderIdempotencyKeyUpdateOneWithoutOrderNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutOrderNestedInput
   profile?: Prisma.ProfileUpdateOneWithoutOrdersNestedInput
   shipment?: Prisma.ShipmentUpdateOneWithoutOrderNestedInput
 }
@@ -1181,12 +1420,20 @@ export type OrderUncheckedUpdateWithoutStatusHistoryInput = {
   isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalRequirement?: Prisma.EnumSaleLegalRequirementFieldUpdateOperationsInput | $Enums.SaleLegalRequirement
+  saleLegalStatus?: Prisma.EnumSaleLegalStatusFieldUpdateOperationsInput | $Enums.SaleLegalStatus
+  saleLegalDocumentType?: Prisma.NullableEnumSaleLegalDocumentTypeFieldUpdateOperationsInput | $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  saleLegalCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   profileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   items?: Prisma.OrderItemUncheckedUpdateManyWithoutOrderNestedInput
   payments?: Prisma.OrderPaymentUncheckedUpdateManyWithoutOrderNestedInput
   idempotencyRecord?: Prisma.OrderIdempotencyKeyUncheckedUpdateOneWithoutOrderNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutOrderNestedInput
   shipment?: Prisma.ShipmentUncheckedUpdateOneWithoutOrderNestedInput
 }
 
@@ -1210,10 +1457,18 @@ export type OrderCreateWithoutIdempotencyRecordInput = {
   isB2B?: boolean
   isManual?: boolean
   paymentReceiptUrl?: string | null
+  saleLegalRequirement?: $Enums.SaleLegalRequirement
+  saleLegalStatus?: $Enums.SaleLegalStatus
+  saleLegalDocumentType?: $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Date | string | null
+  saleLegalCompletedAt?: Date | string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   items?: Prisma.OrderItemCreateNestedManyWithoutOrderInput
   payments?: Prisma.OrderPaymentCreateNestedManyWithoutOrderInput
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutOrderInput
   statusHistory?: Prisma.OrderStatusHistoryCreateNestedManyWithoutOrderInput
   profile?: Prisma.ProfileCreateNestedOneWithoutOrdersInput
   shipment?: Prisma.ShipmentCreateNestedOneWithoutOrderInput
@@ -1239,11 +1494,19 @@ export type OrderUncheckedCreateWithoutIdempotencyRecordInput = {
   isB2B?: boolean
   isManual?: boolean
   paymentReceiptUrl?: string | null
+  saleLegalRequirement?: $Enums.SaleLegalRequirement
+  saleLegalStatus?: $Enums.SaleLegalStatus
+  saleLegalDocumentType?: $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Date | string | null
+  saleLegalCompletedAt?: Date | string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   profileId?: string | null
   items?: Prisma.OrderItemUncheckedCreateNestedManyWithoutOrderInput
   payments?: Prisma.OrderPaymentUncheckedCreateNestedManyWithoutOrderInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutOrderInput
   statusHistory?: Prisma.OrderStatusHistoryUncheckedCreateNestedManyWithoutOrderInput
   shipment?: Prisma.ShipmentUncheckedCreateNestedOneWithoutOrderInput
 }
@@ -1283,10 +1546,18 @@ export type OrderUpdateWithoutIdempotencyRecordInput = {
   isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalRequirement?: Prisma.EnumSaleLegalRequirementFieldUpdateOperationsInput | $Enums.SaleLegalRequirement
+  saleLegalStatus?: Prisma.EnumSaleLegalStatusFieldUpdateOperationsInput | $Enums.SaleLegalStatus
+  saleLegalDocumentType?: Prisma.NullableEnumSaleLegalDocumentTypeFieldUpdateOperationsInput | $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  saleLegalCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   items?: Prisma.OrderItemUpdateManyWithoutOrderNestedInput
   payments?: Prisma.OrderPaymentUpdateManyWithoutOrderNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutOrderNestedInput
   statusHistory?: Prisma.OrderStatusHistoryUpdateManyWithoutOrderNestedInput
   profile?: Prisma.ProfileUpdateOneWithoutOrdersNestedInput
   shipment?: Prisma.ShipmentUpdateOneWithoutOrderNestedInput
@@ -1312,11 +1583,19 @@ export type OrderUncheckedUpdateWithoutIdempotencyRecordInput = {
   isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalRequirement?: Prisma.EnumSaleLegalRequirementFieldUpdateOperationsInput | $Enums.SaleLegalRequirement
+  saleLegalStatus?: Prisma.EnumSaleLegalStatusFieldUpdateOperationsInput | $Enums.SaleLegalStatus
+  saleLegalDocumentType?: Prisma.NullableEnumSaleLegalDocumentTypeFieldUpdateOperationsInput | $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  saleLegalCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   profileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   items?: Prisma.OrderItemUncheckedUpdateManyWithoutOrderNestedInput
   payments?: Prisma.OrderPaymentUncheckedUpdateManyWithoutOrderNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutOrderNestedInput
   statusHistory?: Prisma.OrderStatusHistoryUncheckedUpdateManyWithoutOrderNestedInput
   shipment?: Prisma.ShipmentUncheckedUpdateOneWithoutOrderNestedInput
 }
@@ -1341,10 +1620,18 @@ export type OrderCreateWithoutPaymentsInput = {
   isB2B?: boolean
   isManual?: boolean
   paymentReceiptUrl?: string | null
+  saleLegalRequirement?: $Enums.SaleLegalRequirement
+  saleLegalStatus?: $Enums.SaleLegalStatus
+  saleLegalDocumentType?: $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Date | string | null
+  saleLegalCompletedAt?: Date | string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   items?: Prisma.OrderItemCreateNestedManyWithoutOrderInput
   idempotencyRecord?: Prisma.OrderIdempotencyKeyCreateNestedOneWithoutOrderInput
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutOrderInput
   statusHistory?: Prisma.OrderStatusHistoryCreateNestedManyWithoutOrderInput
   profile?: Prisma.ProfileCreateNestedOneWithoutOrdersInput
   shipment?: Prisma.ShipmentCreateNestedOneWithoutOrderInput
@@ -1370,11 +1657,19 @@ export type OrderUncheckedCreateWithoutPaymentsInput = {
   isB2B?: boolean
   isManual?: boolean
   paymentReceiptUrl?: string | null
+  saleLegalRequirement?: $Enums.SaleLegalRequirement
+  saleLegalStatus?: $Enums.SaleLegalStatus
+  saleLegalDocumentType?: $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Date | string | null
+  saleLegalCompletedAt?: Date | string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   profileId?: string | null
   items?: Prisma.OrderItemUncheckedCreateNestedManyWithoutOrderInput
   idempotencyRecord?: Prisma.OrderIdempotencyKeyUncheckedCreateNestedOneWithoutOrderInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutOrderInput
   statusHistory?: Prisma.OrderStatusHistoryUncheckedCreateNestedManyWithoutOrderInput
   shipment?: Prisma.ShipmentUncheckedCreateNestedOneWithoutOrderInput
 }
@@ -1414,10 +1709,18 @@ export type OrderUpdateWithoutPaymentsInput = {
   isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalRequirement?: Prisma.EnumSaleLegalRequirementFieldUpdateOperationsInput | $Enums.SaleLegalRequirement
+  saleLegalStatus?: Prisma.EnumSaleLegalStatusFieldUpdateOperationsInput | $Enums.SaleLegalStatus
+  saleLegalDocumentType?: Prisma.NullableEnumSaleLegalDocumentTypeFieldUpdateOperationsInput | $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  saleLegalCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   items?: Prisma.OrderItemUpdateManyWithoutOrderNestedInput
   idempotencyRecord?: Prisma.OrderIdempotencyKeyUpdateOneWithoutOrderNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutOrderNestedInput
   statusHistory?: Prisma.OrderStatusHistoryUpdateManyWithoutOrderNestedInput
   profile?: Prisma.ProfileUpdateOneWithoutOrdersNestedInput
   shipment?: Prisma.ShipmentUpdateOneWithoutOrderNestedInput
@@ -1443,11 +1746,19 @@ export type OrderUncheckedUpdateWithoutPaymentsInput = {
   isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalRequirement?: Prisma.EnumSaleLegalRequirementFieldUpdateOperationsInput | $Enums.SaleLegalRequirement
+  saleLegalStatus?: Prisma.EnumSaleLegalStatusFieldUpdateOperationsInput | $Enums.SaleLegalStatus
+  saleLegalDocumentType?: Prisma.NullableEnumSaleLegalDocumentTypeFieldUpdateOperationsInput | $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  saleLegalCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   profileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   items?: Prisma.OrderItemUncheckedUpdateManyWithoutOrderNestedInput
   idempotencyRecord?: Prisma.OrderIdempotencyKeyUncheckedUpdateOneWithoutOrderNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutOrderNestedInput
   statusHistory?: Prisma.OrderStatusHistoryUncheckedUpdateManyWithoutOrderNestedInput
   shipment?: Prisma.ShipmentUncheckedUpdateOneWithoutOrderNestedInput
 }
@@ -1472,10 +1783,18 @@ export type OrderCreateWithoutItemsInput = {
   isB2B?: boolean
   isManual?: boolean
   paymentReceiptUrl?: string | null
+  saleLegalRequirement?: $Enums.SaleLegalRequirement
+  saleLegalStatus?: $Enums.SaleLegalStatus
+  saleLegalDocumentType?: $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Date | string | null
+  saleLegalCompletedAt?: Date | string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   payments?: Prisma.OrderPaymentCreateNestedManyWithoutOrderInput
   idempotencyRecord?: Prisma.OrderIdempotencyKeyCreateNestedOneWithoutOrderInput
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutOrderInput
   statusHistory?: Prisma.OrderStatusHistoryCreateNestedManyWithoutOrderInput
   profile?: Prisma.ProfileCreateNestedOneWithoutOrdersInput
   shipment?: Prisma.ShipmentCreateNestedOneWithoutOrderInput
@@ -1501,11 +1820,19 @@ export type OrderUncheckedCreateWithoutItemsInput = {
   isB2B?: boolean
   isManual?: boolean
   paymentReceiptUrl?: string | null
+  saleLegalRequirement?: $Enums.SaleLegalRequirement
+  saleLegalStatus?: $Enums.SaleLegalStatus
+  saleLegalDocumentType?: $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Date | string | null
+  saleLegalCompletedAt?: Date | string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   profileId?: string | null
   payments?: Prisma.OrderPaymentUncheckedCreateNestedManyWithoutOrderInput
   idempotencyRecord?: Prisma.OrderIdempotencyKeyUncheckedCreateNestedOneWithoutOrderInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutOrderInput
   statusHistory?: Prisma.OrderStatusHistoryUncheckedCreateNestedManyWithoutOrderInput
   shipment?: Prisma.ShipmentUncheckedCreateNestedOneWithoutOrderInput
 }
@@ -1545,10 +1872,18 @@ export type OrderUpdateWithoutItemsInput = {
   isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalRequirement?: Prisma.EnumSaleLegalRequirementFieldUpdateOperationsInput | $Enums.SaleLegalRequirement
+  saleLegalStatus?: Prisma.EnumSaleLegalStatusFieldUpdateOperationsInput | $Enums.SaleLegalStatus
+  saleLegalDocumentType?: Prisma.NullableEnumSaleLegalDocumentTypeFieldUpdateOperationsInput | $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  saleLegalCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payments?: Prisma.OrderPaymentUpdateManyWithoutOrderNestedInput
   idempotencyRecord?: Prisma.OrderIdempotencyKeyUpdateOneWithoutOrderNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutOrderNestedInput
   statusHistory?: Prisma.OrderStatusHistoryUpdateManyWithoutOrderNestedInput
   profile?: Prisma.ProfileUpdateOneWithoutOrdersNestedInput
   shipment?: Prisma.ShipmentUpdateOneWithoutOrderNestedInput
@@ -1574,11 +1909,19 @@ export type OrderUncheckedUpdateWithoutItemsInput = {
   isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalRequirement?: Prisma.EnumSaleLegalRequirementFieldUpdateOperationsInput | $Enums.SaleLegalRequirement
+  saleLegalStatus?: Prisma.EnumSaleLegalStatusFieldUpdateOperationsInput | $Enums.SaleLegalStatus
+  saleLegalDocumentType?: Prisma.NullableEnumSaleLegalDocumentTypeFieldUpdateOperationsInput | $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  saleLegalCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   profileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   payments?: Prisma.OrderPaymentUncheckedUpdateManyWithoutOrderNestedInput
   idempotencyRecord?: Prisma.OrderIdempotencyKeyUncheckedUpdateOneWithoutOrderNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutOrderNestedInput
   statusHistory?: Prisma.OrderStatusHistoryUncheckedUpdateManyWithoutOrderNestedInput
   shipment?: Prisma.ShipmentUncheckedUpdateOneWithoutOrderNestedInput
 }
@@ -1603,11 +1946,19 @@ export type OrderCreateWithoutProfileInput = {
   isB2B?: boolean
   isManual?: boolean
   paymentReceiptUrl?: string | null
+  saleLegalRequirement?: $Enums.SaleLegalRequirement
+  saleLegalStatus?: $Enums.SaleLegalStatus
+  saleLegalDocumentType?: $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Date | string | null
+  saleLegalCompletedAt?: Date | string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   items?: Prisma.OrderItemCreateNestedManyWithoutOrderInput
   payments?: Prisma.OrderPaymentCreateNestedManyWithoutOrderInput
   idempotencyRecord?: Prisma.OrderIdempotencyKeyCreateNestedOneWithoutOrderInput
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutOrderInput
   statusHistory?: Prisma.OrderStatusHistoryCreateNestedManyWithoutOrderInput
   shipment?: Prisma.ShipmentCreateNestedOneWithoutOrderInput
 }
@@ -1632,11 +1983,19 @@ export type OrderUncheckedCreateWithoutProfileInput = {
   isB2B?: boolean
   isManual?: boolean
   paymentReceiptUrl?: string | null
+  saleLegalRequirement?: $Enums.SaleLegalRequirement
+  saleLegalStatus?: $Enums.SaleLegalStatus
+  saleLegalDocumentType?: $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Date | string | null
+  saleLegalCompletedAt?: Date | string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   items?: Prisma.OrderItemUncheckedCreateNestedManyWithoutOrderInput
   payments?: Prisma.OrderPaymentUncheckedCreateNestedManyWithoutOrderInput
   idempotencyRecord?: Prisma.OrderIdempotencyKeyUncheckedCreateNestedOneWithoutOrderInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutOrderInput
   statusHistory?: Prisma.OrderStatusHistoryUncheckedCreateNestedManyWithoutOrderInput
   shipment?: Prisma.ShipmentUncheckedCreateNestedOneWithoutOrderInput
 }
@@ -1690,9 +2049,179 @@ export type OrderScalarWhereInput = {
   isB2B?: Prisma.BoolFilter<"Order"> | boolean
   isManual?: Prisma.BoolFilter<"Order"> | boolean
   paymentReceiptUrl?: Prisma.StringNullableFilter<"Order"> | string | null
+  saleLegalRequirement?: Prisma.EnumSaleLegalRequirementFilter<"Order"> | $Enums.SaleLegalRequirement
+  saleLegalStatus?: Prisma.EnumSaleLegalStatusFilter<"Order"> | $Enums.SaleLegalStatus
+  saleLegalDocumentType?: Prisma.EnumSaleLegalDocumentTypeNullableFilter<"Order"> | $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: Prisma.StringNullableFilter<"Order"> | string | null
+  saleLegalTrace?: Prisma.JsonNullableFilter<"Order">
+  saleLegalResolvedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
+  saleLegalCompletedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
   deletedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Order"> | Date | string
   profileId?: Prisma.StringNullableFilter<"Order"> | string | null
+}
+
+export type OrderCreateWithoutInventoryMovementsInput = {
+  id?: string
+  orderNumber?: number
+  customerEmail: string
+  customerPhone: string
+  shippingAddress: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  city: string
+  totalAmount: number
+  netAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxTotal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  amountPaid?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceDue?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  currency?: string
+  status?: $Enums.OrderStatus
+  source?: $Enums.OrderSource
+  trackingNumber?: string | null
+  carrier?: string | null
+  isB2B?: boolean
+  isManual?: boolean
+  paymentReceiptUrl?: string | null
+  saleLegalRequirement?: $Enums.SaleLegalRequirement
+  saleLegalStatus?: $Enums.SaleLegalStatus
+  saleLegalDocumentType?: $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Date | string | null
+  saleLegalCompletedAt?: Date | string | null
+  deletedAt?: Date | string | null
+  createdAt?: Date | string
+  items?: Prisma.OrderItemCreateNestedManyWithoutOrderInput
+  payments?: Prisma.OrderPaymentCreateNestedManyWithoutOrderInput
+  idempotencyRecord?: Prisma.OrderIdempotencyKeyCreateNestedOneWithoutOrderInput
+  statusHistory?: Prisma.OrderStatusHistoryCreateNestedManyWithoutOrderInput
+  profile?: Prisma.ProfileCreateNestedOneWithoutOrdersInput
+  shipment?: Prisma.ShipmentCreateNestedOneWithoutOrderInput
+}
+
+export type OrderUncheckedCreateWithoutInventoryMovementsInput = {
+  id?: string
+  orderNumber?: number
+  customerEmail: string
+  customerPhone: string
+  shippingAddress: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  city: string
+  totalAmount: number
+  netAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxTotal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  amountPaid?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceDue?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  currency?: string
+  status?: $Enums.OrderStatus
+  source?: $Enums.OrderSource
+  trackingNumber?: string | null
+  carrier?: string | null
+  isB2B?: boolean
+  isManual?: boolean
+  paymentReceiptUrl?: string | null
+  saleLegalRequirement?: $Enums.SaleLegalRequirement
+  saleLegalStatus?: $Enums.SaleLegalStatus
+  saleLegalDocumentType?: $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Date | string | null
+  saleLegalCompletedAt?: Date | string | null
+  deletedAt?: Date | string | null
+  createdAt?: Date | string
+  profileId?: string | null
+  items?: Prisma.OrderItemUncheckedCreateNestedManyWithoutOrderInput
+  payments?: Prisma.OrderPaymentUncheckedCreateNestedManyWithoutOrderInput
+  idempotencyRecord?: Prisma.OrderIdempotencyKeyUncheckedCreateNestedOneWithoutOrderInput
+  statusHistory?: Prisma.OrderStatusHistoryUncheckedCreateNestedManyWithoutOrderInput
+  shipment?: Prisma.ShipmentUncheckedCreateNestedOneWithoutOrderInput
+}
+
+export type OrderCreateOrConnectWithoutInventoryMovementsInput = {
+  where: Prisma.OrderWhereUniqueInput
+  create: Prisma.XOR<Prisma.OrderCreateWithoutInventoryMovementsInput, Prisma.OrderUncheckedCreateWithoutInventoryMovementsInput>
+}
+
+export type OrderUpsertWithoutInventoryMovementsInput = {
+  update: Prisma.XOR<Prisma.OrderUpdateWithoutInventoryMovementsInput, Prisma.OrderUncheckedUpdateWithoutInventoryMovementsInput>
+  create: Prisma.XOR<Prisma.OrderCreateWithoutInventoryMovementsInput, Prisma.OrderUncheckedCreateWithoutInventoryMovementsInput>
+  where?: Prisma.OrderWhereInput
+}
+
+export type OrderUpdateToOneWithWhereWithoutInventoryMovementsInput = {
+  where?: Prisma.OrderWhereInput
+  data: Prisma.XOR<Prisma.OrderUpdateWithoutInventoryMovementsInput, Prisma.OrderUncheckedUpdateWithoutInventoryMovementsInput>
+}
+
+export type OrderUpdateWithoutInventoryMovementsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  customerEmail?: Prisma.StringFieldUpdateOperationsInput | string
+  customerPhone?: Prisma.StringFieldUpdateOperationsInput | string
+  shippingAddress?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  city?: Prisma.StringFieldUpdateOperationsInput | string
+  totalAmount?: Prisma.FloatFieldUpdateOperationsInput | number
+  netAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxTotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  amountPaid?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceDue?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+  source?: Prisma.EnumOrderSourceFieldUpdateOperationsInput | $Enums.OrderSource
+  trackingNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  carrier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalRequirement?: Prisma.EnumSaleLegalRequirementFieldUpdateOperationsInput | $Enums.SaleLegalRequirement
+  saleLegalStatus?: Prisma.EnumSaleLegalStatusFieldUpdateOperationsInput | $Enums.SaleLegalStatus
+  saleLegalDocumentType?: Prisma.NullableEnumSaleLegalDocumentTypeFieldUpdateOperationsInput | $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  saleLegalCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  items?: Prisma.OrderItemUpdateManyWithoutOrderNestedInput
+  payments?: Prisma.OrderPaymentUpdateManyWithoutOrderNestedInput
+  idempotencyRecord?: Prisma.OrderIdempotencyKeyUpdateOneWithoutOrderNestedInput
+  statusHistory?: Prisma.OrderStatusHistoryUpdateManyWithoutOrderNestedInput
+  profile?: Prisma.ProfileUpdateOneWithoutOrdersNestedInput
+  shipment?: Prisma.ShipmentUpdateOneWithoutOrderNestedInput
+}
+
+export type OrderUncheckedUpdateWithoutInventoryMovementsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  orderNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  customerEmail?: Prisma.StringFieldUpdateOperationsInput | string
+  customerPhone?: Prisma.StringFieldUpdateOperationsInput | string
+  shippingAddress?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  city?: Prisma.StringFieldUpdateOperationsInput | string
+  totalAmount?: Prisma.FloatFieldUpdateOperationsInput | number
+  netAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxTotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  amountPaid?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceDue?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+  source?: Prisma.EnumOrderSourceFieldUpdateOperationsInput | $Enums.OrderSource
+  trackingNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  carrier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalRequirement?: Prisma.EnumSaleLegalRequirementFieldUpdateOperationsInput | $Enums.SaleLegalRequirement
+  saleLegalStatus?: Prisma.EnumSaleLegalStatusFieldUpdateOperationsInput | $Enums.SaleLegalStatus
+  saleLegalDocumentType?: Prisma.NullableEnumSaleLegalDocumentTypeFieldUpdateOperationsInput | $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  saleLegalCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  profileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  items?: Prisma.OrderItemUncheckedUpdateManyWithoutOrderNestedInput
+  payments?: Prisma.OrderPaymentUncheckedUpdateManyWithoutOrderNestedInput
+  idempotencyRecord?: Prisma.OrderIdempotencyKeyUncheckedUpdateOneWithoutOrderNestedInput
+  statusHistory?: Prisma.OrderStatusHistoryUncheckedUpdateManyWithoutOrderNestedInput
+  shipment?: Prisma.ShipmentUncheckedUpdateOneWithoutOrderNestedInput
 }
 
 export type OrderCreateManyProfileInput = {
@@ -1715,6 +2244,13 @@ export type OrderCreateManyProfileInput = {
   isB2B?: boolean
   isManual?: boolean
   paymentReceiptUrl?: string | null
+  saleLegalRequirement?: $Enums.SaleLegalRequirement
+  saleLegalStatus?: $Enums.SaleLegalStatus
+  saleLegalDocumentType?: $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Date | string | null
+  saleLegalCompletedAt?: Date | string | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
 }
@@ -1738,11 +2274,19 @@ export type OrderUpdateWithoutProfileInput = {
   isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalRequirement?: Prisma.EnumSaleLegalRequirementFieldUpdateOperationsInput | $Enums.SaleLegalRequirement
+  saleLegalStatus?: Prisma.EnumSaleLegalStatusFieldUpdateOperationsInput | $Enums.SaleLegalStatus
+  saleLegalDocumentType?: Prisma.NullableEnumSaleLegalDocumentTypeFieldUpdateOperationsInput | $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  saleLegalCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   items?: Prisma.OrderItemUpdateManyWithoutOrderNestedInput
   payments?: Prisma.OrderPaymentUpdateManyWithoutOrderNestedInput
   idempotencyRecord?: Prisma.OrderIdempotencyKeyUpdateOneWithoutOrderNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutOrderNestedInput
   statusHistory?: Prisma.OrderStatusHistoryUpdateManyWithoutOrderNestedInput
   shipment?: Prisma.ShipmentUpdateOneWithoutOrderNestedInput
 }
@@ -1767,11 +2311,19 @@ export type OrderUncheckedUpdateWithoutProfileInput = {
   isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalRequirement?: Prisma.EnumSaleLegalRequirementFieldUpdateOperationsInput | $Enums.SaleLegalRequirement
+  saleLegalStatus?: Prisma.EnumSaleLegalStatusFieldUpdateOperationsInput | $Enums.SaleLegalStatus
+  saleLegalDocumentType?: Prisma.NullableEnumSaleLegalDocumentTypeFieldUpdateOperationsInput | $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  saleLegalCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   items?: Prisma.OrderItemUncheckedUpdateManyWithoutOrderNestedInput
   payments?: Prisma.OrderPaymentUncheckedUpdateManyWithoutOrderNestedInput
   idempotencyRecord?: Prisma.OrderIdempotencyKeyUncheckedUpdateOneWithoutOrderNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutOrderNestedInput
   statusHistory?: Prisma.OrderStatusHistoryUncheckedUpdateManyWithoutOrderNestedInput
   shipment?: Prisma.ShipmentUncheckedUpdateOneWithoutOrderNestedInput
 }
@@ -1796,6 +2348,13 @@ export type OrderUncheckedUpdateManyWithoutProfileInput = {
   isB2B?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentReceiptUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalRequirement?: Prisma.EnumSaleLegalRequirementFieldUpdateOperationsInput | $Enums.SaleLegalRequirement
+  saleLegalStatus?: Prisma.EnumSaleLegalStatusFieldUpdateOperationsInput | $Enums.SaleLegalStatus
+  saleLegalDocumentType?: Prisma.NullableEnumSaleLegalDocumentTypeFieldUpdateOperationsInput | $Enums.SaleLegalDocumentType | null
+  saleLegalDocumentReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  saleLegalTrace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  saleLegalResolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  saleLegalCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1808,12 +2367,14 @@ export type OrderUncheckedUpdateManyWithoutProfileInput = {
 export type OrderCountOutputType = {
   items: number
   payments: number
+  inventoryMovements: number
   statusHistory: number
 }
 
 export type OrderCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   items?: boolean | OrderCountOutputTypeCountItemsArgs
   payments?: boolean | OrderCountOutputTypeCountPaymentsArgs
+  inventoryMovements?: boolean | OrderCountOutputTypeCountInventoryMovementsArgs
   statusHistory?: boolean | OrderCountOutputTypeCountStatusHistoryArgs
 }
 
@@ -1844,6 +2405,13 @@ export type OrderCountOutputTypeCountPaymentsArgs<ExtArgs extends runtime.Types.
 /**
  * OrderCountOutputType without action
  */
+export type OrderCountOutputTypeCountInventoryMovementsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.InventoryMovementWhereInput
+}
+
+/**
+ * OrderCountOutputType without action
+ */
 export type OrderCountOutputTypeCountStatusHistoryArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.OrderStatusHistoryWhereInput
 }
@@ -1869,12 +2437,20 @@ export type OrderSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   isB2B?: boolean
   isManual?: boolean
   paymentReceiptUrl?: boolean
+  saleLegalRequirement?: boolean
+  saleLegalStatus?: boolean
+  saleLegalDocumentType?: boolean
+  saleLegalDocumentReference?: boolean
+  saleLegalTrace?: boolean
+  saleLegalResolvedAt?: boolean
+  saleLegalCompletedAt?: boolean
   deletedAt?: boolean
   createdAt?: boolean
   profileId?: boolean
   items?: boolean | Prisma.Order$itemsArgs<ExtArgs>
   payments?: boolean | Prisma.Order$paymentsArgs<ExtArgs>
   idempotencyRecord?: boolean | Prisma.Order$idempotencyRecordArgs<ExtArgs>
+  inventoryMovements?: boolean | Prisma.Order$inventoryMovementsArgs<ExtArgs>
   statusHistory?: boolean | Prisma.Order$statusHistoryArgs<ExtArgs>
   profile?: boolean | Prisma.Order$profileArgs<ExtArgs>
   shipment?: boolean | Prisma.Order$shipmentArgs<ExtArgs>
@@ -1901,6 +2477,13 @@ export type OrderSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   isB2B?: boolean
   isManual?: boolean
   paymentReceiptUrl?: boolean
+  saleLegalRequirement?: boolean
+  saleLegalStatus?: boolean
+  saleLegalDocumentType?: boolean
+  saleLegalDocumentReference?: boolean
+  saleLegalTrace?: boolean
+  saleLegalResolvedAt?: boolean
+  saleLegalCompletedAt?: boolean
   deletedAt?: boolean
   createdAt?: boolean
   profileId?: boolean
@@ -1927,6 +2510,13 @@ export type OrderSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   isB2B?: boolean
   isManual?: boolean
   paymentReceiptUrl?: boolean
+  saleLegalRequirement?: boolean
+  saleLegalStatus?: boolean
+  saleLegalDocumentType?: boolean
+  saleLegalDocumentReference?: boolean
+  saleLegalTrace?: boolean
+  saleLegalResolvedAt?: boolean
+  saleLegalCompletedAt?: boolean
   deletedAt?: boolean
   createdAt?: boolean
   profileId?: boolean
@@ -1953,16 +2543,24 @@ export type OrderSelectScalar = {
   isB2B?: boolean
   isManual?: boolean
   paymentReceiptUrl?: boolean
+  saleLegalRequirement?: boolean
+  saleLegalStatus?: boolean
+  saleLegalDocumentType?: boolean
+  saleLegalDocumentReference?: boolean
+  saleLegalTrace?: boolean
+  saleLegalResolvedAt?: boolean
+  saleLegalCompletedAt?: boolean
   deletedAt?: boolean
   createdAt?: boolean
   profileId?: boolean
 }
 
-export type OrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "orderNumber" | "customerEmail" | "customerPhone" | "shippingAddress" | "city" | "totalAmount" | "netAmount" | "taxTotal" | "amountPaid" | "balanceDue" | "currency" | "status" | "source" | "trackingNumber" | "carrier" | "isB2B" | "isManual" | "paymentReceiptUrl" | "deletedAt" | "createdAt" | "profileId", ExtArgs["result"]["order"]>
+export type OrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "orderNumber" | "customerEmail" | "customerPhone" | "shippingAddress" | "city" | "totalAmount" | "netAmount" | "taxTotal" | "amountPaid" | "balanceDue" | "currency" | "status" | "source" | "trackingNumber" | "carrier" | "isB2B" | "isManual" | "paymentReceiptUrl" | "saleLegalRequirement" | "saleLegalStatus" | "saleLegalDocumentType" | "saleLegalDocumentReference" | "saleLegalTrace" | "saleLegalResolvedAt" | "saleLegalCompletedAt" | "deletedAt" | "createdAt" | "profileId", ExtArgs["result"]["order"]>
 export type OrderInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   items?: boolean | Prisma.Order$itemsArgs<ExtArgs>
   payments?: boolean | Prisma.Order$paymentsArgs<ExtArgs>
   idempotencyRecord?: boolean | Prisma.Order$idempotencyRecordArgs<ExtArgs>
+  inventoryMovements?: boolean | Prisma.Order$inventoryMovementsArgs<ExtArgs>
   statusHistory?: boolean | Prisma.Order$statusHistoryArgs<ExtArgs>
   profile?: boolean | Prisma.Order$profileArgs<ExtArgs>
   shipment?: boolean | Prisma.Order$shipmentArgs<ExtArgs>
@@ -1981,6 +2579,7 @@ export type $OrderPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     items: Prisma.$OrderItemPayload<ExtArgs>[]
     payments: Prisma.$OrderPaymentPayload<ExtArgs>[]
     idempotencyRecord: Prisma.$OrderIdempotencyKeyPayload<ExtArgs> | null
+    inventoryMovements: Prisma.$InventoryMovementPayload<ExtArgs>[]
     statusHistory: Prisma.$OrderStatusHistoryPayload<ExtArgs>[]
     profile: Prisma.$ProfilePayload<ExtArgs> | null
     shipment: Prisma.$ShipmentPayload<ExtArgs> | null
@@ -2005,6 +2604,13 @@ export type $OrderPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     isB2B: boolean
     isManual: boolean
     paymentReceiptUrl: string | null
+    saleLegalRequirement: $Enums.SaleLegalRequirement
+    saleLegalStatus: $Enums.SaleLegalStatus
+    saleLegalDocumentType: $Enums.SaleLegalDocumentType | null
+    saleLegalDocumentReference: string | null
+    saleLegalTrace: runtime.JsonValue | null
+    saleLegalResolvedAt: Date | null
+    saleLegalCompletedAt: Date | null
     deletedAt: Date | null
     createdAt: Date
     profileId: string | null
@@ -2405,6 +3011,7 @@ export interface Prisma__OrderClient<T, Null = never, ExtArgs extends runtime.Ty
   items<T extends Prisma.Order$itemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Order$itemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrderItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   payments<T extends Prisma.Order$paymentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Order$paymentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrderPaymentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   idempotencyRecord<T extends Prisma.Order$idempotencyRecordArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Order$idempotencyRecordArgs<ExtArgs>>): Prisma.Prisma__OrderIdempotencyKeyClient<runtime.Types.Result.GetResult<Prisma.$OrderIdempotencyKeyPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  inventoryMovements<T extends Prisma.Order$inventoryMovementsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Order$inventoryMovementsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$InventoryMovementPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   statusHistory<T extends Prisma.Order$statusHistoryArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Order$statusHistoryArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrderStatusHistoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   profile<T extends Prisma.Order$profileArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Order$profileArgs<ExtArgs>>): Prisma.Prisma__ProfileClient<runtime.Types.Result.GetResult<Prisma.$ProfilePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   shipment<T extends Prisma.Order$shipmentArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Order$shipmentArgs<ExtArgs>>): Prisma.Prisma__ShipmentClient<runtime.Types.Result.GetResult<Prisma.$ShipmentPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
@@ -2456,6 +3063,13 @@ export interface OrderFieldRefs {
   readonly isB2B: Prisma.FieldRef<"Order", 'Boolean'>
   readonly isManual: Prisma.FieldRef<"Order", 'Boolean'>
   readonly paymentReceiptUrl: Prisma.FieldRef<"Order", 'String'>
+  readonly saleLegalRequirement: Prisma.FieldRef<"Order", 'SaleLegalRequirement'>
+  readonly saleLegalStatus: Prisma.FieldRef<"Order", 'SaleLegalStatus'>
+  readonly saleLegalDocumentType: Prisma.FieldRef<"Order", 'SaleLegalDocumentType'>
+  readonly saleLegalDocumentReference: Prisma.FieldRef<"Order", 'String'>
+  readonly saleLegalTrace: Prisma.FieldRef<"Order", 'Json'>
+  readonly saleLegalResolvedAt: Prisma.FieldRef<"Order", 'DateTime'>
+  readonly saleLegalCompletedAt: Prisma.FieldRef<"Order", 'DateTime'>
   readonly deletedAt: Prisma.FieldRef<"Order", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Order", 'DateTime'>
   readonly profileId: Prisma.FieldRef<"Order", 'String'>
@@ -2919,6 +3533,30 @@ export type Order$idempotencyRecordArgs<ExtArgs extends runtime.Types.Extensions
    */
   include?: Prisma.OrderIdempotencyKeyInclude<ExtArgs> | null
   where?: Prisma.OrderIdempotencyKeyWhereInput
+}
+
+/**
+ * Order.inventoryMovements
+ */
+export type Order$inventoryMovementsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the InventoryMovement
+   */
+  select?: Prisma.InventoryMovementSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the InventoryMovement
+   */
+  omit?: Prisma.InventoryMovementOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InventoryMovementInclude<ExtArgs> | null
+  where?: Prisma.InventoryMovementWhereInput
+  orderBy?: Prisma.InventoryMovementOrderByWithRelationInput | Prisma.InventoryMovementOrderByWithRelationInput[]
+  cursor?: Prisma.InventoryMovementWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.InventoryMovementScalarFieldEnum | Prisma.InventoryMovementScalarFieldEnum[]
 }
 
 /**

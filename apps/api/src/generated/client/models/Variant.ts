@@ -34,6 +34,8 @@ export type VariantAvgAggregateOutputType = {
   totalCost: number | null
   taxRate: runtime.Decimal | null
   stock: number | null
+  stockCommitted: number | null
+  reorderPoint: number | null
 }
 
 export type VariantSumAggregateOutputType = {
@@ -44,6 +46,8 @@ export type VariantSumAggregateOutputType = {
   totalCost: number | null
   taxRate: runtime.Decimal | null
   stock: number | null
+  stockCommitted: number | null
+  reorderPoint: number | null
 }
 
 export type VariantMinAggregateOutputType = {
@@ -59,6 +63,8 @@ export type VariantMinAggregateOutputType = {
   totalCost: number | null
   taxRate: runtime.Decimal | null
   stock: number | null
+  stockCommitted: number | null
+  reorderPoint: number | null
   isActive: boolean | null
   productId: string | null
 }
@@ -76,6 +82,8 @@ export type VariantMaxAggregateOutputType = {
   totalCost: number | null
   taxRate: runtime.Decimal | null
   stock: number | null
+  stockCommitted: number | null
+  reorderPoint: number | null
   isActive: boolean | null
   productId: string | null
 }
@@ -93,6 +101,8 @@ export type VariantCountAggregateOutputType = {
   totalCost: number
   taxRate: number
   stock: number
+  stockCommitted: number
+  reorderPoint: number
   isActive: number
   productId: number
   _all: number
@@ -107,6 +117,8 @@ export type VariantAvgAggregateInputType = {
   totalCost?: true
   taxRate?: true
   stock?: true
+  stockCommitted?: true
+  reorderPoint?: true
 }
 
 export type VariantSumAggregateInputType = {
@@ -117,6 +129,8 @@ export type VariantSumAggregateInputType = {
   totalCost?: true
   taxRate?: true
   stock?: true
+  stockCommitted?: true
+  reorderPoint?: true
 }
 
 export type VariantMinAggregateInputType = {
@@ -132,6 +146,8 @@ export type VariantMinAggregateInputType = {
   totalCost?: true
   taxRate?: true
   stock?: true
+  stockCommitted?: true
+  reorderPoint?: true
   isActive?: true
   productId?: true
 }
@@ -149,6 +165,8 @@ export type VariantMaxAggregateInputType = {
   totalCost?: true
   taxRate?: true
   stock?: true
+  stockCommitted?: true
+  reorderPoint?: true
   isActive?: true
   productId?: true
 }
@@ -166,6 +184,8 @@ export type VariantCountAggregateInputType = {
   totalCost?: true
   taxRate?: true
   stock?: true
+  stockCommitted?: true
+  reorderPoint?: true
   isActive?: true
   productId?: true
   _all?: true
@@ -270,6 +290,8 @@ export type VariantGroupByOutputType = {
   totalCost: number | null
   taxRate: runtime.Decimal
   stock: number
+  stockCommitted: number
+  reorderPoint: number | null
   isActive: boolean
   productId: string
   _count: VariantCountAggregateOutputType | null
@@ -310,8 +332,13 @@ export type VariantWhereInput = {
   totalCost?: Prisma.FloatNullableFilter<"Variant"> | number | null
   taxRate?: Prisma.DecimalFilter<"Variant"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFilter<"Variant"> | number
+  stockCommitted?: Prisma.IntFilter<"Variant"> | number
+  reorderPoint?: Prisma.IntNullableFilter<"Variant"> | number | null
   isActive?: Prisma.BoolFilter<"Variant"> | boolean
   productId?: Prisma.StringFilter<"Variant"> | string
+  inventoryAdjustments?: Prisma.InventoryAdjustmentListRelationFilter
+  inventoryMovements?: Prisma.InventoryMovementListRelationFilter
+  b2BQuoteItems?: Prisma.B2BQuoteItemListRelationFilter
   orderItems?: Prisma.OrderItemListRelationFilter
   personalizationRequests?: Prisma.PersonalizationRequestListRelationFilter
   product?: Prisma.XOR<Prisma.ProductScalarRelationFilter, Prisma.ProductWhereInput>
@@ -332,8 +359,13 @@ export type VariantOrderByWithRelationInput = {
   totalCost?: Prisma.SortOrderInput | Prisma.SortOrder
   taxRate?: Prisma.SortOrder
   stock?: Prisma.SortOrder
+  stockCommitted?: Prisma.SortOrder
+  reorderPoint?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
   productId?: Prisma.SortOrder
+  inventoryAdjustments?: Prisma.InventoryAdjustmentOrderByRelationAggregateInput
+  inventoryMovements?: Prisma.InventoryMovementOrderByRelationAggregateInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemOrderByRelationAggregateInput
   orderItems?: Prisma.OrderItemOrderByRelationAggregateInput
   personalizationRequests?: Prisma.PersonalizationRequestOrderByRelationAggregateInput
   product?: Prisma.ProductOrderByWithRelationInput
@@ -357,8 +389,13 @@ export type VariantWhereUniqueInput = Prisma.AtLeast<{
   totalCost?: Prisma.FloatNullableFilter<"Variant"> | number | null
   taxRate?: Prisma.DecimalFilter<"Variant"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFilter<"Variant"> | number
+  stockCommitted?: Prisma.IntFilter<"Variant"> | number
+  reorderPoint?: Prisma.IntNullableFilter<"Variant"> | number | null
   isActive?: Prisma.BoolFilter<"Variant"> | boolean
   productId?: Prisma.StringFilter<"Variant"> | string
+  inventoryAdjustments?: Prisma.InventoryAdjustmentListRelationFilter
+  inventoryMovements?: Prisma.InventoryMovementListRelationFilter
+  b2BQuoteItems?: Prisma.B2BQuoteItemListRelationFilter
   orderItems?: Prisma.OrderItemListRelationFilter
   personalizationRequests?: Prisma.PersonalizationRequestListRelationFilter
   product?: Prisma.XOR<Prisma.ProductScalarRelationFilter, Prisma.ProductWhereInput>
@@ -379,6 +416,8 @@ export type VariantOrderByWithAggregationInput = {
   totalCost?: Prisma.SortOrderInput | Prisma.SortOrder
   taxRate?: Prisma.SortOrder
   stock?: Prisma.SortOrder
+  stockCommitted?: Prisma.SortOrder
+  reorderPoint?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
   productId?: Prisma.SortOrder
   _count?: Prisma.VariantCountOrderByAggregateInput
@@ -404,6 +443,8 @@ export type VariantScalarWhereWithAggregatesInput = {
   totalCost?: Prisma.FloatNullableWithAggregatesFilter<"Variant"> | number | null
   taxRate?: Prisma.DecimalWithAggregatesFilter<"Variant"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntWithAggregatesFilter<"Variant"> | number
+  stockCommitted?: Prisma.IntWithAggregatesFilter<"Variant"> | number
+  reorderPoint?: Prisma.IntNullableWithAggregatesFilter<"Variant"> | number | null
   isActive?: Prisma.BoolWithAggregatesFilter<"Variant"> | boolean
   productId?: Prisma.StringWithAggregatesFilter<"Variant"> | string
 }
@@ -421,7 +462,12 @@ export type VariantCreateInput = {
   totalCost?: number | null
   taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: number
+  stockCommitted?: number
+  reorderPoint?: number | null
   isActive?: boolean
+  inventoryAdjustments?: Prisma.InventoryAdjustmentCreateNestedManyWithoutVariantInput
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutVariantInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemCreateNestedManyWithoutVariantInput
   orderItems?: Prisma.OrderItemCreateNestedManyWithoutVariantInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutVariantInput
   product: Prisma.ProductCreateNestedOneWithoutVariantsInput
@@ -442,8 +488,13 @@ export type VariantUncheckedCreateInput = {
   totalCost?: number | null
   taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: number
+  stockCommitted?: number
+  reorderPoint?: number | null
   isActive?: boolean
   productId: string
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedCreateNestedManyWithoutVariantInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutVariantInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemUncheckedCreateNestedManyWithoutVariantInput
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutVariantInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutVariantInput
   purchaseBatches?: Prisma.PurchaseBatchUncheckedCreateNestedManyWithoutVariantInput
@@ -463,7 +514,12 @@ export type VariantUpdateInput = {
   totalCost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
+  stockCommitted?: Prisma.IntFieldUpdateOperationsInput | number
+  reorderPoint?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUpdateManyWithoutVariantNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutVariantNestedInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemUpdateManyWithoutVariantNestedInput
   orderItems?: Prisma.OrderItemUpdateManyWithoutVariantNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutVariantNestedInput
   product?: Prisma.ProductUpdateOneRequiredWithoutVariantsNestedInput
@@ -484,8 +540,13 @@ export type VariantUncheckedUpdateInput = {
   totalCost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
+  stockCommitted?: Prisma.IntFieldUpdateOperationsInput | number
+  reorderPoint?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   productId?: Prisma.StringFieldUpdateOperationsInput | string
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedUpdateManyWithoutVariantNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutVariantNestedInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemUncheckedUpdateManyWithoutVariantNestedInput
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutVariantNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutVariantNestedInput
   purchaseBatches?: Prisma.PurchaseBatchUncheckedUpdateManyWithoutVariantNestedInput
@@ -505,6 +566,8 @@ export type VariantCreateManyInput = {
   totalCost?: number | null
   taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: number
+  stockCommitted?: number
+  reorderPoint?: number | null
   isActive?: boolean
   productId: string
 }
@@ -522,6 +585,8 @@ export type VariantUpdateManyMutationInput = {
   totalCost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
+  stockCommitted?: Prisma.IntFieldUpdateOperationsInput | number
+  reorderPoint?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
@@ -538,6 +603,8 @@ export type VariantUncheckedUpdateManyInput = {
   totalCost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
+  stockCommitted?: Prisma.IntFieldUpdateOperationsInput | number
+  reorderPoint?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   productId?: Prisma.StringFieldUpdateOperationsInput | string
 }
@@ -565,6 +632,8 @@ export type VariantCountOrderByAggregateInput = {
   totalCost?: Prisma.SortOrder
   taxRate?: Prisma.SortOrder
   stock?: Prisma.SortOrder
+  stockCommitted?: Prisma.SortOrder
+  reorderPoint?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   productId?: Prisma.SortOrder
 }
@@ -577,6 +646,8 @@ export type VariantAvgOrderByAggregateInput = {
   totalCost?: Prisma.SortOrder
   taxRate?: Prisma.SortOrder
   stock?: Prisma.SortOrder
+  stockCommitted?: Prisma.SortOrder
+  reorderPoint?: Prisma.SortOrder
 }
 
 export type VariantMaxOrderByAggregateInput = {
@@ -592,6 +663,8 @@ export type VariantMaxOrderByAggregateInput = {
   totalCost?: Prisma.SortOrder
   taxRate?: Prisma.SortOrder
   stock?: Prisma.SortOrder
+  stockCommitted?: Prisma.SortOrder
+  reorderPoint?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   productId?: Prisma.SortOrder
 }
@@ -609,6 +682,8 @@ export type VariantMinOrderByAggregateInput = {
   totalCost?: Prisma.SortOrder
   taxRate?: Prisma.SortOrder
   stock?: Prisma.SortOrder
+  stockCommitted?: Prisma.SortOrder
+  reorderPoint?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   productId?: Prisma.SortOrder
 }
@@ -621,6 +696,8 @@ export type VariantSumOrderByAggregateInput = {
   totalCost?: Prisma.SortOrder
   taxRate?: Prisma.SortOrder
   stock?: Prisma.SortOrder
+  stockCommitted?: Prisma.SortOrder
+  reorderPoint?: Prisma.SortOrder
 }
 
 export type VariantNullableScalarRelationFilter = {
@@ -678,6 +755,14 @@ export type DecimalFieldUpdateOperationsInput = {
   divide?: runtime.Decimal | runtime.DecimalJsLike | number | string
 }
 
+export type NullableIntFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
+}
+
 export type VariantCreateNestedOneWithoutOrderItemsInput = {
   create?: Prisma.XOR<Prisma.VariantCreateWithoutOrderItemsInput, Prisma.VariantUncheckedCreateWithoutOrderItemsInput>
   connectOrCreate?: Prisma.VariantCreateOrConnectWithoutOrderItemsInput
@@ -708,6 +793,22 @@ export type VariantUpdateOneWithoutPersonalizationRequestsNestedInput = {
   delete?: Prisma.VariantWhereInput | boolean
   connect?: Prisma.VariantWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.VariantUpdateToOneWithWhereWithoutPersonalizationRequestsInput, Prisma.VariantUpdateWithoutPersonalizationRequestsInput>, Prisma.VariantUncheckedUpdateWithoutPersonalizationRequestsInput>
+}
+
+export type VariantCreateNestedOneWithoutB2BQuoteItemsInput = {
+  create?: Prisma.XOR<Prisma.VariantCreateWithoutB2BQuoteItemsInput, Prisma.VariantUncheckedCreateWithoutB2BQuoteItemsInput>
+  connectOrCreate?: Prisma.VariantCreateOrConnectWithoutB2BQuoteItemsInput
+  connect?: Prisma.VariantWhereUniqueInput
+}
+
+export type VariantUpdateOneWithoutB2BQuoteItemsNestedInput = {
+  create?: Prisma.XOR<Prisma.VariantCreateWithoutB2BQuoteItemsInput, Prisma.VariantUncheckedCreateWithoutB2BQuoteItemsInput>
+  connectOrCreate?: Prisma.VariantCreateOrConnectWithoutB2BQuoteItemsInput
+  upsert?: Prisma.VariantUpsertWithoutB2BQuoteItemsInput
+  disconnect?: Prisma.VariantWhereInput | boolean
+  delete?: Prisma.VariantWhereInput | boolean
+  connect?: Prisma.VariantWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.VariantUpdateToOneWithWhereWithoutB2BQuoteItemsInput, Prisma.VariantUpdateWithoutB2BQuoteItemsInput>, Prisma.VariantUncheckedUpdateWithoutB2BQuoteItemsInput>
 }
 
 export type VariantCreateNestedOneWithoutPurchaseBatchesInput = {
@@ -742,6 +843,38 @@ export type VariantUpdateOneWithoutPurchaseBatchLinesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.VariantUpdateToOneWithWhereWithoutPurchaseBatchLinesInput, Prisma.VariantUpdateWithoutPurchaseBatchLinesInput>, Prisma.VariantUncheckedUpdateWithoutPurchaseBatchLinesInput>
 }
 
+export type VariantCreateNestedOneWithoutInventoryAdjustmentsInput = {
+  create?: Prisma.XOR<Prisma.VariantCreateWithoutInventoryAdjustmentsInput, Prisma.VariantUncheckedCreateWithoutInventoryAdjustmentsInput>
+  connectOrCreate?: Prisma.VariantCreateOrConnectWithoutInventoryAdjustmentsInput
+  connect?: Prisma.VariantWhereUniqueInput
+}
+
+export type VariantUpdateOneWithoutInventoryAdjustmentsNestedInput = {
+  create?: Prisma.XOR<Prisma.VariantCreateWithoutInventoryAdjustmentsInput, Prisma.VariantUncheckedCreateWithoutInventoryAdjustmentsInput>
+  connectOrCreate?: Prisma.VariantCreateOrConnectWithoutInventoryAdjustmentsInput
+  upsert?: Prisma.VariantUpsertWithoutInventoryAdjustmentsInput
+  disconnect?: Prisma.VariantWhereInput | boolean
+  delete?: Prisma.VariantWhereInput | boolean
+  connect?: Prisma.VariantWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.VariantUpdateToOneWithWhereWithoutInventoryAdjustmentsInput, Prisma.VariantUpdateWithoutInventoryAdjustmentsInput>, Prisma.VariantUncheckedUpdateWithoutInventoryAdjustmentsInput>
+}
+
+export type VariantCreateNestedOneWithoutInventoryMovementsInput = {
+  create?: Prisma.XOR<Prisma.VariantCreateWithoutInventoryMovementsInput, Prisma.VariantUncheckedCreateWithoutInventoryMovementsInput>
+  connectOrCreate?: Prisma.VariantCreateOrConnectWithoutInventoryMovementsInput
+  connect?: Prisma.VariantWhereUniqueInput
+}
+
+export type VariantUpdateOneWithoutInventoryMovementsNestedInput = {
+  create?: Prisma.XOR<Prisma.VariantCreateWithoutInventoryMovementsInput, Prisma.VariantUncheckedCreateWithoutInventoryMovementsInput>
+  connectOrCreate?: Prisma.VariantCreateOrConnectWithoutInventoryMovementsInput
+  upsert?: Prisma.VariantUpsertWithoutInventoryMovementsInput
+  disconnect?: Prisma.VariantWhereInput | boolean
+  delete?: Prisma.VariantWhereInput | boolean
+  connect?: Prisma.VariantWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.VariantUpdateToOneWithWhereWithoutInventoryMovementsInput, Prisma.VariantUpdateWithoutInventoryMovementsInput>, Prisma.VariantUncheckedUpdateWithoutInventoryMovementsInput>
+}
+
 export type VariantCreateWithoutProductInput = {
   id?: string
   sku: string
@@ -755,7 +888,12 @@ export type VariantCreateWithoutProductInput = {
   totalCost?: number | null
   taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: number
+  stockCommitted?: number
+  reorderPoint?: number | null
   isActive?: boolean
+  inventoryAdjustments?: Prisma.InventoryAdjustmentCreateNestedManyWithoutVariantInput
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutVariantInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemCreateNestedManyWithoutVariantInput
   orderItems?: Prisma.OrderItemCreateNestedManyWithoutVariantInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutVariantInput
   purchaseBatches?: Prisma.PurchaseBatchCreateNestedManyWithoutVariantInput
@@ -775,7 +913,12 @@ export type VariantUncheckedCreateWithoutProductInput = {
   totalCost?: number | null
   taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: number
+  stockCommitted?: number
+  reorderPoint?: number | null
   isActive?: boolean
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedCreateNestedManyWithoutVariantInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutVariantInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemUncheckedCreateNestedManyWithoutVariantInput
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutVariantInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutVariantInput
   purchaseBatches?: Prisma.PurchaseBatchUncheckedCreateNestedManyWithoutVariantInput
@@ -824,6 +967,8 @@ export type VariantScalarWhereInput = {
   totalCost?: Prisma.FloatNullableFilter<"Variant"> | number | null
   taxRate?: Prisma.DecimalFilter<"Variant"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFilter<"Variant"> | number
+  stockCommitted?: Prisma.IntFilter<"Variant"> | number
+  reorderPoint?: Prisma.IntNullableFilter<"Variant"> | number | null
   isActive?: Prisma.BoolFilter<"Variant"> | boolean
   productId?: Prisma.StringFilter<"Variant"> | string
 }
@@ -841,7 +986,12 @@ export type VariantCreateWithoutOrderItemsInput = {
   totalCost?: number | null
   taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: number
+  stockCommitted?: number
+  reorderPoint?: number | null
   isActive?: boolean
+  inventoryAdjustments?: Prisma.InventoryAdjustmentCreateNestedManyWithoutVariantInput
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutVariantInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemCreateNestedManyWithoutVariantInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutVariantInput
   product: Prisma.ProductCreateNestedOneWithoutVariantsInput
   purchaseBatches?: Prisma.PurchaseBatchCreateNestedManyWithoutVariantInput
@@ -861,8 +1011,13 @@ export type VariantUncheckedCreateWithoutOrderItemsInput = {
   totalCost?: number | null
   taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: number
+  stockCommitted?: number
+  reorderPoint?: number | null
   isActive?: boolean
   productId: string
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedCreateNestedManyWithoutVariantInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutVariantInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemUncheckedCreateNestedManyWithoutVariantInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutVariantInput
   purchaseBatches?: Prisma.PurchaseBatchUncheckedCreateNestedManyWithoutVariantInput
   purchaseBatchLines?: Prisma.PurchaseBatchLineUncheckedCreateNestedManyWithoutVariantInput
@@ -897,7 +1052,12 @@ export type VariantUpdateWithoutOrderItemsInput = {
   totalCost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
+  stockCommitted?: Prisma.IntFieldUpdateOperationsInput | number
+  reorderPoint?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUpdateManyWithoutVariantNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutVariantNestedInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemUpdateManyWithoutVariantNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutVariantNestedInput
   product?: Prisma.ProductUpdateOneRequiredWithoutVariantsNestedInput
   purchaseBatches?: Prisma.PurchaseBatchUpdateManyWithoutVariantNestedInput
@@ -917,8 +1077,13 @@ export type VariantUncheckedUpdateWithoutOrderItemsInput = {
   totalCost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
+  stockCommitted?: Prisma.IntFieldUpdateOperationsInput | number
+  reorderPoint?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   productId?: Prisma.StringFieldUpdateOperationsInput | string
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedUpdateManyWithoutVariantNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutVariantNestedInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemUncheckedUpdateManyWithoutVariantNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutVariantNestedInput
   purchaseBatches?: Prisma.PurchaseBatchUncheckedUpdateManyWithoutVariantNestedInput
   purchaseBatchLines?: Prisma.PurchaseBatchLineUncheckedUpdateManyWithoutVariantNestedInput
@@ -937,7 +1102,12 @@ export type VariantCreateWithoutPersonalizationRequestsInput = {
   totalCost?: number | null
   taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: number
+  stockCommitted?: number
+  reorderPoint?: number | null
   isActive?: boolean
+  inventoryAdjustments?: Prisma.InventoryAdjustmentCreateNestedManyWithoutVariantInput
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutVariantInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemCreateNestedManyWithoutVariantInput
   orderItems?: Prisma.OrderItemCreateNestedManyWithoutVariantInput
   product: Prisma.ProductCreateNestedOneWithoutVariantsInput
   purchaseBatches?: Prisma.PurchaseBatchCreateNestedManyWithoutVariantInput
@@ -957,8 +1127,13 @@ export type VariantUncheckedCreateWithoutPersonalizationRequestsInput = {
   totalCost?: number | null
   taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: number
+  stockCommitted?: number
+  reorderPoint?: number | null
   isActive?: boolean
   productId: string
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedCreateNestedManyWithoutVariantInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutVariantInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemUncheckedCreateNestedManyWithoutVariantInput
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutVariantInput
   purchaseBatches?: Prisma.PurchaseBatchUncheckedCreateNestedManyWithoutVariantInput
   purchaseBatchLines?: Prisma.PurchaseBatchLineUncheckedCreateNestedManyWithoutVariantInput
@@ -993,7 +1168,12 @@ export type VariantUpdateWithoutPersonalizationRequestsInput = {
   totalCost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
+  stockCommitted?: Prisma.IntFieldUpdateOperationsInput | number
+  reorderPoint?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUpdateManyWithoutVariantNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutVariantNestedInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemUpdateManyWithoutVariantNestedInput
   orderItems?: Prisma.OrderItemUpdateManyWithoutVariantNestedInput
   product?: Prisma.ProductUpdateOneRequiredWithoutVariantsNestedInput
   purchaseBatches?: Prisma.PurchaseBatchUpdateManyWithoutVariantNestedInput
@@ -1013,9 +1193,130 @@ export type VariantUncheckedUpdateWithoutPersonalizationRequestsInput = {
   totalCost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
+  stockCommitted?: Prisma.IntFieldUpdateOperationsInput | number
+  reorderPoint?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   productId?: Prisma.StringFieldUpdateOperationsInput | string
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedUpdateManyWithoutVariantNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutVariantNestedInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemUncheckedUpdateManyWithoutVariantNestedInput
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutVariantNestedInput
+  purchaseBatches?: Prisma.PurchaseBatchUncheckedUpdateManyWithoutVariantNestedInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineUncheckedUpdateManyWithoutVariantNestedInput
+}
+
+export type VariantCreateWithoutB2BQuoteItemsInput = {
+  id?: string
+  sku: string
+  size?: string | null
+  color: string
+  imageUrl: string
+  salePrice?: number | null
+  minPrice?: number | null
+  comparePrice?: number | null
+  costPrice?: number | null
+  totalCost?: number | null
+  taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  stock?: number
+  stockCommitted?: number
+  reorderPoint?: number | null
+  isActive?: boolean
+  inventoryAdjustments?: Prisma.InventoryAdjustmentCreateNestedManyWithoutVariantInput
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutVariantInput
+  orderItems?: Prisma.OrderItemCreateNestedManyWithoutVariantInput
+  personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutVariantInput
+  product: Prisma.ProductCreateNestedOneWithoutVariantsInput
+  purchaseBatches?: Prisma.PurchaseBatchCreateNestedManyWithoutVariantInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineCreateNestedManyWithoutVariantInput
+}
+
+export type VariantUncheckedCreateWithoutB2BQuoteItemsInput = {
+  id?: string
+  sku: string
+  size?: string | null
+  color: string
+  imageUrl: string
+  salePrice?: number | null
+  minPrice?: number | null
+  comparePrice?: number | null
+  costPrice?: number | null
+  totalCost?: number | null
+  taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  stock?: number
+  stockCommitted?: number
+  reorderPoint?: number | null
+  isActive?: boolean
+  productId: string
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedCreateNestedManyWithoutVariantInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutVariantInput
+  orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutVariantInput
+  personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutVariantInput
+  purchaseBatches?: Prisma.PurchaseBatchUncheckedCreateNestedManyWithoutVariantInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineUncheckedCreateNestedManyWithoutVariantInput
+}
+
+export type VariantCreateOrConnectWithoutB2BQuoteItemsInput = {
+  where: Prisma.VariantWhereUniqueInput
+  create: Prisma.XOR<Prisma.VariantCreateWithoutB2BQuoteItemsInput, Prisma.VariantUncheckedCreateWithoutB2BQuoteItemsInput>
+}
+
+export type VariantUpsertWithoutB2BQuoteItemsInput = {
+  update: Prisma.XOR<Prisma.VariantUpdateWithoutB2BQuoteItemsInput, Prisma.VariantUncheckedUpdateWithoutB2BQuoteItemsInput>
+  create: Prisma.XOR<Prisma.VariantCreateWithoutB2BQuoteItemsInput, Prisma.VariantUncheckedCreateWithoutB2BQuoteItemsInput>
+  where?: Prisma.VariantWhereInput
+}
+
+export type VariantUpdateToOneWithWhereWithoutB2BQuoteItemsInput = {
+  where?: Prisma.VariantWhereInput
+  data: Prisma.XOR<Prisma.VariantUpdateWithoutB2BQuoteItemsInput, Prisma.VariantUncheckedUpdateWithoutB2BQuoteItemsInput>
+}
+
+export type VariantUpdateWithoutB2BQuoteItemsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sku?: Prisma.StringFieldUpdateOperationsInput | string
+  size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  color?: Prisma.StringFieldUpdateOperationsInput | string
+  imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  salePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  minPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  comparePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  costPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  totalCost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  stock?: Prisma.IntFieldUpdateOperationsInput | number
+  stockCommitted?: Prisma.IntFieldUpdateOperationsInput | number
+  reorderPoint?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUpdateManyWithoutVariantNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutVariantNestedInput
+  orderItems?: Prisma.OrderItemUpdateManyWithoutVariantNestedInput
+  personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutVariantNestedInput
+  product?: Prisma.ProductUpdateOneRequiredWithoutVariantsNestedInput
+  purchaseBatches?: Prisma.PurchaseBatchUpdateManyWithoutVariantNestedInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineUpdateManyWithoutVariantNestedInput
+}
+
+export type VariantUncheckedUpdateWithoutB2BQuoteItemsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sku?: Prisma.StringFieldUpdateOperationsInput | string
+  size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  color?: Prisma.StringFieldUpdateOperationsInput | string
+  imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  salePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  minPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  comparePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  costPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  totalCost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  stock?: Prisma.IntFieldUpdateOperationsInput | number
+  stockCommitted?: Prisma.IntFieldUpdateOperationsInput | number
+  reorderPoint?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  productId?: Prisma.StringFieldUpdateOperationsInput | string
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedUpdateManyWithoutVariantNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutVariantNestedInput
+  orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutVariantNestedInput
+  personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutVariantNestedInput
   purchaseBatches?: Prisma.PurchaseBatchUncheckedUpdateManyWithoutVariantNestedInput
   purchaseBatchLines?: Prisma.PurchaseBatchLineUncheckedUpdateManyWithoutVariantNestedInput
 }
@@ -1033,7 +1334,12 @@ export type VariantCreateWithoutPurchaseBatchesInput = {
   totalCost?: number | null
   taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: number
+  stockCommitted?: number
+  reorderPoint?: number | null
   isActive?: boolean
+  inventoryAdjustments?: Prisma.InventoryAdjustmentCreateNestedManyWithoutVariantInput
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutVariantInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemCreateNestedManyWithoutVariantInput
   orderItems?: Prisma.OrderItemCreateNestedManyWithoutVariantInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutVariantInput
   product: Prisma.ProductCreateNestedOneWithoutVariantsInput
@@ -1053,8 +1359,13 @@ export type VariantUncheckedCreateWithoutPurchaseBatchesInput = {
   totalCost?: number | null
   taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: number
+  stockCommitted?: number
+  reorderPoint?: number | null
   isActive?: boolean
   productId: string
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedCreateNestedManyWithoutVariantInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutVariantInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemUncheckedCreateNestedManyWithoutVariantInput
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutVariantInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutVariantInput
   purchaseBatchLines?: Prisma.PurchaseBatchLineUncheckedCreateNestedManyWithoutVariantInput
@@ -1089,7 +1400,12 @@ export type VariantUpdateWithoutPurchaseBatchesInput = {
   totalCost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
+  stockCommitted?: Prisma.IntFieldUpdateOperationsInput | number
+  reorderPoint?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUpdateManyWithoutVariantNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutVariantNestedInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemUpdateManyWithoutVariantNestedInput
   orderItems?: Prisma.OrderItemUpdateManyWithoutVariantNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutVariantNestedInput
   product?: Prisma.ProductUpdateOneRequiredWithoutVariantsNestedInput
@@ -1109,8 +1425,13 @@ export type VariantUncheckedUpdateWithoutPurchaseBatchesInput = {
   totalCost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
+  stockCommitted?: Prisma.IntFieldUpdateOperationsInput | number
+  reorderPoint?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   productId?: Prisma.StringFieldUpdateOperationsInput | string
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedUpdateManyWithoutVariantNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutVariantNestedInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemUncheckedUpdateManyWithoutVariantNestedInput
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutVariantNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutVariantNestedInput
   purchaseBatchLines?: Prisma.PurchaseBatchLineUncheckedUpdateManyWithoutVariantNestedInput
@@ -1129,7 +1450,12 @@ export type VariantCreateWithoutPurchaseBatchLinesInput = {
   totalCost?: number | null
   taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: number
+  stockCommitted?: number
+  reorderPoint?: number | null
   isActive?: boolean
+  inventoryAdjustments?: Prisma.InventoryAdjustmentCreateNestedManyWithoutVariantInput
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutVariantInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemCreateNestedManyWithoutVariantInput
   orderItems?: Prisma.OrderItemCreateNestedManyWithoutVariantInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutVariantInput
   product: Prisma.ProductCreateNestedOneWithoutVariantsInput
@@ -1149,8 +1475,13 @@ export type VariantUncheckedCreateWithoutPurchaseBatchLinesInput = {
   totalCost?: number | null
   taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: number
+  stockCommitted?: number
+  reorderPoint?: number | null
   isActive?: boolean
   productId: string
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedCreateNestedManyWithoutVariantInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutVariantInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemUncheckedCreateNestedManyWithoutVariantInput
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutVariantInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutVariantInput
   purchaseBatches?: Prisma.PurchaseBatchUncheckedCreateNestedManyWithoutVariantInput
@@ -1185,7 +1516,12 @@ export type VariantUpdateWithoutPurchaseBatchLinesInput = {
   totalCost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
+  stockCommitted?: Prisma.IntFieldUpdateOperationsInput | number
+  reorderPoint?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUpdateManyWithoutVariantNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutVariantNestedInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemUpdateManyWithoutVariantNestedInput
   orderItems?: Prisma.OrderItemUpdateManyWithoutVariantNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutVariantNestedInput
   product?: Prisma.ProductUpdateOneRequiredWithoutVariantsNestedInput
@@ -1205,11 +1541,248 @@ export type VariantUncheckedUpdateWithoutPurchaseBatchLinesInput = {
   totalCost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
+  stockCommitted?: Prisma.IntFieldUpdateOperationsInput | number
+  reorderPoint?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   productId?: Prisma.StringFieldUpdateOperationsInput | string
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedUpdateManyWithoutVariantNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutVariantNestedInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemUncheckedUpdateManyWithoutVariantNestedInput
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutVariantNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutVariantNestedInput
   purchaseBatches?: Prisma.PurchaseBatchUncheckedUpdateManyWithoutVariantNestedInput
+}
+
+export type VariantCreateWithoutInventoryAdjustmentsInput = {
+  id?: string
+  sku: string
+  size?: string | null
+  color: string
+  imageUrl: string
+  salePrice?: number | null
+  minPrice?: number | null
+  comparePrice?: number | null
+  costPrice?: number | null
+  totalCost?: number | null
+  taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  stock?: number
+  stockCommitted?: number
+  reorderPoint?: number | null
+  isActive?: boolean
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutVariantInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemCreateNestedManyWithoutVariantInput
+  orderItems?: Prisma.OrderItemCreateNestedManyWithoutVariantInput
+  personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutVariantInput
+  product: Prisma.ProductCreateNestedOneWithoutVariantsInput
+  purchaseBatches?: Prisma.PurchaseBatchCreateNestedManyWithoutVariantInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineCreateNestedManyWithoutVariantInput
+}
+
+export type VariantUncheckedCreateWithoutInventoryAdjustmentsInput = {
+  id?: string
+  sku: string
+  size?: string | null
+  color: string
+  imageUrl: string
+  salePrice?: number | null
+  minPrice?: number | null
+  comparePrice?: number | null
+  costPrice?: number | null
+  totalCost?: number | null
+  taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  stock?: number
+  stockCommitted?: number
+  reorderPoint?: number | null
+  isActive?: boolean
+  productId: string
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutVariantInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemUncheckedCreateNestedManyWithoutVariantInput
+  orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutVariantInput
+  personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutVariantInput
+  purchaseBatches?: Prisma.PurchaseBatchUncheckedCreateNestedManyWithoutVariantInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineUncheckedCreateNestedManyWithoutVariantInput
+}
+
+export type VariantCreateOrConnectWithoutInventoryAdjustmentsInput = {
+  where: Prisma.VariantWhereUniqueInput
+  create: Prisma.XOR<Prisma.VariantCreateWithoutInventoryAdjustmentsInput, Prisma.VariantUncheckedCreateWithoutInventoryAdjustmentsInput>
+}
+
+export type VariantUpsertWithoutInventoryAdjustmentsInput = {
+  update: Prisma.XOR<Prisma.VariantUpdateWithoutInventoryAdjustmentsInput, Prisma.VariantUncheckedUpdateWithoutInventoryAdjustmentsInput>
+  create: Prisma.XOR<Prisma.VariantCreateWithoutInventoryAdjustmentsInput, Prisma.VariantUncheckedCreateWithoutInventoryAdjustmentsInput>
+  where?: Prisma.VariantWhereInput
+}
+
+export type VariantUpdateToOneWithWhereWithoutInventoryAdjustmentsInput = {
+  where?: Prisma.VariantWhereInput
+  data: Prisma.XOR<Prisma.VariantUpdateWithoutInventoryAdjustmentsInput, Prisma.VariantUncheckedUpdateWithoutInventoryAdjustmentsInput>
+}
+
+export type VariantUpdateWithoutInventoryAdjustmentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sku?: Prisma.StringFieldUpdateOperationsInput | string
+  size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  color?: Prisma.StringFieldUpdateOperationsInput | string
+  imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  salePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  minPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  comparePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  costPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  totalCost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  stock?: Prisma.IntFieldUpdateOperationsInput | number
+  stockCommitted?: Prisma.IntFieldUpdateOperationsInput | number
+  reorderPoint?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutVariantNestedInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemUpdateManyWithoutVariantNestedInput
+  orderItems?: Prisma.OrderItemUpdateManyWithoutVariantNestedInput
+  personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutVariantNestedInput
+  product?: Prisma.ProductUpdateOneRequiredWithoutVariantsNestedInput
+  purchaseBatches?: Prisma.PurchaseBatchUpdateManyWithoutVariantNestedInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineUpdateManyWithoutVariantNestedInput
+}
+
+export type VariantUncheckedUpdateWithoutInventoryAdjustmentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sku?: Prisma.StringFieldUpdateOperationsInput | string
+  size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  color?: Prisma.StringFieldUpdateOperationsInput | string
+  imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  salePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  minPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  comparePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  costPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  totalCost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  stock?: Prisma.IntFieldUpdateOperationsInput | number
+  stockCommitted?: Prisma.IntFieldUpdateOperationsInput | number
+  reorderPoint?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  productId?: Prisma.StringFieldUpdateOperationsInput | string
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutVariantNestedInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemUncheckedUpdateManyWithoutVariantNestedInput
+  orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutVariantNestedInput
+  personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutVariantNestedInput
+  purchaseBatches?: Prisma.PurchaseBatchUncheckedUpdateManyWithoutVariantNestedInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineUncheckedUpdateManyWithoutVariantNestedInput
+}
+
+export type VariantCreateWithoutInventoryMovementsInput = {
+  id?: string
+  sku: string
+  size?: string | null
+  color: string
+  imageUrl: string
+  salePrice?: number | null
+  minPrice?: number | null
+  comparePrice?: number | null
+  costPrice?: number | null
+  totalCost?: number | null
+  taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  stock?: number
+  stockCommitted?: number
+  reorderPoint?: number | null
+  isActive?: boolean
+  inventoryAdjustments?: Prisma.InventoryAdjustmentCreateNestedManyWithoutVariantInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemCreateNestedManyWithoutVariantInput
+  orderItems?: Prisma.OrderItemCreateNestedManyWithoutVariantInput
+  personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutVariantInput
+  product: Prisma.ProductCreateNestedOneWithoutVariantsInput
+  purchaseBatches?: Prisma.PurchaseBatchCreateNestedManyWithoutVariantInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineCreateNestedManyWithoutVariantInput
+}
+
+export type VariantUncheckedCreateWithoutInventoryMovementsInput = {
+  id?: string
+  sku: string
+  size?: string | null
+  color: string
+  imageUrl: string
+  salePrice?: number | null
+  minPrice?: number | null
+  comparePrice?: number | null
+  costPrice?: number | null
+  totalCost?: number | null
+  taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  stock?: number
+  stockCommitted?: number
+  reorderPoint?: number | null
+  isActive?: boolean
+  productId: string
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedCreateNestedManyWithoutVariantInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemUncheckedCreateNestedManyWithoutVariantInput
+  orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutVariantInput
+  personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutVariantInput
+  purchaseBatches?: Prisma.PurchaseBatchUncheckedCreateNestedManyWithoutVariantInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineUncheckedCreateNestedManyWithoutVariantInput
+}
+
+export type VariantCreateOrConnectWithoutInventoryMovementsInput = {
+  where: Prisma.VariantWhereUniqueInput
+  create: Prisma.XOR<Prisma.VariantCreateWithoutInventoryMovementsInput, Prisma.VariantUncheckedCreateWithoutInventoryMovementsInput>
+}
+
+export type VariantUpsertWithoutInventoryMovementsInput = {
+  update: Prisma.XOR<Prisma.VariantUpdateWithoutInventoryMovementsInput, Prisma.VariantUncheckedUpdateWithoutInventoryMovementsInput>
+  create: Prisma.XOR<Prisma.VariantCreateWithoutInventoryMovementsInput, Prisma.VariantUncheckedCreateWithoutInventoryMovementsInput>
+  where?: Prisma.VariantWhereInput
+}
+
+export type VariantUpdateToOneWithWhereWithoutInventoryMovementsInput = {
+  where?: Prisma.VariantWhereInput
+  data: Prisma.XOR<Prisma.VariantUpdateWithoutInventoryMovementsInput, Prisma.VariantUncheckedUpdateWithoutInventoryMovementsInput>
+}
+
+export type VariantUpdateWithoutInventoryMovementsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sku?: Prisma.StringFieldUpdateOperationsInput | string
+  size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  color?: Prisma.StringFieldUpdateOperationsInput | string
+  imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  salePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  minPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  comparePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  costPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  totalCost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  stock?: Prisma.IntFieldUpdateOperationsInput | number
+  stockCommitted?: Prisma.IntFieldUpdateOperationsInput | number
+  reorderPoint?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUpdateManyWithoutVariantNestedInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemUpdateManyWithoutVariantNestedInput
+  orderItems?: Prisma.OrderItemUpdateManyWithoutVariantNestedInput
+  personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutVariantNestedInput
+  product?: Prisma.ProductUpdateOneRequiredWithoutVariantsNestedInput
+  purchaseBatches?: Prisma.PurchaseBatchUpdateManyWithoutVariantNestedInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineUpdateManyWithoutVariantNestedInput
+}
+
+export type VariantUncheckedUpdateWithoutInventoryMovementsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sku?: Prisma.StringFieldUpdateOperationsInput | string
+  size?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  color?: Prisma.StringFieldUpdateOperationsInput | string
+  imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  salePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  minPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  comparePrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  costPrice?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  totalCost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  stock?: Prisma.IntFieldUpdateOperationsInput | number
+  stockCommitted?: Prisma.IntFieldUpdateOperationsInput | number
+  reorderPoint?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  productId?: Prisma.StringFieldUpdateOperationsInput | string
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedUpdateManyWithoutVariantNestedInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemUncheckedUpdateManyWithoutVariantNestedInput
+  orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutVariantNestedInput
+  personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutVariantNestedInput
+  purchaseBatches?: Prisma.PurchaseBatchUncheckedUpdateManyWithoutVariantNestedInput
+  purchaseBatchLines?: Prisma.PurchaseBatchLineUncheckedUpdateManyWithoutVariantNestedInput
 }
 
 export type VariantCreateManyProductInput = {
@@ -1225,6 +1798,8 @@ export type VariantCreateManyProductInput = {
   totalCost?: number | null
   taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: number
+  stockCommitted?: number
+  reorderPoint?: number | null
   isActive?: boolean
 }
 
@@ -1241,7 +1816,12 @@ export type VariantUpdateWithoutProductInput = {
   totalCost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
+  stockCommitted?: Prisma.IntFieldUpdateOperationsInput | number
+  reorderPoint?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUpdateManyWithoutVariantNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutVariantNestedInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemUpdateManyWithoutVariantNestedInput
   orderItems?: Prisma.OrderItemUpdateManyWithoutVariantNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutVariantNestedInput
   purchaseBatches?: Prisma.PurchaseBatchUpdateManyWithoutVariantNestedInput
@@ -1261,7 +1841,12 @@ export type VariantUncheckedUpdateWithoutProductInput = {
   totalCost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
+  stockCommitted?: Prisma.IntFieldUpdateOperationsInput | number
+  reorderPoint?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedUpdateManyWithoutVariantNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutVariantNestedInput
+  b2BQuoteItems?: Prisma.B2BQuoteItemUncheckedUpdateManyWithoutVariantNestedInput
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutVariantNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutVariantNestedInput
   purchaseBatches?: Prisma.PurchaseBatchUncheckedUpdateManyWithoutVariantNestedInput
@@ -1281,6 +1866,8 @@ export type VariantUncheckedUpdateManyWithoutProductInput = {
   totalCost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   stock?: Prisma.IntFieldUpdateOperationsInput | number
+  stockCommitted?: Prisma.IntFieldUpdateOperationsInput | number
+  reorderPoint?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
@@ -1290,6 +1877,9 @@ export type VariantUncheckedUpdateManyWithoutProductInput = {
  */
 
 export type VariantCountOutputType = {
+  inventoryAdjustments: number
+  inventoryMovements: number
+  b2BQuoteItems: number
   orderItems: number
   personalizationRequests: number
   purchaseBatches: number
@@ -1297,6 +1887,9 @@ export type VariantCountOutputType = {
 }
 
 export type VariantCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  inventoryAdjustments?: boolean | VariantCountOutputTypeCountInventoryAdjustmentsArgs
+  inventoryMovements?: boolean | VariantCountOutputTypeCountInventoryMovementsArgs
+  b2BQuoteItems?: boolean | VariantCountOutputTypeCountB2BQuoteItemsArgs
   orderItems?: boolean | VariantCountOutputTypeCountOrderItemsArgs
   personalizationRequests?: boolean | VariantCountOutputTypeCountPersonalizationRequestsArgs
   purchaseBatches?: boolean | VariantCountOutputTypeCountPurchaseBatchesArgs
@@ -1311,6 +1904,27 @@ export type VariantCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Exte
    * Select specific fields to fetch from the VariantCountOutputType
    */
   select?: Prisma.VariantCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * VariantCountOutputType without action
+ */
+export type VariantCountOutputTypeCountInventoryAdjustmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.InventoryAdjustmentWhereInput
+}
+
+/**
+ * VariantCountOutputType without action
+ */
+export type VariantCountOutputTypeCountInventoryMovementsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.InventoryMovementWhereInput
+}
+
+/**
+ * VariantCountOutputType without action
+ */
+export type VariantCountOutputTypeCountB2BQuoteItemsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.B2BQuoteItemWhereInput
 }
 
 /**
@@ -1355,8 +1969,13 @@ export type VariantSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   totalCost?: boolean
   taxRate?: boolean
   stock?: boolean
+  stockCommitted?: boolean
+  reorderPoint?: boolean
   isActive?: boolean
   productId?: boolean
+  inventoryAdjustments?: boolean | Prisma.Variant$inventoryAdjustmentsArgs<ExtArgs>
+  inventoryMovements?: boolean | Prisma.Variant$inventoryMovementsArgs<ExtArgs>
+  b2BQuoteItems?: boolean | Prisma.Variant$b2BQuoteItemsArgs<ExtArgs>
   orderItems?: boolean | Prisma.Variant$orderItemsArgs<ExtArgs>
   personalizationRequests?: boolean | Prisma.Variant$personalizationRequestsArgs<ExtArgs>
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
@@ -1378,6 +1997,8 @@ export type VariantSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   totalCost?: boolean
   taxRate?: boolean
   stock?: boolean
+  stockCommitted?: boolean
+  reorderPoint?: boolean
   isActive?: boolean
   productId?: boolean
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
@@ -1396,6 +2017,8 @@ export type VariantSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   totalCost?: boolean
   taxRate?: boolean
   stock?: boolean
+  stockCommitted?: boolean
+  reorderPoint?: boolean
   isActive?: boolean
   productId?: boolean
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
@@ -1414,12 +2037,17 @@ export type VariantSelectScalar = {
   totalCost?: boolean
   taxRate?: boolean
   stock?: boolean
+  stockCommitted?: boolean
+  reorderPoint?: boolean
   isActive?: boolean
   productId?: boolean
 }
 
-export type VariantOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sku" | "size" | "color" | "imageUrl" | "salePrice" | "minPrice" | "comparePrice" | "costPrice" | "totalCost" | "taxRate" | "stock" | "isActive" | "productId", ExtArgs["result"]["variant"]>
+export type VariantOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sku" | "size" | "color" | "imageUrl" | "salePrice" | "minPrice" | "comparePrice" | "costPrice" | "totalCost" | "taxRate" | "stock" | "stockCommitted" | "reorderPoint" | "isActive" | "productId", ExtArgs["result"]["variant"]>
 export type VariantInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  inventoryAdjustments?: boolean | Prisma.Variant$inventoryAdjustmentsArgs<ExtArgs>
+  inventoryMovements?: boolean | Prisma.Variant$inventoryMovementsArgs<ExtArgs>
+  b2BQuoteItems?: boolean | Prisma.Variant$b2BQuoteItemsArgs<ExtArgs>
   orderItems?: boolean | Prisma.Variant$orderItemsArgs<ExtArgs>
   personalizationRequests?: boolean | Prisma.Variant$personalizationRequestsArgs<ExtArgs>
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
@@ -1437,6 +2065,9 @@ export type VariantIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
 export type $VariantPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Variant"
   objects: {
+    inventoryAdjustments: Prisma.$InventoryAdjustmentPayload<ExtArgs>[]
+    inventoryMovements: Prisma.$InventoryMovementPayload<ExtArgs>[]
+    b2BQuoteItems: Prisma.$B2BQuoteItemPayload<ExtArgs>[]
     orderItems: Prisma.$OrderItemPayload<ExtArgs>[]
     personalizationRequests: Prisma.$PersonalizationRequestPayload<ExtArgs>[]
     product: Prisma.$ProductPayload<ExtArgs>
@@ -1456,6 +2087,8 @@ export type $VariantPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     totalCost: number | null
     taxRate: runtime.Decimal
     stock: number
+    stockCommitted: number
+    reorderPoint: number | null
     isActive: boolean
     productId: string
   }, ExtArgs["result"]["variant"]>
@@ -1852,6 +2485,9 @@ readonly fields: VariantFieldRefs;
  */
 export interface Prisma__VariantClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  inventoryAdjustments<T extends Prisma.Variant$inventoryAdjustmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Variant$inventoryAdjustmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$InventoryAdjustmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  inventoryMovements<T extends Prisma.Variant$inventoryMovementsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Variant$inventoryMovementsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$InventoryMovementPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  b2BQuoteItems<T extends Prisma.Variant$b2BQuoteItemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Variant$b2BQuoteItemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$B2BQuoteItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   orderItems<T extends Prisma.Variant$orderItemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Variant$orderItemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrderItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   personalizationRequests<T extends Prisma.Variant$personalizationRequestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Variant$personalizationRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PersonalizationRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   product<T extends Prisma.ProductDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProductDefaultArgs<ExtArgs>>): Prisma.Prisma__ProductClient<runtime.Types.Result.GetResult<Prisma.$ProductPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
@@ -1898,6 +2534,8 @@ export interface VariantFieldRefs {
   readonly totalCost: Prisma.FieldRef<"Variant", 'Float'>
   readonly taxRate: Prisma.FieldRef<"Variant", 'Decimal'>
   readonly stock: Prisma.FieldRef<"Variant", 'Int'>
+  readonly stockCommitted: Prisma.FieldRef<"Variant", 'Int'>
+  readonly reorderPoint: Prisma.FieldRef<"Variant", 'Int'>
   readonly isActive: Prisma.FieldRef<"Variant", 'Boolean'>
   readonly productId: Prisma.FieldRef<"Variant", 'String'>
 }
@@ -2293,6 +2931,78 @@ export type VariantDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
    * Limit how many Variants to delete.
    */
   limit?: number
+}
+
+/**
+ * Variant.inventoryAdjustments
+ */
+export type Variant$inventoryAdjustmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the InventoryAdjustment
+   */
+  select?: Prisma.InventoryAdjustmentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the InventoryAdjustment
+   */
+  omit?: Prisma.InventoryAdjustmentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InventoryAdjustmentInclude<ExtArgs> | null
+  where?: Prisma.InventoryAdjustmentWhereInput
+  orderBy?: Prisma.InventoryAdjustmentOrderByWithRelationInput | Prisma.InventoryAdjustmentOrderByWithRelationInput[]
+  cursor?: Prisma.InventoryAdjustmentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.InventoryAdjustmentScalarFieldEnum | Prisma.InventoryAdjustmentScalarFieldEnum[]
+}
+
+/**
+ * Variant.inventoryMovements
+ */
+export type Variant$inventoryMovementsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the InventoryMovement
+   */
+  select?: Prisma.InventoryMovementSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the InventoryMovement
+   */
+  omit?: Prisma.InventoryMovementOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InventoryMovementInclude<ExtArgs> | null
+  where?: Prisma.InventoryMovementWhereInput
+  orderBy?: Prisma.InventoryMovementOrderByWithRelationInput | Prisma.InventoryMovementOrderByWithRelationInput[]
+  cursor?: Prisma.InventoryMovementWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.InventoryMovementScalarFieldEnum | Prisma.InventoryMovementScalarFieldEnum[]
+}
+
+/**
+ * Variant.b2BQuoteItems
+ */
+export type Variant$b2BQuoteItemsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the B2BQuoteItem
+   */
+  select?: Prisma.B2BQuoteItemSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the B2BQuoteItem
+   */
+  omit?: Prisma.B2BQuoteItemOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.B2BQuoteItemInclude<ExtArgs> | null
+  where?: Prisma.B2BQuoteItemWhereInput
+  orderBy?: Prisma.B2BQuoteItemOrderByWithRelationInput | Prisma.B2BQuoteItemOrderByWithRelationInput[]
+  cursor?: Prisma.B2BQuoteItemWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.B2BQuoteItemScalarFieldEnum | Prisma.B2BQuoteItemScalarFieldEnum[]
 }
 
 /**

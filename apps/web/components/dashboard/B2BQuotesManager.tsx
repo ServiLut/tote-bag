@@ -38,14 +38,68 @@ interface B2BQuote {
   logoUrl?: string;
   paymentReceiptUrl?: string | null;
   createdAt: string;
+  reservationStatus?: 'NONE' | 'ACTIVE' | 'RELEASED' | 'EXPIRED';
+  expiresAt?: string | null;
+  items?: B2BQuoteItem[];
 }
+
+interface B2BQuoteItem {
+  id: string;
+  productId: string;
+  variantId?: string | null;
+  quantity: number;
+  itemType?: 'STANDARD_STOCK' | 'MANUAL_EXTERNAL_PRODUCTION';
+  manualSize?: string | null;
+  manualSpecs?: Record<string, unknown> | null;
+  externalUnitCost?: number | null;
+  agreedUnitPrice?: number | null;
+  reservedQuantity?: number;
+  reservationExpiresAt?: string | null;
+}
+
+interface ProductVariant {
+  id: string;
+  sku: string;
+  size?: string | null;
+  color: string;
+  stock: number;
+  stockCommitted?: number;
+  stockAvailable?: number;
+  isActive?: boolean;
+}
+
+interface ProductOption {
+  id: string;
+  name: string;
+  variants?: ProductVariant[] | null;
+}
+
+const INITIAL_MANUAL_QUOTE_FORM = {
+  businessName: '',
+  contactPhone: '',
+  quantity: '50',
+  department: '',
+  municipality: '',
+  neighborhood: '',
+  address: '',
+  qrData: '',
+  productId: '',
+  manualSize: '',
+  manualSpecs: '',
+  externalUnitCost: '',
+  agreedUnitPrice: '',
+};
 
 export default function B2BQuotesManager() {
   const [quotes, setQuotes] = useState<B2BQuote[]>([]);
+  const [products, setProducts] = useState<ProductOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [manualQuoteForm, setManualQuoteForm] = useState(INITIAL_MANUAL_QUOTE_FORM);
+  const [manualQuoteSubmitting, setManualQuoteSubmitting] = useState(false);
+  const [manualQuoteError, setManualQuoteError] = useState<string | null>(null);
   const { role, accessToken } = useDashboardAuth();
 
   // Filters & Pagination State
@@ -58,6 +112,11 @@ export default function B2BQuotesManager() {
   const supabase = createClient();
 
   const isReadOnly = isDashboardReadOnlyRole(role);
+
+  const selectedManualProduct = useMemo(
+    () => products.find((product) => product.id === manualQuoteForm.productId),
+    [manualQuoteForm.productId, products],
+  );
 
   const loadQuotes = useCallback(async (options?: { silent?: boolean }) => {
     const silent = options?.silent ?? false;
@@ -116,8 +175,37 @@ export default function B2BQuotesManager() {
     }
   }, [accessToken, supabase.auth]);
 
+  const loadProducts = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token ?? accessToken;
+      if (!token) {
+        setProducts([]);
+        return;
+      }
+
+      const res = await apiFetch('/catalog/admin/products', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        setProducts([]);
+        return;
+      }
+
+      const responseBody: ApiResponse<ProductOption[]> = await res.json();
+      setProducts(responseBody.data ?? []);
+    } catch (err) {
+      console.error('Error fetching products for manual B2B quote:', err);
+      setProducts([]);
+    }
+  }, [accessToken, supabase.auth]);
+
   useEffect(() => {
     void loadQuotes();
+    void loadProducts();
 
     const {
       data: { subscription },
@@ -130,13 +218,14 @@ export default function B2BQuotesManager() {
         }
 
         void loadQuotes();
+        void loadProducts();
       },
     );
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [accessToken, loadQuotes, supabase.auth]);
+  }, [accessToken, loadProducts, loadQuotes, supabase.auth]);
 
   useEffect(() => {
     const triggerReload = () => {
@@ -250,10 +339,275 @@ export default function B2BQuotesManager() {
     setExpandedRowId(expandedRowId === id ? null : id);
   };
 
+  const handleManualQuoteChange = (
+    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) => {
+    const { name, value } = event.target;
+    setManualQuoteForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleCreateManualQuote = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setManualQuoteError(null);
+
+    const quantity = Number(manualQuoteForm.quantity);
+    const externalUnitCost = Number(manualQuoteForm.externalUnitCost);
+    const agreedUnitPrice = Number(manualQuoteForm.agreedUnitPrice);
+
+    if (!manualQuoteForm.productId) {
+      setManualQuoteError('Selecciona un producto base.');
+      return;
+    }
+
+    if (!Number.isFinite(quantity) || quantity < 50) {
+      setManualQuoteError('La cantidad minima B2B es 50.');
+      return;
+    }
+
+    if (
+      !Number.isFinite(externalUnitCost) ||
+      externalUnitCost < 0 ||
+      !Number.isFinite(agreedUnitPrice) ||
+      agreedUnitPrice < 0
+    ) {
+      setManualQuoteError('Costo externo y precio acordado deben ser numeros validos.');
+      return;
+    }
+
+    setManualQuoteSubmitting(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token ?? accessToken;
+      if (!token) {
+        setManualQuoteError('Tu sesion expiro. Inicia sesion de nuevo.');
+        return;
+      }
+
+      const manualSpecs = manualQuoteForm.manualSpecs.trim()
+        ? { notes: manualQuoteForm.manualSpecs.trim() }
+        : undefined;
+
+      const res = await apiFetch('/b2b/quotes/manual', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          businessName: manualQuoteForm.businessName,
+          contactPhone: manualQuoteForm.contactPhone,
+          quantity,
+          department: manualQuoteForm.department,
+          municipality: manualQuoteForm.municipality,
+          neighborhood: manualQuoteForm.neighborhood,
+          address: manualQuoteForm.address,
+          qrType: 'WHATSAPP',
+          qrData: manualQuoteForm.qrData || manualQuoteForm.contactPhone,
+          package: quantity >= 100 ? 'Evento' : 'Empresa',
+          size: manualQuoteForm.manualSize,
+          items: [
+            {
+              productId: manualQuoteForm.productId,
+              quantity,
+              itemType: 'MANUAL_EXTERNAL_PRODUCTION',
+              manualSize: manualQuoteForm.manualSize,
+              manualSpecs,
+              externalUnitCost,
+              agreedUnitPrice,
+              reserveStock: false,
+            },
+          ],
+        }),
+      });
+
+      if (!res.ok) {
+        const detail = await res.text();
+        throw new Error(`No fue posible crear la cotizacion manual (${res.status}). ${detail}`);
+      }
+
+      setManualQuoteForm(INITIAL_MANUAL_QUOTE_FORM);
+      await loadQuotes({ silent: true });
+    } catch (err) {
+      console.error('Error creating manual B2B quote:', err);
+      setManualQuoteError(
+        err instanceof Error ? err.message : 'No fue posible crear la cotizacion manual.',
+      );
+    } finally {
+      setManualQuoteSubmitting(false);
+    }
+  };
+
   if (loading) return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-muted w-8 h-8" /></div>;
 
   return (
     <div className="space-y-6">
+      {!isReadOnly ? (
+        <form
+          onSubmit={handleCreateManualQuote}
+          className="space-y-4 bg-surface p-4 rounded-2xl border border-theme shadow-sm"
+        >
+          <div className="flex flex-col gap-1">
+            <h3 className="text-sm font-black uppercase tracking-widest text-primary">
+              Cotizacion manual
+            </h3>
+            <p className="text-xs font-medium text-muted">
+              Registra medidas especiales sin crear variantes nuevas en catalogo.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+            <input
+              name="businessName"
+              value={manualQuoteForm.businessName}
+              onChange={handleManualQuoteChange}
+              required
+              placeholder="Empresa"
+              className="w-full px-3 py-2.5 text-sm border border-theme rounded-xl bg-surface text-primary outline-none focus:ring-2 focus:ring-primary/20"
+            />
+            <input
+              name="contactPhone"
+              value={manualQuoteForm.contactPhone}
+              onChange={handleManualQuoteChange}
+              required
+              placeholder="Telefono"
+              className="w-full px-3 py-2.5 text-sm border border-theme rounded-xl bg-surface text-primary outline-none focus:ring-2 focus:ring-primary/20"
+            />
+            <input
+              name="quantity"
+              type="number"
+              min={50}
+              value={manualQuoteForm.quantity}
+              onChange={handleManualQuoteChange}
+              required
+              placeholder="Cantidad"
+              className="w-full px-3 py-2.5 text-sm border border-theme rounded-xl bg-surface text-primary outline-none focus:ring-2 focus:ring-primary/20"
+            />
+            <select
+              name="productId"
+              value={manualQuoteForm.productId}
+              onChange={handleManualQuoteChange}
+              required
+              className="w-full px-3 py-2.5 text-sm border border-theme rounded-xl bg-surface text-primary outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="">Producto base</option>
+              {products.map((product) => (
+                <option key={product.id} value={product.id}>
+                  {product.name}
+                </option>
+              ))}
+            </select>
+            <input
+              name="department"
+              value={manualQuoteForm.department}
+              onChange={handleManualQuoteChange}
+              required
+              placeholder="Departamento"
+              className="w-full px-3 py-2.5 text-sm border border-theme rounded-xl bg-surface text-primary outline-none focus:ring-2 focus:ring-primary/20"
+            />
+            <input
+              name="municipality"
+              value={manualQuoteForm.municipality}
+              onChange={handleManualQuoteChange}
+              required
+              placeholder="Municipio"
+              className="w-full px-3 py-2.5 text-sm border border-theme rounded-xl bg-surface text-primary outline-none focus:ring-2 focus:ring-primary/20"
+            />
+            <input
+              name="neighborhood"
+              value={manualQuoteForm.neighborhood}
+              onChange={handleManualQuoteChange}
+              required
+              placeholder="Barrio"
+              className="w-full px-3 py-2.5 text-sm border border-theme rounded-xl bg-surface text-primary outline-none focus:ring-2 focus:ring-primary/20"
+            />
+            <input
+              name="address"
+              value={manualQuoteForm.address}
+              onChange={handleManualQuoteChange}
+              required
+              placeholder="Direccion"
+              className="w-full px-3 py-2.5 text-sm border border-theme rounded-xl bg-surface text-primary outline-none focus:ring-2 focus:ring-primary/20"
+            />
+            <input
+              name="manualSize"
+              value={manualQuoteForm.manualSize}
+              onChange={handleManualQuoteChange}
+              required
+              placeholder="Medida especial"
+              className="w-full px-3 py-2.5 text-sm border border-theme rounded-xl bg-surface text-primary outline-none focus:ring-2 focus:ring-primary/20"
+            />
+            <input
+              name="externalUnitCost"
+              type="number"
+              min={0}
+              value={manualQuoteForm.externalUnitCost}
+              onChange={handleManualQuoteChange}
+              required
+              placeholder="Costo externo unitario"
+              className="w-full px-3 py-2.5 text-sm border border-theme rounded-xl bg-surface text-primary outline-none focus:ring-2 focus:ring-primary/20"
+            />
+            <input
+              name="agreedUnitPrice"
+              type="number"
+              min={0}
+              value={manualQuoteForm.agreedUnitPrice}
+              onChange={handleManualQuoteChange}
+              required
+              placeholder="Precio acordado unitario"
+              className="w-full px-3 py-2.5 text-sm border border-theme rounded-xl bg-surface text-primary outline-none focus:ring-2 focus:ring-primary/20"
+            />
+            <input
+              name="qrData"
+              value={manualQuoteForm.qrData}
+              onChange={handleManualQuoteChange}
+              placeholder="WhatsApp o QR"
+              className="w-full px-3 py-2.5 text-sm border border-theme rounded-xl bg-surface text-primary outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+
+          <textarea
+            name="manualSpecs"
+            value={manualQuoteForm.manualSpecs}
+            onChange={handleManualQuoteChange}
+            placeholder="Especificaciones de produccion externa"
+            rows={3}
+            className="w-full px-3 py-2.5 text-sm border border-theme rounded-xl bg-surface text-primary outline-none focus:ring-2 focus:ring-primary/20"
+          />
+
+          {selectedManualProduct ? (
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted">
+              Producto base: {selectedManualProduct.name}. No se creara una variante
+              permanente.
+            </p>
+          ) : null}
+
+          {manualQuoteError ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+              {manualQuoteError}
+            </div>
+          ) : null}
+
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={manualQuoteSubmitting}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-base-color rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {manualQuoteSubmitting ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Briefcase className="w-4 h-4" />
+              )}
+              Crear cotizacion manual
+            </button>
+          </div>
+        </form>
+      ) : null}
+
       {/* Filters Bar */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-surface p-4 rounded-2xl border border-theme shadow-sm">
         <div className="relative w-full sm:w-72">
@@ -482,6 +836,60 @@ export default function B2BQuotesManager() {
                               />
                             </div>
 
+                            {quote.items && quote.items.length > 0 ? (
+                              <div className="md:col-span-4 space-y-3">
+                                <h4 className="text-[10px] font-black text-muted uppercase tracking-[0.2em] flex items-center gap-2">
+                                  <Briefcase className="w-3.5 h-3.5" /> Items cotizados
+                                </h4>
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                                  {quote.items.map((item) => (
+                                    <div
+                                      key={item.id}
+                                      className="rounded-2xl border border-theme bg-surface p-4 text-xs shadow-sm"
+                                    >
+                                      <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                          <p className="font-black uppercase tracking-widest text-primary">
+                                            {item.itemType === 'MANUAL_EXTERNAL_PRODUCTION'
+                                              ? 'Produccion externa'
+                                              : 'Stock estandar'}
+                                          </p>
+                                          <p className="mt-1 font-semibold text-muted">
+                                            Cantidad: {item.quantity}
+                                          </p>
+                                        </div>
+                                        {item.reservedQuantity ? (
+                                          <span className="rounded-md border border-secondary/20 bg-secondary/10 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-secondary">
+                                            Reservado: {item.reservedQuantity}
+                                          </span>
+                                        ) : null}
+                                      </div>
+                                      {item.manualSize ? (
+                                        <p className="mt-3 font-semibold text-primary">
+                                          Medida: {item.manualSize}
+                                        </p>
+                                      ) : null}
+                                      {typeof item.externalUnitCost === 'number' ? (
+                                        <p className="mt-2 text-muted">
+                                          Costo externo: ${item.externalUnitCost.toLocaleString('es-CO')}
+                                        </p>
+                                      ) : null}
+                                      {typeof item.agreedUnitPrice === 'number' ? (
+                                        <p className="mt-1 text-muted">
+                                          Precio acordado: ${item.agreedUnitPrice.toLocaleString('es-CO')}
+                                        </p>
+                                      ) : null}
+                                      {item.manualSpecs?.notes ? (
+                                        <p className="mt-3 rounded-xl bg-base p-3 font-medium text-muted">
+                                          {String(item.manualSpecs.notes)}
+                                        </p>
+                                      ) : null}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : null}
+
                           </div>
                         </td>
                       </tr>
@@ -519,4 +927,3 @@ export default function B2BQuotesManager() {
     </div>
   );
 }
-
