@@ -97,6 +97,10 @@ export class CreatePurchaseBatchDto {
   @IsString()
   purchaseDate?: string;
 
+  @IsOptional()
+  @IsString()
+  supportUrl?: string;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => PurchaseBatchItemDto)

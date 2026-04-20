@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma, Product } from '../../generated/client/client';
 import {
   BatchStatus,
+  PurchaseDocumentType,
   PurchaseBatchItemType,
   TransactionType,
   TransactionCategory,
@@ -101,6 +102,28 @@ export class InventoryService {
   private sanitizeOptionalText(value?: string | null) {
     const trimmed = value?.trim();
     return trimmed ? trimmed : null;
+  }
+
+  private resolveRequiredSupportUrl(data: CreatePurchaseBatchDto) {
+    const supportUrl = this.sanitizeOptionalText(data.supportUrl);
+
+    if (!supportUrl) {
+      throw new BadRequestException(
+        'Debes adjuntar soporte PDF/JPG del proveedor para registrar la recepcion.',
+      );
+    }
+
+    return supportUrl;
+  }
+
+  private resolveRequiredDocumentType(data: CreatePurchaseBatchDto) {
+    if (!data.documentType) {
+      throw new BadRequestException(
+        'Debes indicar si el soporte del proveedor es factura o remision.',
+      );
+    }
+
+    return data.documentType as PurchaseDocumentType;
   }
 
   private resolveLineItemType(item: PurchaseBatchItemDto) {
@@ -371,6 +394,8 @@ export class InventoryService {
     return this.prisma.$transaction(async (tx) => {
       const quantity = data.quantityReceived || 0;
       const productId = data.productId || '';
+      const supportUrl = this.resolveRequiredSupportUrl(data);
+      const documentType = this.resolveRequiredDocumentType(data);
 
       if (!quantity || !productId || !data.variantId) {
         throw new BadRequestException(
@@ -411,6 +436,8 @@ export class InventoryService {
           unitCost: unitCostNumber,
           totalCost: totalCostNumber,
           status: statusValue,
+          documentType,
+          supportUrl,
           createdAt: data.purchaseDate
             ? new Date(data.purchaseDate)
             : new Date(),
@@ -480,7 +507,8 @@ export class InventoryService {
             totalCost: totalCostNumber,
             landedTotalCost: totalCostNumber,
             landedUnitCost: unitCostNumber,
-            documentType: data.documentType ?? null,
+            documentType,
+            supportUrl,
             status: data.status,
           },
         },
@@ -492,6 +520,9 @@ export class InventoryService {
 
   async createPurchaseBatch(data: CreatePurchaseBatchDto & { userId: string }) {
     return this.prisma.$transaction(async (tx) => {
+      const supportUrl = this.resolveRequiredSupportUrl(data);
+      const documentType = this.resolveRequiredDocumentType(data);
+
       if (!data.items.length) {
         throw new BadRequestException(
           'Debes registrar al menos una linea en el lote',
@@ -549,6 +580,8 @@ export class InventoryService {
           unitCost: 0,
           totalCost: 0,
           status: statusValue,
+          documentType,
+          supportUrl,
           createdAt: data.purchaseDate
             ? new Date(data.purchaseDate)
             : new Date(),
@@ -698,7 +731,8 @@ export class InventoryService {
             freightCost: decimalToNumber(freightCost),
             totalCost: decimalToNumber(recalculatedTotalCost),
             landedTotalCost: decimalToNumber(recalculatedTotalCost),
-            documentType: data.documentType ?? null,
+            documentType,
+            supportUrl,
             status: data.status,
           },
         },
@@ -828,9 +862,18 @@ export class InventoryService {
     quantityReceived: number;
     unitCost: number;
     purchaseDate: Date;
+    documentType?: PurchaseDocumentType;
+    supportUrl?: string;
     userId: string;
   }) {
     return this.prisma.$transaction(async (tx) => {
+      const supportUrl = this.sanitizeOptionalText(data.supportUrl);
+      if (!supportUrl) {
+        throw new BadRequestException(
+          'Debes adjuntar soporte PDF/JPG del proveedor para registrar la recepcion.',
+        );
+      }
+
       const variant = await tx.variant.findUnique({
         where: { id: data.variantId },
         select: { id: true, productId: true },
@@ -857,6 +900,8 @@ export class InventoryService {
           unitCost: unitCostNumber,
           totalCost: totalCostNumber,
           status: BatchStatus.IN_STOCK,
+          documentType: data.documentType ?? PurchaseDocumentType.INVOICE,
+          supportUrl,
           createdAt: data.purchaseDate,
         },
         include: {
@@ -919,6 +964,8 @@ export class InventoryService {
             invoiceUnitCost: decimalToNumber(unitCost),
             landedUnitCost: unitCostNumber,
             landedTotalCost: totalCostNumber,
+            documentType: data.documentType ?? PurchaseDocumentType.INVOICE,
+            supportUrl,
           },
         },
       });

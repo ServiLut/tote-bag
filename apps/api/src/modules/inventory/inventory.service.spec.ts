@@ -166,6 +166,8 @@ describe('InventoryService', () => {
       status: 'RECIBIDO',
       purchaseDate: '2026-03-25',
       userId: 'admin-1',
+      documentType: 'INVOICE',
+      supportUrl: 'private://support-documents/purchase-batches/test.pdf',
       items: [
         {
           nombre: 'Tela base',
@@ -210,6 +212,8 @@ describe('InventoryService', () => {
         status: 'RECIBIDO',
         purchaseDate: '2026-03-25',
         userId: 'admin-1',
+        documentType: 'INVOICE',
+        supportUrl: 'private://support-documents/purchase-batches/test.pdf',
         items: [],
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
@@ -232,6 +236,8 @@ describe('InventoryService', () => {
       status: 'RECIBIDO',
       purchaseDate: '2026-04-14',
       userId: 'admin-1',
+      documentType: 'INVOICE',
+      supportUrl: 'private://support-documents/purchase-batches/test.pdf',
       items: [
         {
           itemType: 'VARIANT',
@@ -278,6 +284,8 @@ describe('InventoryService', () => {
       status: 'RECIBIDO',
       purchaseDate: '2026-04-14',
       userId: 'admin-1',
+      documentType: 'DELIVERY_NOTE',
+      supportUrl: 'private://support-documents/purchase-batches/test.jpg',
       items: [
         {
           itemType: 'SUPPLY',
@@ -318,6 +326,8 @@ describe('InventoryService', () => {
       status: 'RECIBIDO',
       purchaseDate: '2026-04-14',
       userId: 'admin-1',
+      documentType: 'INVOICE',
+      supportUrl: 'private://support-documents/purchase-batches/test.pdf',
       items: [
         {
           itemType: 'TOOL',
@@ -351,6 +361,8 @@ describe('InventoryService', () => {
       status: 'RECIBIDO',
       purchaseDate: '2026-04-14',
       userId: 'admin-1',
+      documentType: 'DELIVERY_NOTE',
+      supportUrl: 'private://support-documents/purchase-batches/test.jpg',
       items: [
         {
           itemType: 'OTHER',
@@ -398,6 +410,8 @@ describe('InventoryService', () => {
       status: 'RECIBIDO',
       purchaseDate: '2026-04-14',
       userId: 'admin-1',
+      documentType: 'INVOICE',
+      supportUrl: 'private://support-documents/purchase-batches/test.pdf',
       items: [
         {
           itemType: 'VARIANT',
@@ -724,6 +738,8 @@ describe('InventoryService', () => {
       status: 'RECIBIDO',
       purchaseDate: '2026-04-14',
       userId: 'admin-1',
+      documentType: 'INVOICE',
+      supportUrl: 'private://support-documents/purchase-batches/test.pdf',
       items: [
         {
           itemType: 'TOOL',

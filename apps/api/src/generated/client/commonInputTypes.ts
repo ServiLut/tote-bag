@@ -674,6 +674,13 @@ export type EnumBatchStatusFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumBatchStatusFilter<$PrismaModel> | $Enums.BatchStatus
 }
 
+export type EnumPurchaseDocumentTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.PurchaseDocumentType | Prisma.EnumPurchaseDocumentTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.PurchaseDocumentType[] | Prisma.ListEnumPurchaseDocumentTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.PurchaseDocumentType[] | Prisma.ListEnumPurchaseDocumentTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumPurchaseDocumentTypeFilter<$PrismaModel> | $Enums.PurchaseDocumentType
+}
+
 export type EnumBatchStatusWithAggregatesFilter<$PrismaModel = never> = {
   equals?: $Enums.BatchStatus | Prisma.EnumBatchStatusFieldRefInput<$PrismaModel>
   in?: $Enums.BatchStatus[] | Prisma.ListEnumBatchStatusFieldRefInput<$PrismaModel>
@@ -682,6 +689,16 @@ export type EnumBatchStatusWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumBatchStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumBatchStatusFilter<$PrismaModel>
+}
+
+export type EnumPurchaseDocumentTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.PurchaseDocumentType | Prisma.EnumPurchaseDocumentTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.PurchaseDocumentType[] | Prisma.ListEnumPurchaseDocumentTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.PurchaseDocumentType[] | Prisma.ListEnumPurchaseDocumentTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumPurchaseDocumentTypeWithAggregatesFilter<$PrismaModel> | $Enums.PurchaseDocumentType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumPurchaseDocumentTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumPurchaseDocumentTypeFilter<$PrismaModel>
 }
 
 export type EnumPurchaseBatchItemTypeFilter<$PrismaModel = never> = {
@@ -701,28 +718,11 @@ export type EnumPurchaseBatchItemTypeWithAggregatesFilter<$PrismaModel = never> 
   _max?: Prisma.NestedEnumPurchaseBatchItemTypeFilter<$PrismaModel>
 }
 
-export type EnumPurchaseDocumentTypeFilter<$PrismaModel = never> = {
-  equals?: $Enums.PurchaseDocumentType | Prisma.EnumPurchaseDocumentTypeFieldRefInput<$PrismaModel>
-  in?: $Enums.PurchaseDocumentType[] | Prisma.ListEnumPurchaseDocumentTypeFieldRefInput<$PrismaModel>
-  notIn?: $Enums.PurchaseDocumentType[] | Prisma.ListEnumPurchaseDocumentTypeFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumPurchaseDocumentTypeFilter<$PrismaModel> | $Enums.PurchaseDocumentType
-}
-
 export type EnumPurchaseInvoiceStatusFilter<$PrismaModel = never> = {
   equals?: $Enums.PurchaseInvoiceStatus | Prisma.EnumPurchaseInvoiceStatusFieldRefInput<$PrismaModel>
   in?: $Enums.PurchaseInvoiceStatus[] | Prisma.ListEnumPurchaseInvoiceStatusFieldRefInput<$PrismaModel>
   notIn?: $Enums.PurchaseInvoiceStatus[] | Prisma.ListEnumPurchaseInvoiceStatusFieldRefInput<$PrismaModel>
   not?: Prisma.NestedEnumPurchaseInvoiceStatusFilter<$PrismaModel> | $Enums.PurchaseInvoiceStatus
-}
-
-export type EnumPurchaseDocumentTypeWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.PurchaseDocumentType | Prisma.EnumPurchaseDocumentTypeFieldRefInput<$PrismaModel>
-  in?: $Enums.PurchaseDocumentType[] | Prisma.ListEnumPurchaseDocumentTypeFieldRefInput<$PrismaModel>
-  notIn?: $Enums.PurchaseDocumentType[] | Prisma.ListEnumPurchaseDocumentTypeFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumPurchaseDocumentTypeWithAggregatesFilter<$PrismaModel> | $Enums.PurchaseDocumentType
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumPurchaseDocumentTypeFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumPurchaseDocumentTypeFilter<$PrismaModel>
 }
 
 export type EnumPurchaseInvoiceStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -1451,6 +1451,13 @@ export type NestedEnumBatchStatusFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumBatchStatusFilter<$PrismaModel> | $Enums.BatchStatus
 }
 
+export type NestedEnumPurchaseDocumentTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.PurchaseDocumentType | Prisma.EnumPurchaseDocumentTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.PurchaseDocumentType[] | Prisma.ListEnumPurchaseDocumentTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.PurchaseDocumentType[] | Prisma.ListEnumPurchaseDocumentTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumPurchaseDocumentTypeFilter<$PrismaModel> | $Enums.PurchaseDocumentType
+}
+
 export type NestedEnumBatchStatusWithAggregatesFilter<$PrismaModel = never> = {
   equals?: $Enums.BatchStatus | Prisma.EnumBatchStatusFieldRefInput<$PrismaModel>
   in?: $Enums.BatchStatus[] | Prisma.ListEnumBatchStatusFieldRefInput<$PrismaModel>
@@ -1459,6 +1466,16 @@ export type NestedEnumBatchStatusWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumBatchStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumBatchStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumPurchaseDocumentTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.PurchaseDocumentType | Prisma.EnumPurchaseDocumentTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.PurchaseDocumentType[] | Prisma.ListEnumPurchaseDocumentTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.PurchaseDocumentType[] | Prisma.ListEnumPurchaseDocumentTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumPurchaseDocumentTypeWithAggregatesFilter<$PrismaModel> | $Enums.PurchaseDocumentType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumPurchaseDocumentTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumPurchaseDocumentTypeFilter<$PrismaModel>
 }
 
 export type NestedEnumPurchaseBatchItemTypeFilter<$PrismaModel = never> = {
@@ -1478,28 +1495,11 @@ export type NestedEnumPurchaseBatchItemTypeWithAggregatesFilter<$PrismaModel = n
   _max?: Prisma.NestedEnumPurchaseBatchItemTypeFilter<$PrismaModel>
 }
 
-export type NestedEnumPurchaseDocumentTypeFilter<$PrismaModel = never> = {
-  equals?: $Enums.PurchaseDocumentType | Prisma.EnumPurchaseDocumentTypeFieldRefInput<$PrismaModel>
-  in?: $Enums.PurchaseDocumentType[] | Prisma.ListEnumPurchaseDocumentTypeFieldRefInput<$PrismaModel>
-  notIn?: $Enums.PurchaseDocumentType[] | Prisma.ListEnumPurchaseDocumentTypeFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumPurchaseDocumentTypeFilter<$PrismaModel> | $Enums.PurchaseDocumentType
-}
-
 export type NestedEnumPurchaseInvoiceStatusFilter<$PrismaModel = never> = {
   equals?: $Enums.PurchaseInvoiceStatus | Prisma.EnumPurchaseInvoiceStatusFieldRefInput<$PrismaModel>
   in?: $Enums.PurchaseInvoiceStatus[] | Prisma.ListEnumPurchaseInvoiceStatusFieldRefInput<$PrismaModel>
   notIn?: $Enums.PurchaseInvoiceStatus[] | Prisma.ListEnumPurchaseInvoiceStatusFieldRefInput<$PrismaModel>
   not?: Prisma.NestedEnumPurchaseInvoiceStatusFilter<$PrismaModel> | $Enums.PurchaseInvoiceStatus
-}
-
-export type NestedEnumPurchaseDocumentTypeWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.PurchaseDocumentType | Prisma.EnumPurchaseDocumentTypeFieldRefInput<$PrismaModel>
-  in?: $Enums.PurchaseDocumentType[] | Prisma.ListEnumPurchaseDocumentTypeFieldRefInput<$PrismaModel>
-  notIn?: $Enums.PurchaseDocumentType[] | Prisma.ListEnumPurchaseDocumentTypeFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumPurchaseDocumentTypeWithAggregatesFilter<$PrismaModel> | $Enums.PurchaseDocumentType
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumPurchaseDocumentTypeFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumPurchaseDocumentTypeFilter<$PrismaModel>
 }
 
 export type NestedEnumPurchaseInvoiceStatusWithAggregatesFilter<$PrismaModel = never> = {

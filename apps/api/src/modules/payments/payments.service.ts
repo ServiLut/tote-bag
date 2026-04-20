@@ -184,7 +184,10 @@ export class PaymentsService {
     } else if (entityType === 'batch') {
       updatedEntity = await this.prisma.purchaseBatch.update({
         where: { id: entityId },
-        data: { paymentReceiptUrl: uploaded.storageRef },
+        data: {
+          supportUrl: uploaded.storageRef,
+          paymentReceiptUrl: uploaded.storageRef,
+        },
       });
     } else if (entityType === 'purchase-invoice') {
       updatedEntity = await this.prisma.purchaseInvoice.update({
@@ -260,9 +263,9 @@ export class PaymentsService {
     if (entityType === 'batch') {
       const batch = await this.prisma.purchaseBatch.findFirst({
         where: { id: entityId, deletedAt: null },
-        select: { paymentReceiptUrl: true },
+        select: { supportUrl: true, paymentReceiptUrl: true },
       });
-      return batch?.paymentReceiptUrl ?? null;
+      return batch?.supportUrl ?? batch?.paymentReceiptUrl ?? null;
     }
 
     const invoice = await this.prisma.purchaseInvoice.findFirst({

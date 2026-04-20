@@ -670,6 +670,8 @@ export const PurchaseBatchScalarFieldEnum = {
   unitCost: 'unitCost',
   totalCost: 'totalCost',
   status: 'status',
+  documentType: 'documentType',
+  supportUrl: 'supportUrl',
   paymentReceiptUrl: 'paymentReceiptUrl',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',

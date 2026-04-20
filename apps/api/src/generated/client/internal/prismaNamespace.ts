@@ -4373,6 +4373,8 @@ export const PurchaseBatchScalarFieldEnum = {
   unitCost: 'unitCost',
   totalCost: 'totalCost',
   status: 'status',
+  documentType: 'documentType',
+  supportUrl: 'supportUrl',
   paymentReceiptUrl: 'paymentReceiptUrl',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
@@ -4933,20 +4935,6 @@ export type ListEnumBatchStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$
 
 
 /**
- * Reference to a field of type 'PurchaseBatchItemType'
- */
-export type EnumPurchaseBatchItemTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PurchaseBatchItemType'>
-    
-
-
-/**
- * Reference to a field of type 'PurchaseBatchItemType[]'
- */
-export type ListEnumPurchaseBatchItemTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PurchaseBatchItemType[]'>
-    
-
-
-/**
  * Reference to a field of type 'PurchaseDocumentType'
  */
 export type EnumPurchaseDocumentTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PurchaseDocumentType'>
@@ -4957,6 +4945,20 @@ export type EnumPurchaseDocumentTypeFieldRefInput<$PrismaModel> = FieldRefInputT
  * Reference to a field of type 'PurchaseDocumentType[]'
  */
 export type ListEnumPurchaseDocumentTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PurchaseDocumentType[]'>
+    
+
+
+/**
+ * Reference to a field of type 'PurchaseBatchItemType'
+ */
+export type EnumPurchaseBatchItemTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PurchaseBatchItemType'>
+    
+
+
+/**
+ * Reference to a field of type 'PurchaseBatchItemType[]'
+ */
+export type ListEnumPurchaseBatchItemTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PurchaseBatchItemType[]'>
     
 
 

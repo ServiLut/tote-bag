@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   ForbiddenException,
   Get,
@@ -12,8 +13,12 @@ import {
   Param,
   ParseUUIDPipe,
   UnauthorizedException,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Role } from '../../generated/client/client';
+import { PurchaseDocumentType } from '../../generated/client/enums';
 import { InventoryService } from './inventory.service';
 import { FinanceService } from './finance.service';
 import {
@@ -29,6 +34,7 @@ import {
   UpdateSupplierDto,
 } from './dto/finance-inputs.dto';
 import { RolesService } from '../roles/roles.service';
+import { StorageService } from '../../common/storage/storage.service';
 
 interface RequestWithUser {
   user?: { id: string };
@@ -52,6 +58,7 @@ export class InventoryController {
     private readonly inventoryService: InventoryService,
     private readonly financeService: FinanceService,
     private readonly rolesService: RolesService,
+    private readonly storageService: StorageService,
   ) {}
 
   private async ensureAdmin(userId?: string) {
@@ -80,6 +87,44 @@ export class InventoryController {
         'Solo los usuarios ADMIN o GERENTE pueden aprobar cambios criticos de inventario',
       );
     }
+  }
+
+  private assertPurchaseSupportFile(file?: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException(
+        'Debes adjuntar soporte PDF/JPG del proveedor para registrar la recepcion.',
+      );
+    }
+
+    const allowedMimeTypes = new Set(['application/pdf', 'image/jpeg']);
+    if (!allowedMimeTypes.has(file.mimetype)) {
+      throw new BadRequestException(
+        'El soporte del proveedor debe ser PDF o JPG.',
+      );
+    }
+  }
+
+  private parsePurchaseBatchPayload(body: Record<string, unknown>) {
+    if (typeof body.payload === 'string') {
+      try {
+        return JSON.parse(body.payload) as CreatePurchaseBatchDto;
+      } catch {
+        throw new BadRequestException('Payload de recepcion invalido.');
+      }
+    }
+
+    return body as unknown as CreatePurchaseBatchDto;
+  }
+
+  private async uploadPurchaseSupport(file: Express.Multer.File) {
+    const normalizedName = file.originalname.replace(/\s+/g, '-');
+    const uploaded = await this.storageService.uploadPrivateFile(
+      'support-documents',
+      `purchase-batches/${Date.now()}-${normalizedName}`,
+      file,
+    );
+
+    return uploaded.storageRef;
   }
 
   @Get('detailed')
@@ -113,6 +158,7 @@ export class InventoryController {
   @Post('batch')
   @Header('Deprecation', 'true')
   @Header('Sunset', 'Tue, 30 Jun 2026 23:59:59 GMT')
+  @UseInterceptors(FileInterceptor('support'))
   async createBatch(
     @Body()
     body: {
@@ -122,13 +168,24 @@ export class InventoryController {
       quantityReceived: number;
       unitCost: number;
       purchaseDate: string;
+      documentType?: string;
+      supportUrl?: string;
     },
+    @UploadedFile() supportFile: Express.Multer.File | undefined,
     @Request() req: RequestWithUser,
   ) {
     await this.ensureAdmin(req.user?.id);
+    if (supportFile) {
+      this.assertPurchaseSupportFile(supportFile);
+    }
+    const supportUrl =
+      body.supportUrl ||
+      (supportFile ? await this.uploadPurchaseSupport(supportFile) : undefined);
     return this.inventoryService.createBatch({
       ...body,
       purchaseDate: new Date(body.purchaseDate),
+      supportUrl,
+      documentType: body.documentType as PurchaseDocumentType | undefined,
       userId: req.user!.id,
     });
   }
@@ -136,13 +193,23 @@ export class InventoryController {
   @Post('receive-batch')
   @Header('Deprecation', 'true')
   @Header('Sunset', 'Tue, 30 Jun 2026 23:59:59 GMT')
+  @UseInterceptors(FileInterceptor('support'))
   async receiveBatch(
-    @Body() data: CreatePurchaseBatchDto,
+    @Body() body: CreatePurchaseBatchDto & Record<string, unknown>,
+    @UploadedFile() supportFile: Express.Multer.File | undefined,
     @Request() req: RequestWithUser,
   ) {
     await this.ensureAdmin(req.user?.id);
+    if (supportFile) {
+      this.assertPurchaseSupportFile(supportFile);
+    }
+    const data = this.parsePurchaseBatchPayload(body);
+    const supportUrl =
+      data.supportUrl ||
+      (supportFile ? await this.uploadPurchaseSupport(supportFile) : undefined);
     return this.inventoryService.receiveBatch({
       ...data,
+      supportUrl,
       userId: req.user!.id,
     });
   }
@@ -155,6 +222,25 @@ export class InventoryController {
     await this.ensureAdmin(req.user?.id);
     return this.inventoryService.createPurchaseBatch({
       ...data,
+      userId: req.user!.id,
+    });
+  }
+
+  @Post('batches/with-support')
+  @UseInterceptors(FileInterceptor('support'))
+  async createPurchaseBatchWithSupport(
+    @Body() body: Record<string, unknown>,
+    @UploadedFile() supportFile: Express.Multer.File | undefined,
+    @Request() req: RequestWithUser,
+  ) {
+    await this.ensureAdmin(req.user?.id);
+    this.assertPurchaseSupportFile(supportFile);
+    const data = this.parsePurchaseBatchPayload(body);
+    const supportUrl = await this.uploadPurchaseSupport(supportFile!);
+
+    return this.inventoryService.createPurchaseBatch({
+      ...data,
+      supportUrl,
       userId: req.user!.id,
     });
   }

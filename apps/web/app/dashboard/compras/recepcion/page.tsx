@@ -7,6 +7,7 @@ import {
   ChevronDown,
   Database,
   Loader2,
+  Paperclip,
   Package,
   Plus,
   Search,
@@ -107,6 +108,9 @@ interface PurchaseBatch {
   unitCost: number;
   totalCost: number;
   status: string;
+  documentType?: PurchaseDocumentType | null;
+  supportUrl?: string | null;
+  paymentReceiptUrl?: string | null;
   createdAt: string;
   product?: { name: string } | null;
   variant?: ReceivableVariant | null;
@@ -159,6 +163,11 @@ const STATUS_LABELS: Record<string, string> = {
   IN_STOCK: 'Recibido',
   PENDING: 'Pendiente',
   DEPLETED: 'Agotado',
+};
+
+const DOCUMENT_TYPE_LABELS: Record<PurchaseDocumentType, string> = {
+  INVOICE: 'Factura',
+  DELIVERY_NOTE: 'Remision',
 };
 
 const UNIT_OPTIONS = ['und', 'kg', 'g', 'm', 'cm', 'lt', 'ml', 'caja', 'rollo'];
@@ -274,6 +283,8 @@ export default function BatchReceptionPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSupplyModalOpen, setIsSupplyModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [supportFile, setSupportFile] = useState<File | null>(null);
+  const [openingSupportId, setOpeningSupportId] = useState<string | null>(null);
   const [creatingSupply, setCreatingSupply] = useState(false);
   const [creatingSupplyForLine, setCreatingSupplyForLine] = useState<
     string | null
@@ -638,6 +649,7 @@ export default function BatchReceptionPage() {
     setIsModalOpen(false);
     setError(null);
     setFormData(createEmptyForm());
+    setSupportFile(null);
   }, [submitting]);
 
   const validateForm = useCallback(() => {
@@ -647,6 +659,17 @@ export default function BatchReceptionPage() {
 
     if (!formData.purchaseDate) {
       return 'Selecciona la fecha de recepcion.';
+    }
+
+    if (!supportFile) {
+      return 'Adjunta el soporte PDF/JPG del proveedor.';
+    }
+
+    if (
+      supportFile.type !== 'application/pdf' &&
+      supportFile.type !== 'image/jpeg'
+    ) {
+      return 'El soporte del proveedor debe ser PDF o JPG.';
     }
 
     if (formData.lines.length === 0) {
@@ -697,7 +720,7 @@ export default function BatchReceptionPage() {
     }
 
     return null;
-  }, [formData, subtotal]);
+  }, [formData, subtotal, supportFile]);
 
   const handleSubmit = useCallback(
     async (event: React.FormEvent) => {
@@ -745,13 +768,14 @@ export default function BatchReceptionPage() {
           }),
         };
 
-        const res = await apiFetch('/inventory/batches', {
+        const requestBody = new FormData();
+        requestBody.append('payload', JSON.stringify(payload));
+        requestBody.append('support', supportFile!);
+
+        const res = await apiFetch('/inventory/batches/with-support', {
           method: 'POST',
-          headers: {
-            ...authHeaders,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
+          headers: authHeaders,
+          body: requestBody,
         });
 
         if (!res.ok) {
@@ -766,6 +790,7 @@ export default function BatchReceptionPage() {
 
         setIsModalOpen(false);
         setFormData(createEmptyForm());
+        setSupportFile(null);
         await fetchData();
         notifyFinanceDataChanged();
       } catch (err) {
@@ -784,10 +809,62 @@ export default function BatchReceptionPage() {
       formData,
       getAuthHeaders,
       resolveApiErrorMessage,
+      supportFile,
       subtotal,
       validateForm,
       variantById,
     ],
+  );
+
+  const openBatchSupport = useCallback(
+    async (batch: PurchaseBatch) => {
+      setOpeningSupportId(batch.id);
+      setError(null);
+
+      try {
+        const authHeaders = await getAuthHeaders();
+        const response = await apiFetch(
+          `/payments/supports/batch/${batch.id}/signed-url`,
+          { headers: authHeaders },
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            await resolveApiErrorMessage(
+              response,
+              'No fue posible abrir el soporte.',
+              { redirectOnUnauthorized: true },
+            ),
+          );
+        }
+
+        const body: unknown = await response.json();
+        const signedUrl =
+          isRecord(body) && typeof body.signedUrl === 'string'
+            ? body.signedUrl
+            : isRecord(body) &&
+                isRecord(body.data) &&
+                typeof body.data.signedUrl === 'string'
+              ? body.data.signedUrl
+              : null;
+
+        if (!signedUrl) {
+          throw new Error('La API no retorno una URL firmada valida.');
+        }
+
+        window.open(signedUrl, '_blank', 'noopener,noreferrer');
+      } catch (err) {
+        console.error('Error opening batch support:', err);
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'No fue posible abrir el soporte.',
+        );
+      } finally {
+        setOpeningSupportId(null);
+      }
+    },
+    [getAuthHeaders, resolveApiErrorMessage],
   );
 
   const handleCreateSupply = useCallback(
@@ -1111,6 +1188,7 @@ export default function BatchReceptionPage() {
           type="button"
           onClick={() => {
             setFormData(createEmptyForm());
+            setSupportFile(null);
             setError(null);
             setIsModalOpen(true);
           }}
@@ -1251,6 +1329,11 @@ export default function BatchReceptionPage() {
                           <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-primary">
                             {STATUS_LABELS[batch.status] || batch.status}
                           </span>
+                          <span className="inline-flex items-center rounded-full bg-base px-3 py-1 text-[10px] font-black uppercase tracking-wider text-muted">
+                            {DOCUMENT_TYPE_LABELS[
+                              batch.documentType || 'INVOICE'
+                            ] || 'Factura'}
+                          </span>
                         </div>
                         <p className="mt-1 text-xs font-bold text-muted">
                           {new Date(batch.createdAt).toLocaleDateString(
@@ -1263,6 +1346,21 @@ export default function BatchReceptionPage() {
                     </button>
 
                     <div className="flex flex-wrap items-center gap-4 lg:justify-end">
+                      {(batch.supportUrl || batch.paymentReceiptUrl) && (
+                        <Button
+                          type="button"
+                          disabled={openingSupportId === batch.id}
+                          onClick={() => void openBatchSupport(batch)}
+                          className="inline-flex items-center gap-2 rounded-xl border border-theme bg-base px-4 py-2 text-xs font-black uppercase tracking-widest text-primary transition-colors hover:bg-primary/5 disabled:opacity-60"
+                        >
+                          {openingSupportId === batch.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Paperclip className="h-4 w-4" />
+                          )}
+                          Soporte
+                        </Button>
+                      )}
                       <div className="text-left lg:text-right">
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted">
                           Total
@@ -1450,6 +1548,32 @@ export default function BatchReceptionPage() {
                   </Select>
                 </label>
               </div>
+
+              <label className="block rounded-xl border border-dashed border-theme bg-base/40 p-4">
+                <span className="mb-1 flex items-center gap-2 text-sm font-medium text-primary">
+                  <Paperclip className="h-4 w-4" />
+                  Soporte del proveedor
+                </span>
+                <input
+                  type="file"
+                  accept="application/pdf,image/jpeg,.pdf,.jpg,.jpeg"
+                  disabled={submitting}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0] ?? null;
+                    setSupportFile(file);
+                  }}
+                  className="mt-2 block w-full text-sm font-bold text-primary file:mr-4 file:rounded-lg file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-black file:text-base-color disabled:opacity-60"
+                />
+                <p className="mt-2 text-xs font-medium text-muted">
+                  Obligatorio para ingresar stock o abastecimiento. Se almacena
+                  como soporte privado ligado al lote.
+                </p>
+                {supportFile ? (
+                  <p className="mt-1 text-xs font-black text-primary">
+                    {supportFile.name}
+                  </p>
+                ) : null}
+              </label>
 
               <div className="space-y-3">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

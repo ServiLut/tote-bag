@@ -647,10 +647,6 @@ export type PurchaseInvoiceUncheckedUpdateManyWithoutPurchaseBatchNestedInput = 
   deleteMany?: Prisma.PurchaseInvoiceScalarWhereInput | Prisma.PurchaseInvoiceScalarWhereInput[]
 }
 
-export type EnumPurchaseDocumentTypeFieldUpdateOperationsInput = {
-  set?: $Enums.PurchaseDocumentType
-}
-
 export type EnumPurchaseInvoiceStatusFieldUpdateOperationsInput = {
   set?: $Enums.PurchaseInvoiceStatus
 }

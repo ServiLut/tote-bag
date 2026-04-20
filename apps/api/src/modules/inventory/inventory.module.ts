@@ -6,9 +6,10 @@ import { ReportingService } from './reporting.service';
 import { InventoryController } from './inventory.controller';
 import { ReportingController } from './reporting.controller';
 import { PrismaModule } from '../../prisma/prisma.module';
+import { StorageModule } from '../../common/storage/storage.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, StorageModule],
   controllers: [InventoryController, ReportingController, FinanceController],
   providers: [InventoryService, FinanceService, ReportingService],
   exports: [InventoryService, FinanceService, ReportingService],
