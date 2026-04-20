@@ -80,6 +80,21 @@ export class PaymentsController {
     );
   }
 
+  @Get('supports/:entityType/:entityId/signed-url')
+  async getSupportSignedUrl(
+    @Param('entityType')
+    entityType: 'order' | 'b2b' | 'batch' | 'purchase-invoice',
+    @Param('entityId') entityId: string,
+    @Request() req: RequestWithUser,
+  ) {
+    if (!req.user?.id) {
+      throw new ForbiddenException('User not authenticated');
+    }
+
+    await this.ensureSupportReadPermission(req.user.id, entityType);
+    return this.paymentsService.getSupportSignedUrl(entityId, entityType);
+  }
+
   private async ensureUploadPermission(
     userId: string,
     entityType: 'order' | 'b2b' | 'batch' | 'purchase-invoice',
@@ -136,5 +151,18 @@ export class PaymentsController {
         'Solo los usuarios ADMIN pueden subir comprobantes de lotes.',
       );
     }
+  }
+
+  private async ensureSupportReadPermission(
+    userId: string,
+    entityType: 'order' | 'b2b' | 'batch' | 'purchase-invoice',
+  ) {
+    const { effectiveRole } = await this.rolesService.getEffectiveRole(userId);
+
+    if (effectiveRole === Role.MANAGER) {
+      return;
+    }
+
+    return this.ensureUploadPermission(userId, entityType);
   }
 }

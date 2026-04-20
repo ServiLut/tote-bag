@@ -154,6 +154,10 @@ describe('PurchasesService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.$transaction.mockImplementation(
+      (callback: (client: typeof prisma) => Promise<unknown>) =>
+        callback(prisma),
+    );
     service = new PurchasesService(prisma as unknown as PrismaService);
   });
 
@@ -283,21 +287,24 @@ describe('PurchasesService', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
 
     expect(prisma.purchaseInvoice.delete).not.toHaveBeenCalled();
+    expect(prisma.purchaseInvoice.update).not.toHaveBeenCalled();
   });
 
-  it('deletes invoices without payments', async () => {
+  it('soft-deletes invoices without payments', async () => {
     prisma.purchaseInvoice.findUnique.mockResolvedValue({
       id: 'invoice-1',
       _count: {
         payments: 0,
       },
     });
-    prisma.purchaseInvoice.delete.mockResolvedValue({ id: 'invoice-1' });
+    prisma.purchaseInvoice.update.mockResolvedValue({ id: 'invoice-1' });
 
     await service.deletePurchaseInvoice('invoice-1');
 
-    expect(prisma.purchaseInvoice.delete).toHaveBeenCalledWith({
+    expect(prisma.purchaseInvoice.delete).not.toHaveBeenCalled();
+    expect(prisma.purchaseInvoice.update).toHaveBeenCalledWith({
       where: { id: 'invoice-1' },
+      data: { deletedAt: expect.any(Date) as unknown },
     });
   });
 

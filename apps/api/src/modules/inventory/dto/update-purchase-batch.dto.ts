@@ -27,4 +27,12 @@ export class UpdatePurchaseBatchDto {
   @IsOptional()
   @IsString()
   purchaseDate?: string;
+
+  @IsOptional()
+  @IsString()
+  managerApprovalId?: string;
+
+  @IsOptional()
+  @IsString()
+  managerApprovalReason?: string;
 }

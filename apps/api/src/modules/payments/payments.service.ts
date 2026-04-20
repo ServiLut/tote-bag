@@ -17,6 +17,7 @@ import {
   Order,
   B2BQuote,
   PurchaseBatch,
+  PurchaseInvoice,
   Prisma,
 } from '../../generated/client/client';
 import { ShippingSyncService } from '../shipping/shipping-sync.service';
@@ -25,6 +26,8 @@ import { WompiEvent } from './interfaces/wompi-event.interface';
 
 @Injectable()
 export class PaymentsService {
+  private readonly supportDocumentsBucket = 'support-documents';
+
   constructor(
     private configService: ConfigService,
     private prisma: PrismaService,
@@ -151,37 +154,123 @@ export class PaymentsService {
     file: Express.Multer.File,
   ) {
     const fileName = `receipts/${entityType}/${entityId}-${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`;
-    const url = await this.storageService.uploadFile(
-      'payment-receipts',
+    const uploaded = await this.storageService.uploadPrivateFile(
+      this.supportDocumentsBucket,
       fileName,
       file,
     );
+    const signedUrl = await this.storageService.createSignedReadUrl(
+      uploaded.bucket,
+      uploaded.path,
+    );
 
-    let updatedEntity: Order | B2BQuote | PurchaseBatch | undefined;
+    let updatedEntity:
+      | Order
+      | B2BQuote
+      | PurchaseBatch
+      | PurchaseInvoice
+      | undefined;
 
     if (entityType === 'order') {
       updatedEntity = await this.prisma.order.update({
         where: { id: entityId },
-        data: { paymentReceiptUrl: url },
+        data: { paymentReceiptUrl: uploaded.storageRef },
       });
     } else if (entityType === 'b2b') {
       updatedEntity = await this.prisma.b2BQuote.update({
         where: { id: entityId },
-        data: { paymentReceiptUrl: url },
+        data: { paymentReceiptUrl: uploaded.storageRef },
       });
     } else if (entityType === 'batch') {
       updatedEntity = await this.prisma.purchaseBatch.update({
         where: { id: entityId },
-        data: { paymentReceiptUrl: url },
+        data: { paymentReceiptUrl: uploaded.storageRef },
       });
     } else if (entityType === 'purchase-invoice') {
-      await this.prisma.purchaseInvoice.findUniqueOrThrow({
+      updatedEntity = await this.prisma.purchaseInvoice.update({
         where: { id: entityId },
-        select: { id: true },
+        data: { supportUrl: uploaded.storageRef },
       });
     }
 
-    return { success: true, url, updatedEntity };
+    return {
+      success: true,
+      storageRef: uploaded.storageRef,
+      signedUrl,
+      url: signedUrl,
+      updatedEntity,
+    };
+  }
+
+  async getSupportSignedUrl(
+    entityId: string,
+    entityType: 'order' | 'b2b' | 'batch' | 'purchase-invoice',
+  ) {
+    const storageRef = await this.getEntitySupportRef(entityId, entityType);
+
+    if (!storageRef) {
+      throw new BadRequestException('La entidad no tiene soporte asociado.');
+    }
+
+    const location = this.storageService.resolveStorageLocation(
+      storageRef,
+      storageRef.includes('/payment-receipts/')
+        ? 'payment-receipts'
+        : undefined,
+    );
+
+    if (!location) {
+      throw new BadRequestException(
+        'El soporte no tiene una ruta privada valida.',
+      );
+    }
+
+    const signedUrl = await this.storageService.createSignedReadUrl(
+      location.bucket,
+      location.path,
+    );
+
+    return {
+      storageRef,
+      signedUrl,
+      expiresInSeconds: 300,
+    };
+  }
+
+  private async getEntitySupportRef(
+    entityId: string,
+    entityType: 'order' | 'b2b' | 'batch' | 'purchase-invoice',
+  ) {
+    if (entityType === 'order') {
+      const order = await this.prisma.order.findFirst({
+        where: { id: entityId, deletedAt: null },
+        select: { paymentReceiptUrl: true },
+      });
+      return order?.paymentReceiptUrl ?? null;
+    }
+
+    if (entityType === 'b2b') {
+      const quote = await this.prisma.b2BQuote.findFirst({
+        where: { id: entityId, deletedAt: null },
+        select: { paymentReceiptUrl: true },
+      });
+      return quote?.paymentReceiptUrl ?? null;
+    }
+
+    if (entityType === 'batch') {
+      const batch = await this.prisma.purchaseBatch.findFirst({
+        where: { id: entityId, deletedAt: null },
+        select: { paymentReceiptUrl: true },
+      });
+      return batch?.paymentReceiptUrl ?? null;
+    }
+
+    const invoice = await this.prisma.purchaseInvoice.findFirst({
+      where: { id: entityId, deletedAt: null },
+      select: { supportUrl: true },
+    });
+
+    return invoice?.supportUrl ?? null;
   }
 
   async generateSignature(orderId: string) {

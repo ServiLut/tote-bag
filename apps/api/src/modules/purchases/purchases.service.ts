@@ -26,6 +26,7 @@ const purchaseInvoiceInclude = {
     },
   },
   payments: {
+    where: { deletedAt: null },
     orderBy: [{ paymentDate: 'desc' }, { createdAt: 'desc' }],
   },
 } satisfies Prisma.PurchaseInvoiceInclude;
@@ -91,22 +92,25 @@ export class PurchasesService {
       purchaseBatchId = purchaseBatch.id;
     }
 
-    return this.prisma.purchaseInvoice.create({
-      data: {
-        totalAmount,
-        paidAmount: new Prisma.Decimal(0),
-        balanceDue: totalAmount,
-        status: PurchaseInvoiceStatus.PENDING,
-        issueDate,
-        supplierId: resolvedSupplierId,
-        purchaseBatchId,
-      },
-      include: purchaseInvoiceInclude,
+    return this.prisma.$transaction(async (tx) => {
+      return tx.purchaseInvoice.create({
+        data: {
+          totalAmount,
+          paidAmount: new Prisma.Decimal(0),
+          balanceDue: totalAmount,
+          status: PurchaseInvoiceStatus.PENDING,
+          issueDate,
+          supplierId: resolvedSupplierId,
+          purchaseBatchId,
+        },
+        include: purchaseInvoiceInclude,
+      });
     });
   }
 
   async findAllPurchaseInvoices() {
     return this.prisma.purchaseInvoice.findMany({
+      where: { deletedAt: null },
       include: purchaseInvoiceInclude,
       orderBy: [{ issueDate: 'desc' }, { createdAt: 'desc' }],
     });
@@ -120,6 +124,7 @@ export class PurchasesService {
       where: { id: invoiceId },
       select: {
         id: true,
+        deletedAt: true,
         supplierId: true,
         purchaseBatchId: true,
         issueDate: true,
@@ -133,7 +138,7 @@ export class PurchasesService {
       },
     });
 
-    if (!invoice) {
+    if (!invoice || invoice.deletedAt) {
       throw new NotFoundException('Factura de compra no encontrada');
     }
 
@@ -197,16 +202,18 @@ export class PurchasesService {
       nextBalanceDue,
     );
 
-    return this.prisma.purchaseInvoice.update({
-      where: { id: invoiceId },
-      data: {
-        supplierId: nextSupplierId,
-        totalAmount: nextTotalAmount,
-        issueDate: nextIssueDate,
-        balanceDue: nextBalanceDue,
-        status: nextStatus,
-      },
-      include: purchaseInvoiceInclude,
+    return this.prisma.$transaction(async (tx) => {
+      return tx.purchaseInvoice.update({
+        where: { id: invoiceId },
+        data: {
+          supplierId: nextSupplierId,
+          totalAmount: nextTotalAmount,
+          issueDate: nextIssueDate,
+          balanceDue: nextBalanceDue,
+          status: nextStatus,
+        },
+        include: purchaseInvoiceInclude,
+      });
     });
   }
 
@@ -229,6 +236,7 @@ export class PurchasesService {
         where: { id: invoiceId },
         select: {
           id: true,
+          deletedAt: true,
           totalAmount: true,
           paidAmount: true,
           balanceDue: true,
@@ -240,7 +248,7 @@ export class PurchasesService {
         },
       });
 
-      if (!invoice) {
+      if (!invoice || invoice.deletedAt) {
         throw new NotFoundException('Factura de compra no encontrada');
       }
 
@@ -311,6 +319,7 @@ export class PurchasesService {
         where: { id: paymentId },
         select: {
           id: true,
+          deletedAt: true,
           invoiceId: true,
           amount: true,
           paymentDate: true,
@@ -318,7 +327,7 @@ export class PurchasesService {
         },
       });
 
-      if (!payment || payment.invoiceId !== invoiceId) {
+      if (!payment || payment.deletedAt || payment.invoiceId !== invoiceId) {
         throw new NotFoundException('Abono de factura no encontrado');
       }
 
@@ -326,6 +335,7 @@ export class PurchasesService {
         where: { id: invoiceId },
         select: {
           id: true,
+          deletedAt: true,
           totalAmount: true,
           _count: {
             select: {
@@ -335,13 +345,14 @@ export class PurchasesService {
         },
       });
 
-      if (!invoice) {
+      if (!invoice || invoice.deletedAt) {
         throw new NotFoundException('Factura de compra no encontrada');
       }
 
       const paymentsSummary = await tx.purchasePayment.aggregate({
         where: {
           invoiceId,
+          deletedAt: null,
           NOT: {
             id: paymentId,
           },
@@ -423,6 +434,7 @@ export class PurchasesService {
       where: { id: invoiceId },
       select: {
         id: true,
+        deletedAt: true,
         _count: {
           select: {
             payments: true,
@@ -431,7 +443,7 @@ export class PurchasesService {
       },
     });
 
-    if (!invoice) {
+    if (!invoice || invoice.deletedAt) {
       throw new NotFoundException('Factura de compra no encontrada');
     }
 
@@ -441,8 +453,9 @@ export class PurchasesService {
       );
     }
 
-    return this.prisma.purchaseInvoice.delete({
+    return this.prisma.purchaseInvoice.update({
       where: { id: invoiceId },
+      data: { deletedAt: new Date() },
     });
   }
 

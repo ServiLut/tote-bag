@@ -11,6 +11,10 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('payment-receipts', 'payment-receipts', true)
 ON CONFLICT (id) DO NOTHING;
 
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('support-documents', 'support-documents', false)
+ON CONFLICT (id) DO UPDATE SET public = false;
+
 -- 2. Política: Cualquiera puede ver las imágenes y assets (Público)
 CREATE POLICY "Public Access Images"
 ON storage.objects FOR SELECT
@@ -37,6 +41,10 @@ CREATE POLICY "Authenticated Upload Payment Receipts"
 ON storage.objects FOR INSERT
 WITH CHECK ( bucket_id = 'payment-receipts' AND auth.role() = 'authenticated' );
 
+CREATE POLICY "Authenticated Upload Support Documents"
+ON storage.objects FOR INSERT
+WITH CHECK ( bucket_id = 'support-documents' AND auth.role() = 'authenticated' );
+
 -- 4. Política: Solo usuarios autenticados pueden borrar
 CREATE POLICY "Authenticated Delete Images"
 ON storage.objects FOR DELETE
@@ -49,3 +57,7 @@ USING ( bucket_id = 'product-assets' AND auth.role() = 'authenticated' );
 CREATE POLICY "Authenticated Delete Payment Receipts"
 ON storage.objects FOR DELETE
 USING ( bucket_id = 'payment-receipts' AND auth.role() = 'authenticated' );
+
+CREATE POLICY "Authenticated Delete Support Documents"
+ON storage.objects FOR DELETE
+USING ( bucket_id = 'support-documents' AND auth.role() = 'authenticated' );

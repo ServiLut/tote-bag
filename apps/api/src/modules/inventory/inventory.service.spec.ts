@@ -32,6 +32,7 @@ describe('InventoryService', () => {
     purchaseBatchLine: {
       create: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
       findMany: jest.fn(),
       count: jest.fn(),
       aggregate: jest.fn(),
@@ -70,12 +71,21 @@ describe('InventoryService', () => {
       create: jest.fn(),
     },
   };
+  const managerApprovalsService = {
+    requireApproval: jest.fn(),
+  };
 
   let service: InventoryService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new InventoryService(prisma as never);
+    managerApprovalsService.requireApproval.mockResolvedValue({
+      id: 'approval-1',
+    });
+    service = new InventoryService(
+      prisma as never,
+      managerApprovalsService as never,
+    );
     prisma.$transaction.mockImplementation(
       (callback: (client: typeof tx) => Promise<unknown>) => callback(tx),
     );
@@ -514,6 +524,7 @@ describe('InventoryService', () => {
         quantityRemaining: { gt: 0 },
         purchaseBatch: {
           status: 'IN_STOCK',
+          deletedAt: null,
         },
       },
       include: {
@@ -652,7 +663,8 @@ describe('InventoryService', () => {
       status: 'PENDING',
       invoices: [],
     });
-    tx.purchaseBatch.delete.mockResolvedValue({});
+    tx.purchaseBatchLine.updateMany.mockResolvedValue({ count: 1 });
+    tx.purchaseBatch.update.mockResolvedValue({});
     tx.auditLog.create.mockResolvedValue({});
 
     await service.deletePurchaseBatch('batch-2', 'admin-1');
@@ -660,8 +672,14 @@ describe('InventoryService', () => {
     expect(tx.variant.update).not.toHaveBeenCalled();
     expect(tx.supplier.update).not.toHaveBeenCalled();
     expect(tx.financialTransaction.create).not.toHaveBeenCalled();
-    expect(tx.purchaseBatch.delete).toHaveBeenCalledWith({
+    expect(tx.purchaseBatch.delete).not.toHaveBeenCalled();
+    expect(tx.purchaseBatch.update).toHaveBeenCalledWith({
       where: { id: 'batch-2' },
+      data: {
+        quantityRemaining: 0,
+        status: 'CANCELLED',
+        deletedAt: expect.any(Date) as unknown,
+      },
     });
   });
 

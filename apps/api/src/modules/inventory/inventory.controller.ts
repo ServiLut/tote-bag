@@ -68,6 +68,20 @@ export class InventoryController {
     }
   }
 
+  private async ensureAdminOrManager(userId?: string) {
+    if (!userId) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    const { effectiveRole } = await this.rolesService.getEffectiveRole(userId);
+
+    if (effectiveRole !== Role.ADMIN && effectiveRole !== Role.MANAGER) {
+      throw new ForbiddenException(
+        'Solo los usuarios ADMIN o GERENTE pueden aprobar cambios criticos de inventario',
+      );
+    }
+  }
+
   @Get('detailed')
   async getDetailedInventory(@Request() req: RequestWithUser) {
     await this.ensureAdmin(req.user?.id);
@@ -178,7 +192,7 @@ export class InventoryController {
     @Body() data: UpdatePurchaseBatchDto,
     @Request() req: RequestWithUser,
   ) {
-    await this.ensureAdmin(req.user?.id);
+    await this.ensureAdminOrManager(req.user?.id);
     return this.inventoryService.updatePurchaseBatch(id, {
       ...data,
       userId: req.user!.id,

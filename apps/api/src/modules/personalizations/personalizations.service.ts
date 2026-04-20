@@ -605,6 +605,7 @@ export class PersonalizationsService {
   async findAll() {
     try {
       const options = await this.prisma.personalizationOption.findMany({
+        where: { deletedAt: null },
         orderBy: { name: 'asc' },
       });
       return options;
@@ -672,8 +673,9 @@ export class PersonalizationsService {
 
   async remove(id: string) {
     try {
-      return await this.prisma.personalizationOption.delete({
+      return await this.prisma.personalizationOption.update({
         where: { id },
+        data: { isActive: false, deletedAt: new Date() },
       });
     } catch (error) {
       if (

@@ -14,13 +14,14 @@ export class WizardService {
 
   async findAll() {
     return this.prisma.wizardOption.findMany({
+      where: { deletedAt: null },
       orderBy: [{ category: 'asc' }, { sortOrder: 'asc' }, { name: 'asc' }],
     });
   }
 
   async findAllGrouped() {
     const options = await this.prisma.wizardOption.findMany({
-      where: { isActive: true },
+      where: { isActive: true, deletedAt: null },
       orderBy: { sortOrder: 'asc' },
     });
 
@@ -92,8 +93,9 @@ export class WizardService {
 
   async remove(id: string) {
     try {
-      return await this.prisma.wizardOption.delete({
+      return await this.prisma.wizardOption.update({
         where: { id },
+        data: { isActive: false, deletedAt: new Date() },
       });
     } catch (error) {
       if (

@@ -34,6 +34,7 @@ import { PayrollModule } from './modules/payroll/payroll.module';
 import { PurchasesModule } from './modules/purchases/purchases.module';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { AuditModule } from './modules/audit/audit.module';
+import { ManagerApprovalsModule } from './modules/manager-approvals/manager-approvals.module';
 import { AuthMiddleware } from './common/middleware/auth.middleware';
 import { ThrottlerBehindProxyGuard } from './common/guards/throttler.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
@@ -104,6 +105,7 @@ import cacheConfig from './config/cache.config';
     LocationsModule,
     AddressesModule,
     AuditModule,
+    ManagerApprovalsModule,
     ConfigurationModule,
     PricingModule,
     CatalogModule,

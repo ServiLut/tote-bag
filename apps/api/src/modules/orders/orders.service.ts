@@ -743,8 +743,8 @@ export class OrdersService {
     txClient?: Prisma.TransactionClient,
   ) {
     const execute = async (tx: Prisma.TransactionClient) => {
-      const order = await tx.order.findUnique({
-        where: { id: orderId },
+      const order = await tx.order.findFirst({
+        where: { id: orderId, deletedAt: null },
         include: {
           items: {
             select: {
@@ -908,7 +908,7 @@ export class OrdersService {
     } = {},
   ) {
     const { status, source, startDate, endDate, search } = filters;
-    const where: Prisma.OrderWhereInput = {};
+    const where: Prisma.OrderWhereInput = { deletedAt: null };
 
     if (status) {
       where.status = status as OrderStatus;
@@ -982,6 +982,7 @@ export class OrdersService {
             },
           },
           payments: {
+            where: { deletedAt: null },
             select: {
               id: true,
               amount: true,
@@ -1018,10 +1019,15 @@ export class OrdersService {
         },
         profile: true,
         payments: {
+          where: { deletedAt: null },
           orderBy: [{ paymentDate: 'desc' }, { createdAt: 'desc' }],
         },
       },
     });
+
+    if (order?.deletedAt) {
+      return null;
+    }
 
     return this.serializeOrderMoney(order);
   }
@@ -1039,6 +1045,10 @@ export class OrdersService {
       },
     });
 
+    if (order?.deletedAt) {
+      return null;
+    }
+
     return this.serializeOrderMoney(order);
   }
 
@@ -1054,6 +1064,7 @@ export class OrdersService {
 
     const orders = await this.prisma.order.findMany({
       where: {
+        deletedAt: null,
         OR: [
           {
             profile: {
@@ -1084,6 +1095,7 @@ export class OrdersService {
           orderBy: { createdAt: 'desc' },
         },
         payments: {
+          where: { deletedAt: null },
           orderBy: [{ paymentDate: 'desc' }, { createdAt: 'desc' }],
         },
       },
@@ -1112,8 +1124,8 @@ export class OrdersService {
     const notes = data.notes?.trim() || null;
 
     return this.prisma.$transaction(async (tx) => {
-      const order = await tx.order.findUnique({
-        where: { id: orderId },
+      const order = await tx.order.findFirst({
+        where: { id: orderId, deletedAt: null },
         select: {
           id: true,
           status: true,
@@ -1194,6 +1206,7 @@ export class OrdersService {
             include: {
               items: true,
               payments: {
+                where: { deletedAt: null },
                 orderBy: [{ paymentDate: 'desc' }, { createdAt: 'desc' }],
               },
               statusHistory: { orderBy: { createdAt: 'desc' } },
@@ -1215,6 +1228,7 @@ export class OrdersService {
     const orders = await this.prisma.order.findMany({
       where: {
         balanceDue: { gt: 0 },
+        deletedAt: null,
         status: {
           notIn: [OrderStatus.CANCELADA, OrderStatus.RETURNED_TO_STOCK],
         },
@@ -1239,6 +1253,7 @@ export class OrdersService {
           },
         },
         payments: {
+          where: { deletedAt: null },
           select: {
             id: true,
             amount: true,
@@ -1277,8 +1292,8 @@ export class OrdersService {
 
     if (status) {
       return this.prisma.$transaction(async (tx) => {
-        const currentOrder = await tx.order.findUnique({
-          where: { id },
+        const currentOrder = await tx.order.findFirst({
+          where: { id, deletedAt: null },
           select: { status: true, balanceDue: true },
         });
 

@@ -85,9 +85,11 @@ export class CollectionsService {
       );
     }
 
-    // 3. Delete if safe
-    return this.prisma.collection.delete({
+    // 3. Keep configuration history; collections are deactivated instead of
+    // physically removed.
+    return this.prisma.collection.update({
       where: { id },
+      data: { isActive: false },
     });
   }
 }

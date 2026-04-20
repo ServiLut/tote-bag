@@ -1,6 +1,6 @@
 import { PartialType } from '@nestjs/swagger';
 import { CreateProductDto, CreateVariantDto } from './create-product.dto';
-import { IsArray, IsOptional, ValidateNested } from 'class-validator';
+import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class UpdateProductDto extends PartialType(CreateProductDto) {
@@ -9,4 +9,12 @@ export class UpdateProductDto extends PartialType(CreateProductDto) {
   @ValidateNested({ each: true })
   @Type(() => CreateVariantDto)
   variants?: CreateVariantDto[];
+
+  @IsOptional()
+  @IsString()
+  managerApprovalId?: string;
+
+  @IsOptional()
+  @IsString()
+  managerApprovalReason?: string;
 }

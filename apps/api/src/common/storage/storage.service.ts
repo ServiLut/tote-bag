@@ -70,7 +70,7 @@ export class StorageService implements OnModuleInit, OnModuleDestroy {
     path: string,
     file: Express.Multer.File,
   ): Promise<string> {
-    await this.ensureBucket(bucket);
+    await this.ensureBucket(bucket, true);
 
     const { error } = await this.supabase.storage
       .from(bucket)
@@ -93,11 +93,39 @@ export class StorageService implements OnModuleInit, OnModuleDestroy {
     return publicUrlData.publicUrl;
   }
 
+  async uploadPrivateFile(
+    bucket: string,
+    path: string,
+    file: Express.Multer.File,
+  ) {
+    await this.ensureBucket(bucket, false);
+
+    const { error } = await this.supabase.storage
+      .from(bucket)
+      .upload(path, file.buffer, {
+        contentType: file.mimetype,
+        upsert: true,
+      });
+
+    if (error) {
+      console.error('Supabase Private Upload Error:', error);
+      throw new InternalServerErrorException(
+        error.message || `Error uploading private file to ${bucket}`,
+      );
+    }
+
+    return {
+      bucket,
+      path,
+      storageRef: this.buildPrivateStorageRef(bucket, path),
+    };
+  }
+
   async createSignedUpload(
     bucket: string,
     path: string,
   ): Promise<SignedUploadPayload> {
-    await this.ensureBucket(bucket);
+    await this.ensureBucket(bucket, true);
 
     const { data, error } = await this.supabase.storage
       .from(bucket)
@@ -122,12 +150,69 @@ export class StorageService implements OnModuleInit, OnModuleDestroy {
     return data.publicUrl;
   }
 
+  async createSignedReadUrl(
+    bucket: string,
+    path: string,
+    expiresInSeconds = 300,
+  ) {
+    await this.ensureBucket(bucket, false);
+
+    const { data, error } = await this.supabase.storage
+      .from(bucket)
+      .createSignedUrl(path, expiresInSeconds);
+
+    if (error || !data?.signedUrl) {
+      console.error('Supabase Signed Read Error:', error);
+      throw new InternalServerErrorException(
+        error?.message || `Error creating signed read URL for ${bucket}`,
+      );
+    }
+
+    return data.signedUrl;
+  }
+
+  buildPrivateStorageRef(bucket: string, path: string) {
+    return `private://${bucket}/${path}`;
+  }
+
+  parsePrivateStorageRef(storageRef: string) {
+    if (!storageRef.startsWith('private://')) {
+      return null;
+    }
+
+    const withoutScheme = storageRef.slice('private://'.length);
+    const separatorIndex = withoutScheme.indexOf('/');
+
+    if (separatorIndex <= 0) {
+      return null;
+    }
+
+    return {
+      bucket: withoutScheme.slice(0, separatorIndex),
+      path: withoutScheme.slice(separatorIndex + 1),
+    };
+  }
+
+  resolveStorageLocation(storageRef: string, fallbackBucket?: string) {
+    const privateLocation = this.parsePrivateStorageRef(storageRef);
+    if (privateLocation) {
+      return privateLocation;
+    }
+
+    if (!fallbackBucket) {
+      return null;
+    }
+
+    const path = this.extractBucketRelativePath(storageRef, fallbackBucket);
+    return path ? { bucket: fallbackBucket, path } : null;
+  }
+
   async cleanupStaleCustomDesignUploads(maxAgeHours = 48) {
     const bucket = 'product-assets';
     const prefix = 'custom-designs';
     const cutoff = Date.now() - maxAgeHours * 60 * 60 * 1000;
 
-    await this.ensureBucket(bucket);
+    await this.ensureBucket(bucket, true);
 
     const referencedPaths = await this.getReferencedCustomDesignPaths();
     const stalePaths: string[] = [];
@@ -286,7 +371,7 @@ export class StorageService implements OnModuleInit, OnModuleDestroy {
     return null;
   }
 
-  private async ensureBucket(bucket: string) {
+  private async ensureBucket(bucket: string, publicAccess: boolean) {
     if (this.ensuredBuckets.has(bucket)) {
       return;
     }
@@ -304,12 +389,15 @@ export class StorageService implements OnModuleInit, OnModuleDestroy {
     const bucketExists = existingBuckets?.some(
       (existingBucket) => existingBucket.name === bucket,
     );
+    const existingBucket = existingBuckets?.find(
+      (candidate) => candidate.name === bucket,
+    );
 
     if (!bucketExists) {
       const { error: createError } = await this.supabase.storage.createBucket(
         bucket,
         {
-          public: true,
+          public: publicAccess,
         },
       );
 
@@ -320,6 +408,25 @@ export class StorageService implements OnModuleInit, OnModuleDestroy {
         console.error('Supabase Create Bucket Error:', createError);
         throw new InternalServerErrorException(
           createError.message || `Error creating storage bucket ${bucket}`,
+        );
+      }
+    } else if (
+      existingBucket &&
+      'public' in existingBucket &&
+      typeof existingBucket.public === 'boolean' &&
+      existingBucket.public !== publicAccess
+    ) {
+      const { error: updateError } = await this.supabase.storage.updateBucket(
+        bucket,
+        {
+          public: publicAccess,
+        },
+      );
+
+      if (updateError) {
+        console.error('Supabase Update Bucket Error:', updateError);
+        throw new InternalServerErrorException(
+          updateError.message || `Error updating storage bucket ${bucket}`,
         );
       }
     }

@@ -117,6 +117,7 @@ model Order {
   isB2B             Boolean              @default(false) @map("is_b2b")
   isManual          Boolean              @default(false) @map("is_manual")
   paymentReceiptUrl String?              @map("payment_receipt_url")
+  deletedAt         DateTime?            @map("deleted_at")
   createdAt         DateTime             @default(now()) @map("created_at")
   profileId         String?              @map("profile_id")
   items             OrderItem[]
@@ -199,6 +200,7 @@ model OrderPayment {
   paymentDate DateTime @map("payment_date")
   proofUrl    String?  @map("proof_url")
   notes       String?  @map("notes")
+  deletedAt   DateTime? @map("deleted_at")
   createdAt   DateTime @default(now()) @map("created_at")
   order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
@@ -243,6 +245,9 @@ model User {
   personalizationRequests         PersonalizationRequest[] @relation("PersonalizationRequestUser")
   reviewedPersonalizationRequests PersonalizationRequest[] @relation("PersonalizationRequestReviewedBy")
   roles                           UserRole[]
+  managerApprovalsRequested       ManagerApproval[]       @relation("ManagerApprovalRequestedBy")
+  managerApprovalsApproved        ManagerApproval[]       @relation("ManagerApprovalApprovedBy")
+  managerApprovalsUsed            ManagerApproval[]       @relation("ManagerApprovalUsedBy")
 
   @@map("users")
   @@schema("tote-bag")
@@ -414,6 +419,7 @@ model B2BQuote {
   package           String         @map("package")
   status            String         @default("PENDIENTE") @map("status")
   paymentReceiptUrl String?        @map("payment_receipt_url")
+  deletedAt         DateTime?      @map("deleted_at")
   createdAt         DateTime       @default(now()) @map("created_at")
   material          String?        @map("material")
   size              String?        @map("size")
@@ -429,6 +435,7 @@ model AuditLog {
   entity       String   @map("entity")
   entityId     String?  @map("entity_id")
   payload      Json?    @map("payload")
+  newData      Json?    @map("new_data")
   userId       String?  @map("user_id")
   ip           String?  @map("ip")
   userAgent    String?  @map("user_agent")
@@ -469,6 +476,7 @@ model ProductAttribute {
   type          AttributeType @map("type")
   priceModifier Float         @default(0) @map("price_modifier")
   isActive      Boolean       @default(true) @map("is_active")
+  deletedAt     DateTime?     @map("deleted_at")
   sortOrder     Int           @default(0) @map("sort_order")
   value         String        @default("") @map("value")
   product       Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -485,6 +493,7 @@ model PersonalizationOption {
   basePrice             Float                 @map("base_price")
   description           String?               @map("description")
   isActive              Boolean               @default(true) @map("is_active")
+  deletedAt             DateTime?             @map("deleted_at")
   allowedMaterialValues String[]              @default([]) @map("allowed_material_values")
   rules                 PersonalizationRule[]
 
@@ -502,6 +511,7 @@ model PersonalizationRule {
   extraPrice            Float                 @default(0) @map("extra_price")
   extraDays             Int                   @default(0) @map("extra_days")
   isActive              Boolean               @default(true) @map("is_active")
+  deletedAt             DateTime?             @map("deleted_at")
   personalization       PersonalizationOption @relation(fields: [personalizationId], references: [id], onDelete: Cascade)
   product               Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
 
@@ -556,6 +566,7 @@ model PricingRule {
   discountPct    Int?           @map("discount_pct")
   fixedUnitPrice Float?         @map("fixed_unit_price")
   isActive       Boolean        @default(true) @map("is_active")
+  deletedAt      DateTime?      @map("deleted_at")
   maxQty         Int?           @map("max_qty")
   minQty         Int            @default(1) @map("min_qty")
   scope          PriceRuleScope @default(B2C) @map("scope")
@@ -592,6 +603,7 @@ model WizardOption {
   description           String?        @map("description")
   basePriceModifier     Float          @default(0) @map("base_price_modifier")
   isActive              Boolean        @default(true) @map("is_active")
+  deletedAt             DateTime?      @map("deleted_at")
   sortOrder             Int            @default(0) @map("sort_order")
   metadata              Json?          @map("metadata")
   createdAt             DateTime       @default(now()) @map("created_at")
@@ -633,6 +645,7 @@ model SupplyItem {
   stock              Decimal               @default(0) @map("stock") @db.Decimal(18, 3)
   minStock           Decimal?              @map("min_stock") @db.Decimal(18, 3)
   isActive           Boolean               @default(true) @map("is_active")
+  deletedAt          DateTime?             @map("deleted_at")
   createdAt          DateTime              @default(now()) @map("created_at")
   updatedAt          DateTime              @updatedAt @map("updated_at")
   purchaseBatchLines PurchaseBatchLine[]
@@ -656,6 +669,7 @@ model PurchaseBatch {
   totalCost         Decimal                @map("total_cost") @db.Decimal(18, 2)
   status            BatchStatus            @default(IN_STOCK) @map("status")
   paymentReceiptUrl String?                @map("payment_receipt_url")
+  deletedAt         DateTime?              @map("deleted_at")
   createdAt         DateTime               @default(now()) @map("created_at")
   updatedAt         DateTime               @updatedAt @map("updated_at")
   lines             PurchaseBatchLine[]
@@ -740,6 +754,8 @@ model PurchaseInvoice {
   documentType    PurchaseDocumentType  @default(INVOICE) @map("document_type")
   status          PurchaseInvoiceStatus @default(PENDING) @map("status")
   issueDate       DateTime              @map("issue_date")
+  supportUrl      String?               @map("support_url")
+  deletedAt       DateTime?             @map("deleted_at")
   supplierId      String?               @map("supplier_id")
   purchaseBatchId String?               @map("purchase_batch_id")
   createdAt       DateTime              @default(now()) @map("created_at")
@@ -760,6 +776,7 @@ model PurchasePayment {
   amount      Decimal         @map("amount") @db.Decimal(18, 2)
   paymentDate DateTime        @map("payment_date")
   proofUrl    String?         @map("proof_url")
+  deletedAt   DateTime?       @map("deleted_at")
   createdAt   DateTime        @default(now()) @map("created_at")
   updatedAt   DateTime        @updatedAt @map("updated_at")
   invoice     PurchaseInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
@@ -879,6 +896,33 @@ model OpexCategory {
   transactions FinancialTransaction[]
 
   @@map("opex_categories")
+  @@schema("tote-bag")
+}
+
+model ManagerApproval {
+  id                String                @id @default(uuid()) @map("id")
+  resource          String                @map("resource")
+  action            String                @map("action")
+  entity            String                @map("entity")
+  entityId          String?               @map("entity_id")
+  status            ManagerApprovalStatus @default(APPROVED) @map("status")
+  reason            String?               @map("reason")
+  metadata          Json?                 @map("metadata")
+  requestedByUserId String?               @map("requested_by_user_id")
+  approvedByUserId  String                @map("approved_by_user_id")
+  usedByUserId      String?               @map("used_by_user_id")
+  expiresAt         DateTime              @map("expires_at")
+  usedAt            DateTime?             @map("used_at")
+  createdAt         DateTime              @default(now()) @map("created_at")
+  updatedAt         DateTime              @updatedAt @map("updated_at")
+  requestedBy       User?                 @relation("ManagerApprovalRequestedBy", fields: [requestedByUserId], references: [id], onDelete: SetNull)
+  approvedBy        User                  @relation("ManagerApprovalApprovedBy", fields: [approvedByUserId], references: [id])
+  usedBy            User?                 @relation("ManagerApprovalUsedBy", fields: [usedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([resource, action, entity, entityId])
+  @@index([approvedByUserId, createdAt])
+  @@index([usedAt, expiresAt])
+  @@map("manager_approvals")
   @@schema("tote-bag")
 }
 
@@ -1097,6 +1141,15 @@ enum WebhookProcessingStatus {
   VALIDATED
   APPLIED
   FAILED
+
+  @@schema("tote-bag")
+}
+
+enum ManagerApprovalStatus {
+  APPROVED
+  USED
+  EXPIRED
+  REVOKED
 
   @@schema("tote-bag")
 }

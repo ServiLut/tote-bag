@@ -30,6 +30,7 @@ import {
   roundMoney,
   toDecimal,
 } from '../../common/utils/sales-tax.util';
+import { ManagerApprovalsService } from '../manager-approvals/manager-approvals.service';
 
 export type ProductWithRelations = Prisma.ProductGetPayload<{
   include: {
@@ -165,6 +166,7 @@ export class CatalogService {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private readonly managerApprovalsService: ManagerApprovalsService,
   ) {}
 
   private normalizeLabel(value?: string | null) {
@@ -711,6 +713,27 @@ export class CatalogService {
     }
   }
 
+  private touchesOutputPricing(updateProductDto: UpdateProductDto) {
+    if (
+      updateProductDto.basePrice !== undefined ||
+      updateProductDto.minPrice !== undefined ||
+      updateProductDto.comparePrice !== undefined ||
+      updateProductDto.pricingRules !== undefined
+    ) {
+      return true;
+    }
+
+    return (
+      updateProductDto.variants?.some(
+        (variant) =>
+          variant.salePrice !== undefined ||
+          variant.netPrice !== undefined ||
+          variant.minPrice !== undefined ||
+          variant.comparePrice !== undefined,
+      ) ?? false
+    );
+  }
+
   private async assertSkuAvailability(
     tx: Prisma.TransactionClient,
     variants: PreparedVariant[],
@@ -1122,12 +1145,15 @@ export class CatalogService {
   async update(
     id: string,
     updateProductDto: UpdateProductDto,
+    actorUserId?: string,
   ): Promise<ProductWithCalculatedVariantPricing> {
     const {
       variants,
       images,
       attributes,
       pricingRules,
+      managerApprovalId,
+      managerApprovalReason,
       collectionId,
       collectionName,
       basePrice,
@@ -1136,6 +1162,13 @@ export class CatalogService {
       costPrice,
       ...data
     } = updateProductDto;
+    const requiresManagerApproval = this.touchesOutputPricing(updateProductDto);
+
+    if (requiresManagerApproval && !actorUserId) {
+      throw new BadRequestException(
+        'La edicion de precios requiere usuario autenticado.',
+      );
+    }
 
     const activeCollection =
       collectionId || collectionName
@@ -1185,7 +1218,10 @@ export class CatalogService {
 
     if (attributes) {
       updateData.attributes = {
-        deleteMany: {},
+        updateMany: {
+          where: { isActive: true },
+          data: { isActive: false, deletedAt: new Date() },
+        },
         create: sanitizedAttributes.map((attribute) => ({
           type: attribute.type,
           value: attribute.value,
@@ -1198,7 +1234,10 @@ export class CatalogService {
 
     if (pricingRules) {
       updateData.pricingRules = {
-        deleteMany: {},
+        updateMany: {
+          where: { isActive: true },
+          data: { isActive: false, deletedAt: new Date() },
+        },
         create: preparedPricingRules.map((rule) => ({
           scope: rule.scope,
           minQty: rule.minQty,
@@ -1212,6 +1251,26 @@ export class CatalogService {
 
     try {
       const updatedProduct = await this.prisma.$transaction(async (tx) => {
+        if (requiresManagerApproval) {
+          await this.managerApprovalsService.requireApproval({
+            actorUserId: actorUserId!,
+            approvalId: managerApprovalId,
+            reason: managerApprovalReason,
+            resource: 'products',
+            action: 'update-output-prices',
+            entity: 'Product',
+            entityId: id,
+            metadata: {
+              basePrice: basePrice ?? null,
+              minPrice: minPrice ?? null,
+              comparePrice: comparePrice ?? null,
+              pricingRulesCount: pricingRules?.length ?? null,
+              variantsCount: variants?.length ?? null,
+            },
+            tx,
+          });
+        }
+
         if (preparedVariants) {
           const currentProduct = await tx.product.findUnique({
             where: { id },

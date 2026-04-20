@@ -22,6 +22,7 @@ type AuditEntity =
   | 'B2BQuote'
   | 'FinancialTransaction'
   | 'Order'
+  | 'OrderPayment'
   | 'PersonalizationRequest'
   | 'PayrollBillingStatement'
   | 'PayrollWorker'
@@ -29,16 +30,21 @@ type AuditEntity =
   | 'Product'
   | 'Profile'
   | 'PurchaseBatch'
+  | 'PurchaseBatchLine'
   | 'PurchaseInvoice'
+  | 'PurchasePayment'
   | 'PqrsTicket'
   | 'Shipment'
   | 'ShippingProvider'
   | 'Supplier'
+  | 'SupplyItem'
   | 'System'
   | 'User'
   | 'Variant'
   | 'WizardOption'
-  | 'OpexCategory';
+  | 'OpexCategory'
+  | 'PricingRule'
+  | 'ManagerApproval';
 
 const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const ENTITY_ID_PARAM_KEYS = [
@@ -113,6 +119,7 @@ export class AuditInterceptor implements NestInterceptor {
           finalContext.entity,
           finalContext.entityId,
           body,
+          this.extractResponseData(result),
           previousData,
           user?.id,
           ip,
@@ -154,6 +161,7 @@ export class AuditInterceptor implements NestInterceptor {
     if (root === 'catalog') return 'Product';
     if (root === 'catalog' && child === 'products') return 'Product';
     if (root === 'products') return 'Product';
+    if (root === 'orders' && third === 'payments') return 'OrderPayment';
     if (root === 'orders') return 'Order';
     if (root === 'profiles') return 'Profile';
     if (root === 'b2b') return 'B2BQuote';
@@ -164,12 +172,17 @@ export class AuditInterceptor implements NestInterceptor {
     if (root === 'users') return 'User';
     if (root === 'pqrs') return 'PqrsTicket';
     if (root === 'wizard') return 'WizardOption';
+    if (root === 'manager-approvals') return 'ManagerApproval';
+    if (root === 'purchase-invoices' && third === 'payments') {
+      return 'PurchasePayment';
+    }
     if (root === 'purchase-invoices') return 'PurchaseInvoice';
 
     if (root === 'payments' && child === 'upload-receipt') {
       if (third === 'order') return 'Order';
       if (third === 'b2b') return 'B2BQuote';
       if (third === 'batch') return 'PurchaseBatch';
+      if (third === 'purchase-invoice') return 'PurchaseInvoice';
     }
 
     if (root === 'shipping') {
@@ -189,6 +202,7 @@ export class AuditInterceptor implements NestInterceptor {
       if (child === 'suppliers') {
         return third === 'payments' ? 'FinancialTransaction' : 'Supplier';
       }
+      if (child === 'supply-items') return 'SupplyItem';
       if (child === 'finance') {
         if (third === 'opex') return 'FinancialTransaction';
         if (third === 'opex-categories') return 'OpexCategory';
@@ -267,8 +281,10 @@ export class AuditInterceptor implements NestInterceptor {
       Auth: null,
       B2BQuote: 'b2BQuote',
       FinancialTransaction: 'financialTransaction',
+      ManagerApproval: 'managerApproval',
       OpexCategory: 'opexCategory',
       Order: 'order',
+      OrderPayment: 'orderPayment',
       PersonalizationRequest: 'personalizationRequest',
       PayrollBillingStatement: 'payrollBillingStatement',
       PayrollWorker: 'payrollWorker',
@@ -276,15 +292,19 @@ export class AuditInterceptor implements NestInterceptor {
       Product: 'product',
       Profile: 'profile',
       PurchaseBatch: 'purchaseBatch',
+      PurchaseBatchLine: 'purchaseBatchLine',
       PurchaseInvoice: 'purchaseInvoice',
+      PurchasePayment: 'purchasePayment',
       PqrsTicket: 'pqrsTicket',
       Shipment: 'shipment',
       ShippingProvider: 'shippingProvider',
       Supplier: 'supplier',
+      SupplyItem: 'supplyItem',
       System: null,
       User: 'user',
       Variant: 'variant',
       WizardOption: 'wizardOption',
+      PricingRule: 'pricingRule',
     };
 
     const modelName = modelMap[entity];
@@ -325,6 +345,7 @@ export class AuditInterceptor implements NestInterceptor {
     entity: AuditEntity,
     entityId: string | null,
     body: unknown,
+    newData: unknown,
     previousData: unknown,
     userId?: string,
     ip?: string,
@@ -340,6 +361,9 @@ export class AuditInterceptor implements NestInterceptor {
             body && typeof body === 'object' && Object.keys(body).length > 0
               ? (body as Prisma.InputJsonValue)
               : Prisma.JsonNull,
+          newData: newData
+            ? (newData as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
           previousData: previousData
             ? (previousData as Prisma.InputJsonValue)
             : Prisma.JsonNull,

@@ -10,12 +10,21 @@ import {
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { CatalogService } from './catalog.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { VariantPricePreviewDto } from './dto/variant-price-preview.dto';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+
+interface RequestWithUser extends Request {
+  user?: {
+    id: string;
+    [key: string]: unknown;
+  };
+}
 
 @Controller('catalog')
 export class CatalogController {
@@ -127,8 +136,9 @@ export class CatalogController {
   update(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body() updateProductDto: UpdateProductDto,
+    @Req() req: RequestWithUser,
   ) {
-    return this.catalogService.update(id, updateProductDto);
+    return this.catalogService.update(id, updateProductDto, req.user?.id);
   }
 
   @Delete(':id')

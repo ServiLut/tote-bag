@@ -14,10 +14,10 @@ export class ConfigurationService {
           orderBy: { salePrice: 'asc' },
         },
         attributes: {
-          where: { isActive: true },
+          where: { isActive: true, deletedAt: null },
         },
         pricingRules: {
-          where: { isActive: true },
+          where: { isActive: true, deletedAt: null },
         },
       },
     });
@@ -49,9 +49,11 @@ export class ConfigurationService {
   async getAvailableOptions(productId: string) {
     const [attributes, personalizationOptions] = await Promise.all([
       this.prisma.productAttribute.findMany({
-        where: { productId },
+        where: { productId, deletedAt: null },
       }),
-      this.prisma.personalizationOption.findMany(),
+      this.prisma.personalizationOption.findMany({
+        where: { deletedAt: null },
+      }),
     ]);
 
     // Group attributes by type for better frontend consumption

@@ -167,6 +167,7 @@ export class B2bService {
 
   async findAll() {
     const quotes = await this.prisma.b2BQuote.findMany({
+      where: { deletedAt: null },
       include: { items: true },
       orderBy: { createdAt: 'desc' },
     });

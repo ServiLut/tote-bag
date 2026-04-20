@@ -19,6 +19,7 @@ import {
   roundMoney,
   toDecimal,
 } from '../../common/utils/sales-tax.util';
+import { ManagerApprovalsService } from '../manager-approvals/manager-approvals.service';
 
 type ResolvedBatchLine = {
   item: PurchaseBatchItemDto;
@@ -40,7 +41,10 @@ const PURCHASE_BATCH_TRANSACTION_OPTIONS = {
 
 @Injectable()
 export class InventoryService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly managerApprovalsService: ManagerApprovalsService,
+  ) {}
 
   private isReceivedStatus(status: CreatePurchaseBatchDto['status']) {
     return status === BatchInputStatus.RECIBIDO;
@@ -713,6 +717,7 @@ export class InventoryService {
         quantityRemaining: { gt: 0 },
         purchaseBatch: {
           status: BatchStatus.IN_STOCK,
+          deletedAt: null,
         },
       },
       include: {
@@ -924,6 +929,7 @@ export class InventoryService {
 
   async findAllBatches() {
     const batches = await this.prisma.purchaseBatch.findMany({
+      where: { deletedAt: null },
       include: {
         product: true,
         supplier: true,
@@ -953,9 +959,29 @@ export class InventoryService {
       status: BatchInputStatus;
       purchaseDate?: string;
       userId: string;
+      managerApprovalId?: string;
+      managerApprovalReason?: string;
     },
   ) {
     return this.prisma.$transaction(async (tx) => {
+      await this.managerApprovalsService.requireApproval({
+        actorUserId: data.userId,
+        approvalId: data.managerApprovalId,
+        reason: data.managerApprovalReason,
+        resource: 'inventory',
+        action: 'update-entry-costs',
+        entity: 'PurchaseBatch',
+        entityId: batchId,
+        metadata: {
+          supplierId: data.supplierId,
+          variantId: data.variantId,
+          quantityReceived: data.quantityReceived,
+          unitCost: data.unitCost,
+          status: data.status,
+        },
+        tx,
+      });
+
       const existingBatch = await tx.purchaseBatch.findUnique({
         where: { id: batchId },
         include: {
@@ -966,7 +992,7 @@ export class InventoryService {
         },
       });
 
-      if (!existingBatch) {
+      if (!existingBatch || existingBatch.deletedAt) {
         throw new BadRequestException('Lote no encontrado');
       }
 
@@ -1254,7 +1280,7 @@ export class InventoryService {
         },
       });
 
-      if (!existingBatch) {
+      if (!existingBatch || existingBatch.deletedAt) {
         throw new BadRequestException('Lote no encontrado');
       }
 
@@ -1376,8 +1402,21 @@ export class InventoryService {
         },
       });
 
-      await tx.purchaseBatch.delete({
+      await tx.purchaseBatchLine.updateMany({
+        where: { purchaseBatchId: batchId },
+        data: {
+          quantityRemaining: 0,
+          status: BatchStatus.CANCELLED,
+        },
+      });
+
+      await tx.purchaseBatch.update({
         where: { id: batchId },
+        data: {
+          quantityRemaining: 0,
+          status: BatchStatus.CANCELLED,
+          deletedAt: new Date(),
+        },
       });
 
       return { success: true };
@@ -1409,7 +1448,7 @@ export class InventoryService {
 
   async findAllSupplyItems() {
     const supplyItems = await this.prisma.supplyItem.findMany({
-      where: { isActive: true },
+      where: { isActive: true, deletedAt: null },
       orderBy: [{ category: 'asc' }, { name: 'asc' }],
     });
 
@@ -1463,6 +1502,7 @@ export class InventoryService {
           itemType: PurchaseBatchItemType.VARIANT,
           purchaseBatch: {
             status: BatchStatus.IN_STOCK,
+            deletedAt: null,
           },
         },
         include: {
@@ -1609,6 +1649,7 @@ export class InventoryService {
         },
         purchaseBatch: {
           status: BatchStatus.IN_STOCK,
+          deletedAt: null,
         },
       },
       select: {
