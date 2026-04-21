@@ -16,14 +16,17 @@ import {
 import {
   TransactionType,
   TransactionCategory,
+  PurchaseDocumentType,
 } from '../../generated/client/enums';
 import {
+  calculateGrossTaxBreakdown,
   decimalToNumber,
   DecimalInput,
   roundMoney,
   toDecimal,
 } from '../../common/utils/sales-tax.util';
 import { BreakEvenSimulationDto } from './dto/break-even-simulation.dto';
+import { UpdateFixedExpensesConfigDto } from './dto/update-fixed-expenses-config.dto';
 
 type FinancialReportQuery = {
   startDate?: string;
@@ -55,6 +58,204 @@ type FinancialReportOrder = {
   } | null;
 };
 
+type FinancialGatewayConfig = {
+  commissionPercent: Decimal;
+  fixedFeeCop: Decimal;
+  packagingCifCop: Decimal;
+  commissionVatPercent: Decimal;
+  reteFuentePercent: Decimal;
+  reteIvaPercent: Decimal;
+  reteIcaPercent: Decimal;
+};
+
+type InventoryConsumptionReductionSnapshot = {
+  purchaseBatchLineId: string | null;
+  batchId: string;
+  supplierId: string;
+  quantity: number;
+  unitCost: number;
+  documentType: PurchaseDocumentType;
+};
+
+type InventoryConsumptionSnapshot = {
+  totalCOGS: number;
+  reductions: InventoryConsumptionReductionSnapshot[];
+};
+
+type OrderProfitabilityOrderRecord = {
+  id: string;
+  orderNumber: number;
+  customerEmail: string;
+  createdAt: Date;
+  status: OrderStatus;
+  totalAmount: number;
+  netAmount: DecimalInput;
+  taxTotal: DecimalInput;
+  amountPaid: DecimalInput;
+  balanceDue: DecimalInput;
+  items: Array<{
+    id: string;
+    sku: string;
+    quantity: number;
+    pricingJson: Prisma.JsonValue | null;
+    variant: {
+      costPrice: number | null;
+      totalCost: number | null;
+      taxRate: DecimalInput;
+    } | null;
+  }>;
+  payments: Array<{
+    id: string;
+    amount: DecimalInput;
+    paymentDate: Date;
+    provider: string | null;
+    paymentMethodType: string | null;
+    grossAmount: DecimalInput | null;
+    netReceivedAmount: DecimalInput | null;
+    commissionAmount: DecimalInput | null;
+    commissionVatAmount: DecimalInput | null;
+    reteFuenteAmount: DecimalInput | null;
+    reteIvaAmount: DecimalInput | null;
+    reteIcaAmount: DecimalInput | null;
+    packagingCifAmount: DecimalInput | null;
+    settlementSource: string | null;
+  }>;
+};
+
+type OrderProfitabilityRow = {
+  id: string;
+  orderNumber: number;
+  customerEmail: string;
+  createdAt: Date;
+  status: OrderStatus;
+  paymentProvider: string;
+  paymentMethodType: string;
+  ingresoBruto: number;
+  ventaNetaSinIva: number;
+  iva: number;
+  costoProducto: number;
+  comisionWompi: number;
+  ivaComision: number;
+  costoLogisticoCif: number;
+  utilidadBruta: number;
+  utilidadOperativa: number;
+  utilidadNeta: number;
+  utilidadNetaReal: number;
+  netoRecibidoBanco: number;
+  retencionesActivas: number;
+  reteFuente: number;
+  reteIva: number;
+  reteIca: number;
+  brutoVsNetoDelta: number;
+  margenSobreNetoPasarela: number | null;
+  alertaMargenBajo: boolean;
+  isFullyPaid: boolean;
+};
+
+type OrderProfitabilitySummary = {
+  orderCount: number;
+  grossRevenue: number;
+  netSalesWithoutVat: number;
+  vatLiability: number;
+  productCost: number;
+  commissionAmount: number;
+  commissionVatAmount: number;
+  logisticsCifAmount: number;
+  grossProfit: number;
+  operatingProfit: number;
+  netProfit: number;
+  realNetProfit: number;
+  netReceivedBank: number;
+  retentionAssetTotal: number;
+  reteFuenteTotal: number;
+  reteIvaTotal: number;
+  reteIcaTotal: number;
+  grossVsNetDelta: number;
+  marginOnGatewayNet: number | null;
+  marginTarget: number;
+  belowTargetCount: number;
+};
+
+type GatewayMarginGridResult = {
+  config: {
+    commissionPercent: number;
+    fixedFeeCop: number;
+    packagingCifCop: number;
+    commissionVatPercent: number;
+    reteFuentePercent: number;
+    reteIvaPercent: number;
+    reteIcaPercent: number;
+  };
+  current: {
+    ingresoBruto: number;
+    ventaNetaSinIva: number;
+    iva: number;
+    costoProducto: number;
+    comisionWompi: number;
+    ivaComision: number;
+    costoLogisticoCif: number;
+    netoRecibidoBanco: number;
+    retencionesActivas: number;
+    utilidadBruta: number;
+    utilidadOperativa: number;
+    utilidadNeta: number;
+    margenSobreNetoPasarela: number | null;
+    alertaMargenBajo: boolean;
+  };
+  targets: Array<{
+    targetMargin: number;
+    requiredGrossAmount: number | null;
+    requiredNetReceivedAmount: number | null;
+    expectedNetProfit: number | null;
+    reachable: boolean;
+  }>;
+};
+
+type FixedExpenseConfigItem = {
+  id: string;
+  label: string;
+  amount: number;
+};
+
+type FixedExpenseConfigResponse = {
+  key: string;
+  currency: 'COP';
+  period: 'monthly';
+  monthlyTotal: number;
+  items: FixedExpenseConfigItem[];
+  isConfigured: boolean;
+  updatedAt: Date | null;
+};
+
+type FixedExpenseConfigRecord = {
+  currency: 'COP';
+  period: 'monthly';
+  items: FixedExpenseConfigItem[];
+};
+
+type AppSettingRow = {
+  value: Prisma.JsonValue;
+  updated_at: Date;
+};
+
+type BreakEvenThermometerReport = {
+  period: {
+    label: string;
+    startDate: Date;
+    endDate: Date;
+  };
+  fixedExpensesConfig: FixedExpenseConfigResponse;
+  orderCount: number;
+  accumulatedNetProfit: number;
+  targetFixedExpenses: number;
+  progressRatio: number;
+  progressPercentage: number;
+  progressPercentageCapped: number;
+  remainingToBreakEven: number;
+  surplusOverBreakEven: number;
+  status: 'UNCONFIGURED' | 'IN_PROGRESS' | 'BREAK_EVEN_REACHED';
+};
+
 @Injectable()
 export class FinanceService {
   constructor(private readonly prisma: PrismaService) {}
@@ -67,6 +268,420 @@ export class FinanceService {
     OrderStatus.ENVIADA,
     OrderStatus.ENTREGADA,
   ];
+
+  private readonly gatewayMarginTarget = new Decimal('0.60');
+  private readonly monthlyFixedExpensesSettingKey =
+    'finance.monthly_fixed_expenses';
+  private readonly defaultFixedExpenseItems: FixedExpenseConfigItem[] = [
+    { id: 'payroll', label: 'Nomina', amount: 0 },
+    { id: 'rent', label: 'Arriendo', amount: 0 },
+    { id: 'services', label: 'Servicios', amount: 0 },
+  ];
+
+  private parseFinancialConfigNumber(key: string, fallback: number) {
+    const raw = process.env[key];
+    if (raw === undefined || raw === null || raw === '') {
+      return fallback;
+    }
+
+    const parsed = Number(String(raw).replace(',', '.'));
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  private normalizeRateDecimal(value: number) {
+    if (!Number.isFinite(value)) {
+      return new Decimal(0);
+    }
+
+    return new Decimal(Math.abs(value) > 1 ? value / 100 : value);
+  }
+
+  private getFinancialGatewayConfig(): FinancialGatewayConfig {
+    return {
+      commissionPercent: this.normalizeRateDecimal(
+        this.parseFinancialConfigNumber('WOMPI_COMMISSION_PERCENT', 0),
+      ),
+      fixedFeeCop: roundMoney(
+        this.parseFinancialConfigNumber('WOMPI_FIXED_FEE_COP', 0),
+      ),
+      packagingCifCop: roundMoney(
+        this.parseFinancialConfigNumber('WOMPI_PACKAGING_CIF_COP', 990),
+      ),
+      commissionVatPercent: this.normalizeRateDecimal(
+        this.parseFinancialConfigNumber('WOMPI_COMMISSION_VAT_PERCENT', 0),
+      ),
+      reteFuentePercent: this.normalizeRateDecimal(
+        this.parseFinancialConfigNumber('WOMPI_RETEFUENTE_PERCENT', 0),
+      ),
+      reteIvaPercent: this.normalizeRateDecimal(
+        this.parseFinancialConfigNumber('WOMPI_RETEIVA_PERCENT', 0),
+      ),
+      reteIcaPercent: this.normalizeRateDecimal(
+        this.parseFinancialConfigNumber('WOMPI_RETEICA_PERCENT', 0),
+      ),
+    };
+  }
+
+  private sumMoney(
+    collection: ReadonlyArray<Record<string, unknown>>,
+    selector: (
+      item: Record<string, unknown>,
+    ) => DecimalInput | null | undefined,
+  ) {
+    return collection.reduce(
+      (sum, item) => sum.plus(toDecimal(selector(item) ?? 0)),
+      new Decimal(0),
+    );
+  }
+
+  private isWompiProvider(provider: string | null | undefined) {
+    return (provider ?? '').trim().toLowerCase() === 'wompi';
+  }
+
+  private extractInventoryConsumptionSnapshot(
+    pricingJson: Prisma.JsonValue | null,
+  ): InventoryConsumptionSnapshot | null {
+    if (
+      !pricingJson ||
+      typeof pricingJson !== 'object' ||
+      Array.isArray(pricingJson)
+    ) {
+      return null;
+    }
+
+    const inventoryConsumption = (pricingJson as Record<string, unknown>)
+      .inventoryConsumption;
+
+    if (
+      !inventoryConsumption ||
+      typeof inventoryConsumption !== 'object' ||
+      Array.isArray(inventoryConsumption)
+    ) {
+      return null;
+    }
+
+    const rawConsumption = inventoryConsumption as Record<string, unknown>;
+    const reductions = rawConsumption.reductions;
+
+    if (!Array.isArray(reductions)) {
+      return null;
+    }
+
+    const parsedReductions = reductions.flatMap((reduction) => {
+      if (
+        !reduction ||
+        typeof reduction !== 'object' ||
+        Array.isArray(reduction)
+      ) {
+        return [];
+      }
+
+      const candidate = reduction as Record<string, unknown>;
+      if (
+        typeof candidate.batchId !== 'string' ||
+        typeof candidate.supplierId !== 'string' ||
+        typeof candidate.quantity !== 'number' ||
+        typeof candidate.unitCost !== 'number' ||
+        (candidate.documentType !== PurchaseDocumentType.INVOICE &&
+          candidate.documentType !== PurchaseDocumentType.DELIVERY_NOTE)
+      ) {
+        return [];
+      }
+
+      return [
+        {
+          purchaseBatchLineId:
+            typeof candidate.purchaseBatchLineId === 'string'
+              ? candidate.purchaseBatchLineId
+              : null,
+          batchId: candidate.batchId,
+          supplierId: candidate.supplierId,
+          quantity: candidate.quantity,
+          unitCost: candidate.unitCost,
+          documentType: candidate.documentType,
+        },
+      ];
+    });
+
+    if (parsedReductions.length === 0) {
+      return null;
+    }
+
+    return {
+      totalCOGS:
+        typeof rawConsumption.totalCOGS === 'number'
+          ? rawConsumption.totalCOGS
+          : 0,
+      reductions: parsedReductions,
+    };
+  }
+
+  private buildPaymentSettlementBreakdown(params: {
+    amount: DecimalInput;
+    provider?: string | null;
+    grossAmount?: DecimalInput | null;
+    netReceivedAmount?: DecimalInput | null;
+    commissionAmount?: DecimalInput | null;
+    commissionVatAmount?: DecimalInput | null;
+    reteFuenteAmount?: DecimalInput | null;
+    reteIvaAmount?: DecimalInput | null;
+    reteIcaAmount?: DecimalInput | null;
+    packagingCifAmount?: DecimalInput | null;
+  }) {
+    const config = this.getFinancialGatewayConfig();
+    const provider = params.provider ?? null;
+    const grossAmount = roundMoney(params.grossAmount ?? params.amount);
+
+    if (!this.isWompiProvider(provider)) {
+      const packagingCifAmount = roundMoney(params.packagingCifAmount ?? 0);
+      const netReceivedAmount = roundMoney(
+        params.netReceivedAmount ?? params.amount,
+      );
+
+      return {
+        grossAmount,
+        netReceivedAmount,
+        commissionAmount: roundMoney(params.commissionAmount ?? 0),
+        commissionVatAmount: roundMoney(params.commissionVatAmount ?? 0),
+        reteFuenteAmount: roundMoney(params.reteFuenteAmount ?? 0),
+        reteIvaAmount: roundMoney(params.reteIvaAmount ?? 0),
+        reteIcaAmount: roundMoney(params.reteIcaAmount ?? 0),
+        packagingCifAmount,
+      };
+    }
+
+    const commissionAmount = roundMoney(
+      params.commissionAmount ??
+        grossAmount.mul(config.commissionPercent).plus(config.fixedFeeCop),
+    );
+    const commissionVatAmount = roundMoney(
+      params.commissionVatAmount ??
+        commissionAmount.mul(config.commissionVatPercent),
+    );
+    const reteFuenteAmount = roundMoney(
+      params.reteFuenteAmount ?? grossAmount.mul(config.reteFuentePercent),
+    );
+    const reteIvaAmount = roundMoney(
+      params.reteIvaAmount ?? grossAmount.mul(config.reteIvaPercent),
+    );
+    const reteIcaAmount = roundMoney(
+      params.reteIcaAmount ?? grossAmount.mul(config.reteIcaPercent),
+    );
+    const packagingCifAmount = roundMoney(
+      params.packagingCifAmount ?? config.packagingCifCop,
+    );
+    const netReceivedAmount = roundMoney(
+      params.netReceivedAmount ??
+        grossAmount
+          .minus(commissionAmount)
+          .minus(commissionVatAmount)
+          .minus(reteFuenteAmount)
+          .minus(reteIvaAmount)
+          .minus(reteIcaAmount)
+          .minus(packagingCifAmount),
+    );
+
+    return {
+      grossAmount,
+      netReceivedAmount,
+      commissionAmount,
+      commissionVatAmount,
+      reteFuenteAmount,
+      reteIvaAmount,
+      reteIcaAmount,
+      packagingCifAmount,
+    };
+  }
+
+  private buildProfitabilityMetrics(params: {
+    grossAmount: DecimalInput;
+    netSalesWithoutVat?: DecimalInput;
+    vatAmount?: DecimalInput;
+    productCost: DecimalInput;
+    commissionAmount: DecimalInput;
+    commissionVatAmount: DecimalInput;
+    logisticsCifAmount: DecimalInput;
+    netReceivedAmount: DecimalInput;
+    reteFuenteAmount: DecimalInput;
+    reteIvaAmount: DecimalInput;
+    reteIcaAmount: DecimalInput;
+  }) {
+    const grossAmount = roundMoney(params.grossAmount);
+    const netSalesWithoutVat = roundMoney(
+      params.netSalesWithoutVat ??
+        toDecimal(grossAmount).minus(toDecimal(params.vatAmount ?? 0)),
+    );
+    const vatAmount = roundMoney(
+      params.vatAmount ?? new Decimal(grossAmount).minus(netSalesWithoutVat),
+    );
+    const productCost = roundMoney(params.productCost);
+    const commissionAmount = roundMoney(params.commissionAmount);
+    const commissionVatAmount = roundMoney(params.commissionVatAmount);
+    const logisticsCifAmount = roundMoney(params.logisticsCifAmount);
+    const netReceivedAmount = roundMoney(params.netReceivedAmount);
+    const reteFuenteAmount = roundMoney(params.reteFuenteAmount);
+    const reteIvaAmount = roundMoney(params.reteIvaAmount);
+    const reteIcaAmount = roundMoney(params.reteIcaAmount);
+    const retentionAsset = roundMoney(
+      reteFuenteAmount.plus(reteIvaAmount).plus(reteIcaAmount),
+    );
+    const grossProfit = roundMoney(netSalesWithoutVat.minus(productCost));
+    const operatingProfit = roundMoney(
+      grossProfit
+        .minus(commissionAmount)
+        .minus(commissionVatAmount)
+        .minus(logisticsCifAmount),
+    );
+    const realNetProfit = roundMoney(
+      netReceivedAmount
+        .plus(retentionAsset)
+        .minus(vatAmount)
+        .minus(productCost),
+    );
+    const marginOnGatewayNet = netReceivedAmount.greaterThan(0)
+      ? realNetProfit.div(netReceivedAmount)
+      : null;
+
+    return {
+      grossAmount,
+      netSalesWithoutVat,
+      vatAmount,
+      productCost,
+      commissionAmount,
+      commissionVatAmount,
+      logisticsCifAmount,
+      netReceivedAmount,
+      reteFuenteAmount,
+      reteIvaAmount,
+      reteIcaAmount,
+      retentionAsset,
+      grossProfit,
+      operatingProfit,
+      netProfit: operatingProfit,
+      realNetProfit,
+      grossVsNetDelta: roundMoney(grossAmount.minus(netReceivedAmount)),
+      marginOnGatewayNet,
+      isBelowTarget:
+        marginOnGatewayNet !== null &&
+        marginOnGatewayNet.lessThan(this.gatewayMarginTarget),
+    };
+  }
+
+  private buildOrderProfitabilityRow(
+    order: OrderProfitabilityOrderRecord,
+  ): OrderProfitabilityRow {
+    const settlement = order.payments.reduce(
+      (accumulator, payment) => {
+        const current = this.buildPaymentSettlementBreakdown({
+          amount: payment.amount ?? 0,
+          provider: payment.provider,
+          grossAmount: payment.grossAmount,
+          netReceivedAmount: payment.netReceivedAmount,
+          commissionAmount: payment.commissionAmount,
+          commissionVatAmount: payment.commissionVatAmount,
+          reteFuenteAmount: payment.reteFuenteAmount,
+          reteIvaAmount: payment.reteIvaAmount,
+          reteIcaAmount: payment.reteIcaAmount,
+          packagingCifAmount: payment.packagingCifAmount,
+        });
+
+        return {
+          grossAmount: accumulator.grossAmount.plus(current.grossAmount),
+          netReceivedAmount: accumulator.netReceivedAmount.plus(
+            current.netReceivedAmount,
+          ),
+          commissionAmount: accumulator.commissionAmount.plus(
+            current.commissionAmount,
+          ),
+          commissionVatAmount: accumulator.commissionVatAmount.plus(
+            current.commissionVatAmount,
+          ),
+          reteFuenteAmount: accumulator.reteFuenteAmount.plus(
+            current.reteFuenteAmount,
+          ),
+          reteIvaAmount: accumulator.reteIvaAmount.plus(current.reteIvaAmount),
+          reteIcaAmount: accumulator.reteIcaAmount.plus(current.reteIcaAmount),
+          packagingCifAmount: accumulator.packagingCifAmount.plus(
+            current.packagingCifAmount,
+          ),
+        };
+      },
+      {
+        grossAmount: new Decimal(0),
+        netReceivedAmount: new Decimal(0),
+        commissionAmount: new Decimal(0),
+        commissionVatAmount: new Decimal(0),
+        reteFuenteAmount: new Decimal(0),
+        reteIvaAmount: new Decimal(0),
+        reteIcaAmount: new Decimal(0),
+        packagingCifAmount: new Decimal(0),
+      },
+    );
+
+    const fallbackUnitCost = order.items.reduce((sum, item) => {
+      const inventoryConsumption = this.extractInventoryConsumptionSnapshot(
+        item.pricingJson,
+      );
+      if (inventoryConsumption) {
+        return sum.plus(inventoryConsumption.totalCOGS);
+      }
+
+      const unitCost = item.variant?.totalCost ?? item.variant?.costPrice ?? 0;
+      return sum.plus(toDecimal(unitCost).mul(item.quantity));
+    }, new Decimal(0));
+
+    const metrics = this.buildProfitabilityMetrics({
+      grossAmount: order.totalAmount,
+      netSalesWithoutVat: order.netAmount ?? 0,
+      vatAmount: order.taxTotal ?? 0,
+      productCost: fallbackUnitCost,
+      commissionAmount: settlement.commissionAmount,
+      commissionVatAmount: settlement.commissionVatAmount,
+      logisticsCifAmount: settlement.packagingCifAmount,
+      netReceivedAmount: settlement.netReceivedAmount,
+      reteFuenteAmount: settlement.reteFuenteAmount,
+      reteIvaAmount: settlement.reteIvaAmount,
+      reteIcaAmount: settlement.reteIcaAmount,
+    });
+
+    const primaryPayment = order.payments[0];
+    const isFullyPaid = roundMoney(order.balanceDue).lessThanOrEqualTo(0);
+
+    return {
+      id: order.id,
+      orderNumber: order.orderNumber,
+      customerEmail: order.customerEmail,
+      createdAt: order.createdAt,
+      status: order.status,
+      paymentProvider: primaryPayment?.provider ?? 'manual',
+      paymentMethodType: primaryPayment?.paymentMethodType ?? 'N/D',
+      ingresoBruto: decimalToNumber(metrics.grossAmount),
+      ventaNetaSinIva: decimalToNumber(metrics.netSalesWithoutVat),
+      iva: decimalToNumber(metrics.vatAmount),
+      costoProducto: decimalToNumber(metrics.productCost),
+      comisionWompi: decimalToNumber(metrics.commissionAmount),
+      ivaComision: decimalToNumber(metrics.commissionVatAmount),
+      costoLogisticoCif: decimalToNumber(metrics.logisticsCifAmount),
+      utilidadBruta: decimalToNumber(metrics.grossProfit),
+      utilidadOperativa: decimalToNumber(metrics.operatingProfit),
+      utilidadNeta: decimalToNumber(metrics.netProfit),
+      utilidadNetaReal: decimalToNumber(metrics.realNetProfit),
+      netoRecibidoBanco: decimalToNumber(metrics.netReceivedAmount),
+      retencionesActivas: decimalToNumber(metrics.retentionAsset),
+      reteFuente: decimalToNumber(metrics.reteFuenteAmount),
+      reteIva: decimalToNumber(metrics.reteIvaAmount),
+      reteIca: decimalToNumber(metrics.reteIcaAmount),
+      brutoVsNetoDelta: decimalToNumber(metrics.grossVsNetDelta),
+      margenSobreNetoPasarela:
+        metrics.marginOnGatewayNet === null
+          ? null
+          : metrics.marginOnGatewayNet
+              .toDecimalPlaces(6, Decimal.ROUND_HALF_UP)
+              .toNumber(),
+      alertaMargenBajo: metrics.isBelowTarget,
+      isFullyPaid,
+    };
+  }
 
   private getCashFlowDateKey(date: Date, period: 'daily' | 'monthly') {
     const formatter = new Intl.DateTimeFormat('en-CA', {
@@ -312,6 +927,238 @@ export class FinanceService {
         })),
       ],
     };
+  }
+
+  private buildDefaultFixedExpensesConfigRecord(): FixedExpenseConfigRecord {
+    return {
+      currency: 'COP',
+      period: 'monthly',
+      items: this.defaultFixedExpenseItems.map((item) => ({ ...item })),
+    };
+  }
+
+  private createFixedExpenseItemId(label: string, index: number) {
+    const normalized = label
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+    return normalized || `fixed-expense-${index + 1}`;
+  }
+
+  private normalizeFixedExpenseItems(
+    items: unknown,
+    fallbackItems = this.defaultFixedExpenseItems,
+  ) {
+    if (!Array.isArray(items)) {
+      return fallbackItems.map((item) => ({ ...item }));
+    }
+
+    const usedIds = new Set<string>();
+    const normalizedItems = items.flatMap((item, index) => {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) {
+        return [];
+      }
+
+      const candidate = item as Record<string, unknown>;
+      const rawLabel =
+        typeof candidate.label === 'string' ? candidate.label.trim() : '';
+      if (!rawLabel) {
+        return [];
+      }
+
+      const numericAmount = Number(candidate.amount ?? 0);
+      const safeAmount =
+        Number.isFinite(numericAmount) && numericAmount >= 0
+          ? numericAmount
+          : 0;
+      const rawId =
+        typeof candidate.id === 'string' && candidate.id.trim().length > 0
+          ? candidate.id.trim()
+          : this.createFixedExpenseItemId(rawLabel, index);
+      let resolvedId = rawId;
+      let duplicateCounter = 1;
+      while (usedIds.has(resolvedId)) {
+        duplicateCounter += 1;
+        resolvedId = `${rawId}-${duplicateCounter}`;
+      }
+      usedIds.add(resolvedId);
+
+      return [
+        {
+          id: resolvedId,
+          label: rawLabel,
+          amount: roundMoney(safeAmount).toNumber(),
+        },
+      ];
+    });
+
+    if (normalizedItems.length === 0) {
+      return fallbackItems.map((item) => ({ ...item }));
+    }
+
+    return normalizedItems;
+  }
+
+  private parseFixedExpensesConfigRecord(
+    rawValue: Prisma.JsonValue | null | undefined,
+  ): FixedExpenseConfigRecord {
+    if (!rawValue || typeof rawValue !== 'object' || Array.isArray(rawValue)) {
+      return this.buildDefaultFixedExpensesConfigRecord();
+    }
+
+    const record = rawValue as Record<string, unknown>;
+
+    return {
+      currency: 'COP',
+      period: 'monthly',
+      items: this.normalizeFixedExpenseItems(record.items),
+    };
+  }
+
+  private buildFixedExpensesConfigResponse(
+    record: FixedExpenseConfigRecord,
+    updatedAt: Date | null,
+  ): FixedExpenseConfigResponse {
+    const monthlyTotal = record.items.reduce(
+      (sum, item) => sum.plus(item.amount),
+      new Decimal(0),
+    );
+
+    return {
+      key: this.monthlyFixedExpensesSettingKey,
+      currency: record.currency,
+      period: record.period,
+      monthlyTotal: decimalToNumber(roundMoney(monthlyTotal)),
+      items: record.items.map((item) => ({ ...item })),
+      isConfigured: monthlyTotal.greaterThan(0),
+      updatedAt,
+    };
+  }
+
+  private async readFixedExpensesSettingRow() {
+    const rows = await this.prisma.$queryRaw<AppSettingRow[]>(Prisma.sql`
+      SELECT "value", "updated_at"
+      FROM "tote-bag"."app_settings"
+      WHERE "key" = ${this.monthlyFixedExpensesSettingKey}
+      LIMIT 1
+    `);
+
+    return rows[0] ?? null;
+  }
+
+  private async upsertFixedExpensesConfigRecord(
+    record: FixedExpenseConfigRecord,
+  ) {
+    const payload = JSON.stringify(record);
+    await this.prisma.$executeRaw(Prisma.sql`
+      INSERT INTO "tote-bag"."app_settings" ("key", "value", "created_at", "updated_at")
+      VALUES (
+        ${this.monthlyFixedExpensesSettingKey},
+        CAST(${payload} AS jsonb),
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+      )
+      ON CONFLICT ("key") DO UPDATE
+      SET
+        "value" = EXCLUDED."value",
+        "updated_at" = CURRENT_TIMESTAMP
+    `);
+  }
+
+  private async ensureFixedExpensesConfig() {
+    const existingRow = await this.readFixedExpensesSettingRow();
+
+    if (existingRow) {
+      return this.buildFixedExpensesConfigResponse(
+        this.parseFixedExpensesConfigRecord(existingRow.value),
+        existingRow.updated_at,
+      );
+    }
+
+    const defaultRecord = this.buildDefaultFixedExpensesConfigRecord();
+    await this.upsertFixedExpensesConfigRecord(defaultRecord);
+
+    return this.buildFixedExpensesConfigResponse(defaultRecord, new Date());
+  }
+
+  private getInclusiveDayCount(startDate: Date, endDate: Date) {
+    const start = new Date(
+      startDate.getFullYear(),
+      startDate.getMonth(),
+      startDate.getDate(),
+    );
+    const end = new Date(
+      endDate.getFullYear(),
+      endDate.getMonth(),
+      endDate.getDate(),
+    );
+
+    return Math.floor((end.getTime() - start.getTime()) / 86400000) + 1;
+  }
+
+  private calculateProratedFixedExpenseTarget(
+    startDate: Date,
+    endDate: Date,
+    monthlyTotal: Decimal,
+  ) {
+    if (monthlyTotal.lessThanOrEqualTo(0)) {
+      return new Decimal(0);
+    }
+
+    let cursor = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+    let target = new Decimal(0);
+
+    while (cursor <= endDate) {
+      const monthStart = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+      const monthEnd = new Date(
+        cursor.getFullYear(),
+        cursor.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+        999,
+      );
+      const overlapStart = startDate > monthStart ? startDate : monthStart;
+      const overlapEnd = endDate < monthEnd ? endDate : monthEnd;
+
+      if (overlapStart <= overlapEnd) {
+        const coveredDays = this.getInclusiveDayCount(overlapStart, overlapEnd);
+        const daysInMonth = monthEnd.getDate();
+        target = target.plus(monthlyTotal.mul(coveredDays).div(daysInMonth));
+      }
+
+      cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+    }
+
+    return roundMoney(target);
+  }
+
+  async getFixedExpensesConfig() {
+    return this.ensureFixedExpensesConfig();
+  }
+
+  async updateFixedExpensesConfig(dto: UpdateFixedExpensesConfigDto) {
+    const normalizedItems = this.normalizeFixedExpenseItems(dto.items, []);
+
+    if (normalizedItems.length === 0) {
+      throw new BadRequestException(
+        'Debes registrar al menos un gasto fijo mensual.',
+      );
+    }
+
+    const record: FixedExpenseConfigRecord = {
+      currency: 'COP',
+      period: 'monthly',
+      items: normalizedItems,
+    };
+
+    await this.upsertFixedExpensesConfigRecord(record);
+
+    return this.buildFixedExpensesConfigResponse(record, new Date());
   }
 
   private resolveDateRange({
@@ -560,6 +1407,193 @@ export class FinanceService {
         endDate,
         metrics,
       ),
+    };
+  }
+
+  private async getCollectedOrdersForProfitability(query: {
+    startDate?: string;
+    endDate?: string;
+  }) {
+    const createdAtFilter = this.buildDateRangeFilter(
+      query.startDate,
+      query.endDate,
+    );
+
+    return this.prisma.order.findMany({
+      where: {
+        deletedAt: null,
+        status: { in: this.revenueOrderStatuses },
+        balanceDue: { lte: 0 },
+        ...(createdAtFilter ? { createdAt: createdAtFilter } : {}),
+      },
+      select: {
+        id: true,
+        orderNumber: true,
+        customerEmail: true,
+        createdAt: true,
+        status: true,
+        totalAmount: true,
+        netAmount: true,
+        taxTotal: true,
+        amountPaid: true,
+        balanceDue: true,
+        items: {
+          select: {
+            id: true,
+            sku: true,
+            quantity: true,
+            pricingJson: true,
+            variant: {
+              select: {
+                costPrice: true,
+                totalCost: true,
+                taxRate: true,
+              },
+            },
+          },
+        },
+        payments: {
+          where: { deletedAt: null },
+          orderBy: [{ paymentDate: 'asc' }, { createdAt: 'asc' }],
+          select: {
+            id: true,
+            amount: true,
+            paymentDate: true,
+            provider: true,
+            paymentMethodType: true,
+            grossAmount: true,
+            netReceivedAmount: true,
+            commissionAmount: true,
+            commissionVatAmount: true,
+            reteFuenteAmount: true,
+            reteIvaAmount: true,
+            reteIcaAmount: true,
+            packagingCifAmount: true,
+            settlementSource: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    }) as Promise<OrderProfitabilityOrderRecord[]>;
+  }
+
+  async getOrderProfitabilityReport(query: {
+    startDate?: string;
+    endDate?: string;
+  }) {
+    const orders = await this.getCollectedOrdersForProfitability(query);
+    const profitabilityOrders = orders.map((order) =>
+      this.buildOrderProfitabilityRow(order),
+    );
+
+    const summaryAccumulator = profitabilityOrders.reduce(
+      (accumulator, order) => ({
+        grossRevenue: accumulator.grossRevenue.plus(order.ingresoBruto),
+        netSalesWithoutVat: accumulator.netSalesWithoutVat.plus(
+          order.ventaNetaSinIva,
+        ),
+        vatLiability: accumulator.vatLiability.plus(order.iva),
+        productCost: accumulator.productCost.plus(order.costoProducto),
+        commissionAmount: accumulator.commissionAmount.plus(
+          order.comisionWompi,
+        ),
+        commissionVatAmount: accumulator.commissionVatAmount.plus(
+          order.ivaComision,
+        ),
+        logisticsCifAmount: accumulator.logisticsCifAmount.plus(
+          order.costoLogisticoCif,
+        ),
+        grossProfit: accumulator.grossProfit.plus(order.utilidadBruta),
+        operatingProfit: accumulator.operatingProfit.plus(
+          order.utilidadOperativa,
+        ),
+        netProfit: accumulator.netProfit.plus(order.utilidadNeta),
+        realNetProfit: accumulator.realNetProfit.plus(order.utilidadNetaReal),
+        netReceivedBank: accumulator.netReceivedBank.plus(
+          order.netoRecibidoBanco,
+        ),
+        retentionAssetTotal: accumulator.retentionAssetTotal.plus(
+          order.retencionesActivas,
+        ),
+        reteFuenteTotal: accumulator.reteFuenteTotal.plus(order.reteFuente),
+        reteIvaTotal: accumulator.reteIvaTotal.plus(order.reteIva),
+        reteIcaTotal: accumulator.reteIcaTotal.plus(order.reteIca),
+        grossVsNetDelta: accumulator.grossVsNetDelta.plus(
+          order.brutoVsNetoDelta,
+        ),
+        belowTargetCount:
+          accumulator.belowTargetCount + (order.alertaMargenBajo ? 1 : 0),
+      }),
+      {
+        grossRevenue: new Decimal(0),
+        netSalesWithoutVat: new Decimal(0),
+        vatLiability: new Decimal(0),
+        productCost: new Decimal(0),
+        commissionAmount: new Decimal(0),
+        commissionVatAmount: new Decimal(0),
+        logisticsCifAmount: new Decimal(0),
+        grossProfit: new Decimal(0),
+        operatingProfit: new Decimal(0),
+        netProfit: new Decimal(0),
+        realNetProfit: new Decimal(0),
+        netReceivedBank: new Decimal(0),
+        retentionAssetTotal: new Decimal(0),
+        reteFuenteTotal: new Decimal(0),
+        reteIvaTotal: new Decimal(0),
+        reteIcaTotal: new Decimal(0),
+        grossVsNetDelta: new Decimal(0),
+        belowTargetCount: 0,
+      },
+    );
+
+    const marginOnGatewayNet = summaryAccumulator.netReceivedBank.greaterThan(0)
+      ? roundMoney(
+          summaryAccumulator.realNetProfit.div(
+            summaryAccumulator.netReceivedBank,
+          ),
+        )
+      : null;
+
+    const summary: OrderProfitabilitySummary = {
+      orderCount: profitabilityOrders.length,
+      grossRevenue: decimalToNumber(summaryAccumulator.grossRevenue),
+      netSalesWithoutVat: decimalToNumber(
+        summaryAccumulator.netSalesWithoutVat,
+      ),
+      vatLiability: decimalToNumber(summaryAccumulator.vatLiability),
+      productCost: decimalToNumber(summaryAccumulator.productCost),
+      commissionAmount: decimalToNumber(summaryAccumulator.commissionAmount),
+      commissionVatAmount: decimalToNumber(
+        summaryAccumulator.commissionVatAmount,
+      ),
+      logisticsCifAmount: decimalToNumber(
+        summaryAccumulator.logisticsCifAmount,
+      ),
+      grossProfit: decimalToNumber(summaryAccumulator.grossProfit),
+      operatingProfit: decimalToNumber(summaryAccumulator.operatingProfit),
+      netProfit: decimalToNumber(summaryAccumulator.netProfit),
+      realNetProfit: decimalToNumber(summaryAccumulator.realNetProfit),
+      netReceivedBank: decimalToNumber(summaryAccumulator.netReceivedBank),
+      retentionAssetTotal: decimalToNumber(
+        summaryAccumulator.retentionAssetTotal,
+      ),
+      reteFuenteTotal: decimalToNumber(summaryAccumulator.reteFuenteTotal),
+      reteIvaTotal: decimalToNumber(summaryAccumulator.reteIvaTotal),
+      reteIcaTotal: decimalToNumber(summaryAccumulator.reteIcaTotal),
+      grossVsNetDelta: decimalToNumber(summaryAccumulator.grossVsNetDelta),
+      marginOnGatewayNet:
+        marginOnGatewayNet === null
+          ? null
+          : marginOnGatewayNet
+              .toDecimalPlaces(6, Decimal.ROUND_HALF_UP)
+              .toNumber(),
+      marginTarget: this.gatewayMarginTarget.toNumber(),
+      belowTargetCount: summaryAccumulator.belowTargetCount,
+    };
+
+    return {
+      summary,
+      orders: profitabilityOrders,
     };
   }
 
@@ -899,55 +1933,339 @@ export class FinanceService {
   }
 
   async getSalesTaxReport(query: { startDate?: string; endDate?: string }) {
-    const createdAtFilter = this.buildDateRangeFilter(
-      query.startDate,
-      query.endDate,
-    );
-    const orders = await this.prisma.order.findMany({
-      where: {
-        status: { in: this.revenueOrderStatuses },
-        ...(createdAtFilter ? { createdAt: createdAtFilter } : {}),
-      },
-      select: {
-        id: true,
-        orderNumber: true,
-        customerEmail: true,
-        status: true,
-        createdAt: true,
-        totalAmount: true,
-        netAmount: true,
-        taxTotal: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    const taxableBase = orders.reduce(
-      (sum, order) => sum.plus(toDecimal(order.netAmount)),
-      new Decimal(0),
-    );
-    const taxTotal = orders.reduce(
-      (sum, order) => sum.plus(toDecimal(order.taxTotal)),
-      new Decimal(0),
-    );
-    const grossTotal = orders.reduce(
-      (sum, order) => sum.plus(toDecimal(order.totalAmount)),
-      new Decimal(0),
+    const profitability = await this.getOrderProfitabilityReport(query);
+    const taxableBase = toDecimal(profitability.summary.netSalesWithoutVat);
+    const taxTotal = toDecimal(profitability.summary.vatLiability);
+    const grossTotal = toDecimal(profitability.summary.grossRevenue);
+    const vatNetAfterReteIva = roundMoney(
+      taxTotal.minus(profitability.summary.reteIvaTotal),
     );
 
     return {
-      orderCount: orders.length,
+      orderCount: profitability.summary.orderCount,
       taxableBase: decimalToNumber(taxableBase),
       taxTotal: decimalToNumber(taxTotal),
       grossTotal: decimalToNumber(grossTotal),
+      vatLiabilityToReserve: decimalToNumber(taxTotal),
+      reteIvaCredit: profitability.summary.reteIvaTotal,
+      vatNetAfterReteIva: decimalToNumber(vatNetAfterReteIva),
+      withholdingAssetTotal: profitability.summary.retentionAssetTotal,
       reconciliationDifference: decimalToNumber(
         grossTotal.minus(taxableBase.plus(taxTotal)),
       ),
-      orders: orders.map((order) => ({
-        ...order,
-        totalAmount: decimalToNumber(order.totalAmount),
-        netAmount: decimalToNumber(order.netAmount),
-        taxTotal: decimalToNumber(order.taxTotal),
+      orders: profitability.orders.map((order) => ({
+        id: order.id,
+        orderNumber: order.orderNumber,
+        customerEmail: order.customerEmail,
+        status: order.status,
+        createdAt: order.createdAt,
+        totalAmount: order.ingresoBruto,
+        netAmount: order.ventaNetaSinIva,
+        taxTotal: order.iva,
+        reteIvaAmount: order.reteIva,
+        netReceivedAmount: order.netoRecibidoBanco,
       })),
+    };
+  }
+
+  async getRetentionReport(query: { startDate?: string; endDate?: string }) {
+    const profitability = await this.getOrderProfitabilityReport(query);
+    const monthlyMap = profitability.orders.reduce<
+      Record<
+        string,
+        {
+          reteFuente: Decimal;
+          reteIva: Decimal;
+          reteIca: Decimal;
+          total: Decimal;
+          orderCount: number;
+        }
+      >
+    >((accumulator, order) => {
+      const month = this.getMonthKey(order.createdAt);
+      if (!accumulator[month]) {
+        accumulator[month] = {
+          reteFuente: new Decimal(0),
+          reteIva: new Decimal(0),
+          reteIca: new Decimal(0),
+          total: new Decimal(0),
+          orderCount: 0,
+        };
+      }
+
+      accumulator[month].reteFuente = accumulator[month].reteFuente.plus(
+        order.reteFuente,
+      );
+      accumulator[month].reteIva = accumulator[month].reteIva.plus(
+        order.reteIva,
+      );
+      accumulator[month].reteIca = accumulator[month].reteIca.plus(
+        order.reteIca,
+      );
+      accumulator[month].total = accumulator[month].total.plus(
+        order.retencionesActivas,
+      );
+      accumulator[month].orderCount += 1;
+
+      return accumulator;
+    }, {});
+
+    return {
+      summary: {
+        orderCount: profitability.summary.orderCount,
+        reteFuenteTotal: profitability.summary.reteFuenteTotal,
+        reteIvaTotal: profitability.summary.reteIvaTotal,
+        reteIcaTotal: profitability.summary.reteIcaTotal,
+        retentionAssetTotal: profitability.summary.retentionAssetTotal,
+      },
+      months: Object.entries(monthlyMap)
+        .map(([month, value]) => ({
+          month,
+          orderCount: value.orderCount,
+          reteFuente: decimalToNumber(value.reteFuente),
+          reteIva: decimalToNumber(value.reteIva),
+          reteIca: decimalToNumber(value.reteIca),
+          total: decimalToNumber(value.total),
+        }))
+        .sort((left, right) => left.month.localeCompare(right.month)),
+      orders: profitability.orders.map((order) => ({
+        id: order.id,
+        orderNumber: order.orderNumber,
+        customerEmail: order.customerEmail,
+        createdAt: order.createdAt,
+        reteFuente: order.reteFuente,
+        reteIva: order.reteIva,
+        reteIca: order.reteIca,
+        total: order.retencionesActivas,
+      })),
+    };
+  }
+
+  async getBreakEvenThermometer(
+    query: FinancialReportQuery,
+  ): Promise<BreakEvenThermometerReport> {
+    const { startDate, endDate, label } = this.resolveDateRange(query);
+    const [fixedExpensesConfig, profitability] = await Promise.all([
+      this.ensureFixedExpensesConfig(),
+      this.getOrderProfitabilityReport({
+        startDate: format(startDate, 'yyyy-MM-dd'),
+        endDate: format(endDate, 'yyyy-MM-dd'),
+      }),
+    ]);
+
+    const accumulatedNetProfit = roundMoney(
+      profitability.summary.realNetProfit,
+    );
+    const targetFixedExpenses = this.calculateProratedFixedExpenseTarget(
+      startDate,
+      endDate,
+      toDecimal(fixedExpensesConfig.monthlyTotal),
+    );
+    const progressRatio =
+      fixedExpensesConfig.isConfigured && targetFixedExpenses.greaterThan(0)
+        ? accumulatedNetProfit.div(targetFixedExpenses)
+        : new Decimal(0);
+    const remainingToBreakEven = accumulatedNetProfit.lessThan(
+      targetFixedExpenses,
+    )
+      ? roundMoney(targetFixedExpenses.minus(accumulatedNetProfit))
+      : new Decimal(0);
+    const surplusOverBreakEven = accumulatedNetProfit.greaterThan(
+      targetFixedExpenses,
+    )
+      ? roundMoney(accumulatedNetProfit.minus(targetFixedExpenses))
+      : new Decimal(0);
+
+    return {
+      period: {
+        label,
+        startDate,
+        endDate,
+      },
+      fixedExpensesConfig,
+      orderCount: profitability.summary.orderCount,
+      accumulatedNetProfit: decimalToNumber(accumulatedNetProfit),
+      targetFixedExpenses: decimalToNumber(targetFixedExpenses),
+      progressRatio: progressRatio
+        .toDecimalPlaces(6, Decimal.ROUND_HALF_UP)
+        .toNumber(),
+      progressPercentage: roundMoney(progressRatio.mul(100)).toNumber(),
+      progressPercentageCapped: Decimal.max(
+        0,
+        Decimal.min(progressRatio.mul(100), new Decimal(140)),
+      ).toNumber(),
+      remainingToBreakEven: decimalToNumber(remainingToBreakEven),
+      surplusOverBreakEven: decimalToNumber(surplusOverBreakEven),
+      status:
+        !fixedExpensesConfig.isConfigured ||
+        targetFixedExpenses.lessThanOrEqualTo(0)
+          ? 'UNCONFIGURED'
+          : accumulatedNetProfit.greaterThanOrEqualTo(targetFixedExpenses)
+            ? 'BREAK_EVEN_REACHED'
+            : 'IN_PROGRESS',
+    };
+  }
+
+  getGatewayMarginGrid(input: {
+    grossAmount: number;
+    productCost: number;
+    taxRate?: number;
+    targetMargins?: number[];
+  }): GatewayMarginGridResult {
+    if (!Number.isFinite(input.grossAmount) || input.grossAmount <= 0) {
+      throw new BadRequestException('El ingreso bruto debe ser mayor a 0.');
+    }
+
+    if (!Number.isFinite(input.productCost) || input.productCost < 0) {
+      throw new BadRequestException(
+        'El costo del producto no puede ser negativo.',
+      );
+    }
+
+    const taxRate = toDecimal(input.taxRate ?? 0.19);
+    if (taxRate.lessThan(0) || taxRate.greaterThan(1)) {
+      throw new BadRequestException('La tarifa IVA debe estar entre 0 y 1.');
+    }
+
+    const taxBreakdown = calculateGrossTaxBreakdown({
+      grossAmount: input.grossAmount,
+      taxRate,
+    });
+    const settlement = this.buildPaymentSettlementBreakdown({
+      amount: input.grossAmount,
+      provider: 'wompi',
+      grossAmount: input.grossAmount,
+    });
+    const profitability = this.buildProfitabilityMetrics({
+      grossAmount: taxBreakdown.grossAmount,
+      netSalesWithoutVat: taxBreakdown.netAmount,
+      vatAmount: taxBreakdown.taxAmount,
+      productCost: input.productCost,
+      commissionAmount: settlement.commissionAmount,
+      commissionVatAmount: settlement.commissionVatAmount,
+      logisticsCifAmount: settlement.packagingCifAmount,
+      netReceivedAmount: settlement.netReceivedAmount,
+      reteFuenteAmount: settlement.reteFuenteAmount,
+      reteIvaAmount: settlement.reteIvaAmount,
+      reteIcaAmount: settlement.reteIcaAmount,
+    });
+
+    const config = this.getFinancialGatewayConfig();
+    const targetMargins = (input.targetMargins ?? [0.6, 0.65, 0.7]).map(
+      (value) => {
+        const decimalValue = toDecimal(value);
+        return decimalValue.greaterThan(1)
+          ? decimalValue.div(100)
+          : decimalValue;
+      },
+    );
+    const gatewayRate = roundMoney(
+      config.commissionPercent.mul(
+        new Decimal(1).plus(config.commissionVatPercent),
+      ),
+    );
+    const fixedGatewayCost = roundMoney(
+      config.fixedFeeCop
+        .mul(new Decimal(1).plus(config.commissionVatPercent))
+        .plus(config.packagingCifCop),
+    );
+    const retentionRate = roundMoney(
+      config.reteFuentePercent
+        .plus(config.reteIvaPercent)
+        .plus(config.reteIcaPercent),
+    );
+
+    return {
+      config: {
+        commissionPercent: config.commissionPercent.toNumber(),
+        fixedFeeCop: decimalToNumber(config.fixedFeeCop),
+        packagingCifCop: decimalToNumber(config.packagingCifCop),
+        commissionVatPercent: config.commissionVatPercent.toNumber(),
+        reteFuentePercent: config.reteFuentePercent.toNumber(),
+        reteIvaPercent: config.reteIvaPercent.toNumber(),
+        reteIcaPercent: config.reteIcaPercent.toNumber(),
+      },
+      current: {
+        ingresoBruto: decimalToNumber(profitability.grossAmount),
+        ventaNetaSinIva: decimalToNumber(profitability.netSalesWithoutVat),
+        iva: decimalToNumber(profitability.vatAmount),
+        costoProducto: decimalToNumber(profitability.productCost),
+        comisionWompi: decimalToNumber(profitability.commissionAmount),
+        ivaComision: decimalToNumber(profitability.commissionVatAmount),
+        costoLogisticoCif: decimalToNumber(profitability.logisticsCifAmount),
+        netoRecibidoBanco: decimalToNumber(profitability.netReceivedAmount),
+        retencionesActivas: decimalToNumber(profitability.retentionAsset),
+        utilidadBruta: decimalToNumber(profitability.grossProfit),
+        utilidadOperativa: decimalToNumber(profitability.operatingProfit),
+        utilidadNeta: decimalToNumber(profitability.realNetProfit),
+        margenSobreNetoPasarela:
+          profitability.marginOnGatewayNet === null
+            ? null
+            : profitability.marginOnGatewayNet
+                .toDecimalPlaces(6, Decimal.ROUND_HALF_UP)
+                .toNumber(),
+        alertaMargenBajo: profitability.isBelowTarget,
+      },
+      targets: targetMargins.map((targetMargin) => {
+        const target = roundMoney(targetMargin);
+        const denominator = roundMoney(
+          new Decimal(1)
+            .div(new Decimal(1).plus(taxRate))
+            .minus(gatewayRate)
+            .minus(
+              target.mul(
+                new Decimal(1).minus(gatewayRate).minus(retentionRate),
+              ),
+            ),
+        );
+        if (denominator.lessThanOrEqualTo(0)) {
+          return {
+            targetMargin: target.toNumber(),
+            requiredGrossAmount: null,
+            requiredNetReceivedAmount: null,
+            expectedNetProfit: null,
+            reachable: false,
+          };
+        }
+
+        const requiredGrossAmount = roundMoney(
+          toDecimal(input.productCost).plus(
+            fixedGatewayCost.mul(new Decimal(1).minus(target)),
+          ),
+        ).div(denominator);
+        const expectedSettlement = this.buildPaymentSettlementBreakdown({
+          amount: requiredGrossAmount,
+          provider: 'wompi',
+          grossAmount: requiredGrossAmount,
+        });
+        const expectedProfitability = this.buildProfitabilityMetrics({
+          grossAmount: requiredGrossAmount,
+          netSalesWithoutVat: calculateGrossTaxBreakdown({
+            grossAmount: requiredGrossAmount,
+            taxRate,
+          }).netAmount,
+          productCost: input.productCost,
+          commissionAmount: expectedSettlement.commissionAmount,
+          commissionVatAmount: expectedSettlement.commissionVatAmount,
+          logisticsCifAmount: expectedSettlement.packagingCifAmount,
+          netReceivedAmount: expectedSettlement.netReceivedAmount,
+          reteFuenteAmount: expectedSettlement.reteFuenteAmount,
+          reteIvaAmount: expectedSettlement.reteIvaAmount,
+          reteIcaAmount: expectedSettlement.reteIcaAmount,
+        });
+
+        return {
+          targetMargin: target.toNumber(),
+          requiredGrossAmount: decimalToNumber(requiredGrossAmount),
+          requiredNetReceivedAmount: decimalToNumber(
+            expectedProfitability.netReceivedAmount,
+          ),
+          expectedNetProfit: decimalToNumber(
+            expectedProfitability.realNetProfit,
+          ),
+          reachable: true,
+        };
+      }),
     };
   }
 

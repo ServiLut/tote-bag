@@ -2,24 +2,113 @@
 
 import { useEffect, useState } from 'react';
 import { ApiResponse } from '@/types/api';
-import { Product } from '@/types/product';
+import { Product, Variant } from '@/types/product';
 import {
   createCurrencyInputState,
   handleCurrencyInputChangeWithState,
 } from '@/lib/numeric-input';
-import { AlertCircle, Calculator, DollarSign, Loader2, TrendingUp } from 'lucide-react';
+import {
+  AlertCircle,
+  ArrowDownToLine,
+  Calculator,
+  DollarSign,
+  Loader2,
+  Receipt,
+  TrendingUp,
+} from 'lucide-react';
 import { Input, InputGroup } from '@tote-bag/ui';
 import { apiFetch } from '@/utils/api';
 import { useDashboardAuth } from '@/components/dashboard/DashboardAuthContext';
+
+type GatewayMarginGrid = {
+  current: {
+    ingresoBruto: number;
+    ventaNetaSinIva: number;
+    iva: number;
+    costoProducto: number;
+    comisionWompi: number;
+    ivaComision: number;
+    costoLogisticoCif: number;
+    netoRecibidoBanco: number;
+    retencionesActivas: number;
+    utilidadBruta: number;
+    utilidadOperativa: number;
+    utilidadNeta: number;
+    margenSobreNetoPasarela: number | null;
+    alertaMargenBajo: boolean;
+  };
+  targets: Array<{
+    targetMargin: number;
+    requiredGrossAmount: number | null;
+    requiredNetReceivedAmount: number | null;
+    expectedNetProfit: number | null;
+    reachable: boolean;
+  }>;
+};
+
+function formatCurrency(amount: number | null | undefined) {
+  if (amount === null || amount === undefined) {
+    return '--';
+  }
+
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+function formatPercentage(value: number | null | undefined) {
+  if (value === null || value === undefined) {
+    return '--';
+  }
+
+  return `${(value * 100).toFixed(1)}%`;
+}
+
+function getReferenceVariant(product: Product | undefined): Variant | undefined {
+  if (!product) {
+    return undefined;
+  }
+
+  return (
+    product.variants.find((variant) => variant.isActive !== false) ||
+    product.variants[0]
+  );
+}
+
+function unwrapApiData<T>(body: ApiResponse<T> | T): T {
+  if (body && typeof body === 'object' && 'data' in body) {
+    return ((body as ApiResponse<T>).data || null) as T;
+  }
+
+  return body as T;
+}
 
 export default function ProfitCalculator() {
   const { accessToken } = useDashboardAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProductId, setSelectedProductId] = useState<string>('');
-  const [suggestedPrice, setSuggestedPrice] = useState(() => createCurrencyInputState(0));
+  const [suggestedPrice, setSuggestedPrice] = useState(() =>
+    createCurrencyInputState(0),
+  );
   const [avgCost, setAvgCost] = useState(() => createCurrencyInputState(''));
   const [productsLoading, setProductsLoading] = useState(true);
   const [productsError, setProductsError] = useState<string | null>(null);
+  const [grid, setGrid] = useState<GatewayMarginGrid | null>(null);
+  const [gridLoading, setGridLoading] = useState(false);
+  const [gridError, setGridError] = useState<string | null>(null);
+
+  const selectedProduct = products.find((item) => item.id === selectedProductId);
+  const referenceVariant = getReferenceVariant(selectedProduct);
+  const referenceTaxRate =
+    typeof referenceVariant?.taxRate === 'string'
+      ? Number(referenceVariant.taxRate)
+      : (referenceVariant?.taxRate ?? 0.19);
+  const hasSelection = Boolean(selectedProductId);
+  const hasRealCost = avgCost.numericValue > 0;
+  const canCalculateMetrics =
+    hasSelection && hasRealCost && suggestedPrice.numericValue > 0;
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -35,6 +124,7 @@ export default function ProfitCalculator() {
             Authorization: `Bearer ${accessToken}`,
           },
         });
+
         if (!res.ok) {
           throw new Error('No se pudo cargar el catalogo de productos.');
         }
@@ -43,7 +133,9 @@ export default function ProfitCalculator() {
         setProducts(body.data || []);
       } catch (err) {
         console.error('Error fetching products:', err);
-        setProductsError('No se pudieron cargar los productos para analizar margenes.');
+        setProductsError(
+          'No se pudieron cargar los productos para analizar margenes.',
+        );
       } finally {
         setProductsLoading(false);
       }
@@ -53,49 +145,114 @@ export default function ProfitCalculator() {
   }, [accessToken]);
 
   useEffect(() => {
-    const product = products.find((item) => item.id === selectedProductId);
-
-    if (!product) {
+    if (!selectedProduct) {
       setAvgCost(createCurrencyInputState(''));
       setSuggestedPrice(createCurrencyInputState(0));
+      setGrid(null);
       return;
     }
 
-    const referenceVariant =
-      product.variants.find((variant) => variant.isActive !== false)
-      || product.variants[0];
-
     setSuggestedPrice(
-      createCurrencyInputState(referenceVariant?.salePrice ?? product.basePrice ?? 0),
+      createCurrencyInputState(
+        referenceVariant?.salePrice ?? selectedProduct.basePrice ?? 0,
+      ),
     );
-  }, [products, selectedProductId]);
+    setAvgCost(
+      createCurrencyInputState(
+        referenceVariant?.totalCost ?? referenceVariant?.costPrice ?? '',
+      ),
+    );
+  }, [referenceVariant?.costPrice, referenceVariant?.salePrice, referenceVariant?.totalCost, selectedProduct]);
 
-  const grossProfit = suggestedPrice.numericValue - avgCost.numericValue;
-  const hasSelection = Boolean(selectedProductId);
-  const hasRealCost = avgCost.numericValue > 0;
-  const canCalculateMetrics = hasSelection && hasRealCost;
-  const marginPercentage = canCalculateMetrics && suggestedPrice.numericValue > 0
-    ? (grossProfit / suggestedPrice.numericValue) * 100
-    : 0;
-  const markupPercentage = canCalculateMetrics && avgCost.numericValue > 0
-    ? (grossProfit / avgCost.numericValue) * 100
-    : 0;
+  useEffect(() => {
+    let active = true;
 
-  const getTargetPrice = (targetMargin: number) => {
-    if (avgCost.numericValue <= 0 || targetMargin >= 100) return 0;
-    return avgCost.numericValue / (1 - targetMargin / 100);
-  };
+    const fetchGrid = async () => {
+      if (!canCalculateMetrics || !accessToken) {
+        setGrid(null);
+        setGridError(null);
+        setGridLoading(false);
+        return;
+      }
+
+      setGridLoading(true);
+      setGridError(null);
+
+      try {
+        const response = await apiFetch('/finance/gateway-margin-grid', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            grossAmount: suggestedPrice.numericValue,
+            productCost: avgCost.numericValue,
+            taxRate: referenceTaxRate,
+            targetMargins: [0.6, 0.65, 0.7],
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || 'No se pudo calcular la malla financiera.');
+        }
+
+        const body = (await response.json()) as ApiResponse<GatewayMarginGrid>;
+        if (!active) {
+          return;
+        }
+
+        setGrid(unwrapApiData(body));
+      } catch (error) {
+        console.error('Error fetching gateway margin grid:', error);
+        if (active) {
+          setGridError(
+            error instanceof Error
+              ? error.message
+              : 'No se pudo calcular la malla financiera.',
+          );
+          setGrid(null);
+        }
+      } finally {
+        if (active) {
+          setGridLoading(false);
+        }
+      }
+    };
+
+    fetchGrid();
+
+    return () => {
+      active = false;
+    };
+  }, [
+    accessToken,
+    avgCost.numericValue,
+    canCalculateMetrics,
+    referenceTaxRate,
+    suggestedPrice.numericValue,
+  ]);
+
+  const current = grid?.current ?? null;
 
   return (
-    <div className="bg-surface border border-theme rounded-2xl p-6 shadow-sm">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 bg-primary/10 rounded-lg">
-          <Calculator className="w-5 h-5 text-primary" />
+    <div className="rounded-2xl border border-theme bg-surface p-6 shadow-sm">
+      <div className="mb-6 flex items-center gap-3">
+        <div className="rounded-lg bg-primary/10 p-2">
+          <Calculator className="h-5 w-5 text-primary" />
         </div>
-        <h2 className="text-xl font-bold text-primary">Calculadora de Margenes</h2>
+        <div>
+          <h2 className="text-xl font-bold text-primary">
+            Malla de Margen sobre Neto de Pasarela
+          </h2>
+          <p className="text-xs font-medium text-muted">
+            Calcula con backend financiero, no solo sobre PVP con IVA.
+          </p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1.05fr_1fr]">
         <div className="space-y-6">
           <div>
             <label className="mb-2 block text-sm font-bold uppercase tracking-wider text-muted">
@@ -128,7 +285,7 @@ export default function ProfitCalculator() {
 
           <div>
             <label className="mb-2 block text-sm font-bold uppercase tracking-wider text-muted">
-              Costo Promedio Ponderado
+              Costo del Producto
             </label>
             <InputGroup
               prefix={<span className="font-bold text-muted">$</span>}
@@ -139,24 +296,20 @@ export default function ProfitCalculator() {
                 inputMode="decimal"
                 value={avgCost.formattedValue}
                 disabled={!hasSelection}
-                onChange={(event) => handleCurrencyInputChangeWithState(event, setAvgCost)}
+                onChange={(event) =>
+                  handleCurrencyInputChangeWithState(event, setAvgCost)
+                }
                 className="w-full bg-transparent py-3 font-bold text-primary outline-none transition-all focus:ring-0 disabled:cursor-not-allowed disabled:opacity-60"
               />
             </InputGroup>
-            {hasSelection && !hasRealCost ? (
-              <p className="mt-1 text-[10px] font-medium italic text-amber-600">
-                Ingresa un costo para calcular utilidad, margen y markup.
-              </p>
-            ) : (
-              <p className="mt-1 text-[10px] font-medium italic text-muted">
-                Valor manual editable para simular escenarios de pricing.
-              </p>
-            )}
+            <p className="mt-1 text-[10px] font-medium italic text-muted">
+              Usa costo real o ajusta manualmente para simular escenarios.
+            </p>
           </div>
 
           <div>
             <label className="mb-2 block text-sm font-bold uppercase tracking-wider text-muted">
-              Precio de Venta Sugerido
+              PVP con IVA
             </label>
             <InputGroup
               prefix={<span className="font-bold text-muted">$</span>}
@@ -167,21 +320,35 @@ export default function ProfitCalculator() {
                 inputMode="decimal"
                 value={suggestedPrice.formattedValue}
                 disabled={!hasSelection}
-                onChange={(event) => handleCurrencyInputChangeWithState(event, setSuggestedPrice)}
+                onChange={(event) =>
+                  handleCurrencyInputChangeWithState(event, setSuggestedPrice)
+                }
                 className="w-full bg-transparent py-3 font-bold text-primary outline-none transition-all focus:ring-0 disabled:cursor-not-allowed disabled:opacity-60"
               />
             </InputGroup>
+            <p className="mt-1 text-[10px] font-medium italic text-muted">
+              Tarifa IVA de referencia: {(referenceTaxRate * 100).toFixed(0)}%.
+            </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            {[20, 30, 40, 50].map((targetMargin) => (
-              <div key={targetMargin} className="rounded-xl border border-theme bg-base px-4 py-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            {(grid?.targets || []).map((target) => (
+              <div
+                key={target.targetMargin}
+                className="rounded-xl border border-theme bg-base px-4 py-4"
+              >
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted">
-                  Precio {targetMargin}%
+                  Meta {formatPercentage(target.targetMargin)}
                 </p>
-                <p className="mt-1 text-sm font-black text-primary">
-                  {canCalculateMetrics
-                    ? `$${Math.round(getTargetPrice(targetMargin)).toLocaleString('es-CO')}`
+                <p className="mt-2 text-lg font-black text-primary">
+                  {target.reachable
+                    ? formatCurrency(target.requiredGrossAmount)
+                    : 'No alcanzable'}
+                </p>
+                <p className="mt-1 text-[11px] font-medium text-muted">
+                  Neto estimado:{' '}
+                  {target.reachable
+                    ? formatCurrency(target.requiredNetReceivedAmount)
                     : '--'}
                 </p>
               </div>
@@ -189,77 +356,142 @@ export default function ProfitCalculator() {
           </div>
         </div>
 
-        <div className="flex flex-col justify-center space-y-6 rounded-2xl border border-primary/10 bg-primary/5 p-6">
-          {!hasSelection && (
+        <div className="space-y-6 rounded-2xl border border-primary/10 bg-primary/5 p-6">
+          {!hasSelection ? (
             <div className="flex items-start gap-3 rounded-xl border border-theme bg-base px-4 py-3 text-sm text-muted">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-              <p>Selecciona un producto para calcular utilidad, margen y precios objetivo.</p>
+              <p>
+                Selecciona un producto para calcular utilidad real y margen
+                sobre recaudo neto de pasarela.
+              </p>
             </div>
-          )}
+          ) : null}
 
-          <div>
-            <p className="mb-1 text-sm font-bold uppercase tracking-widest text-primary/60">Utilidad Bruta</p>
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-6 w-6 text-primary" />
-              <span className="text-3xl font-black text-primary">
-                {canCalculateMetrics ? grossProfit.toLocaleString('es-CO') : '--'}
-              </span>
+          {gridLoading ? (
+            <div className="flex items-center gap-2 rounded-xl border border-theme bg-base px-4 py-3 text-sm font-medium text-muted">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Calculando motor financiero...
+            </div>
+          ) : null}
+
+          {gridError ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+              {gridError}
+            </div>
+          ) : null}
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="rounded-xl border border-theme bg-base px-4 py-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted">
+                Venta neta sin IVA
+              </p>
+              <p className="mt-2 text-2xl font-black text-primary">
+                {formatCurrency(current?.ventaNetaSinIva)}
+              </p>
+            </div>
+            <div className="rounded-xl border border-theme bg-base px-4 py-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted">
+                Neto recibido banco
+              </p>
+              <p className="mt-2 flex items-center gap-2 text-2xl font-black text-blue-600">
+                <ArrowDownToLine className="h-5 w-5" />
+                {formatCurrency(current?.netoRecibidoBanco)}
+              </p>
+            </div>
+            <div className="rounded-xl border border-theme bg-base px-4 py-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted">
+                Utilidad bruta
+              </p>
+              <p className="mt-2 flex items-center gap-2 text-2xl font-black text-primary">
+                <DollarSign className="h-5 w-5" />
+                {formatCurrency(current?.utilidadBruta)}
+              </p>
+            </div>
+            <div className="rounded-xl border border-theme bg-base px-4 py-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted">
+                Utilidad neta real
+              </p>
+              <p className="mt-2 text-2xl font-black text-emerald-600">
+                {formatCurrency(current?.utilidadNeta)}
+              </p>
             </div>
           </div>
 
-          <div>
-            <p className="mb-1 text-sm font-bold uppercase tracking-widest text-primary/60">
-              Margen de Contribucion
-            </p>
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-6 w-6 text-emerald-500" />
-              <span className={`text-3xl font-black ${marginPercentage > 30 ? 'text-emerald-500' : 'text-amber-500'}`}>
-                {canCalculateMetrics ? `${marginPercentage.toFixed(1)}%` : '--'}
-              </span>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div className="rounded-xl border border-theme bg-base px-4 py-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted">
+                IVA venta
+              </p>
+              <p className="mt-1 text-lg font-black text-primary">
+                {formatCurrency(current?.iva)}
+              </p>
             </div>
-          </div>
-
-          <div>
-            <p className="mb-1 text-sm font-bold uppercase tracking-widest text-primary/60">
-              Markup sobre costo
-            </p>
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-6 w-6 text-primary" />
-              <span className="text-3xl font-black text-primary">
-                {canCalculateMetrics ? `${markupPercentage.toFixed(1)}%` : '--'}
-              </span>
+            <div className="rounded-xl border border-theme bg-base px-4 py-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted">
+                Comision + IVA
+              </p>
+              <p className="mt-1 text-lg font-black text-primary">
+                {formatCurrency(
+                  (current?.comisionWompi || 0) + (current?.ivaComision || 0),
+                )}
+              </p>
+            </div>
+            <div className="rounded-xl border border-theme bg-base px-4 py-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted">
+                Retenciones activas
+              </p>
+              <p className="mt-1 flex items-center gap-2 text-lg font-black text-amber-600">
+                <Receipt className="h-4 w-4" />
+                {formatCurrency(current?.retencionesActivas)}
+              </p>
             </div>
           </div>
 
           <div className="border-t border-primary/10 pt-4">
-            {canCalculateMetrics ? (
+            {current ? (
               <div
-                className={`rounded-lg px-3 py-2 text-center text-xs font-bold ${
-                  marginPercentage > 40
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : marginPercentage > 20
-                      ? 'bg-amber-100 text-amber-700'
-                      : 'bg-red-100 text-red-700'
+                className={`rounded-lg px-3 py-3 text-center text-xs font-bold ${
+                  current.alertaMargenBajo
+                    ? 'bg-rose-100 text-rose-700'
+                    : 'bg-emerald-100 text-emerald-700'
                 }`}
               >
-                {marginPercentage > 40
-                  ? 'MARGEN EXCELENTE'
-                  : marginPercentage > 20
-                    ? 'MARGEN ACEPTABLE'
-                    : 'ALERTA: MARGEN BAJO'}
+                {current.alertaMargenBajo
+                  ? `ALERTA: margen sobre neto de pasarela en ${formatPercentage(
+                      current.margenSobreNetoPasarela,
+                    )}, por debajo del objetivo de 60%`
+                  : `Margen sobre neto de pasarela saludable: ${formatPercentage(
+                      current.margenSobreNetoPasarela,
+                    )}`}
               </div>
             ) : (
               <div className="rounded-lg bg-zinc-100 px-3 py-2 text-center text-xs font-bold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
-                SIN COSTO SUFICIENTE PARA CALCULAR MARGEN
+                SIN DATOS SUFICIENTES PARA CALCULAR EL MOTOR FINANCIERO
               </div>
             )}
           </div>
 
-          {canCalculateMetrics && suggestedPrice.numericValue < avgCost.numericValue && (
+          {canCalculateMetrics &&
+          suggestedPrice.numericValue < avgCost.numericValue ? (
             <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-              El precio sugerido esta por debajo del costo promedio ponderado del inventario activo.
+              El PVP con IVA esta por debajo del costo cargado para este
+              escenario.
             </div>
-          )}
+          ) : null}
+
+          <div className="rounded-xl border border-theme bg-base px-4 py-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted">
+              Referencia actual
+            </p>
+            <p className="mt-2 flex items-center gap-2 text-sm font-bold text-primary">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              {referenceVariant?.sku || 'Sin SKU comercial activo'}
+            </p>
+            <p className="mt-1 text-[11px] font-medium text-muted">
+              El backend estima Wompi, IVA comisión, CIF empaque y retenciones
+              con la configuración actual del ambiente.
+            </p>
+          </div>
         </div>
       </div>
     </div>

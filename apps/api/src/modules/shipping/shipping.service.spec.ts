@@ -306,6 +306,36 @@ describe('ShippingService', () => {
     expect(prisma.order.update).not.toHaveBeenCalled();
   });
 
+  it('bloquea despacho logistico si la orden tiene saldo pendiente', async () => {
+    prisma.order.findUnique.mockResolvedValue({
+      status: OrderStatus.EN_PRODUCCION,
+      trackingNumber: null,
+      carrier: null,
+      balanceDue: 5000,
+      saleLegalRequirement: 'INTERNAL_DOCUMENT_ALLOWED',
+      saleLegalStatus: 'COMPLETED',
+    });
+    prisma.shipment.findUnique.mockResolvedValue({
+      id: 'shipment-1',
+      orderId: 'order-1',
+      status: ShipmentStatus.PENDING,
+      shippedAt: null,
+    });
+
+    await expect(
+      service.updateShipment('order-1', {
+        trackingNumber: 'TRK-1',
+        status: ShipmentStatus.SHIPPED,
+        shippingBagSupplyItemId: 'supply-1',
+        shippingBagQuantityUsed: 1,
+      }),
+    ).rejects.toThrow('La orden no puede despacharse con saldo pendiente');
+
+    expect(prisma.shipment.update).not.toHaveBeenCalled();
+    expect(prisma.purchaseBatchLine.updateMany).not.toHaveBeenCalled();
+    expect(prisma.order.update).not.toHaveBeenCalled();
+  });
+
   it('bloquea despacho si falta completar documento legal de venta', async () => {
     prisma.order.findUnique.mockResolvedValue({
       status: OrderStatus.PAGADA,

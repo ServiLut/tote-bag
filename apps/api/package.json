@@ -24,6 +24,7 @@
     "seed": "ts-node prisma/seed.ts",
     "seed:all": "ts-node prisma/seed-all.ts",
     "seed:demo": "ts-node prisma/seed-prueba.ts",
+    "audit:base-prices": "ts-node src/scripts/audit-base-price-references.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

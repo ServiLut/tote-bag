@@ -233,6 +233,31 @@ describe('InventoryService', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
+  it('bloquea ingreso de stock sin soporte del proveedor', async () => {
+    await expect(
+      service.createPurchaseBatch({
+        supplierId: 'supplier-1',
+        totalCost: 15000,
+        status: 'RECIBIDO',
+        purchaseDate: '2026-03-25',
+        userId: 'admin-1',
+        documentType: 'INVOICE',
+        supportUrl: '   ',
+        items: [
+          {
+            nombre: 'Tela base',
+            productId: 'product-1',
+            variantId: 'variant-1',
+            cantidad: 1,
+            costoUnitario: 15000,
+          },
+        ],
+      }),
+    ).rejects.toThrow(
+      'Debes adjuntar soporte PDF/JPG del proveedor para registrar la recepcion.',
+    );
+  });
+
   it('crea recepcion de producto vendible y solo actualiza stock de variante', async () => {
     mockCreateBatchBase();
     tx.variant.findUnique.mockResolvedValue({

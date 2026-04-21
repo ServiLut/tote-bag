@@ -729,7 +729,7 @@ export default function ShippingManagementPage() {
     setTrackingData({
       providerId: shipment.provider?.id || "",
       trackingNumber: shipment.trackingNumber || "",
-      status: shipment.status === "IN_TRANSIT" ? "IN_TRANSIT" : "SHIPPED",
+      status: "SHIPPED",
     });
     setShippingBagData({
       supplyItemId:

@@ -17,9 +17,12 @@ import {
   Download,
   Filter,
   Loader2,
+  Plus,
   PieChart,
   Receipt,
   ShoppingBag,
+  Target,
+  Trash2,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -90,6 +93,10 @@ interface SalesTaxReport {
   taxableBase: number;
   taxTotal: number;
   grossTotal: number;
+  vatLiabilityToReserve: number;
+  reteIvaCredit: number;
+  vatNetAfterReteIva: number;
+  withholdingAssetTotal: number;
   reconciliationDifference: number;
   orders: Array<{
     id: string;
@@ -100,22 +107,114 @@ interface SalesTaxReport {
     totalAmount: number;
     netAmount: number;
     taxTotal: number;
+    reteIvaAmount?: number;
+    netReceivedAmount?: number;
   }>;
 }
 
-interface BreakEvenSimulation {
-  formula: string;
+interface OrderProfitabilityReport {
+  summary: {
+    orderCount: number;
+    grossRevenue: number;
+    netSalesWithoutVat: number;
+    vatLiability: number;
+    productCost: number;
+    commissionAmount: number;
+    commissionVatAmount: number;
+    logisticsCifAmount: number;
+    grossProfit: number;
+    operatingProfit: number;
+    netProfit: number;
+    realNetProfit: number;
+    netReceivedBank: number;
+    retentionAssetTotal: number;
+    reteFuenteTotal: number;
+    reteIvaTotal: number;
+    reteIcaTotal: number;
+    grossVsNetDelta: number;
+    marginOnGatewayNet: number | null;
+    marginTarget: number;
+    belowTargetCount: number;
+  };
+  orders: Array<{
+    id: string;
+    orderNumber: number;
+    customerEmail: string;
+    createdAt: string;
+    status: string;
+    paymentProvider: string;
+    paymentMethodType: string;
+    ingresoBruto: number;
+    ventaNetaSinIva: number;
+    iva: number;
+    costoProducto: number;
+    comisionWompi: number;
+    ivaComision: number;
+    costoLogisticoCif: number;
+    utilidadBruta: number;
+    utilidadOperativa: number;
+    utilidadNeta: number;
+    utilidadNetaReal: number;
+    netoRecibidoBanco: number;
+    retencionesActivas: number;
+    reteFuente: number;
+    reteIva: number;
+    reteIca: number;
+    brutoVsNetoDelta: number;
+    margenSobreNetoPasarela: number | null;
+    alertaMargenBajo: boolean;
+    isFullyPaid: boolean;
+  }>;
+}
+
+interface RetentionsReport {
+  summary: {
+    orderCount: number;
+    reteFuenteTotal: number;
+    reteIvaTotal: number;
+    reteIcaTotal: number;
+    retentionAssetTotal: number;
+  };
+  months: Array<{
+    month: string;
+    orderCount: number;
+    reteFuente: number;
+    reteIva: number;
+    reteIca: number;
+    total: number;
+  }>;
+}
+
+interface FixedExpensesConfig {
+  key: string;
+  currency: 'COP';
+  period: 'monthly';
+  monthlyTotal: number;
+  items: Array<{
+    id: string;
+    label: string;
+    amount: number;
+  }>;
+  isConfigured: boolean;
+  updatedAt: string | null;
+}
+
+interface BreakEvenThermometerReport {
+  period: {
+    label: string;
+    startDate: string;
+    endDate: string;
+  };
+  fixedExpensesConfig: FixedExpensesConfig;
   orderCount: number;
-  fixedExpensesTotal: number;
-  fixedExpenses: Array<{ label: string; amount: number }>;
-  grossSales: number;
-  taxTotal: number;
-  netSales: number;
-  variableCosts: number;
-  contributionMargin: number;
-  contributionMarginRatio: number;
-  breakEvenSales: number | null;
-  isBreakEvenReachable: boolean;
+  accumulatedNetProfit: number;
+  targetFixedExpenses: number;
+  progressRatio: number;
+  progressPercentage: number;
+  progressPercentageCapped: number;
+  remainingToBreakEven: number;
+  surplusOverBreakEven: number;
+  status: 'UNCONFIGURED' | 'IN_PROGRESS' | 'BREAK_EVEN_REACHED';
 }
 
 type Granularity = 'day' | 'month' | 'year' | 'custom';
@@ -146,6 +245,14 @@ function formatCurrency(amount: number) {
 
 function formatCurrencyOrUnavailable(amount: number | null) {
   return amount === null ? 'No disponible' : formatCurrency(amount);
+}
+
+function formatPercentage(value: number | null | undefined) {
+  if (value === null || value === undefined) {
+    return 'No disponible';
+  }
+
+  return `${(value * 100).toFixed(1)}%`;
 }
 
 function isValidDateInput(value: string) {
@@ -204,6 +311,10 @@ function buildTaxReportFromPreview(preview: ReportPreview): SalesTaxReport {
     taxableBase: preview.subtotal,
     taxTotal: preview.estimatedTaxes,
     grossTotal: preview.grossSales,
+    vatLiabilityToReserve: preview.estimatedTaxes,
+    reteIvaCredit: 0,
+    vatNetAfterReteIva: preview.estimatedTaxes,
+    withholdingAssetTotal: 0,
     reconciliationDifference: 0,
     orders: [],
   };
@@ -234,6 +345,14 @@ function normalizeAccountsReceivableReport(
   };
 }
 
+function buildDefaultFixedExpenseInputs() {
+  return [
+    { id: 'payroll', label: 'Nomina', amount: '' },
+    { id: 'rent', label: 'Arriendo', amount: '' },
+    { id: 'services', label: 'Servicios', amount: '' },
+  ];
+}
+
 export default function FinanceDashboardPage() {
   const currentDate = useMemo(() => new Date(), []);
   const currentYear = currentDate.getFullYear();
@@ -242,18 +361,28 @@ export default function FinanceDashboardPage() {
   const [receivables, setReceivables] =
     useState<AccountsReceivableReport | null>(null);
   const [taxReport, setTaxReport] = useState<SalesTaxReport | null>(null);
+  const [profitability, setProfitability] =
+    useState<OrderProfitabilityReport | null>(null);
+  const [retentionsReport, setRetentionsReport] =
+    useState<RetentionsReport | null>(null);
+  const [fixedExpensesConfig, setFixedExpensesConfig] =
+    useState<FixedExpensesConfig | null>(null);
+  const [breakEvenThermometer, setBreakEvenThermometer] =
+    useState<BreakEvenThermometerReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
-  const [breakEven, setBreakEven] = useState<BreakEvenSimulation | null>(null);
-  const [breakEvenLoading, setBreakEvenLoading] = useState(false);
-  const [breakEvenError, setBreakEvenError] = useState<string | null>(null);
-  const [fixedExpenseInputs, setFixedExpenseInputs] = useState([
-    { id: 'payroll', label: 'Nomina', amount: '' },
-    { id: 'rent', label: 'Arriendo', amount: '' },
-    { id: 'services', label: 'Servicios', amount: '' },
-  ]);
+  const [fixedExpenseInputs, setFixedExpenseInputs] = useState(
+    buildDefaultFixedExpenseInputs(),
+  );
+  const [fixedExpensesSaving, setFixedExpensesSaving] = useState(false);
+  const [fixedExpensesSaveError, setFixedExpensesSaveError] = useState<
+    string | null
+  >(null);
+  const [fixedExpensesSaveSuccess, setFixedExpensesSaveSuccess] = useState<
+    string | null
+  >(null);
   const [filterCategory, setFilterCategory] = useState('ALL');
   const [granularity, setGranularity] = useState<Granularity>('month');
   const [selectedDate, setSelectedDate] = useState(
@@ -330,6 +459,10 @@ export default function FinanceDashboardPage() {
       setPreview(null);
       setReceivables(null);
       setTaxReport(null);
+      setProfitability(null);
+      setRetentionsReport(null);
+      setFixedExpensesConfig(null);
+      setBreakEvenThermometer(null);
 
       if (
         granularity === 'custom' &&
@@ -342,7 +475,16 @@ export default function FinanceDashboardPage() {
 
       try {
         const authHeaders = await getAuthHeaders();
-        const [summaryRes, previewRes, receivablesRes] = await Promise.all([
+        const [
+          summaryRes,
+          previewRes,
+          receivablesRes,
+          taxReportRes,
+          profitabilityRes,
+          retentionsRes,
+          fixedExpensesRes,
+          breakEvenThermometerRes,
+        ] = await Promise.all([
           apiFetch(`/inventory/finance/summary?${queryParams.toString()}`, {
             headers: authHeaders,
           }),
@@ -352,15 +494,53 @@ export default function FinanceDashboardPage() {
           apiFetch('/orders/accounts-receivable', {
             headers: authHeaders,
           }),
+          apiFetch(`/finance/tax-report?${queryParams.toString()}`, {
+            headers: authHeaders,
+          }),
+          apiFetch(`/finance/order-profitability?${queryParams.toString()}`, {
+            headers: authHeaders,
+          }),
+          apiFetch(`/finance/retentions-report?${queryParams.toString()}`, {
+            headers: authHeaders,
+          }),
+          apiFetch('/finance/fixed-expenses-config', {
+            headers: authHeaders,
+          }),
+          apiFetch(
+            `/finance/break-even-thermometer?${queryParams.toString()}`,
+            {
+              headers: authHeaders,
+            },
+          ),
         ]);
 
         if (!active) return;
 
-        if (!summaryRes.ok || !previewRes.ok || !receivablesRes.ok) {
+        if (
+          !summaryRes.ok ||
+          !previewRes.ok ||
+          !receivablesRes.ok ||
+          !taxReportRes.ok ||
+          !profitabilityRes.ok ||
+          !retentionsRes.ok ||
+          !fixedExpensesRes.ok ||
+          !breakEvenThermometerRes.ok
+        ) {
           const firstError = [
             { label: 'Resumen financiero', response: summaryRes },
             { label: 'Reporte financiero', response: previewRes },
             { label: 'Cuentas por cobrar', response: receivablesRes },
+            { label: 'Reporte IVA', response: taxReportRes },
+            { label: 'Rentabilidad por pedido', response: profitabilityRes },
+            { label: 'Reporte de retenciones', response: retentionsRes },
+            {
+              label: 'Configuracion de gastos fijos',
+              response: fixedExpensesRes,
+            },
+            {
+              label: 'Termometro de punto de equilibrio',
+              response: breakEvenThermometerRes,
+            },
           ].find(({ response }) => !response.ok)!;
           const firstErrorResponse = firstError.response;
           const errorText = await firstErrorResponse.text();
@@ -374,23 +554,61 @@ export default function FinanceDashboardPage() {
           );
         }
 
-        const [summaryResult, previewResult, receivablesResult] =
+        const [
+          summaryResult,
+          previewResult,
+          receivablesResult,
+          taxReportResult,
+          profitabilityResult,
+          retentionsResult,
+          fixedExpensesResult,
+          breakEvenThermometerResult,
+        ] =
           await Promise.all([
             summaryRes.json(),
             previewRes.json(),
             receivablesRes.json(),
+            taxReportRes.json(),
+            profitabilityRes.json(),
+            retentionsRes.json(),
+            fixedExpensesRes.json(),
+            breakEvenThermometerRes.json(),
           ]);
         const resolvedSummary = unwrapApiData<FinancialSummary>(summaryResult);
         const resolvedPreview = unwrapApiData<ReportPreview>(previewResult);
         const resolvedReceivables = normalizeAccountsReceivableReport(
           unwrapApiData<AccountsReceivableReport>(receivablesResult),
         );
+        const resolvedTaxReport =
+          unwrapApiData<SalesTaxReport>(taxReportResult);
+        const resolvedProfitability =
+          unwrapApiData<OrderProfitabilityReport>(profitabilityResult);
+        const resolvedRetentions =
+          unwrapApiData<RetentionsReport>(retentionsResult);
+        const resolvedFixedExpenses =
+          unwrapApiData<FixedExpensesConfig>(fixedExpensesResult);
+        const resolvedBreakEvenThermometer =
+          unwrapApiData<BreakEvenThermometerReport>(breakEvenThermometerResult);
 
         setSummary(resolvedSummary);
         setPreview(resolvedPreview);
         setReceivables(resolvedReceivables);
         setTaxReport(
-          resolvedPreview ? buildTaxReportFromPreview(resolvedPreview) : null,
+          resolvedTaxReport ??
+            (resolvedPreview ? buildTaxReportFromPreview(resolvedPreview) : null),
+        );
+        setProfitability(resolvedProfitability);
+        setRetentionsReport(resolvedRetentions);
+        setFixedExpensesConfig(resolvedFixedExpenses);
+        setBreakEvenThermometer(resolvedBreakEvenThermometer);
+        setFixedExpenseInputs(
+          resolvedFixedExpenses?.items?.length
+            ? resolvedFixedExpenses.items.map((item) => ({
+                id: item.id,
+                label: item.label,
+                amount: item.amount > 0 ? String(item.amount) : '',
+              }))
+            : buildDefaultFixedExpenseInputs(),
         );
       } catch (error) {
         console.error('Error fetching financial dashboard:', error);
@@ -417,11 +635,14 @@ export default function FinanceDashboardPage() {
     return Array.from({ length: 6 }, (_, index) => String(currentYear - index));
   }, [currentYear]);
 
-  const netProfit = summary
-    ? summary.kpis.totalIncome -
-      (summary.kpis.totalCOGS ?? 0) -
-      summary.kpis.totalOpex
-    : 0;
+  const profitabilitySummary = profitability?.summary ?? null;
+  const netProfit =
+    profitabilitySummary?.realNetProfit ??
+    (summary
+      ? summary.kpis.totalIncome -
+        (summary.kpis.totalCOGS ?? 0) -
+        summary.kpis.totalOpex
+      : 0);
 
   const filteredTransactions =
     summary?.recentTransactions.filter(
@@ -430,6 +651,18 @@ export default function FinanceDashboardPage() {
   const receivablesSummary =
     receivables?.summary ?? EMPTY_ACCOUNTS_RECEIVABLE_REPORT.summary;
   const receivablesOrders = receivables?.orders ?? [];
+  const profitabilityOrders = profitability?.orders ?? [];
+  const retentionMonths = retentionsReport?.months ?? [];
+  const thermometerProgressWidth = `${Math.max(
+    0,
+    Math.min(breakEvenThermometer?.progressPercentageCapped ?? 0, 140),
+  )}%`;
+  const thermometerStatusTone =
+    breakEvenThermometer?.status === 'BREAK_EVEN_REACHED'
+      ? 'emerald'
+      : breakEvenThermometer?.status === 'UNCONFIGURED'
+      ? 'slate'
+      : 'amber';
 
   const handleExport = async () => {
     setExporting(true);
@@ -485,6 +718,8 @@ export default function FinanceDashboardPage() {
     field: 'label' | 'amount',
     value: string,
   ) => {
+    setFixedExpensesSaveError(null);
+    setFixedExpensesSaveSuccess(null);
     setFixedExpenseInputs((current) =>
       current.map((item) =>
         item.id === id
@@ -500,64 +735,116 @@ export default function FinanceDashboardPage() {
     );
   };
 
-  const handleBreakEvenSimulation = async () => {
-    setBreakEvenLoading(true);
-    setBreakEvenError(null);
+  const handleAddFixedExpense = () => {
+    setFixedExpensesSaveError(null);
+    setFixedExpensesSaveSuccess(null);
+    setFixedExpenseInputs((current) => [
+      ...current,
+      {
+        id: `fixed-expense-${Date.now()}`,
+        label: 'Nuevo gasto',
+        amount: '',
+      },
+    ]);
+  };
 
-    const fixedExpenses = fixedExpenseInputs
+  const handleRemoveFixedExpense = (id: string) => {
+    setFixedExpensesSaveError(null);
+    setFixedExpensesSaveSuccess(null);
+    setFixedExpenseInputs((current) =>
+      current.length > 1 ? current.filter((item) => item.id !== id) : current,
+    );
+  };
+
+  const handleSaveFixedExpenses = async () => {
+    setFixedExpensesSaving(true);
+    setFixedExpensesSaveError(null);
+    setFixedExpensesSaveSuccess(null);
+
+    const items = fixedExpenseInputs
       .map((item) => ({
-        label: item.label.trim() || 'Gasto fijo',
-        amount: item.amount.trim(),
+        id: item.id,
+        label: item.label.trim(),
+        amount: item.amount.trim().length > 0 ? item.amount.trim() : '0',
       }))
-      .filter((item) => item.amount.length > 0);
+      .filter((item) => item.label.length > 0);
 
-    if (fixedExpenses.length === 0) {
-      setBreakEven(null);
-      setBreakEvenError('Registra al menos un gasto fijo para simular.');
-      setBreakEvenLoading(false);
+    if (items.length === 0) {
+      setFixedExpensesSaveError(
+        'Debes registrar al menos un gasto fijo mensual.',
+      );
+      setFixedExpensesSaving(false);
       return;
     }
 
     try {
       const authHeaders = await getAuthHeaders();
-      const response = await apiFetch(
-        '/inventory/finance/break-even-simulation',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...authHeaders,
-          },
-          body: JSON.stringify({
-            startDate: queryParams.get('startDate') || undefined,
-            endDate: queryParams.get('endDate') || undefined,
-            fixedExpenses,
-          }),
+      const configRes = await apiFetch('/finance/fixed-expenses-config', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders,
         },
-      );
+        body: JSON.stringify({ items }),
+      });
 
-      if (!response.ok) {
-        const errorText = await response.text();
+      if (!configRes.ok) {
+        const errorText = await configRes.text();
         throw new Error(
           parseRequestErrorMessage(
             errorText,
-            'No fue posible simular el punto de equilibrio.',
+            'No fue posible guardar los gastos fijos.',
           ),
         );
       }
 
-      const result = await response.json();
-      setBreakEven(unwrapApiData<BreakEvenSimulation>(result));
+      const thermometerRes = await apiFetch(
+        `/finance/break-even-thermometer?${queryParams.toString()}`,
+        {
+          headers: authHeaders,
+        },
+      );
+
+      if (!thermometerRes.ok) {
+        const errorText = await thermometerRes.text();
+        throw new Error(
+          parseRequestErrorMessage(
+            errorText,
+            'No fue posible recalcular el termometro de equilibrio.',
+          ),
+        );
+      }
+
+      const [configResult, thermometerResult] = await Promise.all([
+        configRes.json(),
+        thermometerRes.json(),
+      ]);
+      const resolvedConfig = unwrapApiData<FixedExpensesConfig>(configResult);
+      const resolvedThermometer = unwrapApiData<BreakEvenThermometerReport>(
+        thermometerResult,
+      );
+
+      setFixedExpensesConfig(resolvedConfig);
+      setBreakEvenThermometer(resolvedThermometer);
+      setFixedExpenseInputs(
+        resolvedConfig?.items?.length
+          ? resolvedConfig.items.map((item) => ({
+              id: item.id,
+              label: item.label,
+              amount: item.amount > 0 ? String(item.amount) : '',
+            }))
+          : buildDefaultFixedExpenseInputs(),
+      );
+      setFixedExpensesSaveSuccess('Gastos fijos mensuales guardados.');
     } catch (error) {
-      console.error('Error simulating break-even:', error);
-      setBreakEven(null);
-      setBreakEvenError(
+      console.error('Error saving fixed expenses:', error);
+      setFixedExpensesSaveError(
         error instanceof Error
           ? error.message
-          : 'No fue posible simular el punto de equilibrio.',
+          : 'No fue posible guardar los gastos fijos.',
       );
     } finally {
-      setBreakEvenLoading(false);
+      setFixedExpensesSaving(false);
     }
   };
 
@@ -727,9 +1014,13 @@ export default function FinanceDashboardPage() {
         />
         <MetricCard
           label="Costo de Venta (COGS)"
-          value={formatCurrencyOrUnavailable(summary?.kpis.totalCOGS ?? null)}
+          value={formatCurrencyOrUnavailable(
+            profitabilitySummary?.productCost ?? summary?.kpis.totalCOGS ?? null,
+          )}
           caption={
-            summary?.kpis.totalCOGS === null
+            profitabilitySummary
+              ? `Utilidad bruta: ${formatCurrency(profitabilitySummary.grossProfit)}`
+              : summary?.kpis.totalCOGS === null
               ? 'Sin trazabilidad FIFO suficiente en el periodo'
               : `Items vendidos: ${preview?.totalItems || 0}`
           }
@@ -737,16 +1028,16 @@ export default function FinanceDashboardPage() {
           icon={<ShoppingBag className="h-5 w-5" />}
         />
         <MetricCard
-          label="Impuestos Estimados"
-          value={formatCurrency(preview?.estimatedTaxes || 0)}
-          caption={`Subtotal: ${formatCurrency(preview?.subtotal || 0)}`}
+          label="IVA por Reservar"
+          value={formatCurrency(taxReport?.vatLiabilityToReserve || 0)}
+          caption={`ReteIVA activo: ${formatCurrency(taxReport?.reteIvaCredit || 0)}`}
           accent="blue"
           icon={<Receipt className="h-5 w-5" />}
         />
         <MetricCard
-          label="Utilidad Neta"
+          label="Utilidad Neta Real"
           value={formatCurrency(netProfit)}
-          caption={`Devoluciones: ${preview?.returnedOrderCount || 0}`}
+          caption={`Neto banco: ${formatCurrency(profitabilitySummary?.netReceivedBank || 0)}`}
           accent={netProfit >= 0 ? 'emerald' : 'rose'}
           icon={
             netProfit >= 0 ? (
@@ -755,6 +1046,42 @@ export default function FinanceDashboardPage() {
               <ArrowDownRight className="h-5 w-5" />
             )
           }
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+        <MetricCard
+          label="Utilidad Bruta"
+          value={formatCurrency(profitabilitySummary?.grossProfit || 0)}
+          caption={`Venta neta sin IVA: ${formatCurrency(profitabilitySummary?.netSalesWithoutVat || 0)}`}
+          accent="emerald"
+          icon={<ArrowUpRight className="h-5 w-5" />}
+        />
+        <MetricCard
+          label="Utilidad Operativa"
+          value={formatCurrency(profitabilitySummary?.operatingProfit || 0)}
+          caption={`Comision + IVA comision: ${formatCurrency((profitabilitySummary?.commissionAmount || 0) + (profitabilitySummary?.commissionVatAmount || 0))}`}
+          accent="amber"
+          icon={<ArrowDownRight className="h-5 w-5" />}
+        />
+        <MetricCard
+          label="Activo por Retenciones"
+          value={formatCurrency(profitabilitySummary?.retentionAssetTotal || 0)}
+          caption={`ReteFte ${formatCurrency(profitabilitySummary?.reteFuenteTotal || 0)} / ReteIVA ${formatCurrency(profitabilitySummary?.reteIvaTotal || 0)}`}
+          accent="blue"
+          icon={<Receipt className="h-5 w-5" />}
+        />
+        <MetricCard
+          label="Margen sobre Neto Pasarela"
+          value={formatPercentage(profitabilitySummary?.marginOnGatewayNet)}
+          caption={`Alertas < 60%: ${profitabilitySummary?.belowTargetCount || 0}`}
+          accent={
+            (profitabilitySummary?.marginOnGatewayNet ?? 0) >=
+            (profitabilitySummary?.marginTarget ?? 0.6)
+              ? 'emerald'
+              : 'rose'
+          }
+          icon={<ShoppingBag className="h-5 w-5" />}
         />
       </div>
 
@@ -835,7 +1162,7 @@ export default function FinanceDashboardPage() {
         <div className="rounded-3xl border border-theme bg-surface p-6 shadow-sm">
           <h2 className="text-xl font-bold text-primary">Reporte IVA</h2>
           <p className="mt-1 text-xs font-medium text-muted">
-            Base gravable, IVA y venta total del periodo filtrado.
+            Pasivo de IVA por reservar y cruce informativo con reteIVA.
           </p>
           <div className="mt-6 space-y-3">
             <SummaryLine
@@ -843,17 +1170,21 @@ export default function FinanceDashboardPage() {
               value={formatCurrency(taxReport?.taxableBase || 0)}
             />
             <SummaryLine
-              label="IVA a pagar"
-              value={formatCurrency(taxReport?.taxTotal || 0)}
+              label="IVA por reservar"
+              value={formatCurrency(taxReport?.vatLiabilityToReserve || 0)}
             />
             <SummaryLine
-              label="Venta total"
-              value={formatCurrency(taxReport?.grossTotal || 0)}
+              label="ReteIVA como activo"
+              value={formatCurrency(taxReport?.reteIvaCredit || 0)}
+            />
+            <SummaryLine
+              label="IVA neto tras reteIVA"
+              value={formatCurrency(taxReport?.vatNetAfterReteIva || 0)}
               strong
             />
             <SummaryLine
-              label="Diferencia"
-              value={formatCurrency(taxReport?.reconciliationDifference || 0)}
+              label="Retenciones activas"
+              value={formatCurrency(taxReport?.withholdingAssetTotal || 0)}
             />
           </div>
           <div className="mt-6 overflow-hidden rounded-2xl border border-theme">
@@ -862,6 +1193,7 @@ export default function FinanceDashboardPage() {
                 <tr className="border-b border-theme bg-base/30 text-[10px] font-black uppercase tracking-widest text-muted/60">
                   <th className="px-4 py-3">Orden</th>
                   <th className="px-4 py-3 text-right">IVA</th>
+                  <th className="px-4 py-3 text-right">ReteIVA</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-theme">
@@ -873,12 +1205,15 @@ export default function FinanceDashboardPage() {
                     <td className="px-4 py-3 text-right font-black text-primary">
                       {formatCurrency(order.taxTotal)}
                     </td>
+                    <td className="px-4 py-3 text-right font-black text-blue-600">
+                      {formatCurrency(order.reteIvaAmount || 0)}
+                    </td>
                   </tr>
                 ))}
                 {!taxReport?.orders || taxReport.orders.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={2}
+                      colSpan={3}
                       className="px-4 py-8 text-center text-xs font-bold text-muted"
                     >
                       Sin ordenes en el periodo.
@@ -891,96 +1226,349 @@ export default function FinanceDashboardPage() {
         </div>
       </div>
 
-      <div className="rounded-3xl border border-theme bg-surface p-8 shadow-sm">
-        <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-start">
-          <div>
+      <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
+        <div className="overflow-hidden rounded-3xl border border-theme bg-surface shadow-sm xl:col-span-2">
+          <div className="border-b border-theme bg-base/30 p-6">
             <h2 className="text-xl font-bold text-primary">
-              Simulador de Punto de Equilibrio
+              Utilidad Neta Real por Pedido
             </h2>
-            <p className="mt-1 text-xs font-medium text-muted">
-              Los gastos fijos se envian a NestJS y el backend devuelve el
-              resultado.
+            <p className="text-xs font-medium text-muted">
+              Cruza venta neta, IVA, COGS FIFO, costos Wompi, retenciones y
+              recaudo neto bancario.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={handleBreakEvenSimulation}
-            disabled={breakEvenLoading}
-            className="flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs font-black text-base-color shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] disabled:opacity-70"
-          >
-            {breakEvenLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <PieChart className="h-4 w-4" />
-            )}
-            Simular
-          </button>
-        </div>
-
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-          {fixedExpenseInputs.map((item) => (
-            <div
-              key={item.id}
-              className="rounded-2xl border border-theme bg-base/30 p-4"
-            >
-              <input
-                value={item.label}
-                onChange={(event) =>
-                  handleFixedExpenseChange(item.id, 'label', event.target.value)
-                }
-                className="w-full bg-transparent text-[10px] font-black uppercase tracking-widest text-muted outline-none"
-              />
-              <input
-                value={item.amount}
-                inputMode="decimal"
-                onChange={(event) =>
-                  handleFixedExpenseChange(
-                    item.id,
-                    'amount',
-                    event.target.value,
-                  )
-                }
-                placeholder="0"
-                className="mt-2 w-full bg-transparent text-2xl font-black text-primary outline-none"
-              />
-            </div>
-          ))}
-        </div>
-
-        {breakEvenError ? (
-          <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700">
-            {breakEvenError}
-          </p>
-        ) : null}
-
-        {breakEven ? (
-          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 border-b border-theme p-6 md:grid-cols-4">
             <PreviewCard
-              label="Gastos fijos"
-              value={formatCurrency(breakEven.fixedExpensesTotal)}
+              label="Bruto cobrado"
+              value={formatCurrency(profitabilitySummary?.grossRevenue || 0)}
               tone="slate"
             />
             <PreviewCard
-              label="Ventas netas"
-              value={formatCurrency(breakEven.netSales)}
+              label="Neto en banco"
+              value={formatCurrency(profitabilitySummary?.netReceivedBank || 0)}
               tone="blue"
             />
             <PreviewCard
-              label="Margen contribucion"
-              value={formatCurrency(breakEven.contributionMargin)}
-              tone={breakEven.contributionMargin >= 0 ? 'emerald' : 'rose'}
+              label="Utilidad neta real"
+              value={formatCurrency(profitabilitySummary?.realNetProfit || 0)}
+              tone="emerald"
             />
             <PreviewCard
-              label="Punto equilibrio"
-              value={
-                breakEven.breakEvenSales === null
-                  ? 'No alcanzable'
-                  : formatCurrency(breakEven.breakEvenSales)
+              label="Alertas < 60%"
+              value={String(profitabilitySummary?.belowTargetCount || 0)}
+              tone={
+                (profitabilitySummary?.belowTargetCount || 0) > 0
+                  ? 'rose'
+                  : 'emerald'
               }
-              tone={breakEven.isBreakEvenReachable ? 'amber' : 'rose'}
             />
           </div>
-        ) : null}
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-left">
+              <thead>
+                <tr className="border-b border-theme bg-base/20 text-[10px] font-black uppercase tracking-widest text-muted/60">
+                  <th className="px-6 py-4">Orden</th>
+                  <th className="px-6 py-4 text-right">Bruto</th>
+                  <th className="px-6 py-4 text-right">Neto banco</th>
+                  <th className="px-6 py-4 text-right">Utilidad real</th>
+                  <th className="px-6 py-4 text-right">Margen neto</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-theme">
+                {profitabilityOrders.slice(0, 8).map((order) => (
+                  <tr
+                    key={order.id}
+                    className="text-sm transition-colors hover:bg-primary/5"
+                  >
+                    <td className="px-6 py-4">
+                      <p className="font-black text-primary">
+                        #{order.orderNumber}
+                      </p>
+                      <p className="text-[11px] font-medium text-muted">
+                        {order.customerEmail}
+                      </p>
+                    </td>
+                    <td className="px-6 py-4 text-right font-bold text-primary">
+                      {formatCurrency(order.ingresoBruto)}
+                    </td>
+                    <td className="px-6 py-4 text-right font-bold text-blue-600">
+                      {formatCurrency(order.netoRecibidoBanco)}
+                    </td>
+                    <td className="px-6 py-4 text-right font-black text-emerald-600">
+                      {formatCurrency(order.utilidadNetaReal)}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider ${
+                          order.alertaMargenBajo
+                            ? 'bg-rose-100 text-rose-700'
+                            : 'bg-emerald-100 text-emerald-700'
+                        }`}
+                      >
+                        {formatPercentage(order.margenSobreNetoPasarela)}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                {profitabilityOrders.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="px-6 py-10 text-center text-sm font-bold text-muted"
+                    >
+                      Sin ordenes liquidadas para el periodo.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-theme bg-surface p-6 shadow-sm">
+          <h2 className="text-xl font-bold text-primary">
+            Retenciones como Activo
+          </h2>
+          <p className="mt-1 text-xs font-medium text-muted">
+            Anticipos tributarios retenidos por la pasarela y recuperables en
+            conciliación fiscal.
+          </p>
+          <div className="mt-6 space-y-3">
+            <SummaryLine
+              label="ReteFuente"
+              value={formatCurrency(retentionsReport?.summary.reteFuenteTotal || 0)}
+            />
+            <SummaryLine
+              label="ReteIVA"
+              value={formatCurrency(retentionsReport?.summary.reteIvaTotal || 0)}
+            />
+            <SummaryLine
+              label="ReteICA"
+              value={formatCurrency(retentionsReport?.summary.reteIcaTotal || 0)}
+            />
+            <SummaryLine
+              label="Activo total"
+              value={formatCurrency(retentionsReport?.summary.retentionAssetTotal || 0)}
+              strong
+            />
+          </div>
+          <div className="mt-6 space-y-3">
+            {retentionMonths.slice(0, 4).map((month) => (
+              <div
+                key={month.month}
+                className="rounded-2xl border border-theme bg-base/30 p-4"
+              >
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted">
+                  {month.month}
+                </p>
+                <p className="mt-2 text-lg font-black text-primary">
+                  {formatCurrency(month.total)}
+                </p>
+                <p className="text-[11px] font-medium text-muted">
+                  {month.orderCount} ordenes con retencion.
+                </p>
+              </div>
+            ))}
+            {retentionMonths.length === 0 ? (
+              <div className="rounded-2xl border border-theme bg-base/30 p-4 text-sm font-bold text-muted">
+                Sin retenciones conciliadas en el periodo.
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-3xl border border-theme bg-surface p-8 shadow-sm">
+        <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1.2fr_0.8fr]">
+          <div>
+            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+              <div>
+                <h2 className="text-xl font-bold text-primary">
+                  Termometro de Punto de Equilibrio
+                </h2>
+                <p className="mt-1 text-xs font-medium text-muted">
+                  El administrador configura gastos fijos mensuales y el backend
+                  prorratea el objetivo del periodo filtrado.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleAddFixedExpense}
+                  className="inline-flex items-center gap-2 rounded-xl border border-theme bg-base px-4 py-3 text-[11px] font-black uppercase tracking-wide text-primary transition-colors hover:bg-base/70"
+                >
+                  <Plus className="h-4 w-4" />
+                  Agregar gasto
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveFixedExpenses}
+                  disabled={fixedExpensesSaving}
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-[11px] font-black uppercase tracking-wide text-base-color shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {fixedExpensesSaving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Target className="h-4 w-4" />
+                  )}
+                  {fixedExpensesSaving ? 'Guardando...' : 'Guardar gastos'}
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+              {fixedExpenseInputs.map((item) => (
+                <div
+                  key={item.id}
+                  className="rounded-2xl border border-theme bg-base/30 p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <input
+                      value={item.label}
+                      onChange={(event) =>
+                        handleFixedExpenseChange(
+                          item.id,
+                          'label',
+                          event.target.value,
+                        )
+                      }
+                      className="w-full bg-transparent text-[10px] font-black uppercase tracking-widest text-muted outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFixedExpense(item.id)}
+                      disabled={fixedExpenseInputs.length <= 1}
+                      className="rounded-lg border border-theme p-2 text-muted transition-colors hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label={`Eliminar ${item.label}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <input
+                    value={item.amount}
+                    inputMode="decimal"
+                    onChange={(event) =>
+                      handleFixedExpenseChange(
+                        item.id,
+                        'amount',
+                        event.target.value,
+                      )
+                    }
+                    placeholder="0"
+                    className="mt-2 w-full bg-transparent text-2xl font-black text-primary outline-none"
+                  />
+                </div>
+              ))}
+            </div>
+
+            {fixedExpensesSaveError ? (
+              <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700">
+                {fixedExpensesSaveError}
+              </p>
+            ) : null}
+
+            {fixedExpensesSaveSuccess ? (
+              <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-700">
+                {fixedExpensesSaveSuccess}
+              </p>
+            ) : null}
+          </div>
+
+          <div className="rounded-3xl border border-theme bg-base/20 p-6">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted">
+              Periodo activo
+            </p>
+            <p className="mt-2 text-lg font-black text-primary">
+              {breakEvenThermometer?.period.label || preview?.period?.label || 'N/A'}
+            </p>
+            <p className="mt-1 text-xs font-medium text-muted">
+              {breakEvenThermometer?.orderCount || 0} ordenes liquidadas en el
+              periodo.
+            </p>
+
+            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <PreviewCard
+                label="Objetivo"
+                value={formatCurrency(
+                  breakEvenThermometer?.targetFixedExpenses || 0,
+                )}
+                tone="slate"
+              />
+              <PreviewCard
+                label="Utilidad neta acumulada"
+                value={formatCurrency(
+                  breakEvenThermometer?.accumulatedNetProfit || 0,
+                )}
+                tone="emerald"
+              />
+              <PreviewCard
+                label="Avance"
+                value={`${(breakEvenThermometer?.progressPercentage || 0).toFixed(1)}%`}
+                tone={thermometerStatusTone}
+              />
+            </div>
+
+            <div className="mt-6">
+              <div className="flex items-center justify-between text-[11px] font-bold text-muted">
+                <span>0%</span>
+                <span>100%</span>
+              </div>
+              <div className="mt-2 h-5 overflow-hidden rounded-full bg-slate-200/80">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    thermometerStatusTone === 'emerald'
+                      ? 'bg-emerald-500'
+                      : thermometerStatusTone === 'amber'
+                      ? 'bg-amber-500'
+                      : 'bg-slate-400'
+                  }`}
+                  style={{ width: thermometerProgressWidth }}
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 space-y-3">
+              <SummaryLine
+                label="Objetivo mensual configurado"
+                value={formatCurrency(fixedExpensesConfig?.monthlyTotal || 0)}
+              />
+              <SummaryLine
+                label="Pendiente para equilibrio"
+                value={formatCurrency(
+                  breakEvenThermometer?.remainingToBreakEven || 0,
+                )}
+                strong={
+                  (breakEvenThermometer?.remainingToBreakEven || 0) > 0
+                }
+              />
+              <SummaryLine
+                label="Excedente sobre objetivo"
+                value={formatCurrency(
+                  breakEvenThermometer?.surplusOverBreakEven || 0,
+                )}
+                strong={(breakEvenThermometer?.surplusOverBreakEven || 0) > 0}
+              />
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-theme bg-surface px-4 py-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted">
+                Estado
+              </p>
+              <p className="mt-2 text-sm font-black text-primary">
+                {breakEvenThermometer?.status === 'BREAK_EVEN_REACHED'
+                  ? 'Punto de equilibrio alcanzado'
+                  : breakEvenThermometer?.status === 'UNCONFIGURED'
+                  ? 'Configura gastos fijos para activar el termometro'
+                  : 'En camino al punto de equilibrio'}
+              </p>
+              <p className="mt-1 text-[11px] font-medium text-muted">
+                {fixedExpensesConfig?.updatedAt
+                  ? `Ultima actualizacion: ${format(new Date(fixedExpensesConfig.updatedAt), "d 'de' MMMM yyyy, h:mm a", { locale: es })}`
+                  : 'Aun no hay una configuracion mensual confirmada.'}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">

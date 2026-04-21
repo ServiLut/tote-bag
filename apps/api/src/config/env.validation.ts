@@ -71,6 +71,34 @@ class EnvironmentVariables {
   @IsOptional()
   NEXT_PUBLIC_WOMPI_PUBLIC_KEY: string;
 
+  @IsNumber()
+  @IsOptional()
+  WOMPI_COMMISSION_PERCENT: number = 0;
+
+  @IsNumber()
+  @IsOptional()
+  WOMPI_FIXED_FEE_COP: number = 0;
+
+  @IsNumber()
+  @IsOptional()
+  WOMPI_PACKAGING_CIF_COP: number = 990;
+
+  @IsNumber()
+  @IsOptional()
+  WOMPI_COMMISSION_VAT_PERCENT: number = 0;
+
+  @IsNumber()
+  @IsOptional()
+  WOMPI_RETEFUENTE_PERCENT: number = 0;
+
+  @IsNumber()
+  @IsOptional()
+  WOMPI_RETEIVA_PERCENT: number = 0;
+
+  @IsNumber()
+  @IsOptional()
+  WOMPI_RETEICA_PERCENT: number = 0;
+
   @IsUrl({ require_tld: false })
   @IsOptional()
   SENTRY_DSN: string;

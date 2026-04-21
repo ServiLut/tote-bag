@@ -13,6 +13,10 @@ describe('PaymentsService', () => {
     order: {
       findUnique: jest.fn(),
     },
+    orderPayment: {
+      findFirst: jest.fn(),
+      update: jest.fn(),
+    },
     webhookEvent: {
       findUnique: jest.fn(),
       create: jest.fn(),
@@ -179,7 +183,23 @@ describe('PaymentsService', () => {
           orderNumber: 101,
           totalAmount: 35000,
           status: 'PENDIENTE_PAGO',
+          items: [],
         }),
+      },
+      orderPayment: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'payment-1',
+          amount: 35000,
+          grossAmount: null,
+          netReceivedAmount: null,
+          commissionAmount: null,
+          commissionVatAmount: null,
+          reteFuenteAmount: null,
+          reteIvaAmount: null,
+          reteIcaAmount: null,
+          paymentMethodType: null,
+        }),
+        update: jest.fn().mockResolvedValue({ id: 'payment-1' }),
       },
       financialTransaction: {
         findFirst: jest.fn().mockResolvedValue(null),
@@ -213,6 +233,17 @@ describe('PaymentsService', () => {
       tx,
       'https://wompi.com/transactions/txn-1',
     );
+    expect(tx.orderPayment.update).toHaveBeenCalledWith({
+      where: { id: 'payment-1' },
+      data: expect.objectContaining({
+        provider: 'wompi',
+        externalTransactionId: 'txn-1',
+        externalStatus: 'APPROVED',
+        paymentMethodType: 'CARD',
+        grossAmount: 35000,
+        settlementSource: 'WEBHOOK_ESTIMATE',
+      }) as Record<string, unknown>,
+    });
 
     prisma.webhookEvent.findUnique.mockResolvedValueOnce({
       id: 'webhook-1',
@@ -293,5 +324,78 @@ describe('PaymentsService', () => {
         }) as Record<string, unknown>,
       }),
     );
+  });
+
+  it('reconcilia reporte Wompi y actualiza neto, comision e impuestos retenidos', async () => {
+    (configService.get as jest.Mock).mockImplementation((key: string) => {
+      if (key === 'WOMPI_COMMISSION_PERCENT') return 2.9;
+      if (key === 'WOMPI_FIXED_FEE_COP') return 700;
+      if (key === 'WOMPI_PACKAGING_CIF_COP') return 990;
+      if (key === 'WOMPI_COMMISSION_VAT_PERCENT') return 19;
+      if (key === 'WOMPI_RETEFUENTE_PERCENT') return 1.5;
+      if (key === 'WOMPI_RETEIVA_PERCENT') return 15;
+      if (key === 'WOMPI_RETEICA_PERCENT') return 0.5;
+      return undefined;
+    });
+
+    const tx = {
+      order: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'order-1',
+          orderNumber: 101,
+          totalAmount: 35000,
+          status: 'PAGADA',
+        }),
+      },
+      orderPayment: {
+        findFirst: jest.fn().mockResolvedValueOnce(null).mockResolvedValueOnce({
+          id: 'payment-1',
+          amount: 35000,
+          grossAmount: null,
+          netReceivedAmount: null,
+          commissionAmount: null,
+          commissionVatAmount: null,
+          reteFuenteAmount: null,
+          reteIvaAmount: null,
+          reteIcaAmount: null,
+          paymentMethodType: 'CARD',
+        }),
+        update: jest.fn().mockResolvedValue({ id: 'payment-1' }),
+      },
+    };
+
+    prisma.$transaction.mockImplementation(
+      (callback: (client: typeof tx) => Promise<unknown>) => callback(tx),
+    );
+
+    const file = {
+      originalname: 'wompi-report.csv',
+      buffer: Buffer.from(
+        [
+          'reference;transactionId;status;grossAmount;netReceivedAmount;commissionAmount;commissionVatAmount;reteFuenteAmount;reteIvaAmount;reteIcaAmount;paymentMethodType',
+          'order-1;txn-1;APPROVED;35.000,00;30.000,00;1.015,00;192,85;525,00;150,00;175,00;CARD',
+        ].join('\n'),
+      ),
+    } as Express.Multer.File;
+
+    const result = await service.reconcileWompiReport(file);
+
+    expect(result.reconciledPayments).toBe(1);
+    expect(tx.orderPayment.update).toHaveBeenCalledWith({
+      where: { id: 'payment-1' },
+      data: expect.objectContaining({
+        provider: 'wompi',
+        externalTransactionId: 'txn-1',
+        externalStatus: 'APPROVED',
+        settlementSource: 'WOMPI_REPORT',
+        grossAmount: 35000,
+        netReceivedAmount: 30000,
+        commissionAmount: 1015,
+        commissionVatAmount: 192.85,
+        reteFuenteAmount: 525,
+        reteIvaAmount: 150,
+        reteIcaAmount: 175,
+      }) as Record<string, unknown>,
+    });
   });
 });

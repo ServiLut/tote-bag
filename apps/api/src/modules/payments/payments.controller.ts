@@ -8,6 +8,7 @@ import {
   Body,
   Param,
   Request,
+  UnauthorizedException,
   UseInterceptors,
   UploadedFile,
 } from '@nestjs/common';
@@ -52,6 +53,21 @@ export class PaymentsController {
     @Headers('x-event-checksum') checksumHeader?: string,
   ) {
     return this.paymentsService.handleWompiEvent(event, checksumHeader);
+  }
+
+  @Post('wompi/reconciliation/report')
+  @UseInterceptors(FileInterceptor('file'))
+  async reconcileWompiReport(
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req: RequestWithUser,
+  ) {
+    await this.ensureAdmin(req.user?.id);
+
+    if (!file) {
+      throw new BadRequestException('Debes adjuntar el reporte Wompi.');
+    }
+
+    return this.paymentsService.reconcileWompiReport(file);
   }
 
   @Post('upload-receipt/:entityType/:entityId')
@@ -164,5 +180,19 @@ export class PaymentsController {
     }
 
     return this.ensureUploadPermission(userId, entityType);
+  }
+
+  private async ensureAdmin(userId?: string) {
+    if (!userId) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    const { effectiveRole } = await this.rolesService.getEffectiveRole(userId);
+
+    if (effectiveRole !== Role.ADMIN) {
+      throw new ForbiddenException(
+        'Solo los usuarios ADMIN pueden cargar conciliaciones de Wompi.',
+      );
+    }
   }
 }

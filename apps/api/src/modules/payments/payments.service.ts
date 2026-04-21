@@ -2,9 +2,11 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  UnsupportedMediaTypeException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHash } from 'crypto';
+import Decimal from 'decimal.js';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   OrderStatus,
@@ -32,6 +34,45 @@ export type PaymentSupportEntityType =
   | 'batch'
   | 'purchase-invoice';
 
+type WompiSettlementConfig = {
+  commissionPercent: number;
+  fixedFeeCop: number;
+  packagingCifCop: number;
+  commissionVatPercent: number;
+  reteFuentePercent: number;
+  reteIvaPercent: number;
+  reteIcaPercent: number;
+};
+
+type WompiSettlementBreakdown = {
+  grossAmount: number;
+  netReceivedAmount: number;
+  commissionAmount: number;
+  commissionVatAmount: number;
+  reteFuenteAmount: number;
+  reteIvaAmount: number;
+  reteIcaAmount: number;
+  packagingCifAmount: number;
+  settlementSource: 'WEBHOOK_ESTIMATE' | 'WOMPI_REPORT';
+  config: WompiSettlementConfig;
+};
+
+type ParsedWompiReportRow = {
+  rowNumber: number;
+  reference: string;
+  transactionId: string | null;
+  status: string;
+  paymentMethodType: string | null;
+  grossAmount: number | null;
+  netReceivedAmount: number | null;
+  commissionAmount: number | null;
+  commissionVatAmount: number | null;
+  reteFuenteAmount: number | null;
+  reteIvaAmount: number | null;
+  reteIcaAmount: number | null;
+  raw: Record<string, string>;
+};
+
 @Injectable()
 export class PaymentsService {
   private readonly supportDocumentsBucket = 'support-documents';
@@ -54,6 +95,547 @@ export class PaymentsService {
 
   private getWompiEventsSecret() {
     return this.configService.get<string>('WOMPI_EVENTS_SECRET');
+  }
+
+  private parseConfigNumber(key: string, fallback: number) {
+    const raw = this.configService.get<string | number>(key);
+    if (raw === null || raw === undefined || raw === '') {
+      return fallback;
+    }
+
+    const parsed =
+      typeof raw === 'number' ? raw : Number(String(raw).replace(',', '.'));
+
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  private normalizeRateValue(value: number) {
+    if (!Number.isFinite(value)) {
+      return 0;
+    }
+
+    return Math.abs(value) > 1 ? value / 100 : value;
+  }
+
+  private roundMoney(value: Decimal.Value) {
+    return new Decimal(value).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+  }
+
+  private toOptionalMoneyNumber(value: Decimal.Value | null | undefined) {
+    if (value === null || value === undefined) {
+      return null;
+    }
+
+    return this.roundMoney(value).toNumber();
+  }
+
+  private isApprovedWompiStatus(status: string | null | undefined) {
+    return (status ?? '').trim().toUpperCase().includes('APPROVED');
+  }
+
+  private getWompiSettlementConfig(): WompiSettlementConfig {
+    return {
+      commissionPercent: this.normalizeRateValue(
+        this.parseConfigNumber('WOMPI_COMMISSION_PERCENT', 0),
+      ),
+      fixedFeeCop: this.parseConfigNumber('WOMPI_FIXED_FEE_COP', 0),
+      packagingCifCop: this.parseConfigNumber('WOMPI_PACKAGING_CIF_COP', 990),
+      commissionVatPercent: this.normalizeRateValue(
+        this.parseConfigNumber('WOMPI_COMMISSION_VAT_PERCENT', 0),
+      ),
+      reteFuentePercent: this.normalizeRateValue(
+        this.parseConfigNumber('WOMPI_RETEFUENTE_PERCENT', 0),
+      ),
+      reteIvaPercent: this.normalizeRateValue(
+        this.parseConfigNumber('WOMPI_RETEIVA_PERCENT', 0),
+      ),
+      reteIcaPercent: this.normalizeRateValue(
+        this.parseConfigNumber('WOMPI_RETEICA_PERCENT', 0),
+      ),
+    };
+  }
+
+  getWompiSettlementConfigSummary() {
+    return this.getWompiSettlementConfig();
+  }
+
+  private buildWompiSettlementBreakdown(params: {
+    grossAmount: Decimal.Value;
+    settlementSource: 'WEBHOOK_ESTIMATE' | 'WOMPI_REPORT';
+    netReceivedAmount?: number | null;
+    commissionAmount?: number | null;
+    commissionVatAmount?: number | null;
+    reteFuenteAmount?: number | null;
+    reteIvaAmount?: number | null;
+    reteIcaAmount?: number | null;
+  }): WompiSettlementBreakdown {
+    const config = this.getWompiSettlementConfig();
+    const grossAmount = this.roundMoney(params.grossAmount);
+
+    const fallbackCommissionAmount = this.roundMoney(
+      grossAmount.mul(config.commissionPercent).plus(config.fixedFeeCop),
+    );
+    const fallbackCommissionVatAmount = this.roundMoney(
+      fallbackCommissionAmount.mul(config.commissionVatPercent),
+    );
+    const fallbackReteFuenteAmount = this.roundMoney(
+      grossAmount.mul(config.reteFuentePercent),
+    );
+    const fallbackReteIvaAmount = this.roundMoney(
+      grossAmount.mul(config.reteIvaPercent),
+    );
+    const fallbackReteIcaAmount = this.roundMoney(
+      grossAmount.mul(config.reteIcaPercent),
+    );
+    const packagingCifAmount = this.roundMoney(config.packagingCifCop);
+
+    const commissionAmount = this.roundMoney(
+      params.commissionAmount ?? fallbackCommissionAmount,
+    );
+    const commissionVatAmount = this.roundMoney(
+      params.commissionVatAmount ?? fallbackCommissionVatAmount,
+    );
+    const reteFuenteAmount = this.roundMoney(
+      params.reteFuenteAmount ?? fallbackReteFuenteAmount,
+    );
+    const reteIvaAmount = this.roundMoney(
+      params.reteIvaAmount ?? fallbackReteIvaAmount,
+    );
+    const reteIcaAmount = this.roundMoney(
+      params.reteIcaAmount ?? fallbackReteIcaAmount,
+    );
+    const netReceivedAmount = this.roundMoney(
+      params.netReceivedAmount ??
+        grossAmount
+          .minus(commissionAmount)
+          .minus(commissionVatAmount)
+          .minus(reteFuenteAmount)
+          .minus(reteIvaAmount)
+          .minus(reteIcaAmount)
+          .minus(packagingCifAmount),
+    );
+
+    return {
+      grossAmount: grossAmount.toNumber(),
+      netReceivedAmount: netReceivedAmount.toNumber(),
+      commissionAmount: commissionAmount.toNumber(),
+      commissionVatAmount: commissionVatAmount.toNumber(),
+      reteFuenteAmount: reteFuenteAmount.toNumber(),
+      reteIvaAmount: reteIvaAmount.toNumber(),
+      reteIcaAmount: reteIcaAmount.toNumber(),
+      packagingCifAmount: packagingCifAmount.toNumber(),
+      settlementSource: params.settlementSource,
+      config,
+    };
+  }
+
+  private normalizeHeaderName(header: string) {
+    return header
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '');
+  }
+
+  private parseDelimitedLine(line: string, delimiter: string) {
+    const cells: string[] = [];
+    let current = '';
+    let insideQuotes = false;
+
+    for (let index = 0; index < line.length; index += 1) {
+      const char = line[index];
+      const next = line[index + 1];
+
+      if (char === '"') {
+        if (insideQuotes && next === '"') {
+          current += '"';
+          index += 1;
+          continue;
+        }
+
+        insideQuotes = !insideQuotes;
+        continue;
+      }
+
+      if (char === delimiter && !insideQuotes) {
+        cells.push(current.trim());
+        current = '';
+        continue;
+      }
+
+      current += char;
+    }
+
+    cells.push(current.trim());
+    return cells.map((cell) => cell.replace(/^"|"$/g, '').trim());
+  }
+
+  private parseFlexibleMoney(raw: string | null | undefined) {
+    if (!raw) {
+      return null;
+    }
+
+    const normalized = raw.trim();
+
+    if (!normalized) {
+      return null;
+    }
+
+    const digitsOnly = normalized.replace(/[^\d,.-]/g, '');
+    if (!digitsOnly) {
+      return null;
+    }
+
+    const hasComma = digitsOnly.includes(',');
+    const hasDot = digitsOnly.includes('.');
+    const lastCommaIndex = digitsOnly.lastIndexOf(',');
+    const lastDotIndex = digitsOnly.lastIndexOf('.');
+    let canonical = digitsOnly;
+
+    if (hasComma && hasDot) {
+      canonical =
+        lastCommaIndex > lastDotIndex
+          ? digitsOnly.replace(/\./g, '').replace(',', '.')
+          : digitsOnly.replace(/,/g, '');
+    } else if (hasComma) {
+      canonical =
+        digitsOnly.length - lastCommaIndex - 1 <= 2
+          ? digitsOnly.replace(/\./g, '').replace(',', '.')
+          : digitsOnly.replace(/,/g, '');
+    } else if (hasDot && digitsOnly.length - lastDotIndex - 1 > 2) {
+      canonical = digitsOnly.replace(/\./g, '');
+    }
+
+    const parsed = Number(canonical);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  private parseWompiReport(file: Express.Multer.File) {
+    const extension = file.originalname.split('.').pop()?.toLowerCase() ?? '';
+    if (!['csv', 'txt'].includes(extension)) {
+      throw new UnsupportedMediaTypeException(
+        'El reporte Wompi debe cargarse en formato CSV o TXT delimitado',
+      );
+    }
+
+    const rawText = file.buffer.toString('utf8').replace(/^\uFEFF/, '');
+    const lines = rawText
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+
+    if (lines.length < 2) {
+      throw new BadRequestException(
+        'El archivo de conciliacion Wompi no contiene filas suficientes',
+      );
+    }
+
+    const headerLine = lines[0];
+    const delimiterCandidates = [',', ';', '\t'];
+    const delimiter = delimiterCandidates.sort(
+      (left, right) =>
+        headerLine.split(right).length - headerLine.split(left).length,
+    )[0];
+    const normalizedHeaders = this.parseDelimitedLine(
+      headerLine,
+      delimiter,
+    ).map((header) => this.normalizeHeaderName(header));
+
+    const aliases = {
+      reference: ['reference', 'referencia', 'referenciapago', 'orderid'],
+      transactionId: ['transactionid', 'idtransaccion', 'id', 'transaccionid'],
+      status: ['status', 'estado'],
+      paymentMethodType: ['paymentmethodtype', 'metododepago', 'metodopago'],
+      grossAmountInCents: [
+        'amountincents',
+        'grossamountincents',
+        'montoencentavos',
+      ],
+      grossAmount: [
+        'grossamount',
+        'montobruto',
+        'monto',
+        'valorbruto',
+        'amount',
+      ],
+      netReceivedAmount: [
+        'netreceivedamount',
+        'montoneto',
+        'neto',
+        'valorconsignado',
+        'montoaconsignar',
+      ],
+      commissionAmount: ['commissionamount', 'comision', 'fee', 'cargo'],
+      commissionVatAmount: ['commissionvatamount', 'ivacomision', 'feevat'],
+      reteFuenteAmount: ['retefuenteamount', 'retefuente'],
+      reteIvaAmount: ['reteivaamount', 'reteiva'],
+      reteIcaAmount: ['reteicaamount', 'reteica'],
+    } satisfies Record<string, string[]>;
+
+    const getValue = (row: string[], fieldAliases: string[]) => {
+      for (const alias of fieldAliases) {
+        const index = normalizedHeaders.findIndex((header) => header === alias);
+        if (index >= 0 && row[index] !== undefined) {
+          return row[index];
+        }
+      }
+
+      return '';
+    };
+
+    return lines.slice(1).map<ParsedWompiReportRow>((line, index) => {
+      const row = this.parseDelimitedLine(line, delimiter);
+      const rawRecord = Object.fromEntries(
+        normalizedHeaders.map((header, headerIndex) => [
+          header,
+          row[headerIndex] ?? '',
+        ]),
+      );
+
+      const grossRaw = getValue(row, aliases.grossAmount);
+      const grossAmountInCents = this.parseFlexibleMoney(
+        getValue(row, aliases.grossAmountInCents),
+      );
+      const grossAmount =
+        grossAmountInCents !== null
+          ? this.roundMoney(new Decimal(grossAmountInCents).div(100)).toNumber()
+          : this.parseFlexibleMoney(grossRaw);
+
+      return {
+        rowNumber: index + 2,
+        reference: getValue(row, aliases.reference).trim(),
+        transactionId: getValue(row, aliases.transactionId).trim() || null,
+        status: getValue(row, aliases.status).trim().toUpperCase() || 'UNKNOWN',
+        paymentMethodType:
+          getValue(row, aliases.paymentMethodType).trim() || null,
+        grossAmount,
+        netReceivedAmount: this.parseFlexibleMoney(
+          getValue(row, aliases.netReceivedAmount),
+        ),
+        commissionAmount: this.parseFlexibleMoney(
+          getValue(row, aliases.commissionAmount),
+        ),
+        commissionVatAmount: this.parseFlexibleMoney(
+          getValue(row, aliases.commissionVatAmount),
+        ),
+        reteFuenteAmount: this.parseFlexibleMoney(
+          getValue(row, aliases.reteFuenteAmount),
+        ),
+        reteIvaAmount: this.parseFlexibleMoney(
+          getValue(row, aliases.reteIvaAmount),
+        ),
+        reteIcaAmount: this.parseFlexibleMoney(
+          getValue(row, aliases.reteIcaAmount),
+        ),
+        raw: rawRecord,
+      };
+    });
+  }
+
+  private buildWompiSettlementMetadata(params: {
+    breakdown: WompiSettlementBreakdown;
+    transactionId?: string | null;
+    externalStatus?: string | null;
+    paymentMethodType?: string | null;
+    checksum?: string | null;
+    eventType?: string | null;
+    rawReportRow?: Record<string, string> | null;
+  }): Prisma.InputJsonValue {
+    const metadata: Record<string, unknown> = {
+      provider: 'wompi',
+      source: params.breakdown.settlementSource,
+      configuration: params.breakdown.config,
+    };
+
+    if (params.transactionId) {
+      metadata.transactionId = params.transactionId;
+    }
+
+    if (params.externalStatus) {
+      metadata.externalStatus = params.externalStatus;
+    }
+
+    if (params.paymentMethodType) {
+      metadata.paymentMethodType = params.paymentMethodType;
+    }
+
+    if (params.checksum) {
+      metadata.checksum = params.checksum;
+    }
+
+    if (params.eventType) {
+      metadata.eventType = params.eventType;
+    }
+
+    if (params.rawReportRow) {
+      metadata.reportRow = params.rawReportRow;
+    }
+
+    return metadata as Prisma.InputJsonValue;
+  }
+
+  private buildWompiOrderPaymentUpdate(params: {
+    breakdown: WompiSettlementBreakdown;
+    transactionId?: string | null;
+    externalStatus?: string | null;
+    paymentMethodType?: string | null;
+    reconciledAt?: Date | null;
+    checksum?: string | null;
+    eventType?: string | null;
+    rawReportRow?: Record<string, string> | null;
+  }): Prisma.OrderPaymentUpdateInput {
+    return {
+      provider: 'wompi',
+      externalTransactionId: params.transactionId ?? null,
+      externalStatus: params.externalStatus ?? null,
+      paymentMethodType: params.paymentMethodType ?? null,
+      grossAmount: params.breakdown.grossAmount,
+      netReceivedAmount: params.breakdown.netReceivedAmount,
+      commissionAmount: params.breakdown.commissionAmount,
+      commissionVatAmount: params.breakdown.commissionVatAmount,
+      reteFuenteAmount: params.breakdown.reteFuenteAmount,
+      reteIvaAmount: params.breakdown.reteIvaAmount,
+      reteIcaAmount: params.breakdown.reteIcaAmount,
+      packagingCifAmount: params.breakdown.packagingCifAmount,
+      settlementSource: params.breakdown.settlementSource,
+      settlementMetadata: this.buildWompiSettlementMetadata({
+        breakdown: params.breakdown,
+        transactionId: params.transactionId,
+        externalStatus: params.externalStatus,
+        paymentMethodType: params.paymentMethodType,
+        checksum: params.checksum,
+        eventType: params.eventType,
+        rawReportRow: params.rawReportRow,
+      }),
+      reconciledAt: params.reconciledAt ?? null,
+    };
+  }
+
+  private async findOrderForWompiReference(
+    tx: Prisma.TransactionClient,
+    reference: string,
+  ) {
+    const trimmedReference = reference.trim();
+
+    if (!trimmedReference) {
+      return null;
+    }
+
+    const orderById = await tx.order.findFirst({
+      where: { id: trimmedReference, deletedAt: null },
+      select: {
+        id: true,
+        orderNumber: true,
+        totalAmount: true,
+        status: true,
+      },
+    });
+
+    if (orderById) {
+      return orderById;
+    }
+
+    if (/^\d+$/.test(trimmedReference)) {
+      return tx.order.findFirst({
+        where: {
+          orderNumber: Number(trimmedReference),
+          deletedAt: null,
+        },
+        select: {
+          id: true,
+          orderNumber: true,
+          totalAmount: true,
+          status: true,
+        },
+      });
+    }
+
+    return null;
+  }
+
+  private async findLatestWompiOrderPayment(
+    tx: Prisma.TransactionClient,
+    params: {
+      orderId: string;
+      transactionId?: string | null;
+    },
+  ) {
+    if (params.transactionId) {
+      const paymentByTransaction = await tx.orderPayment.findFirst({
+        where: {
+          deletedAt: null,
+          OR: [
+            { externalTransactionId: params.transactionId },
+            { proofUrl: { contains: params.transactionId } },
+          ],
+        },
+        select: {
+          id: true,
+          amount: true,
+          grossAmount: true,
+          netReceivedAmount: true,
+          commissionAmount: true,
+          commissionVatAmount: true,
+          reteFuenteAmount: true,
+          reteIvaAmount: true,
+          reteIcaAmount: true,
+          paymentMethodType: true,
+        },
+        orderBy: [{ paymentDate: 'desc' }, { createdAt: 'desc' }],
+      });
+
+      if (paymentByTransaction) {
+        return paymentByTransaction;
+      }
+    }
+
+    const wompiPayment = await tx.orderPayment.findFirst({
+      where: {
+        orderId: params.orderId,
+        deletedAt: null,
+        OR: [
+          { provider: 'wompi' },
+          { proofUrl: { contains: 'wompi.com/transactions' } },
+        ],
+      },
+      select: {
+        id: true,
+        amount: true,
+        grossAmount: true,
+        netReceivedAmount: true,
+        commissionAmount: true,
+        commissionVatAmount: true,
+        reteFuenteAmount: true,
+        reteIvaAmount: true,
+        reteIcaAmount: true,
+        paymentMethodType: true,
+      },
+      orderBy: [{ paymentDate: 'desc' }, { createdAt: 'desc' }],
+    });
+
+    if (wompiPayment) {
+      return wompiPayment;
+    }
+
+    return tx.orderPayment.findFirst({
+      where: {
+        orderId: params.orderId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        amount: true,
+        grossAmount: true,
+        netReceivedAmount: true,
+        commissionAmount: true,
+        commissionVatAmount: true,
+        reteFuenteAmount: true,
+        reteIvaAmount: true,
+        reteIcaAmount: true,
+        paymentMethodType: true,
+      },
+      orderBy: [{ paymentDate: 'desc' }, { createdAt: 'desc' }],
+    });
   }
 
   private resolvePropertyPathValue(
@@ -358,6 +940,12 @@ export class PaymentsService {
       amount_in_cents: amountInCents,
     } = data.transaction;
     const webhookEventKey = this.buildWebhookEventKey(event);
+    const settlementBreakdown = this.isApprovedWompiStatus(status)
+      ? this.buildWompiSettlementBreakdown({
+          grossAmount: new Decimal(amountInCents).div(100),
+          settlementSource: 'WEBHOOK_ESTIMATE',
+        })
+      : null;
 
     if (currency !== 'COP') {
       throw new BadRequestException(
@@ -546,6 +1134,29 @@ export class PaymentsService {
         await this.shippingSyncService.ensureShipmentForOrder(order.id, tx);
 
         if (newStatus === OrderStatus.PAGADA) {
+          const paymentRecord = await this.findLatestWompiOrderPayment(tx, {
+            orderId: order.id,
+            transactionId,
+          });
+
+          if (!paymentRecord || !settlementBreakdown) {
+            throw new BadRequestException(
+              `Payment record not found for approved Wompi order ${order.id}`,
+            );
+          }
+
+          await tx.orderPayment.update({
+            where: { id: paymentRecord.id },
+            data: this.buildWompiOrderPaymentUpdate({
+              breakdown: settlementBreakdown,
+              transactionId,
+              externalStatus: status,
+              paymentMethodType: data.transaction.payment_method_type ?? null,
+              checksum,
+              eventType,
+            }),
+          });
+
           const description = `Venta orden #${order.orderNumber} (${order.id})`;
           const existingIncome = await tx.financialTransaction.findFirst({
             where: {
@@ -650,6 +1261,143 @@ export class PaymentsService {
     return {
       retriedCount: failedEvents.length,
       recoveredCount,
+    };
+  }
+
+  async reconcileWompiReport(file: Express.Multer.File) {
+    const rows = this.parseWompiReport(file);
+    const reconciledAt = new Date();
+    const result = {
+      fileName: file.originalname,
+      processedRows: rows.length,
+      reconciledPayments: 0,
+      unmatchedOrders: [] as Array<{
+        rowNumber: number;
+        reference: string;
+        transactionId: string | null;
+      }>,
+      unmatchedPayments: [] as Array<{
+        rowNumber: number;
+        orderId: string;
+        reference: string;
+        transactionId: string | null;
+      }>,
+      statusMismatches: [] as Array<{
+        rowNumber: number;
+        orderId: string;
+        orderStatus: OrderStatus;
+        reportStatus: string;
+      }>,
+    };
+
+    for (const row of rows) {
+      const reconciliation = await this.prisma.$transaction(async (tx) => {
+        const order = await this.findOrderForWompiReference(tx, row.reference);
+
+        if (!order) {
+          return {
+            kind: 'unmatched-order' as const,
+            rowNumber: row.rowNumber,
+            reference: row.reference,
+            transactionId: row.transactionId,
+          };
+        }
+
+        const payment = await this.findLatestWompiOrderPayment(tx, {
+          orderId: order.id,
+          transactionId: row.transactionId,
+        });
+
+        if (!payment) {
+          return {
+            kind: 'unmatched-payment' as const,
+            rowNumber: row.rowNumber,
+            orderId: order.id,
+            reference: row.reference,
+            transactionId: row.transactionId,
+          };
+        }
+
+        const fallbackGrossAmount =
+          row.grossAmount ??
+          this.toOptionalMoneyNumber(payment.grossAmount) ??
+          this.toOptionalMoneyNumber(payment.amount) ??
+          order.totalAmount;
+
+        const breakdown = this.buildWompiSettlementBreakdown({
+          grossAmount: fallbackGrossAmount,
+          settlementSource: 'WOMPI_REPORT',
+          netReceivedAmount:
+            row.netReceivedAmount ??
+            this.toOptionalMoneyNumber(payment.netReceivedAmount),
+          commissionAmount:
+            row.commissionAmount ??
+            this.toOptionalMoneyNumber(payment.commissionAmount),
+          commissionVatAmount:
+            row.commissionVatAmount ??
+            this.toOptionalMoneyNumber(payment.commissionVatAmount),
+          reteFuenteAmount:
+            row.reteFuenteAmount ??
+            this.toOptionalMoneyNumber(payment.reteFuenteAmount),
+          reteIvaAmount:
+            row.reteIvaAmount ??
+            this.toOptionalMoneyNumber(payment.reteIvaAmount),
+          reteIcaAmount:
+            row.reteIcaAmount ??
+            this.toOptionalMoneyNumber(payment.reteIcaAmount),
+        });
+
+        await tx.orderPayment.update({
+          where: { id: payment.id },
+          data: this.buildWompiOrderPaymentUpdate({
+            breakdown,
+            transactionId: row.transactionId,
+            externalStatus: row.status,
+            paymentMethodType:
+              row.paymentMethodType ?? payment.paymentMethodType ?? null,
+            reconciledAt,
+            rawReportRow: row.raw,
+          }),
+        });
+
+        return {
+          kind: 'reconciled' as const,
+          rowNumber: row.rowNumber,
+          orderId: order.id,
+          orderStatus: order.status,
+          reportStatus: row.status,
+        };
+      });
+
+      if (reconciliation.kind === 'reconciled') {
+        result.reconciledPayments += 1;
+
+        if (
+          this.isApprovedWompiStatus(reconciliation.reportStatus) &&
+          reconciliation.orderStatus !== OrderStatus.PAGADA
+        ) {
+          result.statusMismatches.push({
+            rowNumber: reconciliation.rowNumber,
+            orderId: reconciliation.orderId,
+            orderStatus: reconciliation.orderStatus,
+            reportStatus: reconciliation.reportStatus,
+          });
+        }
+
+        continue;
+      }
+
+      if (reconciliation.kind === 'unmatched-order') {
+        result.unmatchedOrders.push(reconciliation);
+        continue;
+      }
+
+      result.unmatchedPayments.push(reconciliation);
+    }
+
+    return {
+      ...result,
+      settlementConfig: this.getWompiSettlementConfigSummary(),
     };
   }
 }

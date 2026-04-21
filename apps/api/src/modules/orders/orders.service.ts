@@ -650,6 +650,25 @@ export class OrdersService {
           );
         }
 
+        const decimalPaymentFields = [
+          'grossAmount',
+          'netReceivedAmount',
+          'commissionAmount',
+          'commissionVatAmount',
+          'reteFuenteAmount',
+          'reteIvaAmount',
+          'reteIcaAmount',
+          'packagingCifAmount',
+        ] as const;
+
+        for (const field of decimalPaymentFields) {
+          if (field in paymentRecord && paymentRecord[field] !== null) {
+            paymentRecord[field] = decimalToNumber(
+              paymentRecord[field] as DecimalInput,
+            );
+          }
+        }
+
         return paymentRecord;
       });
     }
@@ -1456,6 +1475,21 @@ export class OrdersService {
               paymentDate: true,
               proofUrl: true,
               notes: true,
+              provider: true,
+              externalTransactionId: true,
+              externalStatus: true,
+              paymentMethodType: true,
+              grossAmount: true,
+              netReceivedAmount: true,
+              commissionAmount: true,
+              commissionVatAmount: true,
+              reteFuenteAmount: true,
+              reteIvaAmount: true,
+              reteIcaAmount: true,
+              packagingCifAmount: true,
+              settlementSource: true,
+              settlementMetadata: true,
+              reconciledAt: true,
               createdAt: true,
             },
             orderBy: [{ paymentDate: 'desc' }, { createdAt: 'desc' }],
@@ -1768,6 +1802,21 @@ export class OrdersService {
             paymentDate: true,
             proofUrl: true,
             notes: true,
+            provider: true,
+            externalTransactionId: true,
+            externalStatus: true,
+            paymentMethodType: true,
+            grossAmount: true,
+            netReceivedAmount: true,
+            commissionAmount: true,
+            commissionVatAmount: true,
+            reteFuenteAmount: true,
+            reteIvaAmount: true,
+            reteIcaAmount: true,
+            packagingCifAmount: true,
+            settlementSource: true,
+            settlementMetadata: true,
+            reconciledAt: true,
             createdAt: true,
           },
           orderBy: [{ paymentDate: 'desc' }, { createdAt: 'desc' }],

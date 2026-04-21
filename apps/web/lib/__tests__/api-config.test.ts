@@ -11,7 +11,7 @@ describe('api config', () => {
   });
 
   it('usa solo la API configurada en produccion', async () => {
-    process.env.NODE_ENV = 'production';
+    (process.env as Record<string, string | undefined>).NODE_ENV = 'production';
     process.env.NEXT_PUBLIC_API_URL = 'https://api.example.com/api/v1';
 
     const { getApiCandidates } = await import('../api-config');
@@ -20,7 +20,8 @@ describe('api config', () => {
   });
 
   it('prioriza loopback sobre una API LAN configurada en desarrollo', async () => {
-    process.env.NODE_ENV = 'development';
+    (process.env as Record<string, string | undefined>).NODE_ENV =
+      'development';
     process.env.NEXT_PUBLIC_API_URL = 'http://192.168.1.54:4004/api/v1';
 
     const { getApiCandidates } = await import('../api-config');

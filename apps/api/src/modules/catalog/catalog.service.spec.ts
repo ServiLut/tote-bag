@@ -23,6 +23,10 @@ describe('CatalogService', () => {
     del: jest.fn(),
   };
 
+  const managerApprovalsService = {
+    requireApproval: jest.fn().mockResolvedValue(undefined),
+  };
+
   const prisma = {
     $transaction: jest.fn(),
     orderItem: {
@@ -55,7 +59,11 @@ describe('CatalogService', () => {
     prisma.variant.count.mockResolvedValue(0);
     prisma.product.findMany.mockResolvedValue([]);
     tx.purchaseBatch.findMany.mockResolvedValue([]);
-    service = new CatalogService(prisma as never, cacheManager as never);
+    service = new CatalogService(
+      prisma as never,
+      cacheManager as never,
+      managerApprovalsService as never,
+    );
   });
 
   it('previews variant pricing from net price using backend decimal math', () => {
@@ -176,21 +184,25 @@ describe('CatalogService', () => {
       variants: [{ id: 'variant-1', sku: 'TB-BASICOS-TOTEBAGCLASICA-M-NEGRO' }],
     });
 
-    await service.update('product-1', {
-      variants: [
-        {
-          id: 'variant-1',
-          sku: '',
-          size: 'M',
-          color: 'Negro',
-          imageUrl: 'https://example.com/variant.jpg',
-          salePrice: 100,
-          minPrice: 90,
-          costPrice: 50,
-          isActive: true,
-        },
-      ],
-    });
+    await service.update(
+      'product-1',
+      {
+        variants: [
+          {
+            id: 'variant-1',
+            sku: '',
+            size: 'M',
+            color: 'Negro',
+            imageUrl: 'https://example.com/variant.jpg',
+            salePrice: 100,
+            minPrice: 90,
+            costPrice: 50,
+            isActive: true,
+          },
+        ],
+      },
+      'admin-1',
+    );
 
     expect(tx.variant.update).toHaveBeenCalledWith({
       where: { id: 'variant-1' },
@@ -265,22 +277,26 @@ describe('CatalogService', () => {
       ],
     });
 
-    await service.update('product-1', {
-      variants: [
-        {
-          id: 'variant-1',
-          sku: '',
-          size: 'M',
-          color: 'Negro',
-          imageUrl: 'https://example.com/variant.jpg',
-          netPrice: 100000,
-          minPrice: 90000,
-          costPrice: 60000,
-          taxRate: 0.19,
-          isActive: true,
-        },
-      ],
-    });
+    await service.update(
+      'product-1',
+      {
+        variants: [
+          {
+            id: 'variant-1',
+            sku: '',
+            size: 'M',
+            color: 'Negro',
+            imageUrl: 'https://example.com/variant.jpg',
+            netPrice: 100000,
+            minPrice: 90000,
+            costPrice: 60000,
+            taxRate: 0.19,
+            isActive: true,
+          },
+        ],
+      },
+      'admin-1',
+    );
 
     expect(tx.variant.update).toHaveBeenCalledWith({
       where: { id: 'variant-1' },

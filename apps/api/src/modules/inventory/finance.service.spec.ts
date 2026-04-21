@@ -400,4 +400,376 @@ describe('FinanceService PDF rendering', () => {
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
+
+  it('builds per-order profitability including VAT reserve, retentions as asset, and gateway-net margin alert', async () => {
+    const service = new FinanceService({
+      order: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'order-1',
+            orderNumber: 101,
+            customerEmail: 'cliente@tote.co',
+            createdAt: new Date('2026-03-10T10:00:00.000Z'),
+            status: 'ENTREGADA',
+            totalAmount: 119000,
+            netAmount: 100000,
+            taxTotal: 19000,
+            amountPaid: 119000,
+            balanceDue: 0,
+            items: [
+              {
+                id: 'item-1',
+                sku: 'TB-001',
+                quantity: 2,
+                pricingJson: {
+                  inventoryConsumption: {
+                    totalCOGS: 40000,
+                    reductions: [
+                      {
+                        batchId: 'batch-1',
+                        supplierId: 'supplier-1',
+                        quantity: 2,
+                        unitCost: 20000,
+                        documentType: 'INVOICE',
+                      },
+                    ],
+                  },
+                },
+                variant: { costPrice: 18000, totalCost: 20000, taxRate: 0.19 },
+              },
+            ],
+            payments: [
+              {
+                id: 'payment-1',
+                amount: 119000,
+                paymentDate: new Date('2026-03-10T10:00:00.000Z'),
+                provider: 'wompi',
+                paymentMethodType: 'CARD',
+                grossAmount: 119000,
+                netReceivedAmount: 111440,
+                commissionAmount: 3000,
+                commissionVatAmount: 570,
+                reteFuenteAmount: 1500,
+                reteIvaAmount: 1000,
+                reteIcaAmount: 500,
+                packagingCifAmount: 990,
+                settlementSource: 'WOMPI_REPORT',
+              },
+            ],
+          },
+        ]),
+      },
+    } as never);
+
+    const result = await service.getOrderProfitabilityReport({
+      startDate: '2026-03-01',
+      endDate: '2026-03-31',
+    });
+
+    expect(result.summary).toMatchObject({
+      orderCount: 1,
+      vatLiability: 19000,
+      retentionAssetTotal: 3000,
+      grossProfit: 60000,
+      operatingProfit: 55440,
+      netProfit: 55440,
+      realNetProfit: 55440,
+      netReceivedBank: 111440,
+      belowTargetCount: 1,
+    });
+    expect(result.orders[0]).toMatchObject({
+      orderNumber: 101,
+      ingresoBruto: 119000,
+      ventaNetaSinIva: 100000,
+      iva: 19000,
+      costoProducto: 40000,
+      utilidadNetaReal: 55440,
+      netoRecibidoBanco: 111440,
+      retencionesActivas: 3000,
+      alertaMargenBajo: true,
+    });
+    expect(result.orders[0].margenSobreNetoPasarela).toBeCloseTo(0.497487, 6);
+  });
+
+  it('aggregates monthly retentions as tax asset advances', async () => {
+    const service = new FinanceService({
+      order: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'order-1',
+            orderNumber: 101,
+            customerEmail: 'cliente@tote.co',
+            createdAt: new Date('2026-03-10T10:00:00.000Z'),
+            status: 'ENTREGADA',
+            totalAmount: 119000,
+            netAmount: 100000,
+            taxTotal: 19000,
+            amountPaid: 119000,
+            balanceDue: 0,
+            items: [
+              {
+                id: 'item-1',
+                sku: 'TB-001',
+                quantity: 1,
+                pricingJson: {
+                  inventoryConsumption: {
+                    totalCOGS: 30000,
+                    reductions: [
+                      {
+                        batchId: 'batch-1',
+                        supplierId: 'supplier-1',
+                        quantity: 1,
+                        unitCost: 30000,
+                        documentType: 'INVOICE',
+                      },
+                    ],
+                  },
+                },
+                variant: { costPrice: 30000, totalCost: 30000, taxRate: 0.19 },
+              },
+            ],
+            payments: [
+              {
+                id: 'payment-1',
+                amount: 119000,
+                paymentDate: new Date('2026-03-10T10:00:00.000Z'),
+                provider: 'wompi',
+                paymentMethodType: 'CARD',
+                grossAmount: 119000,
+                netReceivedAmount: 112000,
+                commissionAmount: 2500,
+                commissionVatAmount: 475,
+                reteFuenteAmount: 900,
+                reteIvaAmount: 600,
+                reteIcaAmount: 200,
+                packagingCifAmount: 990,
+                settlementSource: 'WOMPI_REPORT',
+              },
+            ],
+          },
+          {
+            id: 'order-2',
+            orderNumber: 202,
+            customerEmail: 'abril@tote.co',
+            createdAt: new Date('2026-04-03T10:00:00.000Z'),
+            status: 'ENTREGADA',
+            totalAmount: 238000,
+            netAmount: 200000,
+            taxTotal: 38000,
+            amountPaid: 238000,
+            balanceDue: 0,
+            items: [
+              {
+                id: 'item-2',
+                sku: 'TB-002',
+                quantity: 1,
+                pricingJson: {
+                  inventoryConsumption: {
+                    totalCOGS: 80000,
+                    reductions: [
+                      {
+                        batchId: 'batch-2',
+                        supplierId: 'supplier-2',
+                        quantity: 1,
+                        unitCost: 80000,
+                        documentType: 'INVOICE',
+                      },
+                    ],
+                  },
+                },
+                variant: { costPrice: 80000, totalCost: 80000, taxRate: 0.19 },
+              },
+            ],
+            payments: [
+              {
+                id: 'payment-2',
+                amount: 238000,
+                paymentDate: new Date('2026-04-03T10:00:00.000Z'),
+                provider: 'wompi',
+                paymentMethodType: 'CARD',
+                grossAmount: 238000,
+                netReceivedAmount: 225000,
+                commissionAmount: 4000,
+                commissionVatAmount: 760,
+                reteFuenteAmount: 1800,
+                reteIvaAmount: 1200,
+                reteIcaAmount: 400,
+                packagingCifAmount: 990,
+                settlementSource: 'WOMPI_REPORT',
+              },
+            ],
+          },
+        ]),
+      },
+    } as never);
+
+    const result = await service.getRetentionReport({
+      startDate: '2026-03-01',
+      endDate: '2026-04-30',
+    });
+
+    expect(result.summary).toEqual({
+      orderCount: 2,
+      reteFuenteTotal: 2700,
+      reteIvaTotal: 1800,
+      reteIcaTotal: 600,
+      retentionAssetTotal: 5100,
+    });
+    expect(result.months).toEqual([
+      {
+        month: '2026-03',
+        orderCount: 1,
+        reteFuente: 900,
+        reteIva: 600,
+        reteIca: 200,
+        total: 1700,
+      },
+      {
+        month: '2026-04',
+        orderCount: 1,
+        reteFuente: 1800,
+        reteIva: 1200,
+        reteIca: 400,
+        total: 3400,
+      },
+    ]);
+  });
+
+  it('creates a safe default monthly fixed-expense config when none exists', async () => {
+    const queryRaw = jest.fn().mockResolvedValue([]);
+    const executeRaw = jest.fn().mockResolvedValue(1);
+    const service = new FinanceService({
+      $queryRaw: queryRaw,
+      $executeRaw: executeRaw,
+    } as never);
+
+    const result = await service.getFixedExpensesConfig();
+
+    expect(queryRaw).toHaveBeenCalled();
+    expect(executeRaw).toHaveBeenCalled();
+    expect(result).toMatchObject({
+      key: 'finance.monthly_fixed_expenses',
+      currency: 'COP',
+      period: 'monthly',
+      monthlyTotal: 0,
+      isConfigured: false,
+    });
+    expect(result.items).toEqual([
+      { id: 'payroll', label: 'Nomina', amount: 0 },
+      { id: 'rent', label: 'Arriendo', amount: 0 },
+      { id: 'services', label: 'Servicios', amount: 0 },
+    ]);
+  });
+
+  it('persists monthly fixed-expense config totals for the administrator', async () => {
+    const executeRaw = jest.fn().mockResolvedValue(1);
+    const service = new FinanceService({
+      $executeRaw: executeRaw,
+    } as never);
+
+    const result = await service.updateFixedExpensesConfig({
+      items: [
+        { id: 'payroll', label: 'Nomina', amount: '2500000' },
+        { id: 'rent', label: 'Arriendo', amount: '1800000' },
+        { id: 'services', label: 'Servicios', amount: '450000' },
+      ],
+    });
+
+    expect(executeRaw).toHaveBeenCalled();
+    expect(result).toMatchObject({
+      monthlyTotal: 4750000,
+      isConfigured: true,
+      items: [
+        { id: 'payroll', label: 'Nomina', amount: 2500000 },
+        { id: 'rent', label: 'Arriendo', amount: 1800000 },
+        { id: 'services', label: 'Servicios', amount: 450000 },
+      ],
+    });
+  });
+
+  it('builds a break-even thermometer from accumulated real net profit versus monthly fixed expenses', async () => {
+    const service = new FinanceService({
+      $queryRaw: jest.fn().mockResolvedValue([
+        {
+          value: {
+            currency: 'COP',
+            period: 'monthly',
+            items: [
+              { id: 'payroll', label: 'Nomina', amount: 5000000 },
+              { id: 'rent', label: 'Arriendo', amount: 3000000 },
+            ],
+          },
+          updated_at: new Date('2026-03-01T10:00:00.000Z'),
+        },
+      ]),
+      order: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'order-1',
+            orderNumber: 101,
+            customerEmail: 'cliente@tote.co',
+            createdAt: new Date('2026-03-10T10:00:00.000Z'),
+            status: 'ENTREGADA',
+            totalAmount: 7000000,
+            netAmount: 6000000,
+            taxTotal: 1000000,
+            amountPaid: 7000000,
+            balanceDue: 0,
+            items: [
+              {
+                id: 'item-1',
+                sku: 'TB-001',
+                quantity: 1,
+                pricingJson: null,
+                variant: {
+                  costPrice: 2000000,
+                  totalCost: 2000000,
+                  taxRate: 0.19,
+                },
+              },
+            ],
+            payments: [
+              {
+                id: 'payment-1',
+                amount: 7000000,
+                paymentDate: new Date('2026-03-10T10:00:00.000Z'),
+                provider: 'manual',
+                paymentMethodType: 'TRANSFER',
+                grossAmount: 7000000,
+                netReceivedAmount: 7000000,
+                commissionAmount: 0,
+                commissionVatAmount: 0,
+                reteFuenteAmount: 0,
+                reteIvaAmount: 0,
+                reteIcaAmount: 0,
+                packagingCifAmount: 0,
+                settlementSource: 'MANUAL',
+              },
+            ],
+          },
+        ]),
+      },
+    } as never);
+
+    const result = await service.getBreakEvenThermometer({
+      month: '03',
+      year: '2026',
+    });
+
+    expect(result).toMatchObject({
+      orderCount: 1,
+      accumulatedNetProfit: 4000000,
+      targetFixedExpenses: 8000000,
+      progressRatio: 0.5,
+      progressPercentage: 50,
+      progressPercentageCapped: 50,
+      remainingToBreakEven: 4000000,
+      surplusOverBreakEven: 0,
+      status: 'IN_PROGRESS',
+    });
+    expect(result.fixedExpensesConfig).toMatchObject({
+      monthlyTotal: 8000000,
+      isConfigured: true,
+    });
+  });
 });

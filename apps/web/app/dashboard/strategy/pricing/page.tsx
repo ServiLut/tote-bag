@@ -19,11 +19,13 @@ export default function PricingStrategyPage() {
           </div>
         </div>
         <p className="max-w-2xl font-medium text-muted">
-          Analiza la rentabilidad de tus productos con costos manuales y define precios de venta estrategicos
-          para distintos escenarios.
+          Analiza la rentabilidad de tus productos con costos manuales y define
+          precios de venta estrategicos sobre recaudo neto de pasarela.
         </p>
         <p className="max-w-2xl text-sm font-medium text-amber-700">
-          Este modulo no guarda reglas de precio ni usa costos operativos en tiempo real. Sirve para simulacion, no para decisiones automaticas de venta.
+          Este modulo estima Wompi, IVA, CIF de empaque y retenciones desde el
+          backend financiero. Sigue siendo un simulador y no publica reglas de
+          precio automaticamente.
         </p>
       </div>
 

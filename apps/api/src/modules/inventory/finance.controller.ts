@@ -3,6 +3,7 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  Put,
   Post,
   Query,
   Req,
@@ -14,6 +15,8 @@ import { Role } from '../../generated/client/client';
 import { FinanceService } from './finance.service';
 import { RolesService } from '../roles/roles.service';
 import { BreakEvenSimulationDto } from './dto/break-even-simulation.dto';
+import { GatewayMarginGridDto } from './dto/gateway-margin-grid.dto';
+import { UpdateFixedExpensesConfigDto } from './dto/update-fixed-expenses-config.dto';
 
 interface RequestWithUser {
   user?: {
@@ -67,6 +70,70 @@ export class FinanceController {
   ) {
     await this.ensureAdmin(req?.user?.id);
     return this.financeService.getSalesTaxReport({ startDate, endDate });
+  }
+
+  @Get('order-profitability')
+  async getOrderProfitability(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Req() req?: RequestWithUser,
+  ) {
+    await this.ensureAdmin(req?.user?.id);
+    return this.financeService.getOrderProfitabilityReport({
+      startDate,
+      endDate,
+    });
+  }
+
+  @Get('retentions-report')
+  async getRetentionsReport(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Req() req?: RequestWithUser,
+  ) {
+    await this.ensureAdmin(req?.user?.id);
+    return this.financeService.getRetentionReport({ startDate, endDate });
+  }
+
+  @Get('fixed-expenses-config')
+  async getFixedExpensesConfig(@Req() req?: RequestWithUser) {
+    await this.ensureAdmin(req?.user?.id);
+    return this.financeService.getFixedExpensesConfig();
+  }
+
+  @Put('fixed-expenses-config')
+  async updateFixedExpensesConfig(
+    @Body() body: UpdateFixedExpensesConfigDto,
+    @Req() req?: RequestWithUser,
+  ) {
+    await this.ensureAdmin(req?.user?.id);
+    return this.financeService.updateFixedExpensesConfig(body);
+  }
+
+  @Get('break-even-thermometer')
+  async getBreakEvenThermometer(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('month') month?: string,
+    @Query('year') year?: string,
+    @Req() req?: RequestWithUser,
+  ) {
+    await this.ensureAdmin(req?.user?.id);
+    return this.financeService.getBreakEvenThermometer({
+      startDate,
+      endDate,
+      month,
+      year,
+    });
+  }
+
+  @Post('gateway-margin-grid')
+  async getGatewayMarginGrid(
+    @Body() body: GatewayMarginGridDto,
+    @Req() req?: RequestWithUser,
+  ) {
+    await this.ensureAdmin(req?.user?.id);
+    return this.financeService.getGatewayMarginGrid(body);
   }
 
   @Post('break-even-simulation')
