@@ -207,12 +207,32 @@ export class PersonalizationsService {
     }
   }
 
-  async createRequest(userId: string, data: CreatePersonalizationRequestDto) {
+  async createRequest(
+    userId: string,
+    data: CreatePersonalizationRequestDto,
+    options?: { allowProfileOverride?: boolean },
+  ) {
+    const requestedProfileId =
+      typeof data.profileId === 'string' && data.profileId.trim().length > 0
+        ? data.profileId.trim()
+        : null;
+
+    if (requestedProfileId && !options?.allowProfileOverride) {
+      throw new BadRequestException(
+        'No puedes crear solicitudes para otro perfil.',
+      );
+    }
+
     const [profile, variant] = await Promise.all([
-      this.prisma.profile.findUnique({
-        where: { userId },
-        select: { id: true },
-      }),
+      requestedProfileId
+        ? this.prisma.profile.findUnique({
+            where: { id: requestedProfileId },
+            select: { id: true, userId: true },
+          })
+        : this.prisma.profile.findUnique({
+            where: { userId },
+            select: { id: true, userId: true },
+          }),
       data.variantId
         ? this.prisma.variant.findUnique({
             where: { id: data.variantId },
@@ -220,6 +240,10 @@ export class PersonalizationsService {
           })
         : Promise.resolve(null),
     ]);
+
+    if (requestedProfileId && !profile) {
+      throw new BadRequestException('El perfil seleccionado no existe.');
+    }
 
     if (data.variantId && variant && variant.productId !== data.productId) {
       throw new BadRequestException(
@@ -264,7 +288,7 @@ export class PersonalizationsService {
     try {
       return await this.prisma.personalizationRequest.create({
         data: {
-          userId,
+          userId: profile?.userId ?? userId,
           profileId: profile?.id ?? null,
           productId: data.productId,
           variantId: resolvedVariantId,

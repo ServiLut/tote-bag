@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Param, Patch, Req } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Req } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { Role } from '../../generated/client/enums';
+import { CreateCustomerDto } from './dto/create-customer.dto';
 
 interface RequestWithUser {
   user?: {
@@ -17,6 +18,15 @@ export class UsersController {
   @RequirePermissions({ resource: 'users', action: 'read' })
   async findAll() {
     return this.usersService.findAll();
+  }
+
+  @Post('customers')
+  @RequirePermissions({ resource: 'users', action: 'update' })
+  async createCustomer(
+    @Body() data: CreateCustomerDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.usersService.createCustomer(data, req.user?.id);
   }
 
   @Patch(':id/role')

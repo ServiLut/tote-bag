@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useEffect, useMemo, Fragment, ChangeEvent, useCallback } from 'react';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import Image from 'next/image';
@@ -469,6 +470,26 @@ export default function PersonalizationRequestsManager() {
 
   return (
     <div className="space-y-6">
+      {!isReadOnly ? (
+        <div className="flex flex-col gap-4 rounded-2xl border border-theme bg-surface p-5 shadow-sm md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1">
+            <h3 className="text-sm font-black uppercase tracking-widest text-primary">
+              Solicitud manual
+            </h3>
+            <p className="max-w-2xl text-xs font-medium text-muted">
+              Registra una personalizacion desde el dashboard para un cliente existente.
+            </p>
+          </div>
+          <Link
+            href="/dashboard/personalizaciones/nueva"
+            className="inline-flex items-center justify-center gap-2 self-start rounded-xl bg-primary px-4 py-2 text-[10px] font-black uppercase tracking-widest text-base-color shadow-lg shadow-primary/10 transition-all active:scale-95 md:self-auto"
+          >
+            <Sparkles className="h-4 w-4" />
+            Crear solicitud manual
+          </Link>
+        </div>
+      ) : null}
+
       <div className="flex flex-col gap-4 rounded-2xl border border-theme bg-surface p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:w-80">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />

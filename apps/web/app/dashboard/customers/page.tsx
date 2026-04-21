@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState, ChangeEvent, useCallback } from 'react';
+import { useEffect, useState, ChangeEvent, useCallback, FormEvent } from 'react';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { createClient } from '@/utils/supabase/client';
-import { Loader2, UserCircle, ShoppingBag, Eye, X, Mail, Phone, MapPin, Hash, Clock, Database, FileText, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, UserCircle, ShoppingBag, Eye, X, Mail, Phone, MapPin, Hash, Clock, Database, FileText, Search, ChevronLeft, ChevronRight, UserPlus, Save } from 'lucide-react';
 import { getAuthHeaders } from '@/utils/supabase/auth';
 import { apiFetch } from '@/utils/api';
 
@@ -47,11 +47,57 @@ interface ProfilesListPayload {
   };
 }
 
+interface ManualCustomerFormState {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  departmentId: string;
+  municipalityId: string;
+  neighborhood: string;
+  address: string;
+}
+
+const INITIAL_MANUAL_CUSTOMER_FORM: ManualCustomerFormState = {
+  email: '',
+  password: '',
+  firstName: '',
+  lastName: '',
+  phone: '',
+  departmentId: '',
+  municipalityId: '',
+  neighborhood: '',
+  address: '',
+};
+
+function getErrorMessage(body: unknown, fallback: string) {
+  if (body && typeof body === 'object') {
+    const payload = body as Record<string, unknown>;
+    if (Array.isArray(payload.message)) {
+      return payload.message.join(', ');
+    }
+    if (typeof payload.message === 'string') {
+      return payload.message;
+    }
+    if (typeof payload.error === 'string') {
+      return payload.error;
+    }
+  }
+
+  return fallback;
+}
+
 export default function CustomersPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCustomer, setSelectedCustomer] = useState<Profile | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showCreateCustomerModal, setShowCreateCustomerModal] = useState(false);
+  const [createCustomerSubmitting, setCreateCustomerSubmitting] = useState(false);
+  const [createCustomerError, setCreateCustomerError] = useState<string | null>(null);
+  const [createCustomerForm, setCreateCustomerForm] = useState<ManualCustomerFormState>(INITIAL_MANUAL_CUSTOMER_FORM);
+  const [createCustomerMunicipalities, setCreateCustomerMunicipalities] = useState<Municipality[]>([]);
 
   // Filtros Geográficos
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -66,6 +112,17 @@ export default function CustomersPage() {
   const [totalPages, setTotalPages] = useState(1);
 
   const supabase = createClient();
+
+  const closeCreateCustomerModal = useCallback((options?: { force?: boolean }) => {
+    if (createCustomerSubmitting && !options?.force) {
+      return;
+    }
+
+    setShowCreateCustomerModal(false);
+    setCreateCustomerError(null);
+    setCreateCustomerForm(INITIAL_MANUAL_CUSTOMER_FORM);
+    setCreateCustomerMunicipalities([]);
+  }, [createCustomerSubmitting]);
 
   const fetchData = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
@@ -247,6 +304,125 @@ export default function CustomersPage() {
     };
   }, [selectedDept, supabase.auth]);
 
+  useEffect(() => {
+    if (!showCreateCustomerModal || !createCustomerForm.departmentId) {
+      setCreateCustomerMunicipalities([]);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    const fetchCreateMunicipalities = async () => {
+      try {
+        const headers = await getAuthHeaders();
+        if (!headers.Authorization) {
+          setCreateCustomerMunicipalities([]);
+          return;
+        }
+
+        const response = await apiFetch(
+          `/locations/municipalities/${createCustomerForm.departmentId}`,
+          {
+            headers,
+            signal: controller.signal,
+          },
+        );
+
+        if (!response.ok) {
+          setCreateCustomerMunicipalities([]);
+          return;
+        }
+
+        const body = await response.json();
+        setCreateCustomerMunicipalities(body.data || []);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return;
+        }
+        console.error('Error fetching municipalities for manual customer:', error);
+        setCreateCustomerMunicipalities([]);
+      }
+    };
+
+    void fetchCreateMunicipalities();
+
+    return () => {
+      controller.abort();
+    };
+  }, [createCustomerForm.departmentId, showCreateCustomerModal]);
+
+  const handleCreateCustomerFormChange = (
+    event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+  ) => {
+    const { name, value } = event.target;
+
+    setCreateCustomerForm((current) => {
+      if (name === 'departmentId') {
+        return {
+          ...current,
+          departmentId: value,
+          municipalityId: '',
+        };
+      }
+
+      return {
+        ...current,
+        [name]: value,
+      };
+    });
+  };
+
+  const handleCreateCustomer = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setCreateCustomerError(null);
+    setCreateCustomerSubmitting(true);
+
+    try {
+      const headers = await getAuthHeaders();
+      if (!headers.Authorization) {
+        throw new Error('Tu sesion expiro. Inicia sesion de nuevo.');
+      }
+
+      const response = await apiFetch('/users/customers', {
+        method: 'POST',
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: createCustomerForm.email.trim(),
+          password: createCustomerForm.password,
+          firstName: createCustomerForm.firstName.trim(),
+          lastName: createCustomerForm.lastName.trim(),
+          phone: createCustomerForm.phone.trim() || undefined,
+          departmentId: createCustomerForm.departmentId || undefined,
+          municipalityId: createCustomerForm.municipalityId || undefined,
+          neighborhood: createCustomerForm.neighborhood.trim() || undefined,
+          address: createCustomerForm.address.trim() || undefined,
+        }),
+      });
+
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(
+          getErrorMessage(body, `No se pudo crear el cliente (${response.status}).`),
+        );
+      }
+
+      closeCreateCustomerModal({ force: true });
+      await fetchData();
+    } catch (error) {
+      console.error('Error creating manual customer:', error);
+      setCreateCustomerError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo crear el cliente manualmente.',
+      );
+    } finally {
+      setCreateCustomerSubmitting(false);
+    }
+  };
+
   const paginationWindowStart = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
   const visiblePages = Array.from(
     { length: Math.min(totalPages, 5) },
@@ -274,11 +450,24 @@ export default function CustomersPage() {
 
   return (
     <div className="p-8 max-w-7xl mx-auto flex flex-col h-[calc(100vh-64px)]">
-      <div className="flex-none mb-8">
-        <h1 className="text-3xl font-black tracking-tight text-primary">Clientes</h1>
-        <p className="mt-2 text-muted font-medium">
-          Listado de clientes registrados en la tienda.
-        </p>
+      <div className="flex-none mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="text-3xl font-black tracking-tight text-primary">Clientes</h1>
+          <p className="mt-2 text-muted font-medium">
+            Listado de clientes registrados en la tienda.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setCreateCustomerError(null);
+            setShowCreateCustomerModal(true);
+          }}
+          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-[10px] font-black uppercase tracking-widest text-base-color shadow-lg shadow-primary/10 transition-all active:scale-95"
+        >
+          <UserPlus className="h-4 w-4" />
+          Registrar cliente manual
+        </button>
       </div>
 
       {/* Sección de Filtros */}
@@ -457,6 +646,194 @@ export default function CustomersPage() {
           </div>
         </div>
       </div>
+
+      {showCreateCustomerModal ? (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={closeCreateCustomerModal}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="manual-customer-title"
+            className="w-full max-w-3xl overflow-hidden rounded-3xl border border-theme bg-surface shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <form onSubmit={handleCreateCustomer}>
+              <div className="flex items-start justify-between gap-4 border-b border-theme bg-base/50 px-6 py-5">
+                <div className="space-y-1">
+                  <h2 id="manual-customer-title" className="text-2xl font-black tracking-tight text-primary">
+                    Registrar cliente manual
+                  </h2>
+                  <p className="text-sm font-medium text-muted">
+                    Crea la cuenta del cliente y deja su perfil base listo desde el dashboard.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeCreateCustomerModal}
+                  disabled={createCustomerSubmitting}
+                  className="rounded-full bg-base/80 p-2 text-muted transition-all hover:bg-base hover:text-primary disabled:opacity-50"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="max-h-[calc(100vh-12rem)] overflow-y-auto px-6 py-6">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-muted">
+                      Nombre
+                    </label>
+                    <input
+                      name="firstName"
+                      value={createCustomerForm.firstName}
+                      onChange={handleCreateCustomerFormChange}
+                      required
+                      className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-muted">
+                      Apellido
+                    </label>
+                    <input
+                      name="lastName"
+                      value={createCustomerForm.lastName}
+                      onChange={handleCreateCustomerFormChange}
+                      required
+                      className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-muted">
+                      Correo
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={createCustomerForm.email}
+                      onChange={handleCreateCustomerFormChange}
+                      required
+                      className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-muted">
+                      Contrasena temporal
+                    </label>
+                    <input
+                      type="password"
+                      name="password"
+                      value={createCustomerForm.password}
+                      onChange={handleCreateCustomerFormChange}
+                      minLength={6}
+                      required
+                      className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-muted">
+                      Telefono
+                    </label>
+                    <input
+                      name="phone"
+                      value={createCustomerForm.phone}
+                      onChange={handleCreateCustomerFormChange}
+                      className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-muted">
+                      Departamento
+                    </label>
+                    <select
+                      name="departmentId"
+                      value={createCustomerForm.departmentId}
+                      onChange={handleCreateCustomerFormChange}
+                      className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    >
+                      <option value="">Selecciona departamento</option>
+                      {departments.map((dept) => (
+                        <option key={dept.id} value={dept.id}>{dept.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-muted">
+                      Municipio
+                    </label>
+                    <select
+                      name="municipalityId"
+                      value={createCustomerForm.municipalityId}
+                      onChange={handleCreateCustomerFormChange}
+                      disabled={!createCustomerForm.departmentId}
+                      className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+                    >
+                      <option value="">Selecciona municipio</option>
+                      {createCustomerMunicipalities.map((muni) => (
+                        <option key={muni.id} value={muni.id}>{muni.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-muted">
+                      Barrio
+                    </label>
+                    <input
+                      name="neighborhood"
+                      value={createCustomerForm.neighborhood}
+                      onChange={handleCreateCustomerFormChange}
+                      className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-muted">
+                      Direccion
+                    </label>
+                    <textarea
+                      name="address"
+                      value={createCustomerForm.address}
+                      onChange={handleCreateCustomerFormChange}
+                      rows={3}
+                      className="w-full rounded-2xl border border-theme bg-base px-4 py-3 text-sm font-medium text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                </div>
+
+                {createCustomerError ? (
+                  <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                    {createCustomerError}
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="flex flex-col-reverse gap-3 border-t border-theme bg-base/30 px-6 py-4 md:flex-row md:justify-end">
+                <button
+                  type="button"
+                  onClick={closeCreateCustomerModal}
+                  disabled={createCustomerSubmitting}
+                  className="inline-flex items-center justify-center rounded-xl border border-theme px-4 py-2 text-[10px] font-black uppercase tracking-widest text-primary transition-all hover:bg-base disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={createCustomerSubmitting}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-[10px] font-black uppercase tracking-widest text-base-color shadow-lg shadow-primary/10 transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {createCustomerSubmitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
+                  Crear cliente
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
 
       {/* Detail Modal */}
       {selectedCustomer && (
@@ -674,4 +1051,3 @@ export default function CustomersPage() {
     </div>
   );
 }
-

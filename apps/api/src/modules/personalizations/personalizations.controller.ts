@@ -15,6 +15,7 @@ import {
   Query,
   Patch,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { PersonalizationsService } from './personalizations.service';
@@ -25,6 +26,7 @@ import { CreatePersonalizationRequestDto } from './dto/create-personalization-re
 import { UpdatePersonalizationRequestDto } from './dto/update-personalization-request.dto';
 import { ApprovePersonalizationRequestDto } from './dto/approve-personalization-request.dto';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { RolesService } from '../roles/roles.service';
 
 interface RequestWithUser {
   user?: {
@@ -37,6 +39,7 @@ interface RequestWithUser {
 export class PersonalizationsController {
   constructor(
     private readonly personalizationsService: PersonalizationsService,
+    private readonly rolesService: RolesService,
   ) {}
 
   @Get()
@@ -85,7 +88,26 @@ export class PersonalizationsController {
       throw new UnauthorizedException('User not authenticated');
     }
 
-    return this.personalizationsService.createRequest(req.user.id, data);
+    let allowProfileOverride = false;
+
+    if (
+      typeof data.profileId === 'string' &&
+      data.profileId.trim().length > 0
+    ) {
+      allowProfileOverride = await this.rolesService.hasPermission(
+        req.user.id,
+        'personalizations',
+        'manage',
+      );
+
+      if (!allowProfileOverride) {
+        throw new ForbiddenException('Insufficient permissions');
+      }
+    }
+
+    return this.personalizationsService.createRequest(req.user.id, data, {
+      allowProfileOverride,
+    });
   }
 
   @Patch('requests/:id')
