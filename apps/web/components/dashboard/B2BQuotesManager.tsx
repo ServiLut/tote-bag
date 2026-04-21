@@ -9,6 +9,7 @@ import {
   Briefcase,
   MapPin,
   CheckCircle,
+  X,
   Image as ImageIcon,
   QrCode,
   Search,
@@ -100,6 +101,7 @@ export default function B2BQuotesManager() {
   const [manualQuoteForm, setManualQuoteForm] = useState(INITIAL_MANUAL_QUOTE_FORM);
   const [manualQuoteSubmitting, setManualQuoteSubmitting] = useState(false);
   const [manualQuoteError, setManualQuoteError] = useState<string | null>(null);
+  const [showManualQuoteModal, setShowManualQuoteModal] = useState(false);
   const { role, accessToken } = useDashboardAuth();
 
   // Filters & Pagination State
@@ -244,6 +246,29 @@ export default function B2BQuotesManager() {
       document.removeEventListener('visibilitychange', triggerReload);
     };
   }, [loadQuotes]);
+
+  useEffect(() => {
+    if (!showManualQuoteModal) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !manualQuoteSubmitting) {
+        setShowManualQuoteModal(false);
+        setManualQuoteError(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [manualQuoteSubmitting, showManualQuoteModal]);
 
   const handleApprove = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -430,6 +455,8 @@ export default function B2BQuotesManager() {
       }
 
       setManualQuoteForm(INITIAL_MANUAL_QUOTE_FORM);
+      setManualQuoteError(null);
+      setShowManualQuoteModal(false);
       await loadQuotes({ silent: true });
     } catch (err) {
       console.error('Error creating manual B2B quote:', err);
@@ -446,166 +473,27 @@ export default function B2BQuotesManager() {
   return (
     <div className="space-y-6">
       {!isReadOnly ? (
-        <form
-          onSubmit={handleCreateManualQuote}
-          className="space-y-4 bg-surface p-4 rounded-2xl border border-theme shadow-sm"
-        >
-          <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-4 rounded-2xl border border-theme bg-surface p-5 shadow-sm md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1">
             <h3 className="text-sm font-black uppercase tracking-widest text-primary">
               Cotizacion manual
             </h3>
-            <p className="text-xs font-medium text-muted">
+            <p className="max-w-2xl text-xs font-medium text-muted">
               Registra medidas especiales sin crear variantes nuevas en catalogo.
             </p>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-            <input
-              name="businessName"
-              value={manualQuoteForm.businessName}
-              onChange={handleManualQuoteChange}
-              required
-              placeholder="Empresa"
-              className="w-full px-3 py-2.5 text-sm border border-theme rounded-xl bg-surface text-primary outline-none focus:ring-2 focus:ring-primary/20"
-            />
-            <input
-              name="contactPhone"
-              value={manualQuoteForm.contactPhone}
-              onChange={handleManualQuoteChange}
-              required
-              placeholder="Telefono"
-              className="w-full px-3 py-2.5 text-sm border border-theme rounded-xl bg-surface text-primary outline-none focus:ring-2 focus:ring-primary/20"
-            />
-            <input
-              name="quantity"
-              type="number"
-              min={50}
-              value={manualQuoteForm.quantity}
-              onChange={handleManualQuoteChange}
-              required
-              placeholder="Cantidad"
-              className="w-full px-3 py-2.5 text-sm border border-theme rounded-xl bg-surface text-primary outline-none focus:ring-2 focus:ring-primary/20"
-            />
-            <select
-              name="productId"
-              value={manualQuoteForm.productId}
-              onChange={handleManualQuoteChange}
-              required
-              className="w-full px-3 py-2.5 text-sm border border-theme rounded-xl bg-surface text-primary outline-none focus:ring-2 focus:ring-primary/20"
-            >
-              <option value="">Producto base</option>
-              {products.map((product) => (
-                <option key={product.id} value={product.id}>
-                  {product.name}
-                </option>
-              ))}
-            </select>
-            <input
-              name="department"
-              value={manualQuoteForm.department}
-              onChange={handleManualQuoteChange}
-              required
-              placeholder="Departamento"
-              className="w-full px-3 py-2.5 text-sm border border-theme rounded-xl bg-surface text-primary outline-none focus:ring-2 focus:ring-primary/20"
-            />
-            <input
-              name="municipality"
-              value={manualQuoteForm.municipality}
-              onChange={handleManualQuoteChange}
-              required
-              placeholder="Municipio"
-              className="w-full px-3 py-2.5 text-sm border border-theme rounded-xl bg-surface text-primary outline-none focus:ring-2 focus:ring-primary/20"
-            />
-            <input
-              name="neighborhood"
-              value={manualQuoteForm.neighborhood}
-              onChange={handleManualQuoteChange}
-              required
-              placeholder="Barrio"
-              className="w-full px-3 py-2.5 text-sm border border-theme rounded-xl bg-surface text-primary outline-none focus:ring-2 focus:ring-primary/20"
-            />
-            <input
-              name="address"
-              value={manualQuoteForm.address}
-              onChange={handleManualQuoteChange}
-              required
-              placeholder="Direccion"
-              className="w-full px-3 py-2.5 text-sm border border-theme rounded-xl bg-surface text-primary outline-none focus:ring-2 focus:ring-primary/20"
-            />
-            <input
-              name="manualSize"
-              value={manualQuoteForm.manualSize}
-              onChange={handleManualQuoteChange}
-              required
-              placeholder="Medida especial"
-              className="w-full px-3 py-2.5 text-sm border border-theme rounded-xl bg-surface text-primary outline-none focus:ring-2 focus:ring-primary/20"
-            />
-            <input
-              name="externalUnitCost"
-              type="number"
-              min={0}
-              value={manualQuoteForm.externalUnitCost}
-              onChange={handleManualQuoteChange}
-              required
-              placeholder="Costo externo unitario"
-              className="w-full px-3 py-2.5 text-sm border border-theme rounded-xl bg-surface text-primary outline-none focus:ring-2 focus:ring-primary/20"
-            />
-            <input
-              name="agreedUnitPrice"
-              type="number"
-              min={0}
-              value={manualQuoteForm.agreedUnitPrice}
-              onChange={handleManualQuoteChange}
-              required
-              placeholder="Precio acordado unitario"
-              className="w-full px-3 py-2.5 text-sm border border-theme rounded-xl bg-surface text-primary outline-none focus:ring-2 focus:ring-primary/20"
-            />
-            <input
-              name="qrData"
-              value={manualQuoteForm.qrData}
-              onChange={handleManualQuoteChange}
-              placeholder="WhatsApp o QR"
-              className="w-full px-3 py-2.5 text-sm border border-theme rounded-xl bg-surface text-primary outline-none focus:ring-2 focus:ring-primary/20"
-            />
-          </div>
-
-          <textarea
-            name="manualSpecs"
-            value={manualQuoteForm.manualSpecs}
-            onChange={handleManualQuoteChange}
-            placeholder="Especificaciones de produccion externa"
-            rows={3}
-            className="w-full px-3 py-2.5 text-sm border border-theme rounded-xl bg-surface text-primary outline-none focus:ring-2 focus:ring-primary/20"
-          />
-
-          {selectedManualProduct ? (
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted">
-              Producto base: {selectedManualProduct.name}. No se creara una variante
-              permanente.
-            </p>
-          ) : null}
-
-          {manualQuoteError ? (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-              {manualQuoteError}
-            </div>
-          ) : null}
-
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={manualQuoteSubmitting}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-base-color rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {manualQuoteSubmitting ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <Briefcase className="w-4 h-4" />
-              )}
-              Crear cotizacion manual
-            </button>
-          </div>
-        </form>
+          <button
+            type="button"
+            onClick={() => {
+              setManualQuoteError(null);
+              setShowManualQuoteModal(true);
+            }}
+            className="inline-flex items-center justify-center gap-2 self-start rounded-xl bg-primary px-4 py-2 text-[10px] font-black uppercase tracking-widest text-base-color shadow-lg shadow-primary/10 transition-all active:scale-95 md:self-auto"
+          >
+            <Briefcase className="h-4 w-4" />
+            Crear cotizacion manual
+          </button>
+        </div>
       ) : null}
 
       {/* Filters Bar */}
@@ -924,6 +812,220 @@ export default function B2BQuotesManager() {
           </div>
         </div>
       </div>
+
+      {showManualQuoteModal ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-300"
+          onClick={() => {
+            if (!manualQuoteSubmitting) {
+              setShowManualQuoteModal(false);
+              setManualQuoteError(null);
+            }
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="manual-b2b-quote-title"
+            className="w-full max-w-5xl overflow-hidden rounded-3xl border border-theme bg-surface shadow-2xl animate-in zoom-in-95 duration-300"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <form onSubmit={handleCreateManualQuote}>
+              <div className="flex items-start justify-between gap-4 border-b border-theme px-6 py-5 md:px-8">
+                <div className="space-y-1">
+                  <h3
+                    id="manual-b2b-quote-title"
+                    className="text-xl font-black tracking-tight text-primary md:text-2xl"
+                  >
+                    Cotizacion manual
+                  </h3>
+                  <p className="text-sm font-medium text-muted">
+                    Crea una cotizacion B2B con produccion externa y medidas especiales.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!manualQuoteSubmitting) {
+                      setShowManualQuoteModal(false);
+                      setManualQuoteError(null);
+                    }
+                  }}
+                  disabled={manualQuoteSubmitting}
+                  className="rounded-full bg-base/80 p-2 text-muted transition-all hover:bg-base hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="Cerrar modal de cotizacion manual"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="max-h-[calc(100vh-10rem)] overflow-y-auto px-6 py-6 md:px-8">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    <input
+                      name="businessName"
+                      value={manualQuoteForm.businessName}
+                      onChange={handleManualQuoteChange}
+                      required
+                      placeholder="Empresa"
+                      className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                    <input
+                      name="contactPhone"
+                      value={manualQuoteForm.contactPhone}
+                      onChange={handleManualQuoteChange}
+                      required
+                      placeholder="Telefono"
+                      className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                    <input
+                      name="quantity"
+                      type="number"
+                      min={50}
+                      value={manualQuoteForm.quantity}
+                      onChange={handleManualQuoteChange}
+                      required
+                      placeholder="Cantidad"
+                      className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                    <select
+                      name="productId"
+                      value={manualQuoteForm.productId}
+                      onChange={handleManualQuoteChange}
+                      required
+                      className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    >
+                      <option value="">Producto base</option>
+                      {products.map((product) => (
+                        <option key={product.id} value={product.id}>
+                          {product.name}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      name="department"
+                      value={manualQuoteForm.department}
+                      onChange={handleManualQuoteChange}
+                      required
+                      placeholder="Departamento"
+                      className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                    <input
+                      name="municipality"
+                      value={manualQuoteForm.municipality}
+                      onChange={handleManualQuoteChange}
+                      required
+                      placeholder="Municipio"
+                      className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                    <input
+                      name="neighborhood"
+                      value={manualQuoteForm.neighborhood}
+                      onChange={handleManualQuoteChange}
+                      required
+                      placeholder="Barrio"
+                      className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                    <input
+                      name="address"
+                      value={manualQuoteForm.address}
+                      onChange={handleManualQuoteChange}
+                      required
+                      placeholder="Direccion"
+                      className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                    <input
+                      name="manualSize"
+                      value={manualQuoteForm.manualSize}
+                      onChange={handleManualQuoteChange}
+                      required
+                      placeholder="Medida especial"
+                      className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                    <input
+                      name="externalUnitCost"
+                      type="number"
+                      min={0}
+                      value={manualQuoteForm.externalUnitCost}
+                      onChange={handleManualQuoteChange}
+                      required
+                      placeholder="Costo externo unitario"
+                      className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                    <input
+                      name="agreedUnitPrice"
+                      type="number"
+                      min={0}
+                      value={manualQuoteForm.agreedUnitPrice}
+                      onChange={handleManualQuoteChange}
+                      required
+                      placeholder="Precio acordado unitario"
+                      className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                    <input
+                      name="qrData"
+                      value={manualQuoteForm.qrData}
+                      onChange={handleManualQuoteChange}
+                      placeholder="WhatsApp o QR"
+                      className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+
+                  <textarea
+                    name="manualSpecs"
+                    value={manualQuoteForm.manualSpecs}
+                    onChange={handleManualQuoteChange}
+                    placeholder="Especificaciones de produccion externa"
+                    rows={4}
+                    className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+
+                  {selectedManualProduct ? (
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted">
+                      Producto base: {selectedManualProduct.name}. No se creara una variante
+                      permanente.
+                    </p>
+                  ) : null}
+
+                  {manualQuoteError ? (
+                    <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                      {manualQuoteError}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="flex flex-col-reverse gap-3 border-t border-theme px-6 py-4 md:flex-row md:items-center md:justify-end md:px-8">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!manualQuoteSubmitting) {
+                      setShowManualQuoteModal(false);
+                      setManualQuoteError(null);
+                    }
+                  }}
+                  disabled={manualQuoteSubmitting}
+                  className="inline-flex items-center justify-center rounded-xl border border-theme px-4 py-2 text-[10px] font-black uppercase tracking-widest text-primary transition-all hover:bg-base disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={manualQuoteSubmitting}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-[10px] font-black uppercase tracking-widest text-base-color shadow-lg shadow-primary/10 transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {manualQuoteSubmitting ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Briefcase className="h-4 w-4" />
+                  )}
+                  Crear cotizacion manual
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
