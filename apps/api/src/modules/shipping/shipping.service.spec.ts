@@ -192,6 +192,13 @@ describe('ShippingService', () => {
     expect(orderUpdateCall?.data.status).toBe(OrderStatus.ENVIADA);
     expect(orderUpdateCall?.data.trackingNumber).toBe('TRK-1');
     expect(orderUpdateCall?.data.carrier).toBe('Servientrega');
+    expect(prisma.shipmentSupplyUsage.findFirst).toHaveBeenCalledWith({
+      where: {
+        shipmentId: 'shipment-1',
+        supplyItemId: 'supply-1',
+      },
+      select: { id: true },
+    });
     expect(prisma.shipmentSupplyUsage.create).toHaveBeenCalledWith({
       data: {
         shipmentId: 'shipment-1',

@@ -2,8 +2,11 @@ import { Injectable } from '@nestjs/common';
 import {
   OrderStatus,
   Prisma,
+  SaleLegalRequirement,
+  SaleLegalStatus,
   ShipmentStatus,
 } from '../../generated/client/client';
+import { decimalToNumber } from '../../common/utils/sales-tax.util';
 import { PrismaService } from '../../prisma/prisma.service';
 
 type NormalizedShippingAddress = Record<string, unknown> & {
@@ -15,9 +18,12 @@ type OrdersWithoutShipmentQueryResult = {
   orderNumber: number;
   customerEmail: string;
   totalAmount: number;
+  balanceDue: Prisma.Decimal;
   createdAt: Date;
   city: string;
   status: OrderStatus;
+  saleLegalRequirement: SaleLegalRequirement;
+  saleLegalStatus: SaleLegalStatus;
   trackingNumber: string | null;
   carrier: string | null;
   shippingAddress: Prisma.JsonValue;
@@ -41,6 +47,9 @@ type PendingShipmentRecord = {
     totalAmount: number;
     createdAt: Date;
     shippingAddress: NormalizedShippingAddress;
+    balanceDue: number;
+    saleLegalRequirement: SaleLegalRequirement;
+    saleLegalStatus: SaleLegalStatus;
     profile: {
       firstName: string | null;
       lastName: string | null;
@@ -324,9 +333,12 @@ export class ShippingSyncService {
           orderNumber: true,
           customerEmail: true,
           totalAmount: true,
+          balanceDue: true,
           createdAt: true,
           city: true,
           status: true,
+          saleLegalRequirement: true,
+          saleLegalStatus: true,
           trackingNumber: true,
           carrier: true,
           shippingAddress: true,
@@ -415,8 +427,11 @@ export class ShippingSyncService {
           orderNumber: order.orderNumber,
           customerEmail: order.customerEmail,
           totalAmount: order.totalAmount,
+          balanceDue: decimalToNumber(order.balanceDue),
           createdAt: order.createdAt,
           shippingAddress,
+          saleLegalRequirement: order.saleLegalRequirement,
+          saleLegalStatus: order.saleLegalStatus,
           profile: order.profile,
         },
         returnInfo: null,

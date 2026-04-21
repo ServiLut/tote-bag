@@ -50,6 +50,9 @@ type ShipmentListItem = {
     totalAmount: number;
     createdAt: Date;
     shippingAddress?: unknown;
+    balanceDue: number;
+    saleLegalRequirement: SaleLegalRequirement;
+    saleLegalStatus: SaleLegalStatus;
     profile?: {
       firstName: string | null;
       lastName: string | null;
@@ -224,13 +227,16 @@ export class ShippingService {
     },
   ) {
     const existingUsage = await tx.shipmentSupplyUsage.findFirst({
-      where: { shipmentId: params.shipmentId },
+      where: {
+        shipmentId: params.shipmentId,
+        supplyItemId: params.supplyItemId,
+      },
       select: { id: true },
     });
 
     if (existingUsage) {
       throw new BadRequestException(
-        'Este envio ya tiene consumo de bolsas registrado',
+        'Este envio ya tiene consumo registrado para ese insumo',
       );
     }
 
@@ -892,7 +898,34 @@ export class ShippingService {
         );
 
         return {
-          ...shipment,
+          id: shipment.id,
+          orderId: shipment.orderId,
+          trackingNumber: shipment.trackingNumber,
+          status: shipment.status,
+          weight: shipment.weight,
+          dimensions: shipment.dimensions,
+          provider: shipment.provider
+            ? {
+                id: shipment.provider.id,
+                name: shipment.provider.name,
+              }
+            : null,
+          order: {
+            orderNumber: shipment.order.orderNumber,
+            customerEmail: shipment.order.customerEmail,
+            totalAmount: shipment.order.totalAmount,
+            createdAt: shipment.order.createdAt,
+            shippingAddress: shipment.order.shippingAddress,
+            balanceDue: decimalToNumber(shipment.order.balanceDue),
+            saleLegalRequirement: shipment.order.saleLegalRequirement,
+            saleLegalStatus: shipment.order.saleLegalStatus,
+            profile: shipment.order.profile
+              ? {
+                  firstName: shipment.order.profile.firstName,
+                  lastName: shipment.order.profile.lastName,
+                }
+              : null,
+          },
           returnInfo: payload
             ? {
                 reason: payload.reason,

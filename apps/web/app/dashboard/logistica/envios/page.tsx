@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Filter,
+  Layers3,
   Loader2,
   MapPin,
   MoreHorizontal,
@@ -91,6 +92,12 @@ type ShipmentRecord = {
     customerEmail: string;
     totalAmount: number;
     createdAt: string;
+    balanceDue: number;
+    saleLegalRequirement:
+      | "PENDING_STOCK_ASSIGNMENT"
+      | "ELECTRONIC_INVOICE_REQUIRED"
+      | "INTERNAL_DOCUMENT_ALLOWED";
+    saleLegalStatus: "PENDING" | "COMPLETED" | "NOT_REQUIRED";
     shippingAddress: { address?: string; city?: string };
     profile?: { firstName?: string | null; lastName?: string | null } | null;
   };
@@ -102,6 +109,39 @@ type ShipmentRecord = {
     restock?: boolean | null;
     returnTrackingNumber?: string | null;
   } | null;
+};
+
+type ShipmentSupplyUsageAllocation = {
+  id: string;
+  purchaseBatchLineId: string;
+  purchaseBatchId: string;
+  quantityAllocated: number;
+  unitCost: number;
+  lineRemaining: number;
+  batchCreatedAt: string;
+  supplier?: { id: string; name: string; nit?: string | null } | null;
+  createdAt: string;
+};
+
+type ShipmentSupplyUsageRecord = {
+  id: string;
+  supplyItem: {
+    id: string;
+    name: string;
+    sku?: string | null;
+    category: string;
+    supplyType: string;
+    unitOfMeasure: string;
+  };
+  quantityUsed: number;
+  createdAt: string;
+  allocations: ShipmentSupplyUsageAllocation[];
+};
+
+type ShipmentSupplyUsageResponse = {
+  shipmentId: string;
+  orderId: string;
+  usages: ShipmentSupplyUsageRecord[];
 };
 
 const RETURNABLE_STATUSES = new Set<ShipmentStatus>(["RETURNED", "CANCELLED"]);
@@ -259,6 +299,26 @@ function meta(status: ShipmentStatus) {
   return STATUS_META[status] || STATUS_META.PENDING;
 }
 
+function isPastDispatchStatus(status: ShipmentStatus) {
+  return (
+    status === "SHIPPED" || status === "IN_TRANSIT" || status === "DELIVERED"
+  );
+}
+
+function getSaleLegalBlocker(order: ShipmentRecord["order"]) {
+  if (order.saleLegalStatus === "COMPLETED") {
+    return null;
+  }
+
+  if (order.saleLegalRequirement === "PENDING_STOCK_ASSIGNMENT") {
+    return "Falta asignacion FIFO real del lote vendido.";
+  }
+
+  return order.saleLegalRequirement === "ELECTRONIC_INVOICE_REQUIRED"
+    ? "Falta factura electronica para cerrar la venta."
+    : "Falta registrar el documento legal de venta.";
+}
+
 function getApiList<T>(body: unknown): T[] {
   if (Array.isArray(body)) return body as T[];
   if (
@@ -344,6 +404,10 @@ export default function ShippingManagementPage() {
   const [returnOpen, setReturnOpen] = useState(false);
   const [hasShipmentAccess, setHasShipmentAccess] = useState(true);
   const [hasProviderAccess, setHasProviderAccess] = useState(true);
+  const [supplyUsageOpen, setSupplyUsageOpen] = useState(false);
+  const [supplyUsageLoading, setSupplyUsageLoading] = useState(false);
+  const [supplyUsageData, setSupplyUsageData] =
+    useState<ShipmentSupplyUsageResponse | null>(null);
   const [trackingData, setTrackingData] = useState({
     providerId: "",
     trackingNumber: "",
@@ -528,6 +592,33 @@ export default function ShippingManagementPage() {
     const parsed = parseLocalizedNumber(shippingBagData.quantity);
     return Number.isFinite(parsed) ? parsed : 0;
   }, [shippingBagData.quantity]);
+  const getDispatchBlockers = useCallback(
+    (shipment: ShipmentRecord) => {
+      const blockers: string[] = [];
+
+      if ((shipment.order.balanceDue || 0) > 0) {
+        blockers.push(
+          `Saldo pendiente: ${formatCurrency(shipment.order.balanceDue)}`,
+        );
+      }
+
+      const saleLegalBlocker = getSaleLegalBlocker(shipment.order);
+      if (saleLegalBlocker) {
+        blockers.push(saleLegalBlocker);
+      }
+
+      if (shippingBagOptions.length === 0) {
+        blockers.push("No hay bolsas de envio activas con stock disponible.");
+      }
+
+      return blockers;
+    },
+    [shippingBagOptions.length],
+  );
+  const selectedDispatchBlockers = useMemo(
+    () => (selected ? getDispatchBlockers(selected) : []),
+    [getDispatchBlockers, selected],
+  );
   const shippingBagValidation = useMemo(() => {
     if (!dispatchOpen) return null;
     if (shippingBagOptions.length === 0)
@@ -623,6 +714,17 @@ export default function ShippingManagementPage() {
 
   const openDispatch = (shipment: ShipmentRecord) => {
     if (!canManageShipments) return;
+    if (isPastDispatchStatus(shipment.status)) {
+      setMessage(
+        "Este envio ya fue despachado. Consulta la trazabilidad o confirma entrega.",
+      );
+      return;
+    }
+    const blockers = getDispatchBlockers(shipment);
+    if (blockers.length > 0) {
+      setMessage(blockers[0]);
+      return;
+    }
     setSelected(shipment);
     setTrackingData({
       providerId: shipment.provider?.id || "",
@@ -636,6 +738,47 @@ export default function ShippingManagementPage() {
     });
     setMessage(null);
     setDispatchOpen(true);
+  };
+
+  const openSupplyUsage = async (shipment: ShipmentRecord) => {
+    if (!canManageShipments) return;
+    setSelected(shipment);
+    setSupplyUsageData(null);
+    setSupplyUsageOpen(true);
+    setSupplyUsageLoading(true);
+    setMessage(null);
+
+    try {
+      const response = await apiFetch(
+        `/shipping/shipments/${shipment.orderId}/supply-usage`,
+        {
+          headers: await getHeaders(),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          await getErrorMessage(
+            response,
+            "No fue posible cargar la trazabilidad del insumo.",
+          ),
+        );
+      }
+
+      const body = (await response.json().catch(() => null)) as
+        | ShipmentSupplyUsageResponse
+        | null;
+      setSupplyUsageData(body);
+    } catch (error) {
+      setSupplyUsageOpen(false);
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "No fue posible cargar la trazabilidad del insumo.",
+      );
+    } finally {
+      setSupplyUsageLoading(false);
+    }
   };
 
   const openLabel = (shipment: ShipmentRecord) => {
@@ -674,6 +817,7 @@ export default function ShippingManagementPage() {
     setActiveActionMenu(null);
     setSelected(null);
     setDispatchOpen(false);
+    setSupplyUsageOpen(false);
     setLabelOpen(false);
     setReturnOpen(false);
   }, [hasShipmentAccess]);
@@ -681,6 +825,8 @@ export default function ShippingManagementPage() {
   const submitDispatch = async (event: FormEvent) => {
     event.preventDefault();
     if (!selected) return;
+    if (selectedDispatchBlockers.length > 0)
+      return setMessage(selectedDispatchBlockers[0]);
     if (!trackingData.providerId.trim())
       return setMessage(
         "Selecciona un proveedor antes de confirmar el despacho.",
@@ -1077,6 +1223,9 @@ export default function ShippingManagementPage() {
                       filteredOperational.map((shipment) => {
                         const hasAlert = isException(shipment);
                         const hasTracking = Boolean(shipment.trackingNumber);
+                        const dispatchBlockers = getDispatchBlockers(shipment);
+                        const canDispatch =
+                          !isPastDispatchStatus(shipment.status);
                         const canConfirmDelivery =
                           shipment.status === "SHIPPED" ||
                           shipment.status === "IN_TRANSIT";
@@ -1154,6 +1303,22 @@ export default function ShippingManagementPage() {
                                     Sin guia
                                   </Badge>
                                 ) : null}
+                                {(shipment.order.balanceDue || 0) > 0 ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="border-rose-200 bg-rose-50 text-rose-700"
+                                  >
+                                    Saldo pendiente
+                                  </Badge>
+                                ) : null}
+                                {getSaleLegalBlocker(shipment.order) ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="border-orange-200 bg-orange-50 text-orange-700"
+                                  >
+                                    Venta sin cierre legal
+                                  </Badge>
+                                ) : null}
                                 {shipment.provider?.id ? null : (
                                   <Badge
                                     variant="outline"
@@ -1164,7 +1329,8 @@ export default function ShippingManagementPage() {
                                 )}
                                 {!hasAlert &&
                                 hasTracking &&
-                                shipment.provider?.id ? (
+                                shipment.provider?.id &&
+                                dispatchBlockers.length === 0 ? (
                                   <Badge
                                     variant="outline"
                                     className="border-emerald-200 bg-emerald-50 text-emerald-700"
@@ -1210,17 +1376,36 @@ export default function ShippingManagementPage() {
                                         <Printer className="h-4 w-4" />
                                         Generar etiqueta
                                       </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setActiveActionMenu(null);
-                                          openDispatch(shipment);
-                                        }}
-                                        className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-primary transition-colors hover:bg-primary/5"
-                                      >
-                                        <Truck className="h-4 w-4" />
-                                        Despachar
-                                      </button>
+                                      {canDispatch ? (
+                                        <button
+                                          type="button"
+                                          disabled={
+                                            submitting ||
+                                            dispatchBlockers.length > 0
+                                          }
+                                          onClick={() => {
+                                            setActiveActionMenu(null);
+                                            openDispatch(shipment);
+                                          }}
+                                          className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-primary transition-colors hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                          <Truck className="h-4 w-4" />
+                                          Despachar
+                                        </button>
+                                      ) : null}
+                                      {!shipment.id.startsWith("pending-") ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setActiveActionMenu(null);
+                                            void openSupplyUsage(shipment);
+                                          }}
+                                          className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-primary transition-colors hover:bg-primary/5"
+                                        >
+                                          <Layers3 className="h-4 w-4" />
+                                          Ver trazabilidad
+                                        </button>
+                                      ) : null}
                                       {canConfirmDelivery ? (
                                         <button
                                           type="button"
@@ -1246,6 +1431,12 @@ export default function ShippingManagementPage() {
                                           <Undo2 className="h-4 w-4" />
                                           Enviar a devoluciones
                                         </button>
+                                      ) : null}
+                                      {dispatchBlockers.length > 0 &&
+                                      canDispatch ? (
+                                        <div className="border-t border-theme bg-base/40 px-4 py-3 text-xs font-medium text-rose-700">
+                                          {dispatchBlockers[0]}
+                                        </div>
                                       ) : null}
                                     </PopoverContent>
                                   </Popover>
@@ -1584,6 +1775,11 @@ export default function ShippingManagementPage() {
             <p className="text-sm text-muted">
               Completa proveedor y guia para dejar trazabilidad operativa.
             </p>
+            {selectedDispatchBlockers.length > 0 ? (
+              <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+                {selectedDispatchBlockers[0]}
+              </div>
+            ) : null}
             <select
               value={trackingData.providerId}
               onChange={(e) =>
@@ -1696,6 +1892,124 @@ export default function ShippingManagementPage() {
               </button>
             </div>
           </form>
+        </div>
+      ) : null}
+
+      {selected && supplyUsageOpen ? (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-primary/20 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-3xl space-y-4 rounded-3xl border border-theme bg-surface p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-black text-primary">
+                  Trazabilidad de insumos #{selected.order.orderNumber}
+                </h2>
+                <p className="text-sm text-muted">
+                  Consumo real por envio, insumo y lotes FIFO de origen.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSupplyUsageOpen(false)}
+                className="rounded-2xl border border-theme bg-base px-4 py-2 text-sm font-bold text-muted"
+              >
+                Cerrar
+              </button>
+            </div>
+
+            {supplyUsageLoading ? (
+              <div className="rounded-2xl border border-theme bg-base/40 px-4 py-10 text-center">
+                <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : !supplyUsageData || supplyUsageData.usages.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-theme bg-base/30 px-4 py-6 text-sm italic text-muted">
+                Este envio aun no tiene consumo de insumos registrado.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {supplyUsageData.usages.map((usage) => (
+                  <div
+                    key={usage.id}
+                    className="rounded-3xl border border-theme bg-base/40 p-4"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <div className="text-lg font-black text-primary">
+                          {usage.supplyItem.name}
+                        </div>
+                        <div className="text-xs font-medium text-muted">
+                          {usage.supplyItem.sku
+                            ? `${usage.supplyItem.sku} · `
+                            : ""}
+                          {usage.supplyItem.category}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-black text-primary">
+                          {formatQuantity(
+                            usage.quantityUsed,
+                            usage.supplyItem.unitOfMeasure,
+                          )}
+                        </div>
+                        <div className="text-xs text-muted">
+                          {formatDateTime(usage.createdAt)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 space-y-3">
+                      {usage.allocations.map((allocation) => (
+                        <div
+                          key={allocation.id}
+                          className="rounded-2xl border border-theme bg-surface px-4 py-3"
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <div className="text-sm font-black text-primary">
+                                Lote {allocation.purchaseBatchId}
+                              </div>
+                              <div className="text-xs text-muted">
+                                Linea {allocation.purchaseBatchLineId}
+                              </div>
+                            </div>
+                            <div className="text-right text-sm font-medium text-primary">
+                              <div>
+                                Consumido:{" "}
+                                {formatQuantity(
+                                  allocation.quantityAllocated,
+                                  usage.supplyItem.unitOfMeasure,
+                                )}
+                              </div>
+                              <div className="text-xs text-muted">
+                                Saldo lote:{" "}
+                                {formatQuantity(
+                                  allocation.lineRemaining,
+                                  usage.supplyItem.unitOfMeasure,
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted">
+                            <span>
+                              Proveedor:{" "}
+                              {allocation.supplier?.name || "Sin proveedor"}
+                            </span>
+                            <span>
+                              Costo unitario:{" "}
+                              {formatCurrency(allocation.unitCost)}
+                            </span>
+                            <span>
+                              Ingreso lote:{" "}
+                              {formatDateTime(allocation.batchCreatedAt)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       ) : null}
 
