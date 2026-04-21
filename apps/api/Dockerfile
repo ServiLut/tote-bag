@@ -19,18 +19,20 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 COPY --from=base /app/out/json/ .
 COPY --from=base /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
-# INSTALAMOS CON --ignore-scripts
+# Instalamos dependencias de producción y desarrollo para el build
 RUN pnpm install --frozen-lockfile --ignore-scripts
 
 # Copiamos el código fuente completo
 COPY --from=base /app/out/full/ .
 
 # Generar Prisma Client
-# Usamos pnpm exec en el contexto del paquete api para localizar correctamente el binario
 RUN pnpm --filter=api exec prisma generate
 
 # Construir la API
 RUN pnpm --filter=api build
+
+# Limpiar dependencias de desarrollo para dejar solo las de producción
+RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 
 # 3. Runner
 FROM node:22-alpine AS runner
@@ -39,16 +41,14 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=4000
 
-# Instalamos OpenSSL
+# Instalamos OpenSSL para Prisma
 RUN apk add --no-cache openssl
 
-# Copiamos dependencias y build
+# Copiamos solo lo necesario para la ejecución
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/apps/api/dist ./apps/api/dist
 COPY --from=build /app/apps/api/package.json ./apps/api/package.json
-COPY --from=build /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=build /app/apps/api/prisma ./apps/api/prisma
-COPY --from=build /app/apps/api/prisma.config.ts ./apps/api/prisma.config.ts
 
 WORKDIR /app/apps/api
 

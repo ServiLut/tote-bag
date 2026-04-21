@@ -26,9 +26,8 @@ function getImageRemotePatterns(): NonNullable<NextConfig['images']>['remotePatt
   }
 
   if (hosts.size === 0) {
-    hosts.add('**');
-  } else if (!hasExplicitHostAllowlist) {
-    hosts.add('**');
+    // En producción, no permitir cualquier host por defecto.
+    console.warn('⚠️ No image remote hosts configured. Remote images may not load.');
   }
 
   return Array.from(hosts).map((hostname) => ({

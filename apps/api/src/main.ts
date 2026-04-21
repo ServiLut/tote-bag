@@ -3,61 +3,18 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe, Logger, VersioningType } from '@nestjs/common';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
-import { Request, Response, NextFunction, json, urlencoded } from 'express';
+import { json, urlencoded, Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
-import { createRequire } from 'module';
+import helmet from 'helmet';
 import { winstonConfig } from './common/logger/winston.config';
-
-type CorsOriginCallback = (err: Error | null, allow?: boolean) => void;
-const localDevOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
 
 type RequestWithCorrelation = Request & {
   requestId?: string;
   correlationId?: string;
 };
 
-type HelmetMiddleware = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => void;
-type HelmetFactory = (options?: Record<string, unknown>) => HelmetMiddleware;
-const moduleRequire = createRequire(__filename);
-
-function resolveHelmetFactory(moduleValue: unknown): HelmetFactory | null {
-  if (typeof moduleValue === 'function') {
-    return moduleValue as HelmetFactory;
-  }
-
-  if (
-    typeof moduleValue === 'object' &&
-    moduleValue !== null &&
-    'default' in moduleValue &&
-    typeof moduleValue.default === 'function'
-  ) {
-    return moduleValue.default as HelmetFactory;
-  }
-
-  return null;
-}
-
-function resolveHelmetMiddleware(): HelmetMiddleware | null {
-  try {
-    const helmetModule: unknown = moduleRequire('helmet');
-    const helmetFactory = resolveHelmetFactory(helmetModule);
-
-    if (!helmetFactory) {
-      return null;
-    }
-
-    return helmetFactory({
-      contentSecurityPolicy: false,
-      crossOriginEmbedderPolicy: false,
-    });
-  } catch {
-    return null;
-  }
-}
+type CorsOriginCallback = (err: Error | null, allow?: boolean) => void;
+const localDevOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -65,44 +22,24 @@ async function bootstrap() {
   });
 
   const logger = new Logger('HTTP');
-  const helmetMiddleware = resolveHelmetMiddleware();
   const bodyLimit = process.env.JSON_BODY_LIMIT?.trim() || '256kb';
 
-  // Global prefix and versioning
   app.setGlobalPrefix('api');
   app.enableVersioning({
     type: VersioningType.URI,
     defaultVersion: '1',
   });
-  const httpAdapter = app.getHttpAdapter().getInstance() as {
-    set: (setting: string, value: unknown) => void;
-  };
+
+  app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  }));
+
+  const httpAdapter = app.getHttpAdapter().getInstance() as any;
   httpAdapter.set('trust proxy', 1);
 
   app.use(json({ limit: bodyLimit }));
-  app.use(
-    urlencoded({
-      extended: true,
-      limit: bodyLimit,
-    }),
-  );
-
-  if (helmetMiddleware) {
-    app.use(helmetMiddleware);
-  } else {
-    logger.warn(
-      'helmet package not installed; applying fallback security headers.',
-    );
-    app.use((_req: Request, res: Response, next: NextFunction) => {
-      res.setHeader('X-Content-Type-Options', 'nosniff');
-      res.setHeader('X-Frame-Options', 'DENY');
-      res.setHeader('Referrer-Policy', 'no-referrer');
-      res.setHeader('X-DNS-Prefetch-Control', 'off');
-      res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
-      res.setHeader('X-Download-Options', 'noopen');
-      next();
-    });
-  }
+  app.use(urlencoded({ extended: true, limit: bodyLimit }));
 
   app.use((req: RequestWithCorrelation, res: Response, next: NextFunction) => {
     const forwardedRequestId =
