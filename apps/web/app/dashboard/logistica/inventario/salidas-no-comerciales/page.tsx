@@ -8,8 +8,10 @@ import {
   Gift,
   Loader2,
   Package,
+  Plus,
   RefreshCw,
   ShieldCheck,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Input, Select } from '@tote-bag/ui';
@@ -233,6 +235,7 @@ export default function NonCommercialOutputsPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
 
@@ -465,6 +468,7 @@ export default function NonCommercialOutputsPage() {
         }
 
         setForm(DEFAULT_FORM);
+        setIsCreateModalOpen(false);
         toast.success(
           `Salida no comercial registrada para ${selectedVariant.productName}.`,
         );
@@ -495,6 +499,37 @@ export default function NonCommercialOutputsPage() {
       stockValidationMessage,
     ],
   );
+
+  const closeCreateModal = useCallback(() => {
+    if (submitting) {
+      return;
+    }
+
+    setIsCreateModalOpen(false);
+    setForm(DEFAULT_FORM);
+    setError(null);
+  }, [submitting]);
+
+  useEffect(() => {
+    if (!isCreateModalOpen) {
+      return;
+    }
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeCreateModal();
+      }
+    };
+
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [closeCreateModal, isCreateModalOpen]);
 
   if (loading) {
     return (
@@ -533,19 +568,33 @@ export default function NonCommercialOutputsPage() {
           </div>
         </div>
 
-        <Button
-          type="button"
-          onClick={() => void fetchModuleData({ background: true })}
-          disabled={refreshing || submitting}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-theme bg-surface px-5 py-3 text-sm font-bold text-primary disabled:opacity-60"
-        >
-          {refreshing ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCw className="h-4 w-4" />
-          )}
-          Actualizar datos
-        </Button>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Button
+            type="button"
+            onClick={() => {
+              setError(null);
+              setIsCreateModalOpen(true);
+            }}
+            disabled={refreshing || submitting}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-black text-base-color disabled:opacity-60"
+          >
+            <Plus className="h-4 w-4" />
+            Registrar nueva salida
+          </Button>
+          <Button
+            type="button"
+            onClick={() => void fetchModuleData({ background: true })}
+            disabled={refreshing || submitting}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-theme bg-surface px-5 py-3 text-sm font-bold text-primary disabled:opacity-60"
+          >
+            {refreshing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
+            Actualizar datos
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-4">
@@ -582,216 +631,7 @@ export default function NonCommercialOutputsPage() {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-8 xl:grid-cols-[420px_minmax(0,1fr)]">
-        <section className="rounded-3xl border border-theme bg-surface p-6 shadow-sm">
-          <div className="mb-6">
-            <h2 className="text-xl font-black text-primary">
-              Registrar nueva salida
-            </h2>
-            <p className="mt-1 text-sm font-medium text-muted">
-              El stock visible se toma del backend y se vuelve a consultar al
-              finalizar cada registro.
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="mb-2 block text-sm font-bold text-primary">
-                Variante o producto
-              </label>
-              <Combobox
-                options={variantOptions.map((variant) => ({
-                  value: variant.id,
-                  label: variant.label,
-                }))}
-                value={form.variantId}
-                onChange={(value) =>
-                  setForm((current) => ({ ...current, variantId: value }))
-                }
-                placeholder="Selecciona una variante"
-                searchPlaceholder="Buscar por producto, detalle o SKU..."
-                emptyMessage="No se encontraron variantes activas."
-                disabled={submitting}
-              />
-            </div>
-
-            <div className="rounded-2xl border border-theme bg-base/30 p-4">
-              <p className="text-[10px] font-black uppercase tracking-widest text-muted">
-                Stock actual reportado por backend
-              </p>
-              {selectedVariant ? (
-                <div className="mt-3 space-y-3">
-                  <div>
-                    <p className="font-black text-primary">
-                      {selectedVariant.productName}
-                    </p>
-                    <p className="text-xs font-medium text-muted">
-                      {selectedVariant.label}
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-3 gap-3 text-center">
-                    <div className="rounded-xl border border-theme bg-surface p-3">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-muted">
-                        Disponible
-                      </p>
-                      <p className="mt-1 text-lg font-black text-primary">
-                        {formatUnits(selectedVariant.stockAvailable)}
-                      </p>
-                    </div>
-                    <div className="rounded-xl border border-theme bg-surface p-3">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-muted">
-                        Fisico
-                      </p>
-                      <p className="mt-1 text-lg font-black text-primary">
-                        {formatUnits(selectedVariant.stockPhysical)}
-                      </p>
-                    </div>
-                    <div className="rounded-xl border border-theme bg-surface p-3">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-muted">
-                        Comprometido
-                      </p>
-                      <p className="mt-1 text-lg font-black text-primary">
-                        {formatUnits(selectedVariant.stockCommitted)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <p className="mt-2 text-sm font-medium text-muted">
-                  Selecciona una variante para ver su disponibilidad.
-                </p>
-              )}
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <label>
-                <span className="mb-2 block text-sm font-bold text-primary">
-                  Cantidad
-                </span>
-                <Input
-                  value={form.quantity}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      quantity: sanitizeIntegerInput(event.target.value),
-                    }))
-                  }
-                  inputMode="numeric"
-                  placeholder="Ej. 5"
-                  disabled={submitting}
-                  className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
-                />
-              </label>
-
-              <label>
-                <span className="mb-2 block text-sm font-bold text-primary">
-                  Motivo
-                </span>
-                <Select
-                  value={form.reason}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      reason: event.target.value as NonCommercialOutputReason,
-                    }))
-                  }
-                  disabled={submitting}
-                  className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
-                >
-                  {(
-                    Object.entries(REASON_LABELS) as Array<
-                      [NonCommercialOutputReason, string]
-                    >
-                  ).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </Select>
-              </label>
-            </div>
-
-            {stockValidationMessage ? (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
-                {stockValidationMessage}
-              </div>
-            ) : selectedVariant ? (
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
-                Puedes registrar hasta {formatUnits(selectedVariant.stockAvailable)}{' '}
-                unidades disponibles para esta variante.
-              </div>
-            ) : null}
-
-            <label>
-              <span className="mb-2 block text-sm font-bold text-primary">
-                Observacion
-              </span>
-              <textarea
-                value={form.notes}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    notes: event.target.value,
-                  }))
-                }
-                disabled={submitting}
-                rows={4}
-                placeholder="Ej. Entrega de muestra para fotos internas o obsequio institucional."
-                className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-medium text-primary outline-none transition-all focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
-              />
-            </label>
-
-            <label>
-              <span className="mb-2 block text-sm font-bold text-primary">
-                Soporte opcional
-              </span>
-              <Input
-                value={form.supportUrl}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    supportUrl: event.target.value,
-                  }))
-                }
-                disabled={submitting}
-                placeholder="URL o storage ref si existe soporte documental"
-                className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
-              />
-              <p className="mt-2 text-xs font-medium text-muted">
-                Se deja listo para adjuntar evidencia cuando el soporte exista.
-              </p>
-            </label>
-
-            <div className="flex flex-col gap-3 border-t border-theme pt-5 sm:flex-row sm:justify-end">
-              <Button
-                type="button"
-                onClick={() => setForm(DEFAULT_FORM)}
-                disabled={submitting}
-                className="rounded-xl border border-theme bg-base px-5 py-3 text-sm font-bold text-muted disabled:opacity-60"
-              >
-                Limpiar
-              </Button>
-              <Button
-                type="submit"
-                disabled={
-                  submitting ||
-                  !selectedVariant ||
-                  !hasValidQuantity ||
-                  Boolean(stockValidationMessage)
-                }
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-black text-base-color disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {submitting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Gift className="h-4 w-4" />
-                )}
-                Registrar salida no comercial
-              </Button>
-            </div>
-          </form>
-        </section>
-
+      <div className="grid grid-cols-1 gap-8">
         <section className="overflow-hidden rounded-3xl border border-theme bg-surface shadow-sm">
           <div className="flex flex-col gap-4 border-b border-theme bg-base/20 p-6 md:flex-row md:items-center md:justify-between">
             <div>
@@ -891,6 +731,243 @@ export default function NonCommercialOutputsPage() {
           </div>
         </section>
       </div>
+
+      {isCreateModalOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-primary/20 p-4 backdrop-blur-sm"
+          onClick={closeCreateModal}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="non-commercial-output-modal-title"
+            className="my-8 w-full max-w-2xl rounded-3xl border border-theme bg-surface shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-theme p-8">
+              <div>
+                <h2
+                  id="non-commercial-output-modal-title"
+                  className="text-2xl font-black text-primary"
+                >
+                  Registrar nueva salida
+                </h2>
+                <p className="mt-1 text-sm font-medium text-muted">
+                  El stock visible se toma del backend y se vuelve a consultar
+                  al finalizar cada registro.
+                </p>
+              </div>
+              <Button
+                type="button"
+                onClick={closeCreateModal}
+                disabled={submitting}
+                className="rounded-xl p-2 text-muted transition-colors hover:bg-base hover:text-primary disabled:opacity-60"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-5 p-8">
+              <div>
+                <label className="mb-2 block text-sm font-bold text-primary">
+                  Variante o producto
+                </label>
+                <Combobox
+                  options={variantOptions.map((variant) => ({
+                    value: variant.id,
+                    label: variant.label,
+                  }))}
+                  value={form.variantId}
+                  onChange={(value) =>
+                    setForm((current) => ({ ...current, variantId: value }))
+                  }
+                  placeholder="Selecciona una variante"
+                  searchPlaceholder="Buscar por producto, detalle o SKU..."
+                  emptyMessage="No se encontraron variantes activas."
+                  disabled={submitting}
+                />
+              </div>
+
+              <div className="rounded-2xl border border-theme bg-base/30 p-4">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted">
+                  Stock actual reportado por backend
+                </p>
+                {selectedVariant ? (
+                  <div className="mt-3 space-y-3">
+                    <div>
+                      <p className="font-black text-primary">
+                        {selectedVariant.productName}
+                      </p>
+                      <p className="text-xs font-medium text-muted">
+                        {selectedVariant.label}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3 text-center">
+                      <div className="rounded-xl border border-theme bg-surface p-3">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted">
+                          Disponible
+                        </p>
+                        <p className="mt-1 text-lg font-black text-primary">
+                          {formatUnits(selectedVariant.stockAvailable)}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-theme bg-surface p-3">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted">
+                          Fisico
+                        </p>
+                        <p className="mt-1 text-lg font-black text-primary">
+                          {formatUnits(selectedVariant.stockPhysical)}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-theme bg-surface p-3">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted">
+                          Comprometido
+                        </p>
+                        <p className="mt-1 text-lg font-black text-primary">
+                          {formatUnits(selectedVariant.stockCommitted)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-sm font-medium text-muted">
+                    Selecciona una variante para ver su disponibilidad.
+                  </p>
+                )}
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <label>
+                  <span className="mb-2 block text-sm font-bold text-primary">
+                    Cantidad
+                  </span>
+                  <Input
+                    value={form.quantity}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        quantity: sanitizeIntegerInput(event.target.value),
+                      }))
+                    }
+                    inputMode="numeric"
+                    placeholder="Ej. 5"
+                    disabled={submitting}
+                    className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                  />
+                </label>
+
+                <label>
+                  <span className="mb-2 block text-sm font-bold text-primary">
+                    Motivo
+                  </span>
+                  <Select
+                    value={form.reason}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        reason: event.target.value as NonCommercialOutputReason,
+                      }))
+                    }
+                    disabled={submitting}
+                    className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                  >
+                    {(
+                      Object.entries(REASON_LABELS) as Array<
+                        [NonCommercialOutputReason, string]
+                      >
+                    ).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </Select>
+                </label>
+              </div>
+
+              {stockValidationMessage ? (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
+                  {stockValidationMessage}
+                </div>
+              ) : selectedVariant ? (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+                  Puedes registrar hasta{' '}
+                  {formatUnits(selectedVariant.stockAvailable)} unidades
+                  disponibles para esta variante.
+                </div>
+              ) : null}
+
+              <label>
+                <span className="mb-2 block text-sm font-bold text-primary">
+                  Observacion
+                </span>
+                <textarea
+                  value={form.notes}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      notes: event.target.value,
+                    }))
+                  }
+                  disabled={submitting}
+                  rows={4}
+                  placeholder="Ej. Entrega de muestra para fotos internas o obsequio institucional."
+                  className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-medium text-primary outline-none transition-all focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                />
+              </label>
+
+              <label>
+                <span className="mb-2 block text-sm font-bold text-primary">
+                  Soporte opcional
+                </span>
+                <Input
+                  value={form.supportUrl}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      supportUrl: event.target.value,
+                    }))
+                  }
+                  disabled={submitting}
+                  placeholder="URL o storage ref si existe soporte documental"
+                  className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                />
+                <p className="mt-2 text-xs font-medium text-muted">
+                  Se deja listo para adjuntar evidencia cuando el soporte
+                  exista.
+                </p>
+              </label>
+
+              <div className="flex flex-col gap-3 border-t border-theme pt-5 sm:flex-row sm:justify-end">
+                <Button
+                  type="button"
+                  onClick={() => setForm(DEFAULT_FORM)}
+                  disabled={submitting}
+                  className="rounded-xl border border-theme bg-base px-5 py-3 text-sm font-bold text-muted disabled:opacity-60"
+                >
+                  Limpiar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={
+                    submitting ||
+                    !selectedVariant ||
+                    !hasValidQuantity ||
+                    Boolean(stockValidationMessage)
+                  }
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-black text-base-color disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {submitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Gift className="h-4 w-4" />
+                  )}
+                  Registrar salida no comercial
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
