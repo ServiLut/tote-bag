@@ -207,6 +207,25 @@ export class PersonalizationsService {
     }
   }
 
+  async findRequestById(id: string) {
+    try {
+      const request = await this.prisma.personalizationRequest.findUnique({
+        where: { id },
+        include: this.getRequestInclude(),
+      });
+
+      if (!request) {
+        throw new NotFoundException(
+          `Personalization request with ID ${id} not found`,
+        );
+      }
+
+      return request;
+    } catch (error) {
+      this.rethrowIfRequestStorageUnavailable(error);
+    }
+  }
+
   async createRequest(
     userId: string,
     data: CreatePersonalizationRequestDto,
@@ -333,14 +352,210 @@ export class PersonalizationsService {
     actorUserId: string,
   ) {
     try {
+      const currentRequest =
+        await this.prisma.personalizationRequest.findUnique({
+          where: { id },
+          select: {
+            id: true,
+            userId: true,
+            profileId: true,
+            productId: true,
+            variantId: true,
+            quantity: true,
+            line: true,
+            size: true,
+            material: true,
+            quality: true,
+            status: true,
+            notes: true,
+            reviewNotes: true,
+            designUrl: true,
+            personalizations: true,
+            configurationJson: true,
+          },
+        });
+
+      if (!currentRequest) {
+        throw new NotFoundException(
+          `Personalization request with ID ${id} not found`,
+        );
+      }
+
+      if (currentRequest.status === PersonalizationRequestStatus.APPROVED) {
+        throw new ConflictException(
+          'Las solicitudes aprobadas no se pueden editar.',
+        );
+      }
+
+      const nextProfileId = data.profileId ?? currentRequest.profileId;
+      const nextProductId = data.productId ?? currentRequest.productId;
+      const nextVariantId = data.variantId ?? currentRequest.variantId;
+      const nextLine = data.line ?? currentRequest.line;
+      const nextSize = data.size ?? currentRequest.size;
+      const nextMaterial = data.material ?? currentRequest.material;
+      const nextQuality =
+        data.quality !== undefined ? data.quality : currentRequest.quality;
+      const nextQuantity = data.quantity ?? currentRequest.quantity;
+      const nextDesignUrl =
+        data.customImageURL !== undefined
+          ? data.customImageURL?.trim() || null
+          : currentRequest.designUrl;
+
+      const nextNotes =
+        data.notes !== undefined
+          ? data.notes?.trim() || null
+          : currentRequest.notes;
+      const nextReviewNotes =
+        data.reviewNotes !== undefined
+          ? data.reviewNotes?.trim() || null
+          : currentRequest.reviewNotes;
+      const nextStatus = data.status ?? currentRequest.status;
+      const nextPersonalizations =
+        data.personalizations ??
+        (Array.isArray(currentRequest.personalizations)
+          ? currentRequest.personalizations
+          : []);
+
+      if (!nextVariantId) {
+        throw new BadRequestException(
+          'La solicitud debe conservar una variante comercial asociada.',
+        );
+      }
+
+      const sanitizedPersonalizations = Array.isArray(nextPersonalizations)
+        ? nextPersonalizations
+            .filter(
+              (
+                personalization,
+              ): personalization is {
+                code: string;
+                options?: string[];
+              } =>
+                !!personalization &&
+                typeof personalization === 'object' &&
+                'code' in personalization &&
+                typeof personalization.code === 'string',
+            )
+            .map((personalization) => ({
+              code: personalization.code,
+              options: Array.isArray(personalization.options)
+                ? personalization.options.filter(
+                    (option): option is string => typeof option === 'string',
+                  )
+                : undefined,
+            }))
+        : [];
+
+      const [profile, variant] = await Promise.all([
+        nextProfileId
+          ? this.prisma.profile.findUnique({
+              where: { id: nextProfileId },
+              select: { id: true, userId: true },
+            })
+          : Promise.resolve(null),
+        nextVariantId
+          ? this.prisma.variant.findUnique({
+              where: { id: nextVariantId },
+              select: { id: true, productId: true },
+            })
+          : Promise.resolve(null),
+      ]);
+
+      if (nextProfileId && !profile) {
+        throw new BadRequestException('El perfil seleccionado no existe.');
+      }
+
+      if (nextVariantId && !variant) {
+        throw new BadRequestException('La variante seleccionada no existe.');
+      }
+
+      if (nextVariantId && variant && variant.productId !== nextProductId) {
+        throw new BadRequestException(
+          'La variante no corresponde al producto seleccionado.',
+        );
+      }
+
+      const quote = await this.pricingService.calculateQuote(
+        {
+          productId: nextProductId,
+          variantId: nextVariantId,
+          line: nextLine,
+          size: nextSize,
+          material: nextMaterial,
+          quality: nextQuality ?? undefined,
+          customImageURL: nextDesignUrl ?? undefined,
+          quantity: nextQuantity,
+          personalizations: sanitizedPersonalizations,
+        },
+        PriceRuleScope.B2C,
+      );
+
+      const resolvedVariantId =
+        typeof quote.snapshot.variantId === 'string' &&
+        quote.snapshot.variantId.trim().length > 0
+          ? quote.snapshot.variantId
+          : nextVariantId;
+      const resolvedSize =
+        typeof quote.snapshot.size === 'string' &&
+        quote.snapshot.size.trim().length > 0
+          ? quote.snapshot.size
+          : nextSize;
+
+      const normalizedPersonalizations = normalizeSnapshotPersonalizations(
+        sanitizedPersonalizations,
+      );
+
+      const configurationRecord =
+        currentRequest.configurationJson &&
+        typeof currentRequest.configurationJson === 'object' &&
+        !Array.isArray(currentRequest.configurationJson)
+          ? (currentRequest.configurationJson as Record<string, unknown>)
+          : {};
+
       return await this.prisma.personalizationRequest.update({
         where: { id },
         data: {
-          status: data.status,
-          reviewNotes: data.reviewNotes,
-          notes: data.notes,
-          reviewedAt: new Date(),
-          reviewedByUserId: actorUserId,
+          userId: profile?.userId ?? currentRequest.userId,
+          profileId: profile?.id ?? null,
+          productId: nextProductId,
+          variantId: resolvedVariantId,
+          quantity: nextQuantity,
+          line: nextLine,
+          size: resolvedSize,
+          material: nextMaterial,
+          quality: nextQuality ?? null,
+          configCode: quote.snapshot.configCode,
+          unitPrice: quote.unitPrice,
+          totalPrice: quote.total,
+          currency: quote.currency,
+          status: nextStatus,
+          notes: nextNotes,
+          reviewNotes: nextReviewNotes,
+          designUrl: nextDesignUrl,
+          personalizations: normalizedPersonalizations as Prisma.InputJsonValue,
+          configurationJson: {
+            ...configurationRecord,
+            productId: nextProductId,
+            variantId: resolvedVariantId,
+            line: nextLine,
+            size: resolvedSize,
+            material: nextMaterial,
+            quality: nextQuality ?? null,
+            quantity: nextQuantity,
+            customImageURL: nextDesignUrl,
+            personalizations: normalizedPersonalizations,
+            configCode: quote.snapshot.configCode,
+            updatedAt: new Date().toISOString(),
+          } as Prisma.InputJsonValue,
+          pricingJson: quote.snapshot as unknown as Prisma.InputJsonValue,
+          reviewedAt:
+            data.status !== undefined || data.reviewNotes !== undefined
+              ? new Date()
+              : undefined,
+          reviewedByUserId:
+            data.status !== undefined || data.reviewNotes !== undefined
+              ? actorUserId
+              : undefined,
         },
         include: this.getRequestInclude(),
       });
@@ -362,6 +577,33 @@ export class PersonalizationsService {
         );
       }
       throw error;
+    }
+  }
+
+  async removeRequest(id: string) {
+    try {
+      const request = await this.prisma.personalizationRequest.findUnique({
+        where: { id },
+        select: { id: true, status: true },
+      });
+
+      if (!request) {
+        throw new NotFoundException(
+          `Personalization request with ID ${id} not found`,
+        );
+      }
+
+      if (request.status === PersonalizationRequestStatus.APPROVED) {
+        throw new ConflictException(
+          'Las solicitudes aprobadas no se pueden eliminar.',
+        );
+      }
+
+      return await this.prisma.personalizationRequest.delete({
+        where: { id },
+      });
+    } catch (error) {
+      this.rethrowIfRequestStorageUnavailable(error);
     }
   }
 

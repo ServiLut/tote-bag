@@ -46,13 +46,13 @@ export class PricingService {
 
   private getVariantCommercialPricing(
     variant: {
-      salePrice: number | null;
-      minPrice: number | null;
+      salePrice: DecimalInput;
+      minPrice: DecimalInput;
       taxRate?: DecimalInput;
     } | null,
     product: {
-      basePrice: number;
-      minPrice: number;
+      basePrice: DecimalInput;
+      minPrice: DecimalInput;
     },
   ) {
     if (!variant) {
@@ -225,7 +225,7 @@ export class PricingService {
         snapshot.attributeModifiers.push({
           type: inputAttribute.type,
           name: inputAttribute.value,
-          modifier: matchingAttr.priceModifier,
+          modifier: decimalToNumber(matchingAttr.priceModifier),
         });
         continue;
       }
@@ -240,12 +240,12 @@ export class PricingService {
             option.code === inputAttribute.value),
       );
 
-      if (globalOption && globalOption.basePriceModifier !== 0) {
+      if (globalOption && !toDecimal(globalOption.basePriceModifier).isZero()) {
         unitPrice = unitPrice.plus(toDecimal(globalOption.basePriceModifier));
         snapshot.attributeModifiers.push({
           type: inputAttribute.type,
           name: inputAttribute.value,
-          modifier: globalOption.basePriceModifier,
+          modifier: decimalToNumber(globalOption.basePriceModifier),
         });
       }
     }
@@ -350,7 +350,7 @@ export class PricingService {
         unitPrice = unitPrice.plus(toDecimal(wizardOption.basePriceModifier));
         snapshot.personalizationSurcharges.push({
           code: personalization.code,
-          surcharge: wizardOption.basePriceModifier,
+          surcharge: decimalToNumber(wizardOption.basePriceModifier),
         });
       }
     }

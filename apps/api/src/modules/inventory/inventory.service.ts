@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import Decimal from 'decimal.js';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma, Product } from '../../generated/client/client';
@@ -7,6 +11,8 @@ import {
   InventoryAdjustmentItemType,
   InventoryAdjustmentReason,
   InventoryMovementReason,
+  NonCommercialInventoryOutputReason,
+  NonCommercialInventoryOutputStatus,
   PurchaseDocumentType,
   PurchaseBatchItemType,
   TransactionType,
@@ -20,6 +26,7 @@ import {
   PurchaseBatchItemDto,
   UpdateReorderPointDto,
 } from './dto/create-purchase-batch.dto';
+import { CreateNonCommercialInventoryOutputDto } from './dto/create-non-commercial-output.dto';
 import {
   decimalToNumber,
   roundMoney,
@@ -278,6 +285,40 @@ export class InventoryService {
     }
 
     return result as T;
+  }
+
+  private getNonCommercialOutputInclude() {
+    return {
+      variant: {
+        select: {
+          id: true,
+          sku: true,
+          size: true,
+          color: true,
+          stock: true,
+          stockCommitted: true,
+          product: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+        },
+      },
+      user: {
+        select: {
+          id: true,
+          email: true,
+          profile: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      },
+    } satisfies Prisma.NonCommercialInventoryOutputInclude;
   }
 
   private async recordInventoryMovement(
@@ -889,7 +930,10 @@ export class InventoryService {
           include: {
             product: {
               include: {
-                images: { take: 1 },
+                images: {
+                  take: 1,
+                  orderBy: { position: 'asc' },
+                },
               },
             },
           },
@@ -1651,7 +1695,7 @@ export class InventoryService {
   }
 
   async findReceivableVariants() {
-    return this.prisma.product.findMany({
+    const products = await this.prisma.product.findMany({
       where: { isActive: true },
       include: {
         variants: {
@@ -1665,6 +1709,13 @@ export class InventoryService {
       },
       orderBy: { name: 'asc' },
     });
+
+    return products.map((product) => ({
+      ...product,
+      variants: product.variants.map((variant) =>
+        this.serializeStockFields(variant),
+      ),
+    }));
   }
 
   async findAllSupplyItems() {
@@ -1674,6 +1725,174 @@ export class InventoryService {
     });
 
     return supplyItems.map((item) => this.serializeSupplyItem(item));
+  }
+
+  async listNonCommercialOutputs() {
+    const outputs = await this.prisma.nonCommercialInventoryOutput.findMany({
+      include: this.getNonCommercialOutputInclude(),
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return outputs.map((output) => this.serializeNonCommercialOutput(output));
+  }
+
+  async getNonCommercialOutputById(id: string) {
+    const output = await this.prisma.nonCommercialInventoryOutput.findUnique({
+      where: { id },
+      include: this.getNonCommercialOutputInclude(),
+    });
+
+    if (!output) {
+      throw new NotFoundException(
+        'La salida no comercial solicitada no existe',
+      );
+    }
+
+    return this.serializeNonCommercialOutput(output);
+  }
+
+  private serializeNonCommercialOutput<T extends Record<string, unknown> | null>(
+    output: T,
+  ): T {
+    if (!output) {
+      return output;
+    }
+
+    const result = { ...output };
+
+    if (result.variant && typeof result.variant === 'object') {
+      result.variant = this.serializeStockFields(
+        result.variant as Record<string, unknown>,
+      );
+    }
+
+    return result as T;
+  }
+
+  async createNonCommercialOutput(
+    data: CreateNonCommercialInventoryOutputDto & { userId: string },
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const quantityDecimal = this.toQuantityDecimal(data.quantity);
+
+      if (!this.isWholeQuantity(quantityDecimal)) {
+        throw new BadRequestException(
+          'La cantidad de una salida no comercial debe ser entera',
+        );
+      }
+
+      const quantity = this.quantityToLegacyInt(quantityDecimal);
+
+      if (quantity <= 0) {
+        throw new BadRequestException(
+          'La cantidad de una salida no comercial debe ser mayor a cero',
+        );
+      }
+
+      const reason =
+        data.reason as unknown as NonCommercialInventoryOutputReason;
+      const notes = this.sanitizeOptionalText(data.notes);
+      const supportUrl = this.sanitizeOptionalText(data.supportUrl);
+
+      const variant = await tx.variant.findUnique({
+        where: { id: data.variantId },
+        select: {
+          id: true,
+          sku: true,
+          stock: true,
+          stockCommitted: true,
+          product: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+        },
+      });
+
+      if (!variant) {
+        throw new BadRequestException('La variante seleccionada no existe');
+      }
+
+      const stockBefore = variant.stock;
+      const stockCommitted = variant.stockCommitted;
+      const stockAvailableBefore = Math.max(stockBefore - stockCommitted, 0);
+
+      if (stockAvailableBefore < quantity) {
+        throw new BadRequestException(
+          `Stock disponible insuficiente para la variante ${variant.sku}. Disponible ${stockAvailableBefore}, solicitado ${quantity}.`,
+        );
+      }
+
+      const reduction = await this.reduceStockFIFO(
+        data.variantId,
+        quantity,
+        data.userId,
+        tx,
+        {
+          movementReason: InventoryMovementReason.NON_COMMERCIAL_OUTPUT,
+          auditAction: 'REDUCE_STOCK_NON_COMMERCIAL_OUTPUT',
+          metadata: {
+            outputReason: reason,
+            outputType: 'NON_COMMERCIAL',
+            notes,
+            supportUrl,
+          },
+        },
+      );
+
+      const stockAfter = stockBefore - quantity;
+
+      const output = await tx.nonCommercialInventoryOutput.create({
+        data: {
+          variantId: data.variantId,
+          quantity,
+          reason,
+          notes,
+          supportUrl,
+          status: NonCommercialInventoryOutputStatus.COMPLETED,
+          stockBefore,
+          stockAfter,
+          userId: data.userId,
+          metadata: {
+            totalCOGS: reduction.totalCOGS,
+            reductions: reduction.reductions,
+            stockCommitted,
+            stockAvailableBefore,
+            stockAvailableAfter: Math.max(stockAfter - stockCommitted, 0),
+          },
+        },
+        include: this.getNonCommercialOutputInclude(),
+      });
+
+      await tx.auditLog.create({
+        data: {
+          action: 'CREATE_NON_COMMERCIAL_INVENTORY_OUTPUT',
+          entity: 'NonCommercialInventoryOutput',
+          entityId: output.id,
+          userId: data.userId,
+          payload: {
+            variantId: data.variantId,
+            sku: variant.sku,
+            productId: variant.product.id,
+            productName: variant.product.name,
+            quantity,
+            reason,
+            notes,
+            supportUrl,
+            stockBefore,
+            stockAfter,
+            stockCommitted,
+            stockAvailableBefore,
+            reductions: reduction.reductions,
+            totalCOGS: reduction.totalCOGS,
+          },
+        },
+      });
+
+      return this.serializeNonCommercialOutput(output);
+    });
   }
 
   async createSupplyItem(data: CreateSupplyItemDto) {
@@ -1713,6 +1932,11 @@ export class InventoryService {
     quantityToSell: number,
     userId?: string,
     txClient?: Prisma.TransactionClient,
+    options?: {
+      movementReason?: InventoryMovementReason;
+      auditAction?: string;
+      metadata?: Record<string, unknown>;
+    },
   ) {
     const execute = async (tx: Prisma.TransactionClient) => {
       const lines = await tx.purchaseBatchLine.findMany({
@@ -1819,7 +2043,8 @@ export class InventoryService {
         });
 
         await this.recordInventoryMovement(tx, {
-          reason: InventoryMovementReason.SALE_CONSUMPTION,
+          reason:
+            options?.movementReason ?? InventoryMovementReason.SALE_CONSUMPTION,
           itemType: InventoryAdjustmentItemType.VARIANT,
           quantity: -amountFromThisBatch,
           balanceAfter: updatedVariant.stock,
@@ -1833,12 +2058,13 @@ export class InventoryService {
             unitCost: decimalToNumber(unitCost),
             documentType: line.purchaseBatch.documentType,
             purchaseBatchLineId: line.id,
+            ...(options?.metadata ?? {}),
           },
         });
 
         await tx.auditLog.create({
           data: {
-            action: 'REDUCE_STOCK_FIFO',
+            action: options?.auditAction ?? 'REDUCE_STOCK_FIFO',
             entity: 'PurchaseBatchLine',
             entityId: line.id,
             userId: userId ?? null,
@@ -1851,6 +2077,7 @@ export class InventoryService {
               newRemaining,
               unitCost: decimalToNumber(unitCost),
               documentType: line.purchaseBatch.documentType,
+              ...(options?.metadata ?? {}),
             },
           },
         });

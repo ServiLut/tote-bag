@@ -27,6 +27,7 @@ import {
   CreateSupplyItemDto,
   UpdateReorderPointDto,
 } from './dto/create-purchase-batch.dto';
+import { CreateNonCommercialInventoryOutputDto } from './dto/create-non-commercial-output.dto';
 import { UpdatePurchaseBatchDto } from './dto/update-purchase-batch.dto';
 import { BreakEvenSimulationDto } from './dto/break-even-simulation.dto';
 import {
@@ -139,6 +140,33 @@ export class InventoryController {
   async getInventoryMovements(@Request() req: RequestWithUser) {
     await this.ensureAdmin(req.user?.id);
     return this.inventoryService.getInventoryMovements();
+  }
+
+  @Get('non-commercial-outputs')
+  async listNonCommercialOutputs(@Request() req: RequestWithUser) {
+    await this.ensureAdmin(req.user?.id);
+    return this.inventoryService.listNonCommercialOutputs();
+  }
+
+  @Get('non-commercial-outputs/:id')
+  async getNonCommercialOutputById(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Request() req: RequestWithUser,
+  ) {
+    await this.ensureAdmin(req.user?.id);
+    return this.inventoryService.getNonCommercialOutputById(id);
+  }
+
+  @Post('non-commercial-outputs')
+  async createNonCommercialOutput(
+    @Body() body: CreateNonCommercialInventoryOutputDto,
+    @Request() req: RequestWithUser,
+  ) {
+    await this.ensureAdmin(req.user?.id);
+    return this.inventoryService.createNonCommercialOutput({
+      ...body,
+      userId: req.user!.id,
+    });
   }
 
   @Get('reorder-alerts')

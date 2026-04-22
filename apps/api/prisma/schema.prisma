@@ -89,6 +89,7 @@ model Variant {
   productId               String                   @map("product_id")
   inventoryAdjustments    InventoryAdjustment[]
   inventoryMovements      InventoryMovement[]
+  nonCommercialOutputs    NonCommercialInventoryOutput[]
   b2BQuoteItems           B2BQuoteItem[]
   orderItems              OrderItem[]
   personalizationRequests PersonalizationRequest[]
@@ -273,6 +274,7 @@ model User {
   financialTransactions           FinancialTransaction[]
   inventoryAdjustments            InventoryAdjustment[]
   inventoryMovements              InventoryMovement[]
+  nonCommercialInventoryOutputs   NonCommercialInventoryOutput[]
   profile                         Profile?
   personalizationRequests         PersonalizationRequest[] @relation("PersonalizationRequestUser")
   reviewedPersonalizationRequests PersonalizationRequest[] @relation("PersonalizationRequestReviewedBy")
@@ -832,6 +834,32 @@ model InventoryAdjustment {
   @@schema("tote-bag")
 }
 
+model NonCommercialInventoryOutput {
+  id          String                             @id @default(uuid()) @map("id")
+  variantId   String                             @map("variant_id")
+  quantity    Int                                @map("quantity")
+  reason      NonCommercialInventoryOutputReason @map("reason")
+  notes       String?                            @map("notes")
+  supportUrl  String?                            @map("support_url")
+  status      NonCommercialInventoryOutputStatus @default(COMPLETED) @map("status")
+  stockBefore Int                                @map("stock_before")
+  stockAfter  Int                                @map("stock_after")
+  metadata    Json?                              @map("metadata")
+  userId      String                             @map("user_id")
+  createdAt   DateTime                           @default(now()) @map("created_at")
+  updatedAt   DateTime                           @updatedAt @map("updated_at")
+  user        User                               @relation(fields: [userId], references: [id])
+  variant     Variant                            @relation(fields: [variantId], references: [id])
+
+  @@index([createdAt])
+  @@index([reason, createdAt])
+  @@index([status, createdAt])
+  @@index([userId])
+  @@index([variantId])
+  @@map("non_commercial_inventory_outputs")
+  @@schema("tote-bag")
+}
+
 model InventoryMovement {
   id                  String                     @id @default(uuid()) @map("id")
   reason              InventoryMovementReason    @map("reason")
@@ -1210,11 +1238,28 @@ enum InventoryAdjustmentReason {
 enum InventoryMovementReason {
   PURCHASE_RECEIPT
   SALE_CONSUMPTION
+  NON_COMMERCIAL_OUTPUT
   RETURN_TO_STOCK
   MANUAL_ADJUSTMENT
   STOCK_COMMITMENT
   STOCK_COMMITMENT_RELEASE
   SHIPMENT_SUPPLY_USAGE
+
+  @@schema("tote-bag")
+}
+
+enum NonCommercialInventoryOutputReason {
+  GIFT
+  SAMPLE
+  INTERNAL_TEST
+  OPERATIONAL_USE
+  OTHER
+
+  @@schema("tote-bag")
+}
+
+enum NonCommercialInventoryOutputStatus {
+  COMPLETED
 
   @@schema("tote-bag")
 }

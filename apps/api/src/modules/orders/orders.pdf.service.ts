@@ -7,6 +7,10 @@ import {
   Profile,
   Product,
 } from '../../generated/client/client';
+import {
+  decimalToNumber,
+  DecimalInput,
+} from '../../common/utils/sales-tax.util';
 
 export interface ExtendedOrderItem extends OrderItem {
   product?: Product;
@@ -150,11 +154,11 @@ export class ReceiptPdfService {
     doc.end();
   }
 
-  private formatCurrency(amount: number) {
+  private formatCurrency(amount: DecimalInput) {
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
       currency: 'COP',
       maximumFractionDigits: 0,
-    }).format(amount);
+    }).format(decimalToNumber(amount));
   }
 }

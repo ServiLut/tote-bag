@@ -53,6 +53,9 @@ describe('InventoryService', () => {
     inventoryMovement: {
       create: jest.fn(),
     },
+    nonCommercialInventoryOutput: {
+      create: jest.fn(),
+    },
     auditLog: {
       create: jest.fn(),
     },
@@ -73,6 +76,10 @@ describe('InventoryService', () => {
     supplyItem: {
       findMany: jest.fn(),
       create: jest.fn(),
+    },
+    nonCommercialInventoryOutput: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
     },
   };
   const managerApprovalsService = {
@@ -585,7 +592,10 @@ describe('InventoryService', () => {
           include: {
             product: {
               include: {
-                images: { take: 1 },
+                images: {
+                  take: 1,
+                  orderBy: { position: 'asc' },
+                },
               },
             },
           },
@@ -678,6 +688,172 @@ describe('InventoryService', () => {
         documentType: 'DELIVERY_NOTE',
       },
     ]);
+  });
+
+  it('crea una salida no comercial reutilizando FIFO y registra trazabilidad propia', async () => {
+    tx.variant.findUnique.mockResolvedValue({
+      id: 'variant-1',
+      sku: 'SKU-1',
+      stock: 10,
+      stockCommitted: 2,
+      product: {
+        id: 'product-1',
+        name: 'Bolsa clasica',
+        slug: 'bolsa-clasica',
+      },
+    });
+    tx.purchaseBatchLine.findMany.mockResolvedValue([
+      {
+        id: 'line-1',
+        purchaseBatchId: 'batch-1',
+        quantityRemaining: 8,
+        unitCost: 12000,
+        purchaseBatch: {
+          id: 'batch-1',
+          supplierId: 'supplier-1',
+          variantId: 'variant-1',
+          documentType: 'INVOICE',
+          createdAt: new Date('2026-04-01T00:00:00.000Z'),
+        },
+      },
+    ]);
+    tx.purchaseBatchLine.update.mockResolvedValue({});
+    tx.purchaseBatchLine.count.mockResolvedValue(1);
+    tx.purchaseBatchLine.aggregate.mockResolvedValue({
+      _sum: { quantityRemaining: 5 },
+    });
+    tx.purchaseBatch.update.mockResolvedValue({});
+    tx.nonCommercialInventoryOutput.create.mockImplementation(
+      ({ data }: { data: Record<string, unknown> }) =>
+        Promise.resolve({
+          id: 'output-1',
+          ...data,
+          createdAt: new Date('2026-04-22T12:00:00.000Z'),
+          updatedAt: new Date('2026-04-22T12:00:00.000Z'),
+          variant: {
+            id: 'variant-1',
+            sku: 'SKU-1',
+            size: 'M',
+            color: 'Natural',
+            stock: 7,
+            stockCommitted: 2,
+            product: {
+              id: 'product-1',
+              name: 'Bolsa clasica',
+              slug: 'bolsa-clasica',
+            },
+          },
+          user: {
+            id: 'admin-1',
+            email: 'admin@tote-bag.com',
+            profile: {
+              firstName: 'Admin',
+              lastName: 'Uno',
+            },
+          },
+        }),
+    );
+
+    const result = await service.createNonCommercialOutput({
+      variantId: 'variant-1',
+      quantity: 3,
+      reason: 'GIFT',
+      notes: 'Salida de cortesia',
+      supportUrl: 'private://support-documents/non-commercial/gift.pdf',
+      userId: 'admin-1',
+    });
+
+    const inventoryMovementCalls = tx.inventoryMovement.create.mock
+      .calls as Array<
+      [
+        {
+          data: { reason: string; quantity: number; variantId: string };
+        },
+      ]
+    >;
+    const nonCommercialOutputCalls = tx.nonCommercialInventoryOutput.create.mock
+      .calls as Array<
+      [
+        {
+          data: {
+            variantId: string;
+            quantity: number;
+            reason: string;
+            stockBefore: number;
+            stockAfter: number;
+            userId: string;
+            status: string;
+          };
+        },
+      ]
+    >;
+    const auditLogCalls = tx.auditLog.create.mock.calls as Array<
+      [
+        {
+          data: { action: string; entity: string; entityId: string };
+        },
+      ]
+    >;
+
+    expect(inventoryMovementCalls[0]?.[0]).toMatchObject({
+      data: {
+        reason: 'NON_COMMERCIAL_OUTPUT',
+        quantity: -3,
+        variantId: 'variant-1',
+      },
+    });
+    expect(nonCommercialOutputCalls[0]?.[0]).toMatchObject({
+      data: {
+        variantId: 'variant-1',
+        quantity: 3,
+        reason: 'GIFT',
+        stockBefore: 10,
+        stockAfter: 7,
+        userId: 'admin-1',
+        status: 'COMPLETED',
+      },
+    });
+    expect(auditLogCalls.at(-1)?.[0]).toMatchObject({
+      data: {
+        action: 'CREATE_NON_COMMERCIAL_INVENTORY_OUTPUT',
+        entity: 'NonCommercialInventoryOutput',
+        entityId: 'output-1',
+      },
+    });
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: 'output-1',
+        quantity: 3,
+        stockAfter: 7,
+      }),
+    );
+  });
+
+  it('rechaza una salida no comercial si invade stock comprometido', async () => {
+    tx.variant.findUnique.mockResolvedValue({
+      id: 'variant-1',
+      sku: 'SKU-1',
+      stock: 5,
+      stockCommitted: 4,
+      product: {
+        id: 'product-1',
+        name: 'Bolsa clasica',
+        slug: 'bolsa-clasica',
+      },
+    });
+
+    await expect(
+      service.createNonCommercialOutput({
+        variantId: 'variant-1',
+        quantity: 2,
+        reason: 'OTHER',
+        notes: 'Uso interno',
+        userId: 'admin-1',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(tx.purchaseBatchLine.findMany).not.toHaveBeenCalled();
+    expect(tx.nonCommercialInventoryOutput.create).not.toHaveBeenCalled();
   });
 
   it('actualiza un lote intacto y ajusta stock y saldo del proveedor', async () => {

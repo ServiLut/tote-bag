@@ -30,12 +30,14 @@ async function bootstrap() {
     defaultVersion: '1',
   });
 
-  app.use(helmet({
-    contentSecurityPolicy: false,
-    crossOriginEmbedderPolicy: false,
-  }));
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
 
-  const httpAdapter = app.getHttpAdapter().getInstance() as any;
+  const httpAdapter = app.getHttpAdapter().getInstance();
   httpAdapter.set('trust proxy', 1);
 
   app.use(json({ limit: bodyLimit }));

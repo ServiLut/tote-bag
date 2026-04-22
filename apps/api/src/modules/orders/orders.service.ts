@@ -62,10 +62,10 @@ type ResolvedCommercialVariant = {
   sku: string;
   productId: string;
   imageUrl: string;
-  salePrice: number | null;
-  minPrice: number | null;
-  comparePrice: number | null;
-  costPrice: number | null;
+  salePrice: Decimal | null;
+  minPrice: Decimal | null;
+  comparePrice: Decimal | null;
+  costPrice: Decimal | null;
   taxRate: DecimalInput;
   size: string | null;
   isActive: boolean;

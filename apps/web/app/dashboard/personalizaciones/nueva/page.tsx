@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, CheckCircle2, Loader2, Search, Sparkles, Upload } from 'lucide-react';
 import { ApiResponse } from '@/types/api';
 import { createClient } from '@/utils/supabase/client';
@@ -48,6 +48,20 @@ interface CreatedRequest {
   configCode?: string | null;
 }
 
+interface EditableRequestPayload extends CreatedRequest {
+  profileId?: string | null;
+  productId: string;
+  variantId?: string | null;
+  quantity: number;
+  line: string;
+  size?: string | null;
+  material: string;
+  quality?: string | null;
+  notes?: string | null;
+  designUrl?: string | null;
+  profile?: Profile | null;
+}
+
 type FormState = {
   quantity: string;
   line: string;
@@ -83,9 +97,20 @@ function getErrorMessage(payload: unknown, fallback: string) {
   return fallback;
 }
 
+function extractApiData<T>(payload: unknown): T | null {
+  if (payload && typeof payload === 'object' && 'data' in payload) {
+    return ((payload as ApiResponse<T>).data ?? null) as T | null;
+  }
+
+  return (payload as T | null) ?? null;
+}
+
 export default function NewManualPersonalizationRequestPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+  const requestId = searchParams.get('editar')?.trim() || '';
+  const isEditMode = requestId.length > 0;
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -99,6 +124,7 @@ export default function NewManualPersonalizationRequestPage() {
   const [selectedProductId, setSelectedProductId] = useState('');
   const [selectedVariantId, setSelectedVariantId] = useState('');
   const [designFile, setDesignFile] = useState<File | null>(null);
+  const [existingDesignUrl, setExistingDesignUrl] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [createdRequest, setCreatedRequest] = useState<CreatedRequest | null>(null);
 
@@ -117,7 +143,7 @@ export default function NewManualPersonalizationRequestPage() {
         Authorization: `Bearer ${session.access_token}`,
       };
 
-      const [profilesRes, productsRes, optionsRes] = await Promise.all([
+      const [profilesRes, productsRes, optionsRes, requestRes] = await Promise.all([
         apiFetch('/profiles?role=CUSTOMER', {
           headers: authHeaders,
         }),
@@ -125,40 +151,95 @@ export default function NewManualPersonalizationRequestPage() {
           headers: authHeaders,
         }),
         apiFetch('/wizard-options/grouped'),
+        isEditMode
+          ? apiFetch(`/personalizations/requests/${requestId}`, {
+              headers: authHeaders,
+            })
+          : Promise.resolve(null),
       ]);
 
-      if (!profilesRes.ok || !productsRes.ok || !optionsRes.ok) {
+      if (
+        !profilesRes.ok ||
+        !productsRes.ok ||
+        !optionsRes.ok ||
+        (requestRes && !requestRes.ok)
+      ) {
         const errors = [
           !profilesRes.ok ? `profiles:${profilesRes.status}` : null,
           !productsRes.ok ? `products:${productsRes.status}` : null,
           !optionsRes.ok ? `wizard-options:${optionsRes.status}` : null,
+          requestRes && !requestRes.ok ? `request:${requestRes.status}` : null,
         ].filter(Boolean);
 
         throw new Error(`No se pudo cargar la informacion del formulario. ${errors.join(' | ')}`);
       }
 
-      const [profilesJson, productsJson, optionsJson]: [
+      const [profilesJson, productsJson, optionsJson, requestJson]: [
         ApiResponse<Profile[]>,
         ApiResponse<ProductOption[]>,
         ApiResponse<GroupedWizardOptions>,
+        unknown,
       ] = await Promise.all([
         profilesRes.json(),
         productsRes.json(),
         optionsRes.json(),
+        requestRes ? requestRes.json().catch(() => null) : Promise.resolve(null),
       ]);
 
+      const nextProfiles = profilesJson.data ?? [];
+      const nextProducts = productsJson.data ?? [];
       const nextLineOptions = optionsJson.data?.LINE ?? [];
       const nextMaterialOptions = optionsJson.data?.MATERIAL ?? [];
 
-      setProfiles(profilesJson.data ?? []);
-      setProducts(productsJson.data ?? []);
+      setProfiles(nextProfiles);
+      setProducts(nextProducts);
       setLineOptions(nextLineOptions);
       setMaterialOptions(nextMaterialOptions);
-      setForm((current) => ({
-        ...current,
-        line: current.line || nextLineOptions[0]?.code || '',
-        material: current.material || nextMaterialOptions[0]?.name || '',
-      }));
+
+      const editableRequest = isEditMode
+        ? extractApiData<EditableRequestPayload>(requestJson)
+        : null;
+
+      if (isEditMode) {
+        if (!editableRequest) {
+          throw new Error('No se encontro la solicitud que intentas editar.');
+        }
+
+        const matchedProfile =
+          nextProfiles.find((profile) => profile.id === editableRequest.profileId) ||
+          (editableRequest.profile
+            ? {
+                id: editableRequest.profile.id,
+                firstName: editableRequest.profile.firstName ?? null,
+                lastName: editableRequest.profile.lastName ?? null,
+                email: editableRequest.profile.email,
+                phone: editableRequest.profile.phone ?? null,
+              }
+            : null);
+
+        setSelectedProfile(matchedProfile);
+        setSelectedProductId(editableRequest.productId);
+        setSelectedVariantId(editableRequest.variantId ?? '');
+        setExistingDesignUrl(editableRequest.designUrl ?? null);
+        setForm({
+          quantity: String(editableRequest.quantity ?? 1),
+          line: editableRequest.line || nextLineOptions[0]?.code || '',
+          material: editableRequest.material || nextMaterialOptions[0]?.name || '',
+          quality: editableRequest.quality || '',
+          size: editableRequest.size || '',
+          notes: editableRequest.notes || '',
+        });
+      } else {
+        setSelectedProfile(null);
+        setSelectedProductId('');
+        setSelectedVariantId('');
+        setExistingDesignUrl(null);
+        setForm({
+          ...INITIAL_FORM,
+          line: nextLineOptions[0]?.code || '',
+          material: nextMaterialOptions[0]?.name || '',
+        });
+      }
     } catch (error) {
       console.error(error);
       setFormError(
@@ -169,7 +250,7 @@ export default function NewManualPersonalizationRequestPage() {
     } finally {
       setLoading(false);
     }
-  }, [router, supabase.auth]);
+  }, [isEditMode, requestId, router, supabase.auth]);
 
   useEffect(() => {
     void fetchData();
@@ -265,10 +346,15 @@ export default function NewManualPersonalizationRequestPage() {
         throw new Error('La sesion expiro. Inicia sesion de nuevo.');
       }
 
-      const designUrl = await uploadDesignFile(session.access_token);
+      const uploadedDesignUrl = await uploadDesignFile(session.access_token);
+      const designUrl = uploadedDesignUrl ?? existingDesignUrl ?? undefined;
+      const endpoint = isEditMode
+        ? `/personalizations/requests/${requestId}`
+        : '/personalizations/requests';
+      const method = isEditMode ? 'PATCH' : 'POST';
 
-      const response = await apiFetch('/personalizations/requests', {
-        method: 'POST',
+      const response = await apiFetch(endpoint, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
@@ -282,7 +368,7 @@ export default function NewManualPersonalizationRequestPage() {
           material: form.material,
           quality: form.quality.trim() || undefined,
           quantity,
-          customImageURL: designUrl ?? undefined,
+          customImageURL: designUrl,
           notes: form.notes.trim() || undefined,
         }),
       });
@@ -290,20 +376,26 @@ export default function NewManualPersonalizationRequestPage() {
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
         throw new Error(
-          getErrorMessage(payload, `No se pudo crear la solicitud (${response.status}).`),
+          getErrorMessage(
+            payload,
+            `No se pudo ${isEditMode ? 'actualizar' : 'crear'} la solicitud (${response.status}).`,
+          ),
         );
       }
 
-      const body = payload as ApiResponse<CreatedRequest>;
-      setCreatedRequest(body.data);
+      const savedRequest = extractApiData<CreatedRequest>(payload);
+      setCreatedRequest(savedRequest);
+      setExistingDesignUrl(designUrl ?? null);
       setDesignFile(null);
-      setForm(INITIAL_FORM);
+      if (!isEditMode) {
+        setForm(INITIAL_FORM);
+      }
     } catch (error) {
       console.error(error);
       setFormError(
         error instanceof Error
           ? error.message
-          : 'No se pudo crear la solicitud manual.',
+          : `No se pudo ${isEditMode ? 'actualizar' : 'crear'} la solicitud manual.`,
       );
     } finally {
       setSubmitting(false);
@@ -328,9 +420,11 @@ export default function NewManualPersonalizationRequestPage() {
           <CheckCircle2 className="h-10 w-10" />
         </div>
         <div>
-          <h1 className="text-4xl font-black text-primary">Solicitud creada</h1>
+          <h1 className="text-4xl font-black text-primary">
+            {isEditMode ? 'Solicitud actualizada' : 'Solicitud creada'}
+          </h1>
           <p className="mt-2 text-muted">
-            La solicitud manual quedo registrada con el codigo{' '}
+            La solicitud manual {isEditMode ? 'quedo actualizada' : 'quedo registrada'} con el codigo{' '}
             <span className="font-black text-primary">{createdRequest.configCode || createdRequest.id}</span>.
           </p>
         </div>
@@ -341,23 +435,26 @@ export default function NewManualPersonalizationRequestPage() {
           >
             Volver a personalizaciones
           </Link>
-          <button
-            type="button"
-            onClick={() => {
-              setCreatedRequest(null);
-              setSelectedProfile(null);
-              setSelectedProductId('');
-              setSelectedVariantId('');
+          {!isEditMode ? (
+            <button
+              type="button"
+              onClick={() => {
+                setCreatedRequest(null);
+                setSelectedProfile(null);
+                setSelectedProductId('');
+                setSelectedVariantId('');
+                setExistingDesignUrl(null);
                 setForm({
                   ...INITIAL_FORM,
                   line: lineOptions[0]?.code || '',
                   material: materialOptions[0]?.name || '',
                 });
-            }}
-            className="rounded-2xl border border-theme p-4 font-black uppercase tracking-widest text-primary"
-          >
-            Crear otra solicitud
-          </button>
+              }}
+              className="rounded-2xl border border-theme p-4 font-black uppercase tracking-widest text-primary"
+            >
+              Crear otra solicitud
+            </button>
+          ) : null}
         </div>
       </div>
     );
@@ -374,9 +471,13 @@ export default function NewManualPersonalizationRequestPage() {
           <ArrowLeft className="h-5 w-5 text-primary" />
         </button>
         <div>
-          <h1 className="text-3xl font-black text-primary">Nueva solicitud manual</h1>
+          <h1 className="text-3xl font-black text-primary">
+            {isEditMode ? 'Editar solicitud manual' : 'Nueva solicitud manual'}
+          </h1>
           <p className="text-sm font-medium text-muted">
-            Crea una solicitud de personalizacion para un cliente existente desde el dashboard.
+            {isEditMode
+              ? 'Actualiza la configuracion de la solicitud antes de continuar con la revision.'
+              : 'Crea una solicitud de personalizacion para un cliente existente desde el dashboard.'}
           </p>
         </div>
       </div>
@@ -556,7 +657,11 @@ export default function NewManualPersonalizationRequestPage() {
             <label className="flex cursor-pointer items-center justify-between rounded-2xl border border-dashed border-theme bg-base/40 px-4 py-3 text-sm font-medium text-primary transition-all hover:border-primary/40 hover:bg-primary/5">
               <span className="flex items-center gap-3">
                 <Upload className="h-4 w-4" />
-                {designFile ? designFile.name : 'Adjuntar diseno de referencia (opcional)'}
+                {designFile
+                  ? designFile.name
+                  : existingDesignUrl
+                    ? 'Diseno actual cargado'
+                    : 'Adjuntar diseno de referencia (opcional)'}
               </span>
               <span className="text-[10px] font-black uppercase tracking-widest text-muted">
                 PNG JPG WEBP
@@ -568,6 +673,16 @@ export default function NewManualPersonalizationRequestPage() {
                 onChange={(event) => setDesignFile(event.target.files?.[0] ?? null)}
               />
             </label>
+            {existingDesignUrl ? (
+              <a
+                href={existingDesignUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex text-xs font-bold text-primary underline-offset-4 hover:underline"
+              >
+                Ver diseno actual
+              </a>
+            ) : null}
 
             <textarea
               value={form.notes}
@@ -611,7 +726,9 @@ export default function NewManualPersonalizationRequestPage() {
           </div>
 
           <div className="rounded-2xl border border-theme bg-base/40 px-4 py-3 text-xs text-muted">
-            La solicitud se crea a nombre del cliente seleccionado y aparecera en el listado general para revision y aprobacion.
+            {isEditMode
+              ? 'Los cambios actualizan la solicitud existente y recalculan su configuracion comercial.'
+              : 'La solicitud se crea a nombre del cliente seleccionado y aparecera en el listado general para revision y aprobacion.'}
           </div>
 
           <button
@@ -622,12 +739,12 @@ export default function NewManualPersonalizationRequestPage() {
             {submitting ? (
               <span className="flex items-center justify-center gap-2">
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Creando...
+                {isEditMode ? 'Guardando...' : 'Creando...'}
               </span>
             ) : (
               <span className="flex items-center justify-center gap-2">
                 <Sparkles className="h-5 w-5" />
-                Crear solicitud
+                {isEditMode ? 'Guardar cambios' : 'Crear solicitud'}
               </span>
             )}
           </button>

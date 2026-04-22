@@ -21,6 +21,7 @@ type AuditEntity =
   | 'Auth'
   | 'B2BQuote'
   | 'FinancialTransaction'
+  | 'NonCommercialInventoryOutput'
   | 'Order'
   | 'OrderPayment'
   | 'PersonalizationRequest'
@@ -192,6 +193,9 @@ export class AuditInterceptor implements NestInterceptor {
     }
 
     if (root === 'inventory') {
+      if (child === 'non-commercial-outputs') {
+        return 'NonCommercialInventoryOutput';
+      }
       if (
         child === 'batch' ||
         child === 'batches' ||
@@ -282,6 +286,7 @@ export class AuditInterceptor implements NestInterceptor {
       B2BQuote: 'b2BQuote',
       FinancialTransaction: 'financialTransaction',
       ManagerApproval: 'managerApproval',
+      NonCommercialInventoryOutput: 'nonCommercialInventoryOutput',
       OpexCategory: 'opexCategory',
       Order: 'order',
       OrderPayment: 'orderPayment',

@@ -67,6 +67,19 @@ const comprasYEntradasItems: MenuLinkItem[] = [
   },
 ];
 
+const inventarioItems: MenuLinkItem[] = [
+  {
+    name: 'Inventario FIFO',
+    href: '/dashboard/logistica/inventario',
+    icon: Package,
+  },
+  {
+    name: 'Salidas no comerciales',
+    href: '/dashboard/logistica/inventario/salidas-no-comerciales',
+    icon: Package,
+  },
+];
+
 function isSubmenuItem(item: MenuItem): item is MenuSubmenuItem {
   return 'type' in item && item.type === 'submenu';
 }
@@ -106,7 +119,13 @@ const menuGroups = [
         icon: Database,
         items: comprasYEntradasItems,
       },
-      { name: 'Inventario FIFO', href: '/dashboard/logistica/inventario', icon: Package },
+      {
+        type: 'submenu',
+        key: 'inventario',
+        name: 'Inventario',
+        icon: Package,
+        items: inventarioItems,
+      },
     ],
   },
   {
@@ -151,7 +170,11 @@ export default function Sidebar({
   const canAccessPqrs = canAccessDashboardPath(role, '/dashboard/pqrs');
 
   const isItemActive = (href: string) => {
-    if (href === '/dashboard' || href === '/dashboard/finanzas') {
+    if (
+      href === '/dashboard' ||
+      href === '/dashboard/finanzas' ||
+      href === '/dashboard/logistica/inventario'
+    ) {
       return pathname === href;
     }
     return pathname === href || pathname.startsWith(`${href}/`);

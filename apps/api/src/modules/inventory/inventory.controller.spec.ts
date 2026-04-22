@@ -3,7 +3,9 @@ import { Role } from '../../generated/client/client';
 import { InventoryController } from './inventory.controller';
 
 describe('InventoryController suppliers access', () => {
-  const inventoryService = {};
+  const inventoryService = {
+    createNonCommercialOutput: jest.fn(),
+  };
   const financeService = {
     findAllSuppliers: jest.fn(),
     createSupplier: jest.fn(),
@@ -62,6 +64,33 @@ describe('InventoryController suppliers access', () => {
       name: 'Proveedor Uno',
       nit: '900123456-7',
       contact: 'Ana',
+    });
+  });
+
+  it('forwards non-commercial output creation for admin users', async () => {
+    rolesService.getEffectiveRole.mockResolvedValue({
+      effectiveRole: Role.ADMIN,
+    });
+    inventoryService.createNonCommercialOutput.mockResolvedValue({
+      id: 'output-1',
+    });
+
+    await controller.createNonCommercialOutput(
+      {
+        variantId: 'variant-1',
+        quantity: 2,
+        reason: 'GIFT',
+        notes: 'Salida de cortesia',
+      },
+      { user: { id: 'admin-1' } } as never,
+    );
+
+    expect(inventoryService.createNonCommercialOutput).toHaveBeenCalledWith({
+      variantId: 'variant-1',
+      quantity: 2,
+      reason: 'GIFT',
+      notes: 'Salida de cortesia',
+      userId: 'admin-1',
     });
   });
 });

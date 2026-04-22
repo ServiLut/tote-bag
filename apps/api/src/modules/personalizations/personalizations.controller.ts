@@ -79,6 +79,14 @@ export class PersonalizationsController {
     return this.personalizationsService.findRequests(status);
   }
 
+  @Get('requests/:id')
+  @RequirePermissions({ resource: 'personalizations', action: 'manage' })
+  async findRequestById(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ) {
+    return this.personalizationsService.findRequestById(id);
+  }
+
   @Post('requests')
   async createRequest(
     @Req() req: RequestWithUser,
@@ -122,6 +130,14 @@ export class PersonalizationsController {
     }
 
     return this.personalizationsService.updateRequest(id, data, req.user.id);
+  }
+
+  @Delete('requests/:id')
+  @RequirePermissions({ resource: 'personalizations', action: 'manage' })
+  async removeRequest(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ) {
+    return this.personalizationsService.removeRequest(id);
   }
 
   @Patch('requests/:id/approve')

@@ -6,6 +6,10 @@ const entityAliases: Record<string, string[]> = {
   B2BQuote: ['B2BQuote', 'b2b'],
   FinancialTransaction: ['FinancialTransaction', 'finance'],
   ManagerApproval: ['ManagerApproval', 'manager-approvals'],
+  NonCommercialInventoryOutput: [
+    'NonCommercialInventoryOutput',
+    'non-commercial-outputs',
+  ],
   Order: ['Order', 'orders'],
   OrderPayment: ['OrderPayment'],
   PayrollBillingStatement: ['PayrollBillingStatement'],

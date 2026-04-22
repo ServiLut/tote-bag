@@ -2,6 +2,10 @@ import { Injectable } from '@nestjs/common';
 import PDFDocument from 'pdfkit';
 import { Response } from 'express';
 import {
+  decimalToNumber,
+  DecimalInput,
+} from '../../common/utils/sales-tax.util';
+import {
   PayrollBillingStatement,
   PayrollShift,
 } from '../../generated/client/client';
@@ -139,12 +143,12 @@ export class PayrollPdfService {
     doc.end();
   }
 
-  private formatCurrency(amount: number) {
+  private formatCurrency(amount: DecimalInput) {
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
       currency: 'COP',
       maximumFractionDigits: 0,
-    }).format(amount);
+    }).format(decimalToNumber(amount));
   }
 
   private formatDate(date: Date) {

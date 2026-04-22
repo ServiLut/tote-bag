@@ -208,21 +208,24 @@ export class UsersService {
       );
     }
 
+    const email = authUser.email;
+    const userId = authUser.id;
+
     try {
       const createdProfile = await this.prisma.$transaction(
         async (tx): Promise<CreatedCustomerProfile> => {
           await tx.user.create({
             data: {
-              id: authUser.id,
-              email: authUser.email,
+              id: userId,
+              email: email,
               role: Role.CUSTOMER,
             },
           });
 
           return tx.profile.create({
             data: {
-              email: authUser.email,
-              userId: authUser.id,
+              email: email,
+              userId: userId,
               firstName: normalizedFirstName,
               lastName: normalizedLastName,
               phone: normalizedPhone,
@@ -249,7 +252,7 @@ export class UsersService {
                 select: { orders: true },
               },
             },
-          });
+          }) as unknown as CreatedCustomerProfile;
         },
       );
 

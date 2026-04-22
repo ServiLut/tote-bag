@@ -39,7 +39,7 @@ type FinancialReportOrder = {
   id: string;
   orderNumber: number;
   customerEmail: string | null;
-  totalAmount: number;
+  totalAmount: Decimal;
   netAmount: DecimalInput;
   taxTotal: DecimalInput;
   createdAt: Date;
@@ -88,7 +88,7 @@ type OrderProfitabilityOrderRecord = {
   customerEmail: string;
   createdAt: Date;
   status: OrderStatus;
-  totalAmount: number;
+  totalAmount: Decimal;
   netAmount: DecimalInput;
   taxTotal: DecimalInput;
   amountPaid: DecimalInput;
@@ -99,8 +99,8 @@ type OrderProfitabilityOrderRecord = {
     quantity: number;
     pricingJson: Prisma.JsonValue | null;
     variant: {
-      costPrice: number | null;
-      totalCost: number | null;
+      costPrice: Decimal | null;
+      totalCost: Decimal | null;
       taxRate: DecimalInput;
     } | null;
   }>;
@@ -1615,8 +1615,10 @@ export class FinanceService {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', (error: Error) => reject(error));
 
-      const drawMoney = (amount: number) =>
-        this.formatCurrency(this.sanitizeCurrencyAmount(amount));
+      const drawMoney = (amount: DecimalInput) =>
+        this.formatCurrency(
+          this.sanitizeCurrencyAmount(decimalToNumber(amount)),
+        );
       const drawLine = (y: number, color = '#E5E7EB') => {
         doc
           .moveTo(42, y)

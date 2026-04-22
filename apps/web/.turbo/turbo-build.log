@@ -2,77 +2,12 @@
 > web@0.1.0 build C:\Users\user\Desktop\deybis\tote-bag\apps\web
 > next build
 
-▲ Next.js 16.1.6 (Turbopack)
+▲ Next.js 16.2.3 (Turbopack)
 - Environments: .env
 
   Creating an optimized production build ...
-✓ Compiled successfully in 10.6s
+✓ Compiled successfully in 13.3s
   Running TypeScript ...
-  Collecting page data using 7 workers ...
-  Generating static pages using 7 workers (0/48) ...
-🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
-🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
-  Generating static pages using 7 workers (12/48) 
-  Generating static pages using 7 workers (24/48) 
-  Generating static pages using 7 workers (36/48) 
-✓ Generating static pages using 7 workers (48/48) in 1043.6ms
-  Finalizing page optimization ...
-
-Route (app)
-┌ ○ /
-├ ○ /_not-found
-├ ○ /about
-├ ƒ /api/proxy/[...path]
-├ ƒ /auth/signout
-├ ○ /b2b
-├ ○ /beneficios
-├ ○ /catalog
-├ ƒ /catalog/[slug]
-├ ○ /checkout
-├ ○ /checkout/confirmacion
-├ ○ /corporativo
-├ ƒ /dashboard
-├ ƒ /dashboard/audit
-├ ƒ /dashboard/b2b
-├ ƒ /dashboard/compras/recepcion
-├ ƒ /dashboard/customers
-├ ƒ /dashboard/finanzas
-├ ƒ /dashboard/finanzas/cash-flow
-├ ƒ /dashboard/finanzas/nomina
-├ ƒ /dashboard/finanzas/opex
-├ ƒ /dashboard/logistica/envios
-├ ƒ /dashboard/logistica/insumos
-├ ƒ /dashboard/logistica/inventario
-├ ƒ /dashboard/logistica/proveedores
-├ ƒ /dashboard/orders
-├ ƒ /dashboard/orders/new
-├ ƒ /dashboard/personalizaciones
-├ ƒ /dashboard/pqrs
-├ ƒ /dashboard/products
-├ ƒ /dashboard/products/[id]/edit
-├ ƒ /dashboard/products/new
-├ ƒ /dashboard/reportes
-├ ƒ /dashboard/settings
-├ ƒ /dashboard/settings/users
-├ ƒ /dashboard/strategy/pricing
-├ ○ /envios
-├ ○ /forgot-password
-├ ○ /legal/cookies
-├ ○ /legal/data-processing
-├ ○ /legal/privacy
-├ ƒ /linea/[slug]
-├ ○ /lineas
-├ ○ /login
-├ ƒ /personaliza
-├ ƒ /personaliza/configurador
-├ ○ /pqrs
-├ ○ /profile
-├ ○ /register
-└ ○ /reset-password
-
-
-ƒ Proxy (Middleware)
-
-○  (Static)   prerendered as static content
-ƒ  (Dynamic)  server-rendered on demand
-
+Debug Failure. Expected C:/Users/user/Desktop/deybis/tote-bag/apps/web/.next/cache/.tsbuildinfo === C:\Users\user\Desktop\deybis\tote-bag\apps\web\.next\cache\.tsbuildinfo. 
+Next.js build worker exited with code: 1 and signal: null
+ ELIFECYCLE  Command failed with exit code 1.

@@ -432,9 +432,9 @@ export class CatalogService {
   }
 
   private calculateVariantFinancialBreakdown(variant: {
-    salePrice: number | null;
-    costPrice?: number | null;
-    totalCost?: number | null;
+    salePrice: DecimalInput;
+    costPrice?: DecimalInput;
+    totalCost?: DecimalInput;
     taxRate?: DecimalInput;
   }) {
     if (variant.salePrice === null || variant.salePrice === undefined) {
@@ -472,7 +472,7 @@ export class CatalogService {
     }
 
     return {
-      price: variant.salePrice,
+      price: decimalToNumber(variant.salePrice),
       netSalePrice: decimalToNumber(netPrice),
       netPrice: decimalToNumber(netPrice),
       taxAmount: decimalToNumber(taxAmount),
@@ -500,8 +500,8 @@ export class CatalogService {
     size: string | null;
     color: string;
     imageUrl: string;
-    salePrice: number | null;
-    comparePrice: number | null;
+    salePrice: DecimalInput;
+    comparePrice: DecimalInput;
     stock: number;
     stockCommitted: number;
     reorderPoint: number | null;
@@ -515,8 +515,8 @@ export class CatalogService {
       size: variant.size,
       color: variant.color,
       imageUrl: variant.imageUrl,
-      salePrice: variant.salePrice,
-      comparePrice: variant.comparePrice,
+      salePrice: decimalToNumber(variant.salePrice),
+      comparePrice: decimalToNumber(variant.comparePrice),
       stock: stockAvailable,
       stockPhysical: variant.stock,
       stockCommitted: variant.stockCommitted,
@@ -544,8 +544,12 @@ export class CatalogService {
       name: product.name,
       slug: product.slug,
       description: product.description,
-      basePrice: referenceVariant?.salePrice ?? product.basePrice,
-      comparePrice: referenceVariant?.comparePrice ?? product.comparePrice,
+      basePrice: decimalToNumber(
+        referenceVariant?.salePrice ?? product.basePrice,
+      ),
+      comparePrice: decimalToNumber(
+        referenceVariant?.comparePrice ?? product.comparePrice,
+      ),
       status: product.status,
       collectionId: product.collectionId,
       collection: product.collection,
@@ -975,15 +979,15 @@ export class CatalogService {
   }
 
   private getReferencePrice(product: {
-    basePrice: number;
-    variants: Array<{ salePrice: number | null; isActive: boolean }>;
+    basePrice: DecimalInput;
+    variants: Array<{ salePrice: DecimalInput; isActive: boolean }>;
   }) {
     const activeVariantPrice = product.variants
       .filter((variant) => variant.isActive && variant.salePrice !== null)
-      .map((variant) => variant.salePrice as number)
+      .map((variant) => decimalToNumber(variant.salePrice))
       .sort((left, right) => left - right)[0];
 
-    return activeVariantPrice ?? product.basePrice;
+    return activeVariantPrice ?? decimalToNumber(product.basePrice);
   }
 
   private buildLegacySizeFilter(values: string[]): Prisma.ProductWhereInput {
@@ -1801,7 +1805,9 @@ export class CatalogService {
       id: product.id,
       slug: product.slug,
       name: product.name,
-      basePrice: product.variants[0]?.salePrice ?? product.basePrice,
+      basePrice: decimalToNumber(
+        product.variants[0]?.salePrice ?? product.basePrice,
+      ),
       collection: product.collection,
       images: product.images,
     }));

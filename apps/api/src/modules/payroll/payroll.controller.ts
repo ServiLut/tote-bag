@@ -169,6 +169,15 @@ export class PayrollController {
     return this.payrollService.updateWorker(id, dto, req.user!.id);
   }
 
+  @Delete('workers/:id')
+  async deleteWorker(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: RequestWithUser,
+  ) {
+    await this.ensureAdmin(req.user?.id);
+    return this.payrollService.deleteWorker(id);
+  }
+
   @Delete('shifts/:id')
   async deleteShift(
     @Param('id', ParseIntPipe) id: number,

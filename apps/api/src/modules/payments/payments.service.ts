@@ -7,6 +7,10 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { createHash } from 'crypto';
 import Decimal from 'decimal.js';
+import {
+  decimalToNumber,
+  DecimalInput,
+} from '../../common/utils/sales-tax.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   OrderStatus,
@@ -693,8 +697,8 @@ export class PaymentsService {
     ].join(':');
   }
 
-  private getOrderAmountInCents(totalAmount: number) {
-    return Math.round(totalAmount * 100);
+  private getOrderAmountInCents(totalAmount: DecimalInput) {
+    return Math.round(decimalToNumber(totalAmount) * 100);
   }
 
   private buildWompiPaymentProofUrl(transactionId: string) {
@@ -703,7 +707,7 @@ export class PaymentsService {
 
   private assertWompiAmountMatchesOrder(
     transactionAmountInCents: number,
-    order: { id: string; totalAmount: number },
+    order: { id: string; totalAmount: DecimalInput },
   ) {
     const expectedAmountInCents = this.getOrderAmountInCents(order.totalAmount);
 
@@ -905,7 +909,7 @@ export class PaymentsService {
       return { error: 'Orden no encontrada' };
     }
 
-    const amountInCents = Math.round(order.totalAmount * 100);
+    const amountInCents = this.getOrderAmountInCents(order.totalAmount);
     const currency = 'COP';
     const integritySecret = this.configService.get<string>(
       'WOMPI_INTEGRITY_SECRET',

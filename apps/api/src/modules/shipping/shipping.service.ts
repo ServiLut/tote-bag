@@ -41,16 +41,16 @@ type ShipmentListItem = {
   orderId: string;
   trackingNumber: string | null;
   status: ShipmentStatus;
-  weight: number | null;
+  weight: Decimal | null;
   dimensions: string | null;
   provider: { id: string; name: string } | null;
   order: {
     orderNumber: number;
     customerEmail: string;
-    totalAmount: number;
+    totalAmount: Decimal;
     createdAt: Date;
     shippingAddress?: unknown;
-    balanceDue: number;
+    balanceDue: Decimal;
     saleLegalRequirement: SaleLegalRequirement;
     saleLegalStatus: SaleLegalStatus;
     profile?: {
@@ -916,7 +916,7 @@ export class ShippingService {
             totalAmount: shipment.order.totalAmount,
             createdAt: shipment.order.createdAt,
             shippingAddress: shipment.order.shippingAddress,
-            balanceDue: decimalToNumber(shipment.order.balanceDue),
+            balanceDue: shipment.order.balanceDue,
             saleLegalRequirement: shipment.order.saleLegalRequirement,
             saleLegalStatus: shipment.order.saleLegalStatus,
             profile: shipment.order.profile

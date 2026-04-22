@@ -18,6 +18,10 @@ import { CreatePayrollWorkerDto } from './dto/create-payroll-worker.dto';
 import { UpdatePayrollStatementStatusDto } from './dto/update-payroll-statement-status.dto';
 import { UpdatePayrollShiftDto } from './dto/update-payroll-shift.dto';
 import { UpdatePayrollWorkerDto } from './dto/update-payroll-worker.dto';
+import {
+  decimalToNumber,
+  DecimalInput,
+} from '../../common/utils/sales-tax.util';
 
 type PayrollShiftFiles = {
   entryPhoto?: Express.Multer.File[];
@@ -195,6 +199,35 @@ export class PayrollService {
     });
   }
 
+  async deleteWorker(id: number) {
+    const existingWorker = await this.prisma.payrollWorker.findUnique({
+      where: { id },
+    });
+
+    if (!existingWorker) {
+      throw new NotFoundException('Trabajador no encontrado');
+    }
+
+    const [shiftCount, statementCount] = await Promise.all([
+      this.prisma.payrollShift.count({
+        where: { workerId: id },
+      }),
+      this.prisma.payrollBillingStatement.count({
+        where: { workerId: id },
+      }),
+    ]);
+
+    if (shiftCount > 0 || statementCount > 0) {
+      throw new BadRequestException(
+        'No se puede eliminar el trabajador porque tiene turnos o cuentas asociados',
+      );
+    }
+
+    return this.prisma.payrollWorker.delete({
+      where: { id },
+    });
+  }
+
   async createShift(
     dto: CreatePayrollShiftDto,
     files: PayrollShiftFiles = {},
@@ -287,7 +320,8 @@ export class PayrollService {
       endTime: dto.endTime ?? existingShift.endTime,
       breakMinutes: dto.breakMinutes ?? existingShift.breakMinutes,
       notes: dto.notes ?? existingShift.notes,
-      totalAmount: dto.totalAmount ?? existingShift.totalAmount,
+      totalAmount:
+        dto.totalAmount ?? decimalToNumber(existingShift.totalAmount),
     };
 
     const shiftPayload = await this.resolveShiftPayload(mergedDto);
@@ -411,7 +445,7 @@ export class PayrollService {
 
     const collaborator = collaboratorNames[0];
     const totalAmount = shifts.reduce(
-      (sum, shift) => sum + shift.totalAmount,
+      (sum, shift) => sum + decimalToNumber(shift.totalAmount),
       0,
     );
     const periodStart = shifts[0].workDate;
@@ -579,12 +613,12 @@ export class PayrollService {
       return {
         workerId: worker.id,
         collaborator: worker.displayName,
-        hourlyRateApplied: worker.hourlyRate,
+        hourlyRateApplied: decimalToNumber(worker.hourlyRate),
         totalAmount: this.calculateShiftAmount({
           startTime: dto.startTime,
           endTime: dto.endTime,
           breakMinutes: dto.breakMinutes ?? 0,
-          hourlyRate: worker.hourlyRate,
+          hourlyRate: decimalToNumber(worker.hourlyRate),
         }),
       };
     }

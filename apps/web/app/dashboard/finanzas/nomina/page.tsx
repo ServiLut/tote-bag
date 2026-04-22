@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import Image from 'next/image';
-import { Camera, Download, Edit3, Image as ImageIcon, Loader2, Plus, Trash2, UploadCloud, Users, Wallet, X } from 'lucide-react';
-import { Button, Input, Tabs, TabsContent, TabsList, TabsTrigger } from '@tote-bag/ui';
+import { Camera, Download, Edit3, Image as ImageIcon, Loader2, MoreHorizontal, Plus, Trash2, UploadCloud, Users, Wallet, X } from 'lucide-react';
+import { Button, Input, Popover, PopoverContent, PopoverTrigger, Tabs, TabsContent, TabsList, TabsTrigger } from '@tote-bag/ui';
 import { createClient } from '@/utils/supabase/client';
 import { apiFetch } from '@/utils/api';
 import { notifyFinanceDataChanged } from '@/lib/finance-events';
@@ -137,6 +137,7 @@ export default function PayrollPage() {
   const [selectedShiftPhotos, setSelectedShiftPhotos] = useState<PayrollShift | null>(null);
   const [selectedHistory, setSelectedHistory] = useState<WorkerHistory | null>(null);
   const [selectedStatement, setSelectedStatement] = useState<(PayrollStatement & { shifts?: PayrollShift[] }) | null>(null);
+  const [activeActionMenu, setActiveActionMenu] = useState<string | null>(null);
   const [workerForConsolidation, setWorkerForConsolidation] = useState('');
   const [entryPhoto, setEntryPhoto] = useState<File | null>(null);
   const [exitPhoto, setExitPhoto] = useState<File | null>(null);
@@ -350,6 +351,10 @@ export default function PayrollPage() {
   };
 
   const handleDeleteShift = async (shiftId: number) => {
+    if (!window.confirm('Este turno se eliminara permanentemente. Esta accion no se puede deshacer.')) {
+      return;
+    }
+    setActiveActionMenu(null);
     const headers = await getAuthHeaders();
     const response = await apiFetch(`/payroll/shifts/${shiftId}`, { method: 'DELETE', headers });
     if (response.ok) {
@@ -357,6 +362,21 @@ export default function PayrollPage() {
       showSuccess('Turno eliminado.');
     } else {
       showError(await getErrorMessage(response, 'No fue posible eliminar el turno.'));
+    }
+  };
+
+  const handleDeleteWorker = async (workerId: number) => {
+    if (!window.confirm('Este trabajador se eliminara permanentemente. Esta accion no se puede deshacer.')) {
+      return;
+    }
+    setActiveActionMenu(null);
+    const headers = await getAuthHeaders();
+    const response = await apiFetch(`/payroll/workers/${workerId}`, { method: 'DELETE', headers });
+    if (response.ok) {
+      await fetchPayrollData();
+      showSuccess('Trabajador eliminado.');
+    } else {
+      showError(await getErrorMessage(response, 'No fue posible eliminar el trabajador.'));
     }
   };
 
@@ -496,7 +516,45 @@ export default function PayrollPage() {
                   <td className="px-4 py-3 text-sm text-muted">{worker.workerType}</td>
                   <td className="px-4 py-3 font-bold text-primary">{formatCurrency(worker.hourlyRate)}</td>
                   <td className="px-4 py-3 text-sm text-muted">{worker.isActive ? 'Activo' : 'Inactivo'}</td>
-                  <td className="px-4 py-3"><div className="flex justify-end"><button type="button" onClick={() => openWorkerModal(worker)} className="rounded-lg border border-theme p-2 text-primary transition-colors hover:bg-primary hover:text-base-color"><Edit3 className="h-4 w-4" /></button></div></td>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end">
+                      <Popover
+                        open={activeActionMenu === `worker-${worker.id}`}
+                        onOpenChange={(open) => setActiveActionMenu(open ? `worker-${worker.id}` : null)}
+                      >
+                        <PopoverTrigger>
+                          <button
+                            type="button"
+                            className="inline-flex items-center rounded-xl border border-theme bg-base p-2 text-primary transition-colors hover:bg-primary/5"
+                            aria-label={`Acciones para trabajador ${worker.displayName}`}
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent side="bottom" align="end" className="w-56 overflow-hidden rounded-2xl border border-theme bg-surface shadow-xl">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveActionMenu(null);
+                              openWorkerModal(worker);
+                            }}
+                            className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-primary transition-colors hover:bg-primary/5"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleDeleteWorker(worker.id)}
+                            className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-rose-700 transition-colors hover:bg-rose-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Eliminar
+                          </button>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </Table>
@@ -523,7 +581,59 @@ export default function PayrollPage() {
                   <td className="px-4 py-3 text-sm text-muted">{formatCurrency(shift.hourlyRateApplied)}</td>
                   <td className="px-4 py-3 font-bold text-primary">{formatCurrency(shift.totalAmount)}</td>
                   <td className="px-4 py-3 text-sm text-muted">{shift.status}</td>
-                  <td className="px-4 py-3"><div className="flex justify-end gap-2">{shift.entryPhotoUrl || shift.exitPhotoUrl ? <button type="button" onClick={() => openShiftPhotos(shift)} className="rounded-lg border border-theme p-2 text-primary transition-colors hover:bg-primary hover:text-base-color" title="Ver fotos del turno"><ImageIcon className="h-4 w-4" /></button> : null}<button type="button" disabled={shift.status !== 'RECORDED'} onClick={() => openShiftModal(shift)} className="rounded-lg border border-theme p-2 text-primary transition-colors hover:bg-primary hover:text-base-color disabled:opacity-40"><Edit3 className="h-4 w-4" /></button><button type="button" disabled={shift.status !== 'RECORDED'} onClick={() => void handleDeleteShift(shift.id)} className="rounded-lg border border-theme p-2 text-rose-600 transition-colors hover:bg-rose-600 hover:text-white disabled:opacity-40"><Trash2 className="h-4 w-4" /></button></div></td>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end">
+                      <Popover
+                        open={activeActionMenu === `shift-${shift.id}`}
+                        onOpenChange={(open) => setActiveActionMenu(open ? `shift-${shift.id}` : null)}
+                      >
+                        <PopoverTrigger>
+                          <button
+                            type="button"
+                            className="inline-flex items-center rounded-xl border border-theme bg-base p-2 text-primary transition-colors hover:bg-primary/5"
+                            aria-label={`Acciones para turno ${shift.id}`}
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent side="bottom" align="end" className="w-56 overflow-hidden rounded-2xl border border-theme bg-surface shadow-xl">
+                          <button
+                            type="button"
+                            disabled={!shift.entryPhotoUrl && !shift.exitPhotoUrl}
+                            onClick={() => {
+                              setActiveActionMenu(null);
+                              openShiftPhotos(shift);
+                            }}
+                            className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-primary transition-colors hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <ImageIcon className="h-4 w-4" />
+                            {!shift.entryPhotoUrl && !shift.exitPhotoUrl ? 'Sin fotos registradas' : 'Ver fotos'}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={shift.status !== 'RECORDED'}
+                            onClick={() => {
+                              setActiveActionMenu(null);
+                              openShiftModal(shift);
+                            }}
+                            className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-primary transition-colors hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            disabled={shift.status !== 'RECORDED'}
+                            onClick={() => void handleDeleteShift(shift.id)}
+                            className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-rose-700 transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Eliminar
+                          </button>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </Table>
@@ -576,7 +686,7 @@ export default function PayrollPage() {
 
 function Table({ loading, headers, children, emptyMessage }: { loading: boolean; headers: string[]; children: ReactNode; emptyMessage: string }) {
   const hasRows = Array.isArray(children) ? children.length > 0 : !!children;
-  return <div className="overflow-x-auto rounded-2xl border border-theme"><table className="w-full text-left"><thead className="bg-base/20 text-[10px] font-black uppercase tracking-widest text-muted/70"><tr>{headers.map((header) => <th key={header} className="px-4 py-3">{header}</th>)}</tr></thead><tbody className="divide-y divide-theme">{loading ? <tr><td colSpan={headers.length} className="px-6 py-12 text-center"><Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" /></td></tr> : hasRows ? children : <tr><td colSpan={headers.length} className="px-6 py-12 text-center text-sm italic text-muted">{emptyMessage}</td></tr>}</tbody></table></div>;
+  return <div className="overflow-x-auto rounded-2xl border border-theme"><table className="w-full table-fixed text-left"><thead className="bg-base/20 text-[10px] font-black uppercase tracking-widest text-muted/70"><tr>{headers.map((header, index) => <th key={header} className={`px-4 py-3 ${index === headers.length - 1 ? 'w-24 text-right' : ''}`}>{header}</th>)}</tr></thead><tbody className="divide-y divide-theme">{loading ? <tr><td colSpan={headers.length} className="px-6 py-12 text-center"><Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" /></td></tr> : hasRows ? children : <tr><td colSpan={headers.length} className="px-6 py-12 text-center text-sm italic text-muted">{emptyMessage}</td></tr>}</tbody></table></div>;
 }
 
 function Modal({ title, onClose, children, maxWidthClass = 'max-w-2xl' }: { title: string; onClose: () => void; children: ReactNode; maxWidthClass?: string }) {

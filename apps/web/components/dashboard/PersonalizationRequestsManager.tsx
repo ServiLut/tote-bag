@@ -20,7 +20,11 @@ import {
   MapPin,
   Palette,
   ArrowRight,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@tote-bag/ui';
 import { ApiResponse } from '@/types/api';
 import { cn } from '@/utils/cn';
 import { useDashboardAuth } from '@/components/dashboard/DashboardAuthContext';
@@ -61,6 +65,10 @@ type NormalizedPersonalizationRequest = PersonalizationRequest & {
 };
 
 const REQUEST_ENDPOINTS = ['/personalizations/requests', '/personalization-requests'];
+const REQUEST_MUTATION_ENDPOINTS = [
+  (id: string) => `/personalizations/requests/${id}`,
+  (id: string) => `/personalization-requests/${id}`,
+];
 const APPROVE_ENDPOINTS = [
   (id: string) => `/personalizations/requests/${id}/approve`,
   (id: string) => `/personalizations/${id}/approve`,
@@ -233,6 +241,8 @@ export default function PersonalizationRequestsManager() {
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [activeActionMenu, setActiveActionMenu] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
@@ -344,6 +354,7 @@ export default function PersonalizationRequestsManager() {
 
   const handleApprove = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    setActiveActionMenu(null);
     setProcessingId(id);
 
     try {
@@ -464,6 +475,80 @@ export default function PersonalizationRequestsManager() {
     }));
   };
 
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (isReadOnly) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      'Esta solicitud se eliminara permanentemente. Esta accion no se puede deshacer.',
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setActiveActionMenu(null);
+    setDeletingId(id);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token ?? accessToken;
+      if (!token) {
+        alert('Tu sesiÃ³n expirÃ³. Inicia sesiÃ³n de nuevo.');
+        return;
+      }
+
+      let response: Response | null = null;
+      for (const buildEndpoint of REQUEST_MUTATION_ENDPOINTS) {
+        response = await apiFetch(buildEndpoint(id), {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.status !== 404) break;
+      }
+
+      if (!response) {
+        throw new Error('No se pudo resolver el endpoint de eliminaciÃ³n.');
+      }
+
+      if (response.status === 401 || response.status === 403) {
+        alert('No tienes permisos para eliminar esta solicitud.');
+        return;
+      }
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => null);
+        const errorMessage =
+          errorBody && typeof errorBody === 'object'
+            ? ('message' in errorBody
+                ? Array.isArray(errorBody.message)
+                  ? errorBody.message.join(', ')
+                  : String(errorBody.message)
+                : 'error' in errorBody
+                  ? String(errorBody.error)
+                  : null)
+            : null;
+        throw new Error(errorMessage || `Failed to delete (${response.status})`);
+      }
+
+      setRequests((prev) => prev.filter((request) => request.id !== id));
+      setExpandedRowId((current) => (current === id ? null : current));
+      setReceiptFiles((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    } catch (error) {
+      console.error('Error deleting personalization request:', error);
+      alert(error instanceof Error ? error.message : 'Error eliminando la solicitud');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   if (loading) {
     return <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-muted" /></div>;
   }
@@ -548,6 +633,9 @@ export default function PersonalizationRequestsManager() {
               ) : (
                 paginatedRequests.map((request) => {
                   const isApproved = request.status.toUpperCase().includes('APPROVED') || request.status.toUpperCase().includes('READY');
+                  const canEditOrDelete = !isApproved && !isReadOnly;
+                  const isDeleting = deletingId === request.id;
+                  const isApproving = processingId === request.id;
                   return (
                     <Fragment key={request.id}>
                       <tr
@@ -583,6 +671,47 @@ export default function PersonalizationRequestsManager() {
                         <td className="px-6 py-4 text-right">
                           {isApproved ? (
                             <div className="flex flex-col items-end gap-2">
+                              <div className="flex justify-end">
+                                <Popover
+                                  open={activeActionMenu === request.id}
+                                  onOpenChange={(open) =>
+                                    setActiveActionMenu(open ? request.id : null)
+                                  }
+                                >
+                                  <PopoverTrigger>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="inline-flex items-center rounded-xl border border-theme bg-base p-2 text-primary transition-colors hover:bg-primary/5"
+                                      aria-label={`Acciones para solicitud ${request.configuration?.configCode || request.id.slice(0, 8)}`}
+                                    >
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </button>
+                                  </PopoverTrigger>
+                                  <PopoverContent
+                                    side="bottom"
+                                    align="end"
+                                    className="w-56 overflow-hidden rounded-2xl border border-theme bg-surface shadow-xl"
+                                  >
+                                    <button
+                                      type="button"
+                                      disabled
+                                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-primary opacity-50"
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                      Editar
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled
+                                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-rose-700 opacity-50"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                      Eliminar
+                                    </button>
+                                  </PopoverContent>
+                                </Popover>
+                              </div>
                               <div className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-emerald-700">
                                 <CheckCircle className="h-4 w-4" />
                                 Pedido creado
@@ -590,38 +719,92 @@ export default function PersonalizationRequestsManager() {
                             </div>
                           ) : (
                             <div className="flex flex-col items-end gap-2">
+                              <div className="flex justify-end">
+                                <Popover
+                                  open={activeActionMenu === request.id}
+                                  onOpenChange={(open) =>
+                                    setActiveActionMenu(open ? request.id : null)
+                                  }
+                                >
+                                  <PopoverTrigger>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="inline-flex items-center rounded-xl border border-theme bg-base p-2 text-primary transition-colors hover:bg-primary/5"
+                                      aria-label={`Acciones para solicitud ${request.configuration?.configCode || request.id.slice(0, 8)}`}
+                                    >
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </button>
+                                  </PopoverTrigger>
+                                  <PopoverContent
+                                    side="bottom"
+                                    align="end"
+                                    className="w-56 overflow-hidden rounded-2xl border border-theme bg-surface shadow-xl"
+                                  >
+                                    <Link
+                                      href={`/dashboard/personalizaciones/nueva?editar=${request.id}`}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActiveActionMenu(null);
+                                      }}
+                                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-primary transition-colors hover:bg-primary/5"
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                      Editar
+                                    </Link>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => void handleDelete(request.id, e)}
+                                      disabled={!canEditOrDelete || isDeleting || !!processingId}
+                                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-rose-700 transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                      {isDeleting ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <Trash2 className="h-4 w-4" />
+                                      )}
+                                      Eliminar
+                                    </button>
+                                    <label
+                                      htmlFor={`receipt-${request.id}`}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className={cn(
+                                        'flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left text-sm font-bold text-primary transition-colors hover:bg-primary/5',
+                                        (!!processingId || isReadOnly || isDeleting) && 'cursor-not-allowed opacity-50',
+                                      )}
+                                    >
+                                      <FileText className="h-4 w-4" />
+                                      {receiptFiles[request.id] ? 'Cambiar comprobante' : 'Agregar comprobante'}
+                                    </label>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => handleApprove(request.id, e)}
+                                      disabled={!!processingId || isReadOnly || !receiptFiles[request.id] || isDeleting}
+                                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-primary transition-colors hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                      {isApproving ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <Sparkles className="h-4 w-4" />
+                                      )}
+                                      {isReadOnly ? 'Solo lectura' : 'Aprobar revisión'}
+                                    </button>
+                                  </PopoverContent>
+                                </Popover>
+                              </div>
                               <input
                                 id={`receipt-${request.id}`}
                                 type="file"
                                 accept="image/*,.pdf"
                                 className="hidden"
                                 onChange={(e) => handleReceiptChange(request.id, e)}
-                                disabled={!!processingId || isReadOnly}
+                                disabled={!!processingId || isReadOnly || isDeleting}
                               />
-                              <label
-                                htmlFor={`receipt-${request.id}`}
-                                onClick={(e) => e.stopPropagation()}
-                                className={cn(
-                                  'inline-flex cursor-pointer items-center gap-2 rounded-xl border border-theme bg-surface px-4 py-2 text-[10px] font-black uppercase tracking-widest text-primary transition-all hover:bg-base/60',
-                                  (!!processingId || isReadOnly) && 'cursor-not-allowed opacity-50',
-                                )}
-                              >
-                                <FileText className="h-4 w-4" />
-                                {receiptFiles[request.id] ? 'Comprobante listo' : 'Agregar comprobante'}
-                              </label>
                               {receiptFiles[request.id] ? (
                                 <span className="max-w-[220px] truncate text-[10px] font-bold text-muted" title={receiptFiles[request.id]?.name}>
                                   {receiptFiles[request.id]?.name}
                                 </span>
                               ) : null}
-                              <button
-                                onClick={(e) => handleApprove(request.id, e)}
-                                disabled={!!processingId || isReadOnly || !receiptFiles[request.id]}
-                                className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-[10px] font-black uppercase tracking-widest text-base-color shadow-lg shadow-primary/10 transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                {processingId === request.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                                {isReadOnly ? 'Solo lectura' : 'Aprobar revisión'}
-                              </button>
                             </div>
                           )}
                         </td>

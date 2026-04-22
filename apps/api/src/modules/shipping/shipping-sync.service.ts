@@ -17,7 +17,7 @@ type OrdersWithoutShipmentQueryResult = {
   id: string;
   orderNumber: number;
   customerEmail: string;
-  totalAmount: number;
+  totalAmount: Prisma.Decimal;
   balanceDue: Prisma.Decimal;
   createdAt: Date;
   city: string;
@@ -44,10 +44,10 @@ type PendingShipmentRecord = {
   order: {
     orderNumber: number;
     customerEmail: string;
-    totalAmount: number;
+    totalAmount: Prisma.Decimal;
     createdAt: Date;
     shippingAddress: NormalizedShippingAddress;
-    balanceDue: number;
+    balanceDue: Prisma.Decimal;
     saleLegalRequirement: SaleLegalRequirement;
     saleLegalStatus: SaleLegalStatus;
     profile: {
@@ -427,7 +427,7 @@ export class ShippingSyncService {
           orderNumber: order.orderNumber,
           customerEmail: order.customerEmail,
           totalAmount: order.totalAmount,
-          balanceDue: decimalToNumber(order.balanceDue),
+          balanceDue: order.balanceDue,
           createdAt: order.createdAt,
           shippingAddress,
           saleLegalRequirement: order.saleLegalRequirement,
