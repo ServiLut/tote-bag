@@ -650,7 +650,7 @@ export default function CustomersPage() {
       {showCreateCustomerModal ? (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-          onClick={closeCreateCustomerModal}
+          onClick={() => closeCreateCustomerModal()}
         >
           <div
             role="dialog"
@@ -671,7 +671,7 @@ export default function CustomersPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={closeCreateCustomerModal}
+                  onClick={() => closeCreateCustomerModal()}
                   disabled={createCustomerSubmitting}
                   className="rounded-full bg-base/80 p-2 text-muted transition-all hover:bg-base hover:text-primary disabled:opacity-50"
                 >
@@ -811,7 +811,7 @@ export default function CustomersPage() {
               <div className="flex flex-col-reverse gap-3 border-t border-theme bg-base/30 px-6 py-4 md:flex-row md:justify-end">
                 <button
                   type="button"
-                  onClick={closeCreateCustomerModal}
+                  onClick={() => closeCreateCustomerModal()}
                   disabled={createCustomerSubmitting}
                   className="inline-flex items-center justify-center rounded-xl border border-theme px-4 py-2 text-[10px] font-black uppercase tracking-widest text-primary transition-all hover:bg-base disabled:opacity-50"
                 >

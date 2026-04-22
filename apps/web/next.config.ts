@@ -4,7 +4,6 @@ import path from 'path';
 function getImageRemotePatterns(): NonNullable<NextConfig['images']>['remotePatterns'] {
   const hosts = new Set<string>();
   const configuredHosts = process.env.NEXT_IMAGE_REMOTE_HOSTS?.split(',') ?? [];
-  const hasExplicitHostAllowlist = configuredHosts.some((host) => host.trim());
 
   for (const host of configuredHosts) {
     const normalizedHost = host.trim();
