@@ -55,6 +55,11 @@ export default function ProductCard({
     referenceVariant.comparePrice
     ?? cheapestActiveVariant?.comparePrice
     ?? product.comparePrice;
+  const normalizedSalePrice = toFiniteNumber(variantSalePrice) ?? 0;
+  const normalizedComparePrice = toFiniteNumber(variantComparePrice);
+  const shouldShowComparePrice =
+    normalizedComparePrice !== null
+    && normalizedComparePrice > normalizedSalePrice;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -66,8 +71,10 @@ export default function ProductCard({
     addToCart(product, selectedVariant, 1);
   };
 
-  const discount = variantComparePrice && variantComparePrice > variantSalePrice
-    ? Math.round(((variantComparePrice - variantSalePrice) / variantComparePrice) * 100)
+  const discount = shouldShowComparePrice
+    ? Math.round(
+        ((normalizedComparePrice - normalizedSalePrice) / normalizedComparePrice) * 100,
+      )
     : 0;
 
   const allMainImages = product.images?.map(i => i.url) || [];
@@ -109,14 +116,14 @@ export default function ProductCard({
 
           <div className="flex items-center gap-2 text-sm">
             <span className="font-semibold text-primary">
-              {formatWholeCurrency(variantSalePrice)}
+              {formatWholeCurrency(normalizedSalePrice)}
             </span>
             <span className="text-[10px] font-bold uppercase tracking-wide text-muted">
               IVA incluido
             </span>
-            {variantComparePrice && (
+            {shouldShowComparePrice && (
               <span className="text-muted line-through text-xs">
-                {formatWholeCurrency(variantComparePrice)}
+                {formatWholeCurrency(normalizedComparePrice)}
               </span>
             )}
           </div>
@@ -159,4 +166,17 @@ function getVariantColorHex(colorName: string): string {
     'rojo': '#FF0000',
   };
   return map[colorName?.toLowerCase?.()] || '#cccccc';
+}
+
+function toFiniteNumber(value: unknown): number | null {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value === 'string' && value.trim()) {
+    const normalized = Number(value);
+    return Number.isFinite(normalized) ? normalized : null;
+  }
+
+  return null;
 }
