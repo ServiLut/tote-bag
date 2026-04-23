@@ -41,6 +41,7 @@ import { PermissionsGuard } from './common/guards/permissions.guard';
 import { RolesModule } from './modules/roles/roles.module';
 import { StorageModule } from './common/storage/storage.module';
 import { DebugRoleContextModule } from './common/context/debug-role-context.module';
+import { HealthController } from './health.controller';
 import envValidationSchema from './config/env.validation';
 import appConfig from './config/app.config';
 import authConfig from './config/auth.config';
@@ -121,7 +122,7 @@ import cacheConfig from './config/cache.config';
     PayrollModule,
     PurchasesModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, HealthController],
   providers: [
     AppService,
     {

@@ -1,16 +1,18 @@
 # 1. Base y Prune
 FROM node:22-alpine AS base
 WORKDIR /app
-RUN npm install turbo --global
+ARG TURBO_VERSION=2.8.1
+RUN npm install turbo@${TURBO_VERSION} --global
 COPY . .
 RUN turbo prune --scope=web --docker
 
 # 2. Instalar y Construir
 FROM node:22-alpine AS build
 WORKDIR /app
+ARG PNPM_VERSION=10.28.2
 
 # Enable corepack for pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
 
 # Copiamos lo necesario
 COPY --from=base /app/out/json/ .
@@ -53,10 +55,12 @@ ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 RUN apk add --no-cache libc6-compat
 
 # Copiamos standalone
-COPY --from=build /app/apps/web/public ./apps/web/public
-COPY --from=build /app/apps/web/.next/static ./apps/web/.next/static
-COPY --from=build /app/apps/web/.next/standalone ./
+COPY --from=build --chown=node:node /app/apps/web/public ./apps/web/public
+COPY --from=build --chown=node:node /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=build --chown=node:node /app/apps/web/.next/standalone ./
 
 EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD wget -q -O /dev/null http://127.0.0.1:3000/ || exit 1
+USER node
 
 CMD ["node", "apps/web/server.js"]

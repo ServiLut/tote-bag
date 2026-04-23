@@ -80,10 +80,11 @@ docker build \
 Reemplazar URLs por las de `staging`.
 
 ```bash
-curl -f https://TU_API_STAGING/health
-curl -f https://TU_API_STAGING/finance/tax-report
-curl -f https://TU_API_STAGING/finance/order-profitability
-curl -f https://TU_API_STAGING/finance/break-even-thermometer
+curl -f https://TU_API_STAGING/api/v1/health
+curl -f https://TU_API_STAGING/api/v1/ready
+curl -f https://TU_API_STAGING/api/v1/finance/tax-report
+curl -f https://TU_API_STAGING/api/v1/finance/order-profitability
+curl -f https://TU_API_STAGING/api/v1/finance/break-even-thermometer
 curl -f https://TU_WEB_STAGING
 ```
 

@@ -1751,9 +1751,9 @@ export class InventoryService {
     return this.serializeNonCommercialOutput(output);
   }
 
-  private serializeNonCommercialOutput<T extends Record<string, unknown> | null>(
-    output: T,
-  ): T {
+  private serializeNonCommercialOutput<
+    T extends Record<string, unknown> | null,
+  >(output: T): T {
     if (!output) {
       return output;
     }
