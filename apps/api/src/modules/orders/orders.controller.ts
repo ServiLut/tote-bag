@@ -5,10 +5,12 @@ import {
   Body,
   Param,
   Patch,
+  Delete,
   Query,
   Headers,
   Req,
   Res,
+  BadRequestException,
   ForbiddenException,
   UnauthorizedException,
   NotFoundException,
@@ -57,7 +59,41 @@ export class OrdersController {
       initialStatus: 'PENDIENTE_PAGO',
       manualDiscountType: undefined,
       manualDiscountValue: undefined,
+      paymentReceiptUrl: undefined,
     };
+  }
+
+  private validatePrivilegedOrderCreation(createOrderDto: CreateOrderDto) {
+    const normalizedInitialStatus = createOrderDto.initialStatus?.trim();
+    const normalizedPaymentReceiptUrl =
+      createOrderDto.paymentReceiptUrl?.trim() || undefined;
+
+    if (
+      normalizedInitialStatus &&
+      !['PENDIENTE_PAGO', 'PAGADA'].includes(normalizedInitialStatus)
+    ) {
+      throw new BadRequestException(
+        'Solo puedes crear pedidos manuales en pendiente de pago o pagados.',
+      );
+    }
+
+    if (
+      normalizedInitialStatus === 'PAGADA' &&
+      !normalizedPaymentReceiptUrl
+    ) {
+      throw new BadRequestException(
+        'Debes adjuntar soporte del pago para crear una orden manual pagada.',
+      );
+    }
+
+    if (
+      normalizedPaymentReceiptUrl &&
+      normalizedInitialStatus !== 'PAGADA'
+    ) {
+      throw new BadRequestException(
+        'El soporte de pago solo se admite al crear una orden manual pagada.',
+      );
+    }
   }
 
   private stripClientControlledItemFields(
@@ -85,6 +121,8 @@ export class OrdersController {
       this.isPrivilegedOrderCreation(createOrderDto);
 
     if (requiresOperationalPrivileges) {
+      this.validatePrivilegedOrderCreation(createOrderDto);
+
       if (!actorUserId) {
         throw new UnauthorizedException('User not authenticated');
       }
@@ -177,6 +215,12 @@ export class OrdersController {
   @RequirePermissions({ resource: 'orders', action: 'update' })
   update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
     return this.ordersService.update(id, updateOrderDto);
+  }
+
+  @Delete(':id')
+  @RequirePermissions({ resource: 'orders', action: 'cancel' })
+  remove(@Param('id') id: string) {
+    return this.ordersService.remove(id);
   }
 
   @Post(':id/payments')

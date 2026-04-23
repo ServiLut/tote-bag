@@ -82,3 +82,27 @@ export function getApiBaseUrl() {
 export function isRetryableApiResponseStatus(status: number) {
   return RETRYABLE_API_RESPONSE_STATUSES.has(status);
 }
+
+export function extractApiConnectionErrorTargets(message: string) {
+  const match = message.match(/URLs probadas:\s*(.+?)\.\s*Detalle:/i);
+  if (!match) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      match[1]
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean)
+        .map((value) => {
+          try {
+            const url = new URL(value);
+            return url.host;
+          } catch {
+            return value;
+          }
+        }),
+    ),
+  );
+}

@@ -9,10 +9,23 @@ import {
   IsBoolean,
   Min,
   IsIn,
+  Matches,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ProductConfigInputDto } from '../../../common/dto/product-config.dto';
 import { parseLocalizedNumber } from '../../../common/utils/parse-localized-number';
+
+function normalizeOptionalText(value: unknown) {
+  if (value === null || value === undefined) {
+    return undefined;
+  }
+
+  if (typeof value === 'string') {
+    return value.trim() || undefined;
+  }
+
+  return value;
+}
 
 class AddressDto {
   @IsString()
@@ -139,6 +152,14 @@ export class CreateOrderDto {
   @IsNumber()
   @Min(0)
   manualDiscountValue?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => normalizeOptionalText(value))
+  @IsString()
+  @Matches(/^(https?:\/\/|private:\/\/).+/, {
+    message: 'paymentReceiptUrl debe ser una URL valida o referencia privada',
+  })
+  paymentReceiptUrl?: string;
 
   @IsOptional()
   configurationJson?: any;

@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 import DashboardLayoutClient from '@/components/dashboard/DashboardLayoutClient';
 import { ThemeProvider } from '@/components/theme-provider';
 import {
+  buildDashboardAuthHeaders,
   extractRoleFromProfilePayload,
   extractDebugRoleAllowedFromProfilePayload,
   getDashboardRoleForOperatorEmail,
@@ -24,14 +25,7 @@ async function getCurrentRoleContext(
     try {
       const res = await fetch(`${apiUrl}/profiles/me`, {
         cache: 'no-store',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          ...(debugRole
-            ? {
-                'x-debug-role': debugRole,
-              }
-            : {}),
-        },
+        headers: buildDashboardAuthHeaders(accessToken, debugRole),
       });
 
       if (!res.ok) continue;

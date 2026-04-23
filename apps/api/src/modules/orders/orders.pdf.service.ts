@@ -34,9 +34,9 @@ export class ReceiptPdfService {
 
     // Header - Company Info
     doc.fontSize(20).font('Helvetica-Bold').text('TOTE BAG', { align: 'left' });
-    doc.fontSize(10).font('Helvetica').text('NIT: 900.123.456-7');
-    doc.text('Dirección: Calle 123 #45-67, Bogotá D.C.');
-    doc.text('Contacto: +57 300 000 0000 | info@totebag.com');
+    doc.fontSize(10).font('Helvetica').text('NIT: 901.960.198');
+    doc.text('Dirección: Cl 44A #68A106, Laureles - Estadio, Medellín');
+    doc.text('Contacto: +57 301 447 2558 | totebagbolsadetela@gmail.com');
     doc.moveDown();
 
     // Receipt Title & Number
@@ -146,7 +146,7 @@ export class ReceiptPdfService {
         750,
         { align: 'center' },
       );
-    doc.text('Gracias por elegir Tote Bag - www.totebag.com', {
+    doc.text('Gracias por elegir Tote Bag - www.totebagbolsadetela.com', {
       align: 'center',
     });
 

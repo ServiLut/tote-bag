@@ -49,6 +49,10 @@ describe('OrdersService', () => {
     );
     tx.order.update.mockResolvedValue({
       id: 'order-1',
+      status: OrderStatus.PENDIENTE_PAGO,
+      totalAmount: 0,
+      netAmount: 0,
+      taxTotal: 0,
       amountPaid: 0,
       balanceDue: 0,
       items: [],
@@ -489,5 +493,109 @@ describe('OrdersService', () => {
       }) as unknown,
       include: expect.any(Object) as unknown,
     });
+  });
+
+  it('elimina un pedido pendiente liberando stock comprometido', async () => {
+    tx.order.findFirst.mockResolvedValue({
+      id: 'order-1',
+      status: OrderStatus.PENDIENTE_PAGO,
+      amountPaid: 0,
+      items: [
+        {
+          id: 'item-1',
+          variantId: 'variant-1',
+          quantity: 2,
+          pricingJson: {
+            inventoryCommitment: {
+              variantId: 'variant-1',
+              quantity: 2,
+              committedAt: '2026-04-20T00:00:00.000Z',
+            },
+          },
+        },
+      ],
+      payments: [],
+      shipment: null,
+    });
+    tx.order.update.mockResolvedValue({
+      id: 'order-1',
+      status: OrderStatus.CANCELADA,
+      totalAmount: 0,
+      netAmount: 0,
+      taxTotal: 0,
+      amountPaid: 0,
+      balanceDue: 0,
+      deletedAt: new Date('2026-04-23T00:00:00.000Z'),
+      items: [],
+      payments: [],
+      statusHistory: [],
+      shipment: null,
+    });
+
+    await service.remove('order-1');
+
+    expect(inventoryService.releaseCommittedStock).toHaveBeenCalledWith(
+      'variant-1',
+      2,
+      undefined,
+      'order-1',
+      tx,
+    );
+    expect(tx.orderItem.update).toHaveBeenCalledWith({
+      where: { id: 'item-1' },
+      data: {
+        pricingJson: null,
+      },
+    });
+    expect(tx.order.update).toHaveBeenCalledWith({
+      where: { id: 'order-1' },
+      data: expect.objectContaining({
+        deletedAt: expect.any(Date) as unknown,
+        status: OrderStatus.CANCELADA,
+        statusHistory: {
+          create: {
+            status: OrderStatus.CANCELADA,
+            oldStatus: OrderStatus.PENDIENTE_PAGO,
+            newStatus: OrderStatus.CANCELADA,
+            userId: null,
+          },
+        },
+      }) as unknown,
+      include: expect.any(Object) as unknown,
+    });
+  });
+
+  it('rechaza eliminar pedidos con abonos registrados', async () => {
+    tx.order.findFirst.mockResolvedValue({
+      id: 'order-1',
+      status: OrderStatus.CANCELADA,
+      amountPaid: 100,
+      items: [],
+      payments: [{ id: 'payment-1' }],
+      shipment: null,
+    });
+
+    await expect(service.remove('order-1')).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+
+    expect(tx.order.update).not.toHaveBeenCalled();
+  });
+
+  it('rechaza eliminar pedidos en estados operativos', async () => {
+    tx.order.findFirst.mockResolvedValue({
+      id: 'order-1',
+      status: OrderStatus.EN_PRODUCCION,
+      amountPaid: 0,
+      items: [],
+      payments: [],
+      shipment: null,
+    });
+
+    await expect(service.remove('order-1')).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+
+    expect(tx.order.update).not.toHaveBeenCalled();
   });
 });

@@ -3,7 +3,8 @@
 import { useEffect, useState, ChangeEvent, useCallback, FormEvent } from 'react';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { createClient } from '@/utils/supabase/client';
-import { Loader2, UserCircle, ShoppingBag, Eye, X, Mail, Phone, MapPin, Hash, Clock, Database, FileText, Search, ChevronLeft, ChevronRight, UserPlus, Save } from 'lucide-react';
+import { Loader2, UserCircle, ShoppingBag, Eye, X, Mail, Phone, MapPin, Hash, Clock, Database, FileText, Search, ChevronLeft, ChevronRight, UserPlus, Save, Pencil, Trash2, MoreHorizontal } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@tote-bag/ui';
 import { getAuthHeaders } from '@/utils/supabase/auth';
 import { apiFetch } from '@/utils/api';
 
@@ -18,10 +19,15 @@ interface Profile {
   municipality: string | null;
   neighborhood: string | null;
   address: string | null;
-  role: 'ADMIN' | 'CUSTOMER';
+  departmentId: string | null;
+  municipalityId: string | null;
   createdAt: string;
   updatedAt: string;
   metadata: Record<string, unknown> | null;
+  user: {
+    role: 'ADMIN' | 'CUSTOMER' | 'MANAGER';
+    isActive: boolean;
+  };
   _count: {
     orders: number;
   };
@@ -59,9 +65,31 @@ interface ManualCustomerFormState {
   address: string;
 }
 
+interface EditCustomerFormState {
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  departmentId: string;
+  municipalityId: string;
+  neighborhood: string;
+  address: string;
+}
+
 const INITIAL_MANUAL_CUSTOMER_FORM: ManualCustomerFormState = {
   email: '',
   password: '',
+  firstName: '',
+  lastName: '',
+  phone: '',
+  departmentId: '',
+  municipalityId: '',
+  neighborhood: '',
+  address: '',
+};
+
+const INITIAL_EDIT_CUSTOMER_FORM: EditCustomerFormState = {
+  email: '',
   firstName: '',
   lastName: '',
   phone: '',
@@ -88,16 +116,38 @@ function getErrorMessage(body: unknown, fallback: string) {
   return fallback;
 }
 
+function buildEditCustomerForm(profile: Profile): EditCustomerFormState {
+  return {
+    email: profile.email,
+    firstName: profile.firstName || '',
+    lastName: profile.lastName || '',
+    phone: profile.phone || '',
+    departmentId: profile.departmentId || '',
+    municipalityId: profile.municipalityId || '',
+    neighborhood: profile.neighborhood || '',
+    address: profile.address || '',
+  };
+}
+
 export default function CustomersPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCustomer, setSelectedCustomer] = useState<Profile | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [customerActionError, setCustomerActionError] = useState<string | null>(null);
+  const [activeCustomerActionId, setActiveCustomerActionId] = useState<string | null>(null);
+  const [activeActionMenu, setActiveActionMenu] = useState<string | null>(null);
   const [showCreateCustomerModal, setShowCreateCustomerModal] = useState(false);
   const [createCustomerSubmitting, setCreateCustomerSubmitting] = useState(false);
   const [createCustomerError, setCreateCustomerError] = useState<string | null>(null);
   const [createCustomerForm, setCreateCustomerForm] = useState<ManualCustomerFormState>(INITIAL_MANUAL_CUSTOMER_FORM);
   const [createCustomerMunicipalities, setCreateCustomerMunicipalities] = useState<Municipality[]>([]);
+  const [showEditCustomerModal, setShowEditCustomerModal] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<Profile | null>(null);
+  const [editCustomerSubmitting, setEditCustomerSubmitting] = useState(false);
+  const [editCustomerError, setEditCustomerError] = useState<string | null>(null);
+  const [editCustomerForm, setEditCustomerForm] = useState<EditCustomerFormState>(INITIAL_EDIT_CUSTOMER_FORM);
+  const [editCustomerMunicipalities, setEditCustomerMunicipalities] = useState<Municipality[]>([]);
 
   // Filtros Geográficos
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -123,6 +173,32 @@ export default function CustomersPage() {
     setCreateCustomerForm(INITIAL_MANUAL_CUSTOMER_FORM);
     setCreateCustomerMunicipalities([]);
   }, [createCustomerSubmitting]);
+
+  const closeEditCustomerModal = useCallback((options?: { force?: boolean }) => {
+    if (editCustomerSubmitting && !options?.force) {
+      return;
+    }
+
+    setShowEditCustomerModal(false);
+    setEditingCustomer(null);
+    setEditCustomerError(null);
+    setEditCustomerForm(INITIAL_EDIT_CUSTOMER_FORM);
+    setEditCustomerMunicipalities([]);
+  }, [editCustomerSubmitting]);
+
+  const syncProfileInState = useCallback((updatedProfile: Profile) => {
+    setProfiles((current) =>
+      current.map((profile) =>
+        profile.userId === updatedProfile.userId ? updatedProfile : profile,
+      ),
+    );
+    setSelectedCustomer((current) =>
+      current?.userId === updatedProfile.userId ? updatedProfile : current,
+    );
+    setEditingCustomer((current) =>
+      current?.userId === updatedProfile.userId ? updatedProfile : current,
+    );
+  }, []);
 
   const fetchData = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
@@ -351,12 +427,80 @@ export default function CustomersPage() {
     };
   }, [createCustomerForm.departmentId, showCreateCustomerModal]);
 
+  useEffect(() => {
+    if (!showEditCustomerModal || !editCustomerForm.departmentId) {
+      setEditCustomerMunicipalities([]);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    const fetchEditMunicipalities = async () => {
+      try {
+        const headers = await getAuthHeaders();
+        if (!headers.Authorization) {
+          setEditCustomerMunicipalities([]);
+          return;
+        }
+
+        const response = await apiFetch(
+          `/locations/municipalities/${editCustomerForm.departmentId}`,
+          {
+            headers,
+            signal: controller.signal,
+          },
+        );
+
+        if (!response.ok) {
+          setEditCustomerMunicipalities([]);
+          return;
+        }
+
+        const body = await response.json();
+        setEditCustomerMunicipalities(body.data || []);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return;
+        }
+        console.error('Error fetching municipalities for edit customer:', error);
+        setEditCustomerMunicipalities([]);
+      }
+    };
+
+    void fetchEditMunicipalities();
+
+    return () => {
+      controller.abort();
+    };
+  }, [editCustomerForm.departmentId, showEditCustomerModal]);
+
   const handleCreateCustomerFormChange = (
     event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = event.target;
 
     setCreateCustomerForm((current) => {
+      if (name === 'departmentId') {
+        return {
+          ...current,
+          departmentId: value,
+          municipalityId: '',
+        };
+      }
+
+      return {
+        ...current,
+        [name]: value,
+      };
+    });
+  };
+
+  const handleEditCustomerFormChange = (
+    event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+  ) => {
+    const { name, value } = event.target;
+
+    setEditCustomerForm((current) => {
       if (name === 'departmentId') {
         return {
           ...current,
@@ -420,6 +564,180 @@ export default function CustomersPage() {
       );
     } finally {
       setCreateCustomerSubmitting(false);
+    }
+  };
+
+  const openEditCustomerModal = (profile: Profile) => {
+    setCustomerActionError(null);
+    setEditCustomerError(null);
+    setEditingCustomer(profile);
+    setEditCustomerForm(buildEditCustomerForm(profile));
+    setShowEditCustomerModal(true);
+  };
+
+  const handleEditCustomer = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!editingCustomer) {
+      setEditCustomerError('No se encontro el cliente a editar.');
+      return;
+    }
+
+    setEditCustomerError(null);
+    setEditCustomerSubmitting(true);
+
+    try {
+      const headers = await getAuthHeaders();
+      if (!headers.Authorization) {
+        throw new Error('Tu sesion expiro. Inicia sesion de nuevo.');
+      }
+
+      const response = await apiFetch(`/users/customers/${editingCustomer.userId}`, {
+        method: 'PATCH',
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: editCustomerForm.email.trim(),
+          firstName: editCustomerForm.firstName.trim(),
+          lastName: editCustomerForm.lastName.trim(),
+          phone: editCustomerForm.phone.trim() || undefined,
+          departmentId: editCustomerForm.departmentId || undefined,
+          municipalityId: editCustomerForm.municipalityId || undefined,
+          neighborhood: editCustomerForm.neighborhood.trim() || undefined,
+          address: editCustomerForm.address.trim() || undefined,
+        }),
+      });
+
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(
+          getErrorMessage(body, `No se pudo actualizar el cliente (${response.status}).`),
+        );
+      }
+
+      const updatedProfile = (body?.data?.profile ?? null) as Profile | null;
+      if (updatedProfile) {
+        syncProfileInState(updatedProfile);
+      } else {
+        await fetchData();
+      }
+
+      closeEditCustomerModal({ force: true });
+    } catch (error) {
+      console.error('Error updating customer:', error);
+      setEditCustomerError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo actualizar el cliente.',
+      );
+    } finally {
+      setEditCustomerSubmitting(false);
+    }
+  };
+
+  const handleToggleCustomerStatus = async (profile: Profile) => {
+    const nextIsActive = !profile.user.isActive;
+    setCustomerActionError(null);
+    setActiveCustomerActionId(profile.userId);
+
+    try {
+      const headers = await getAuthHeaders();
+      if (!headers.Authorization) {
+        throw new Error('Tu sesion expiro. Inicia sesion de nuevo.');
+      }
+
+      const response = await apiFetch(`/users/customers/${profile.userId}/status`, {
+        method: 'PATCH',
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          isActive: nextIsActive,
+        }),
+      });
+
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(
+          getErrorMessage(body, `No se pudo actualizar el estado del cliente (${response.status}).`),
+        );
+      }
+
+      const updatedProfile = (body?.data?.profile ?? null) as Profile | null;
+      if (updatedProfile) {
+        syncProfileInState(updatedProfile);
+      } else {
+        syncProfileInState({
+          ...profile,
+          user: {
+            ...profile.user,
+            isActive: nextIsActive,
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Error updating customer status:', error);
+      setCustomerActionError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo actualizar el estado del cliente.',
+      );
+    } finally {
+      setActiveCustomerActionId(null);
+    }
+  };
+
+  const handleDeleteCustomer = async (profile: Profile) => {
+    const confirmed = window.confirm(
+      `Vas a eliminar a ${profile.firstName || profile.email}. Esta accion no se puede deshacer.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setCustomerActionError(null);
+    setActiveCustomerActionId(profile.userId);
+
+    try {
+      const headers = await getAuthHeaders();
+      if (!headers.Authorization) {
+        throw new Error('Tu sesion expiro. Inicia sesion de nuevo.');
+      }
+
+      const response = await apiFetch(`/users/customers/${profile.userId}`, {
+        method: 'DELETE',
+        headers,
+      });
+
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(
+          getErrorMessage(body, `No se pudo eliminar el cliente (${response.status}).`),
+        );
+      }
+
+      if (selectedCustomer?.userId === profile.userId) {
+        setSelectedCustomer(null);
+      }
+
+      if (editingCustomer?.userId === profile.userId) {
+        closeEditCustomerModal({ force: true });
+      }
+
+      await fetchData();
+    } catch (error) {
+      console.error('Error deleting customer:', error);
+      setCustomerActionError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo eliminar el cliente.',
+      );
+    } finally {
+      setActiveCustomerActionId(null);
     }
   };
 
@@ -524,6 +842,12 @@ export default function CustomersPage() {
         )}
       </div>
 
+      {customerActionError ? (
+        <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+          {customerActionError}
+        </div>
+      ) : null}
+
       <div className="flex-1 bg-surface rounded-2xl shadow-sm border border-theme overflow-hidden flex flex-col">
         {/* Table Container with Scroll */}
         <div className="flex-1 overflow-y-auto relative">
@@ -558,7 +882,18 @@ export default function CustomersPage() {
                               ? `${profile.firstName || ''} ${profile.lastName || ''}`
                               : 'Sin Nombre'}
                           </p>
-                          <p className="text-[10px] text-muted font-medium">{profile.email}</p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-[10px] text-muted font-medium">{profile.email}</p>
+                            <span
+                              className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-widest ${
+                                profile.user.isActive
+                                  ? 'bg-emerald-100 text-emerald-700'
+                                  : 'bg-zinc-200 text-zinc-600'
+                              }`}
+                            >
+                              {profile.user.isActive ? 'Activo' : 'Inactivo'}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -588,13 +923,90 @@ export default function CustomersPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => setSelectedCustomer(profile)}
-                        className="p-2.5 text-muted hover:text-primary hover:bg-base rounded-xl transition-all active:scale-90"
-                        title="Ver detalles"
-                      >
-                        <Eye className="w-5 h-5" />
-                      </button>
+                      <div className="flex items-center justify-end gap-3">
+                        <button
+                          type="button"
+                          onClick={() => void handleToggleCustomerStatus(profile)}
+                          disabled={activeCustomerActionId === profile.userId}
+                          className="inline-flex items-center gap-2 rounded-2xl border border-theme bg-base px-3 py-2 text-[10px] font-black uppercase tracking-widest text-primary transition-all disabled:opacity-50"
+                          title={profile.user.isActive ? 'Desactivar cliente' : 'Activar cliente'}
+                        >
+                          <span
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                              profile.user.isActive ? 'bg-emerald-500' : 'bg-zinc-300'
+                            }`}
+                          >
+                            <span
+                              className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${
+                                profile.user.isActive ? 'translate-x-5' : 'translate-x-1'
+                              }`}
+                            />
+                          </span>
+                          {activeCustomerActionId === profile.userId ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <span>{profile.user.isActive ? 'Activo' : 'Inactivo'}</span>
+                          )}
+                        </button>
+
+                        <Popover
+                          open={activeActionMenu === profile.userId}
+                          onOpenChange={(open) =>
+                            setActiveActionMenu(open ? profile.userId : null)
+                          }
+                        >
+                          <PopoverTrigger>
+                            <button
+                              type="button"
+                              className="inline-flex items-center rounded-xl border border-theme bg-base p-2 text-primary transition-colors hover:bg-primary/5"
+                              aria-label={`Acciones para ${profile.firstName || profile.email}`}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            side="bottom"
+                            align="end"
+                            className="w-56 overflow-hidden rounded-2xl border border-theme bg-surface shadow-xl"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveActionMenu(null);
+                                setSelectedCustomer(profile);
+                              }}
+                              className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-primary transition-colors hover:bg-primary/5"
+                            >
+                              <Eye className="h-4 w-4" />
+                              Ver detalles
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveActionMenu(null);
+                                openEditCustomerModal(profile);
+                              }}
+                              disabled={activeCustomerActionId === profile.userId}
+                              className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-primary transition-colors hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              <Pencil className="h-4 w-4" />
+                              Editar cliente
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveActionMenu(null);
+                                void handleDeleteCustomer(profile);
+                              }}
+                              disabled={activeCustomerActionId === profile.userId}
+                              className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-rose-700 transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Eliminar cliente
+                            </button>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -828,6 +1240,180 @@ export default function CustomersPage() {
                     <Save className="h-4 w-4" />
                   )}
                   Crear cliente
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      {showEditCustomerModal ? (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={() => closeEditCustomerModal()}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-customer-title"
+            className="w-full max-w-3xl overflow-hidden rounded-3xl border border-theme bg-surface shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <form onSubmit={handleEditCustomer}>
+              <div className="flex items-start justify-between gap-4 border-b border-theme bg-base/50 px-6 py-5">
+                <div className="space-y-1">
+                  <h2 id="edit-customer-title" className="text-2xl font-black tracking-tight text-primary">
+                    Editar cliente
+                  </h2>
+                  <p className="text-sm font-medium text-muted">
+                    Actualiza la informacion base del cliente registrado.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => closeEditCustomerModal()}
+                  disabled={editCustomerSubmitting}
+                  className="rounded-full bg-base/80 p-2 text-muted transition-all hover:bg-base hover:text-primary disabled:opacity-50"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="max-h-[calc(100vh-12rem)] overflow-y-auto px-6 py-6">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-muted">
+                      Nombre
+                    </label>
+                    <input
+                      name="firstName"
+                      value={editCustomerForm.firstName}
+                      onChange={handleEditCustomerFormChange}
+                      required
+                      className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-muted">
+                      Apellido
+                    </label>
+                    <input
+                      name="lastName"
+                      value={editCustomerForm.lastName}
+                      onChange={handleEditCustomerFormChange}
+                      required
+                      className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-muted">
+                      Correo
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={editCustomerForm.email}
+                      onChange={handleEditCustomerFormChange}
+                      required
+                      className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-muted">
+                      Telefono
+                    </label>
+                    <input
+                      name="phone"
+                      value={editCustomerForm.phone}
+                      onChange={handleEditCustomerFormChange}
+                      className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-muted">
+                      Departamento
+                    </label>
+                    <select
+                      name="departmentId"
+                      value={editCustomerForm.departmentId}
+                      onChange={handleEditCustomerFormChange}
+                      className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    >
+                      <option value="">Selecciona departamento</option>
+                      {departments.map((dept) => (
+                        <option key={dept.id} value={dept.id}>{dept.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-muted">
+                      Municipio
+                    </label>
+                    <select
+                      name="municipalityId"
+                      value={editCustomerForm.municipalityId}
+                      onChange={handleEditCustomerFormChange}
+                      disabled={!editCustomerForm.departmentId}
+                      className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+                    >
+                      <option value="">Selecciona municipio</option>
+                      {editCustomerMunicipalities.map((muni) => (
+                        <option key={muni.id} value={muni.id}>{muni.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-muted">
+                      Barrio
+                    </label>
+                    <input
+                      name="neighborhood"
+                      value={editCustomerForm.neighborhood}
+                      onChange={handleEditCustomerFormChange}
+                      className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-muted">
+                      Direccion
+                    </label>
+                    <textarea
+                      name="address"
+                      value={editCustomerForm.address}
+                      onChange={handleEditCustomerFormChange}
+                      rows={3}
+                      className="w-full rounded-2xl border border-theme bg-base px-4 py-3 text-sm font-medium text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                </div>
+
+                {editCustomerError ? (
+                  <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                    {editCustomerError}
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="flex flex-col-reverse gap-3 border-t border-theme bg-base/30 px-6 py-4 md:flex-row md:justify-end">
+                <button
+                  type="button"
+                  onClick={() => closeEditCustomerModal()}
+                  disabled={editCustomerSubmitting}
+                  className="inline-flex items-center justify-center rounded-xl border border-theme px-4 py-2 text-[10px] font-black uppercase tracking-widest text-primary transition-all hover:bg-base disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={editCustomerSubmitting}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-[10px] font-black uppercase tracking-widest text-base-color shadow-lg shadow-primary/10 transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {editCustomerSubmitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
+                  Guardar cambios
                 </button>
               </div>
             </form>

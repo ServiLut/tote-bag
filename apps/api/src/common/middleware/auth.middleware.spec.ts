@@ -71,7 +71,10 @@ describe('AuthMiddleware', () => {
       },
       error: null,
     });
-    tx.user.findUnique.mockResolvedValue({ role: Role.MANAGER });
+    tx.user.findUnique.mockResolvedValue({
+      role: Role.MANAGER,
+      isActive: true,
+    });
     tx.user.upsert.mockResolvedValue({});
 
     const req = {
@@ -107,7 +110,10 @@ describe('AuthMiddleware', () => {
       },
       error: null,
     });
-    tx.user.findUnique.mockResolvedValue({ role: Role.CUSTOMER });
+    tx.user.findUnique.mockResolvedValue({
+      role: Role.CUSTOMER,
+      isActive: true,
+    });
     tx.user.upsert.mockResolvedValue({});
 
     const req = {
@@ -142,7 +148,10 @@ describe('AuthMiddleware', () => {
       },
       error: null,
     });
-    tx.user.findUnique.mockResolvedValue({ role: Role.CUSTOMER });
+    tx.user.findUnique.mockResolvedValue({
+      role: Role.CUSTOMER,
+      isActive: true,
+    });
     tx.user.upsert.mockResolvedValue({});
 
     const req = {
@@ -179,7 +188,10 @@ describe('AuthMiddleware', () => {
       },
       error: null,
     });
-    tx.user.findUnique.mockResolvedValue({ role: Role.MANAGER });
+    tx.user.findUnique.mockResolvedValue({
+      role: Role.MANAGER,
+      isActive: true,
+    });
     tx.user.upsert.mockResolvedValue({});
 
     const req = {
@@ -195,6 +207,38 @@ describe('AuthMiddleware', () => {
     await middleware.use(req, {} as Response, next);
 
     expect(debugRoleRun).toHaveBeenCalledWith(null, expect.any(Function));
+    expect(next).toHaveBeenCalled();
+  });
+
+  it('no adjunta req.user cuando la cuenta local esta inactiva', async () => {
+    getUserMock.mockResolvedValue({
+      data: {
+        user: {
+          id: 'user-5',
+          email: 'cliente@empresa.com',
+        },
+      },
+      error: null,
+    });
+    tx.user.findUnique.mockResolvedValue({
+      role: Role.CUSTOMER,
+      isActive: false,
+      email: 'cliente@empresa.com',
+    });
+    tx.user.upsert.mockResolvedValue({});
+
+    const req = {
+      method: 'GET',
+      url: '/profiles/me',
+      headers: {
+        authorization: 'Bearer valid-token',
+      },
+    } as unknown as Request & { user?: unknown };
+    const next = jest.fn() as NextFunction;
+
+    await middleware.use(req, {} as Response, next);
+
+    expect(req.user).toBeUndefined();
     expect(next).toHaveBeenCalled();
   });
 });

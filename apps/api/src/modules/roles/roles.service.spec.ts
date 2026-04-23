@@ -24,4 +24,26 @@ describe('RolesService', () => {
       debugRole: Role.MANAGER,
     });
   });
+
+  it('ya no entrega permisos operativos de ordenes a customer', async () => {
+    const prisma = {
+      user: {
+        findUnique: jest.fn().mockResolvedValue({
+          email: 'customer@example.com',
+          role: Role.CUSTOMER,
+        }),
+      },
+    };
+    const debugRoleContext = {
+      getDebugRole: jest.fn().mockReturnValue(null),
+    };
+    const service = new RolesService(
+      prisma as never,
+      debugRoleContext as never,
+    );
+
+    await expect(service.getUserPermissions('user-2')).resolves.toEqual([
+      { resource: 'products', action: 'read' },
+    ]);
+  });
 });

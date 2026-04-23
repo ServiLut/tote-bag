@@ -1,7 +1,7 @@
 import { createClient } from './client';
 import {
+  buildDashboardDebugRoleHeader,
   DASHBOARD_DEBUG_ROLE_COOKIE_NAME,
-  DASHBOARD_DEBUG_ROLE_HEADER_NAME,
   parseDashboardDebugRoleCookie,
 } from '@/lib/dashboard-auth';
 
@@ -39,13 +39,7 @@ export function getDashboardDebugRoleHeader(): Record<string, string> {
     debugRoleCookie ? decodeURIComponent(debugRoleCookie) : null,
   );
 
-  if (!debugRole) {
-    return {};
-  }
-
-  return {
-    [DASHBOARD_DEBUG_ROLE_HEADER_NAME]: debugRole,
-  };
+  return buildDashboardDebugRoleHeader(debugRole);
 }
 
 /**

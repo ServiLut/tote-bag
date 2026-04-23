@@ -25,8 +25,6 @@ type RequestWithUser = Request & {
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {
   private supabase: SupabaseClient<any, any, any, any>;
-  private readonly syncedUserCache = new Map<string, number>();
-  private readonly userSyncTtlMs = 5 * 60 * 1000;
 
   constructor(
     private readonly configService: ConfigService,
@@ -67,15 +65,7 @@ export class AuthMiddleware implements NestMiddleware {
       return;
     }
 
-    const cacheKey = `${user.id}:${normalizedEmail.toLowerCase()}`;
-    const cachedUntil = this.syncedUserCache.get(cacheKey);
-    const now = Date.now();
-
-    if (cachedUntil && cachedUntil > now) {
-      return;
-    }
-
-    await this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx) => {
       const existingUser = await tx.user.findUnique({
         where: { id: user.id },
         select: { email: true, role: true, isActive: true },
@@ -83,14 +73,17 @@ export class AuthMiddleware implements NestMiddleware {
 
       const roleOverride = getOperatorRoleForEmail(normalizedEmail);
       const resolvedRole = roleOverride ?? existingUser?.role ?? Role.CUSTOMER;
+      const resolvedIsActive = existingUser?.isActive ?? true;
 
       if (
         existingUser &&
         existingUser.email === normalizedEmail &&
-        existingUser.role === resolvedRole &&
-        existingUser.isActive === true
+        existingUser.role === resolvedRole
       ) {
-        return;
+        return {
+          role: resolvedRole,
+          isActive: resolvedIsActive,
+        };
       }
 
       await tx.user.upsert({
@@ -98,7 +91,6 @@ export class AuthMiddleware implements NestMiddleware {
         update: {
           email: normalizedEmail,
           role: resolvedRole,
-          isActive: true,
         },
         create: {
           id: user.id,
@@ -107,9 +99,12 @@ export class AuthMiddleware implements NestMiddleware {
           isActive: true,
         },
       });
-    });
 
-    this.syncedUserCache.set(cacheKey, now + this.userSyncTtlMs);
+      return {
+        role: resolvedRole,
+        isActive: resolvedIsActive,
+      };
+    });
   }
 
   async use(req: RequestWithUser, _res: Response, next: NextFunction) {
@@ -141,15 +136,18 @@ export class AuthMiddleware implements NestMiddleware {
                 : null;
 
             try {
-              await this.syncAuthenticatedUser({
+              const syncedUser = await this.syncAuthenticatedUser({
                 id: data.user.id,
                 email: data.user.email,
               });
-              req.user = {
-                id: data.user.id,
-                email: data.user.email,
-                role: effectiveDebugRole ?? null,
-              };
+
+              if (syncedUser?.isActive !== false) {
+                req.user = {
+                  id: data.user.id,
+                  email: data.user.email,
+                  role: effectiveDebugRole ?? null,
+                };
+              }
             } catch (syncError) {
               console.error('AuthMiddleware: User sync failed:', syncError);
               req.user = {

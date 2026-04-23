@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 import {
   ArrowRight,
   Boxes,
@@ -17,9 +18,13 @@ import {
 import { ApiResponse } from '@/types/api';
 import { apiFetch } from '@/utils/api';
 import { createClient } from '@/utils/supabase/server';
+import { extractApiConnectionErrorTargets } from '@/lib/api-config';
 import {
+  buildDashboardAuthHeaders,
   extractRoleFromProfilePayload,
   getDashboardRoleForOperatorEmail,
+  parseDashboardDebugRoleCookie,
+  DASHBOARD_DEBUG_ROLE_COOKIE_NAME,
   type DashboardRole,
 } from '@/lib/dashboard-auth';
 import { canAccessDashboardPath } from '@/lib/frontend-routing';
@@ -83,7 +88,12 @@ function getDashboardStatsErrorMessage(error: unknown) {
   }
 
   if (error.message.startsWith('No fue posible conectar con la API.')) {
-    return 'No fue posible conectar con la API local. Verifica que el backend este ejecutandose en el puerto 4004 y vuelve a cargar el dashboard.';
+    const attemptedTargets = extractApiConnectionErrorTargets(error.message);
+    if (attemptedTargets.length > 0) {
+      return `No fue posible conectar con la API del dashboard. Se intento acceder a ${attemptedTargets.join(', ')}. Verifica que el backend este arriba y vuelve a cargar el dashboard.`;
+    }
+
+    return 'No fue posible conectar con la API del dashboard. Verifica que el backend este arriba y vuelve a cargar el dashboard.';
   }
 
   return error.message;
@@ -200,7 +210,9 @@ function formatCurrency(amount: number) {
   }).format(amount);
 }
 
-async function getDashboardStats(): Promise<DashboardStatsResult> {
+async function getDashboardStats(
+  debugRole: DashboardRole | null,
+): Promise<DashboardStatsResult> {
   const supabase = await createClient();
   const {
     data: { session },
@@ -208,7 +220,7 @@ async function getDashboardStats(): Promise<DashboardStatsResult> {
 
   try {
     const headers = session?.access_token
-      ? { Authorization: `Bearer ${session.access_token}` }
+      ? buildDashboardAuthHeaders(session.access_token, debugRole)
       : undefined;
 
     const statsRes = await apiFetch('/dashboard/stats', {
@@ -250,7 +262,9 @@ async function getDashboardStats(): Promise<DashboardStatsResult> {
   }
 }
 
-async function getCurrentDashboardRole(): Promise<DashboardRole | null> {
+async function getCurrentDashboardRole(
+  debugRole: DashboardRole | null,
+): Promise<DashboardRole | null> {
   const supabase = await createClient();
   const {
     data: { session },
@@ -263,9 +277,7 @@ async function getCurrentDashboardRole(): Promise<DashboardRole | null> {
   try {
     const response = await apiFetch('/profiles/me', {
       cache: 'no-store',
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
+      headers: buildDashboardAuthHeaders(session.access_token, debugRole),
     });
 
     if (response.ok) {
@@ -291,9 +303,13 @@ function getAccessibleDashboardHref(
 }
 
 export default async function DashboardPage() {
+  const cookieStore = await cookies();
+  const debugRole = parseDashboardDebugRoleCookie(
+    cookieStore.get(DASHBOARD_DEBUG_ROLE_COOKIE_NAME)?.value,
+  );
   const [stats, role] = await Promise.all([
-    getDashboardStats(),
-    getCurrentDashboardRole(),
+    getDashboardStats(debugRole),
+    getCurrentDashboardRole(debugRole),
   ]);
   const todayLabel = new Date().toLocaleDateString('es-CO', {
     weekday: 'long',

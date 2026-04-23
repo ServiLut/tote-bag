@@ -749,12 +749,35 @@ export class OrdersService {
       isManual,
       source,
       initialStatus,
+      paymentReceiptUrl,
       ...orderData
     } = createOrderDto;
 
     // Determine initial status
     const statusToSet =
       (initialStatus as OrderStatus) || OrderStatus.PENDIENTE_PAGO;
+    const normalizedPaymentReceiptUrl = paymentReceiptUrl?.trim() || undefined;
+
+    if (
+      statusToSet !== OrderStatus.PENDIENTE_PAGO &&
+      statusToSet !== OrderStatus.PAGADA
+    ) {
+      throw new BadRequestException(
+        'Solo puedes crear pedidos en pendiente de pago o pagados.',
+      );
+    }
+
+    if (statusToSet === OrderStatus.PAGADA && !normalizedPaymentReceiptUrl) {
+      throw new BadRequestException(
+        'Debes adjuntar soporte del pago para crear una orden pagada.',
+      );
+    }
+
+    if (statusToSet !== OrderStatus.PAGADA && normalizedPaymentReceiptUrl) {
+      throw new BadRequestException(
+        'El soporte de pago solo se admite al crear una orden pagada.',
+      );
+    }
 
     // Determine source
     const sourceToSet =
@@ -1072,6 +1095,7 @@ export class OrdersService {
             isManual: !!isManual,
             source: sourceToSet,
             status: statusToSet,
+            paymentReceiptUrl: normalizedPaymentReceiptUrl ?? null,
             shippingAddress: shippingAddressJson,
             totalAmount: decimalToNumber(totalAmount),
             netAmount,
@@ -1115,6 +1139,18 @@ export class OrdersService {
           },
           include: { items: true, statusHistory: true, shipment: true },
         });
+
+        if (statusToSet === OrderStatus.PAGADA && normalizedPaymentReceiptUrl) {
+          await tx.orderPayment.create({
+            data: {
+              orderId: createdOrder.id,
+              amount: totalAmount,
+              paymentDate: new Date(),
+              proofUrl: normalizedPaymentReceiptUrl,
+              notes: 'Pago registrado al crear la orden manual',
+            },
+          });
+        }
 
         if (!shouldReduceInventory) {
           for (const item of createdOrder.items) {
@@ -1763,6 +1799,135 @@ export class OrdersService {
         },
         order: this.serializeOrderMoney(updatedOrder),
       };
+    });
+  }
+
+  async remove(id: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const order = await tx.order.findFirst({
+        where: { id, deletedAt: null },
+        select: {
+          id: true,
+          status: true,
+          amountPaid: true,
+          items: {
+            select: {
+              id: true,
+              variantId: true,
+              quantity: true,
+              pricingJson: true,
+            },
+          },
+          payments: {
+            where: { deletedAt: null },
+            select: { id: true },
+            take: 1,
+          },
+          shipment: {
+            select: { id: true },
+          },
+        },
+      });
+
+      if (!order) {
+        throw new BadRequestException('Orden no encontrada');
+      }
+
+      const deletableStatuses: OrderStatus[] = [
+        OrderStatus.PENDIENTE_PAGO,
+        OrderStatus.CANCELADA,
+      ];
+
+      if (
+        !deletableStatuses.includes(order.status)
+      ) {
+        throw new ForbiddenException(
+          'Solo puedes eliminar pedidos pendientes de pago o cancelados.',
+        );
+      }
+
+      if (roundMoney(order.amountPaid).gt(0) || order.payments.length > 0) {
+        throw new ForbiddenException(
+          'No puedes eliminar un pedido con abonos registrados.',
+        );
+      }
+
+      if (order.shipment) {
+        throw new ForbiddenException(
+          'No puedes eliminar un pedido que ya tiene envio asociado.',
+        );
+      }
+
+      if (
+        order.items.some((item) => this.hasInventoryConsumption(item.pricingJson))
+      ) {
+        throw new ForbiddenException(
+          'No puedes eliminar un pedido que ya consumo inventario.',
+        );
+      }
+
+      for (const item of order.items) {
+        if (!item.variantId || !this.hasInventoryCommitment(item.pricingJson)) {
+          continue;
+        }
+
+        await this.inventoryService.releaseCommittedStock(
+          item.variantId,
+          item.quantity,
+          undefined,
+          id,
+          tx,
+        );
+
+        const basePricingJson =
+          item.pricingJson &&
+          typeof item.pricingJson === 'object' &&
+          !Array.isArray(item.pricingJson)
+            ? (item.pricingJson as Record<string, unknown>)
+            : {};
+        const pricingJsonRest = { ...basePricingJson };
+        delete pricingJsonRest.inventoryCommitment;
+
+        await tx.orderItem.update({
+          where: { id: item.id },
+          data: {
+            pricingJson: Object.keys(pricingJsonRest).length
+              ? (pricingJsonRest as Prisma.InputJsonValue)
+              : (null as unknown as Prisma.InputJsonValue),
+          },
+        });
+      }
+
+      const deletedOrder = await tx.order.update({
+        where: { id },
+        data: {
+          deletedAt: new Date(),
+          ...(order.status === OrderStatus.CANCELADA
+            ? {}
+            : {
+                status: OrderStatus.CANCELADA,
+                statusHistory: {
+                  create: {
+                    status: OrderStatus.CANCELADA,
+                    oldStatus: order.status,
+                    newStatus: OrderStatus.CANCELADA,
+                    userId: null,
+                  },
+                },
+              }),
+        },
+        include: {
+          items: true,
+          payments: {
+            where: { deletedAt: null },
+            orderBy: [{ paymentDate: 'desc' }, { createdAt: 'desc' }],
+          },
+          statusHistory: { orderBy: { createdAt: 'desc' } },
+          shipment: true,
+        },
+      });
+
+      return this.serializeOrderMoney(deletedOrder);
     });
   }
 

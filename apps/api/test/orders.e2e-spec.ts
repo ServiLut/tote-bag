@@ -212,6 +212,114 @@ describe('OrdersController (e2e)', () => {
     );
   });
 
+  it('POST /api/v1/orders rechaza orden manual pagada sin soporte de pago', async () => {
+    await request(getTestServer(app))
+      .post('/api/v1/orders')
+      .set('x-test-user-id', 'user-7')
+      .send({
+        firstName: 'Deybis',
+        lastName: 'Asprilla',
+        customerEmail: 'demo@tote.com',
+        customerPhone: '3001234567',
+        department: 'Antioquia',
+        city: 'Medellin',
+        isManual: true,
+        initialStatus: 'PAGADA',
+        shippingAddress: {
+          city: 'Medellin',
+          address: 'Calle 1 # 2-3',
+          phone: '3001234567',
+        },
+        items: [
+          {
+            productId: 'prod-1',
+            variantId: 'variant-1',
+            sku: 'SKU-1',
+            quantity: 1,
+          },
+        ],
+      })
+      .expect(400);
+
+    expect(ordersService.create).not.toHaveBeenCalled();
+  });
+
+  it('POST /api/v1/orders rechaza estados iniciales operativos no soportados', async () => {
+    await request(getTestServer(app))
+      .post('/api/v1/orders')
+      .set('x-test-user-id', 'user-7')
+      .send({
+        firstName: 'Deybis',
+        lastName: 'Asprilla',
+        customerEmail: 'demo@tote.com',
+        customerPhone: '3001234567',
+        department: 'Antioquia',
+        city: 'Medellin',
+        isManual: true,
+        initialStatus: 'EN_PRODUCCION',
+        shippingAddress: {
+          city: 'Medellin',
+          address: 'Calle 1 # 2-3',
+          phone: '3001234567',
+        },
+        items: [
+          {
+            productId: 'prod-1',
+            variantId: 'variant-1',
+            sku: 'SKU-1',
+            quantity: 1,
+          },
+        ],
+      })
+      .expect(400);
+
+    expect(ordersService.create).not.toHaveBeenCalled();
+  });
+
+  it('POST /api/v1/orders reenvia el soporte al crear una orden manual pagada', async () => {
+    ordersService.create.mockResolvedValue({ id: 'order-1', orderNumber: 104 });
+
+    await request(getTestServer(app))
+      .post('/api/v1/orders')
+      .set('x-test-user-id', 'user-7')
+      .send({
+        firstName: 'Deybis',
+        lastName: 'Asprilla',
+        customerEmail: 'demo@tote.com',
+        customerPhone: '3001234567',
+        department: 'Antioquia',
+        city: 'Medellin',
+        isManual: true,
+        initialStatus: 'PAGADA',
+        paymentReceiptUrl: 'https://cdn.example.com/support.jpg',
+        shippingAddress: {
+          city: 'Medellin',
+          address: 'Calle 1 # 2-3',
+          phone: '3001234567',
+        },
+        items: [
+          {
+            productId: 'prod-1',
+            variantId: 'variant-1',
+            sku: 'SKU-1',
+            quantity: 1,
+          },
+        ],
+      })
+      .expect(201);
+
+    expect(ordersService.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        initialStatus: 'PAGADA',
+        paymentReceiptUrl: 'https://cdn.example.com/support.jpg',
+      }),
+      'user-7',
+      {
+        idempotencyKey: undefined,
+      },
+    );
+  });
+
   it('POST /api/v1/orders reenvia el header de idempotencia al servicio', async () => {
     ordersService.create.mockResolvedValue({ id: 'order-1', orderNumber: 103 });
 

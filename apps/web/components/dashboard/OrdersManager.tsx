@@ -9,7 +9,6 @@ import {
   Box,
   MapPin,
   Truck,
-  Eye,
   X,
   Save,
   Search,
@@ -21,14 +20,18 @@ import {
   Printer,
   Globe,
   PenTool,
+  MoreHorizontal,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { Popover, PopoverContent, PopoverTrigger } from '@tote-bag/ui';
 import { ApiResponse } from '@/types/api';
 import { useDashboardAuth } from '@/components/dashboard/DashboardAuthContext';
 import { ReceiptUpload } from '@/components/dashboard/ReceiptUpload';
 import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
+import { getApiResponseErrorMessage } from '@/lib/api-error';
 import { isDashboardReadOnlyRole } from '@/lib/frontend-routing';
+import { buildOrderStatusUpdatePayload } from '@/lib/order-update';
 import { apiFetch } from '@/utils/api';
 
 function cn(...inputs: (string | undefined | null | false)[]) {
@@ -116,6 +119,8 @@ export default function OrdersManager() {
   const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
   const [loadingOrderDetail, setLoadingOrderDetail] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
+  const [activeActionMenu, setActiveActionMenu] = useState<string | null>(null);
   const { role } = useDashboardAuth();
 
   // Advanced Filters State
@@ -234,10 +239,9 @@ export default function OrdersManager() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          status,
-          trackingNumber: trackingNumber ?? null,
-        }),
+        body: JSON.stringify(
+          buildOrderStatusUpdatePayload(status, trackingNumber),
+        ),
       });
 
       if (res.status === 401 || res.status === 403) {
@@ -254,7 +258,10 @@ export default function OrdersManager() {
             ? {
                 ...o,
                 status,
-                trackingNumber: trackingNumber || o.trackingNumber,
+                trackingNumber:
+                  trackingNumber === undefined
+                    ? o.trackingNumber
+                    : trackingNumber || undefined,
               }
             : o,
         ),
@@ -279,6 +286,72 @@ export default function OrdersManager() {
     );
     if (success) {
       setSelectedOrder(null); // Close modal
+    }
+  };
+
+  const canDeleteOrder = (order: Pick<OrderSummary, 'status'>) =>
+    ['PENDIENTE_PAGO', 'CANCELADA'].includes(order.status);
+
+  const handleDeleteOrder = async (
+    order: Pick<OrderSummary, 'id' | 'orderNumber' | 'status'>,
+  ) => {
+    if (!canDeleteOrder(order)) {
+      alert('Solo puedes eliminar pedidos pendientes de pago o cancelados.');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Se eliminara el pedido #${order.orderNumber}. Esta accion lo ocultara del dashboard. Deseas continuar?`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setActiveActionMenu(null);
+    setDeletingOrderId(order.id);
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      if (!token) {
+        alert('Tu sesion expiro. Inicia sesion de nuevo.');
+        return;
+      }
+
+      const response = await apiFetch(`/orders/${order.id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        alert('No tienes permisos para eliminar esta orden.');
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          await getApiResponseErrorMessage(
+            response,
+            'No se pudo eliminar el pedido.',
+          ),
+        );
+      }
+
+      setOrders((prev) => prev.filter((item) => item.id !== order.id));
+      setSelectedOrder((prev) => (prev?.id === order.id ? null : prev));
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      alert(
+        error instanceof Error ? error.message : 'Error eliminando el pedido',
+      );
+    } finally {
+      setDeletingOrderId(null);
     }
   };
 
@@ -807,6 +880,7 @@ export default function OrdersManager() {
                             updateOrderStatus(
                               order.id,
                               e.target.value as OrderStatus,
+                              order.trackingNumber,
                             )
                           }
                           disabled={updating || isReadOnly}
@@ -841,21 +915,68 @@ export default function OrdersManager() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => downloadReceipt(order.id, order.orderNumber)}
-                          className="p-2.5 text-muted hover:text-primary hover:bg-base rounded-xl transition-all active:scale-90"
-                          title="Descargar Recibo"
+                      <div className="flex justify-end">
+                        <Popover
+                          open={activeActionMenu === order.id}
+                          onOpenChange={(open) =>
+                            setActiveActionMenu(open ? order.id : null)
+                          }
                         >
-                          <Printer className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => openOrderModal(order)}
-                          className="p-2.5 text-muted hover:text-primary hover:bg-base rounded-xl transition-all active:scale-90"
-                          title="Ver Detalles"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
+                          <PopoverTrigger>
+                            <button
+                              type="button"
+                              className="inline-flex items-center rounded-xl border border-theme bg-base p-2 text-primary transition-colors hover:bg-primary/5"
+                              aria-label={`Acciones para la orden ${order.orderNumber}`}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            side="bottom"
+                            align="end"
+                            className="w-56 overflow-hidden rounded-2xl border border-theme bg-surface shadow-xl"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveActionMenu(null);
+                                void downloadReceipt(order.id, order.orderNumber);
+                              }}
+                              className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-primary transition-colors hover:bg-primary/5"
+                            >
+                              <Printer className="h-4 w-4" />
+                              Descargar recibo
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveActionMenu(null);
+                                void openOrderModal(order);
+                              }}
+                              className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-primary transition-colors hover:bg-primary/5"
+                            >
+                              <PenTool className="h-4 w-4" />
+                              Editar pedido
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void handleDeleteOrder(order)}
+                              disabled={
+                                isReadOnly ||
+                                deletingOrderId === order.id ||
+                                !canDeleteOrder(order)
+                              }
+                              className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-rose-700 transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {deletingOrderId === order.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                              Eliminar
+                            </button>
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </td>
                   </tr>
@@ -932,7 +1053,7 @@ export default function OrdersManager() {
                 <div className="px-6 py-5 border-b border-theme flex justify-between items-center bg-base/50">
                   <div className="flex items-center gap-3">
                     <h3 className="text-lg font-black text-primary tracking-tight">
-                      Orden #{selectedOrder.orderNumber}
+                      Editar pedido #{selectedOrder.orderNumber}
                     </h3>
                     {getSourceBadge(selectedOrder.source)}
                     <span
@@ -1173,18 +1294,34 @@ export default function OrdersManager() {
                       </button>
                     </div>
                     {!isReadOnly && (
-                      <button
-                        onClick={handleUpdateOrder}
-                        disabled={updating}
-                        className="w-full sm:w-auto bg-primary text-base-color px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-[0.2em] hover:opacity-90 transition-all shadow-xl shadow-primary/10 flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
-                      >
-                        {updating ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Save className="w-4 h-4" />
+                      <div className="flex w-full sm:w-auto flex-col sm:flex-row gap-3">
+                        {canDeleteOrder(selectedOrder) && (
+                          <button
+                            onClick={() => handleDeleteOrder(selectedOrder)}
+                            disabled={deletingOrderId === selectedOrder.id}
+                            className="w-full sm:w-auto border border-red-200 bg-red-50 text-red-600 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-[0.2em] hover:bg-red-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
+                          >
+                            {deletingOrderId === selectedOrder.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                            Eliminar pedido
+                          </button>
                         )}
-                        Guardar Cambios
-                      </button>
+                        <button
+                          onClick={handleUpdateOrder}
+                          disabled={updating}
+                          className="w-full sm:w-auto bg-primary text-base-color px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-[0.2em] hover:opacity-90 transition-all shadow-xl shadow-primary/10 flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
+                        >
+                          {updating ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Save className="w-4 h-4" />
+                          )}
+                          Guardar Cambios
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>

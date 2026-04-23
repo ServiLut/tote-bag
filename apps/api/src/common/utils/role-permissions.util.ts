@@ -6,6 +6,7 @@ export interface RolePermission {
 }
 
 const ALL_PERMISSIONS: readonly RolePermission[] = [
+  { resource: 'dashboard', action: 'read' },
   { resource: 'products', action: 'create' },
   { resource: 'products', action: 'read' },
   { resource: 'products', action: 'update' },
@@ -28,16 +29,19 @@ const ALL_PERMISSIONS: readonly RolePermission[] = [
 ];
 
 const MANAGER_PERMISSIONS = ALL_PERMISSIONS.filter((permission) =>
-  ['products', 'orders', 'b2b', 'shipping', 'personalizations'].includes(
-    permission.resource,
-  ),
+  [
+    'dashboard',
+    'products',
+    'orders',
+    'b2b',
+    'shipping',
+    'personalizations',
+  ].includes(permission.resource),
 );
 
 const CUSTOMER_PERMISSIONS = ALL_PERMISSIONS.filter(
   (permission) =>
-    (permission.resource === 'products' && permission.action === 'read') ||
-    (permission.resource === 'orders' &&
-      (permission.action === 'read' || permission.action === 'create')),
+    permission.resource === 'products' && permission.action === 'read',
 );
 
 const ROLE_PERMISSIONS: Record<Role, readonly RolePermission[]> = {

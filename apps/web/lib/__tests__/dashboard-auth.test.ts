@@ -1,4 +1,6 @@
 import {
+  buildDashboardAuthHeaders,
+  buildDashboardDebugRoleHeader,
   canUseDashboardDebugRole,
   extractDebugRoleAllowedFromProfilePayload,
   extractRoleFromProfilePayload,
@@ -44,5 +46,16 @@ describe('dashboard auth', () => {
     expect(canUseDashboardDebugRole(true, 'production')).toBe(false);
     expect(canUseDashboardDebugRole(false, 'development')).toBe(false);
     expect(canUseDashboardDebugRole(true, 'development')).toBe(true);
+  });
+
+  it('construye headers de debug role y auth para SSR y cliente', () => {
+    expect(buildDashboardDebugRoleHeader(null)).toEqual({});
+    expect(buildDashboardDebugRoleHeader('MANAGER')).toEqual({
+      'x-debug-role': 'MANAGER',
+    });
+    expect(buildDashboardAuthHeaders('token-123', 'CUSTOMER')).toEqual({
+      Authorization: 'Bearer token-123',
+      'x-debug-role': 'CUSTOMER',
+    });
   });
 });

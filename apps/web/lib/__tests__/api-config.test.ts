@@ -32,4 +32,14 @@ describe('api config', () => {
       'http://192.168.1.54:4004/api/v1',
     ]);
   });
+
+  it('extrae hosts desde el error de conexion de la API', async () => {
+    const { extractApiConnectionErrorTargets } = await import('../api-config');
+
+    expect(
+      extractApiConnectionErrorTargets(
+        'No fue posible conectar con la API. URLs probadas: http://localhost:4004/api/v1/dashboard/stats, http://127.0.0.1:4004/api/v1/dashboard/stats, http://localhost:4004/api/v1/profiles/me. Detalle: fetch failed',
+      ),
+    ).toEqual(['localhost:4004', '127.0.0.1:4004']);
+  });
 });

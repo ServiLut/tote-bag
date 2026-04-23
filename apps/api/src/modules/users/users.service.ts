@@ -17,6 +17,7 @@ import {
   isProtectedAdminEmail,
 } from '../../common/utils/protected-admin.util';
 import { CreateCustomerDto } from './dto/create-customer.dto';
+import { UpdateCustomerDto } from './dto/update-customer.dto';
 
 type CreatedCustomerProfile = {
   id: string;
@@ -45,6 +46,8 @@ type CreatedCustomerProfile = {
     orders: number;
   };
 };
+
+const CUSTOMER_BAN_DURATION = '876000h';
 
 @Injectable()
 export class UsersService {
@@ -75,6 +78,160 @@ export class UsersService {
     return this.supabaseAdmin;
   }
 
+  private normalizeCustomerFields(
+    data: Pick<
+      CreateCustomerDto | UpdateCustomerDto,
+      'email' | 'firstName' | 'lastName' | 'phone' | 'neighborhood' | 'address'
+    >,
+  ) {
+    return {
+      normalizedEmail: data.email.trim().toLowerCase(),
+      normalizedFirstName: data.firstName.trim(),
+      normalizedLastName: data.lastName.trim(),
+      normalizedPhone: data.phone?.trim() || null,
+      normalizedNeighborhood: data.neighborhood?.trim() || null,
+      normalizedAddress: data.address?.trim() || null,
+    };
+  }
+
+  private mergeCustomerMetadata(
+    currentMetadata: Prisma.JsonValue | null,
+    patch: Record<string, unknown>,
+  ): Prisma.InputJsonValue {
+    const base: Prisma.JsonObject =
+      currentMetadata &&
+      typeof currentMetadata === 'object' &&
+      !Array.isArray(currentMetadata)
+        ? currentMetadata
+        : {};
+
+    return {
+      ...base,
+      ...patch,
+    } as Prisma.InputJsonValue;
+  }
+
+  private async resolveCustomerLocation(
+    departmentId?: string,
+    municipalityId?: string,
+  ) {
+    const [department, municipality] = await Promise.all([
+      departmentId
+        ? this.prisma.department.findUnique({
+            where: { id: departmentId },
+            select: { id: true, name: true },
+          })
+        : Promise.resolve(null),
+      municipalityId
+        ? this.prisma.municipality.findUnique({
+            where: { id: municipalityId },
+            select: {
+              id: true,
+              name: true,
+              departmentId: true,
+              department: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          })
+        : Promise.resolve(null),
+    ]);
+
+    if (departmentId && !department) {
+      throw new BadRequestException('El departamento seleccionado no existe.');
+    }
+
+    if (municipalityId && !municipality) {
+      throw new BadRequestException('El municipio seleccionado no existe.');
+    }
+
+    if (
+      department &&
+      municipality &&
+      municipality.departmentId !== department.id
+    ) {
+      throw new BadRequestException(
+        'El municipio no corresponde al departamento seleccionado.',
+      );
+    }
+
+    return {
+      department,
+      municipality,
+      resolvedDepartment: department ?? municipality?.department ?? null,
+    };
+  }
+
+  private async findCustomerProfileOrThrow(userId: string) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { userId },
+      include: {
+        user: {
+          select: { id: true, role: true, isActive: true },
+        },
+        _count: {
+          select: {
+            orders: true,
+            personalizationRequests: true,
+          },
+        },
+      },
+    });
+
+    if (!profile || profile.user.role !== Role.CUSTOMER) {
+      throw new NotFoundException(
+        `Cliente con ID de usuario ${userId} no encontrado`,
+      );
+    }
+
+    return profile;
+  }
+
+  private async findCustomerListProfileOrThrow(userId: string) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { userId },
+      include: {
+        user: {
+          select: { role: true, isActive: true },
+        },
+        _count: {
+          select: { orders: true },
+        },
+      },
+    });
+
+    if (!profile || profile.user.role !== Role.CUSTOMER) {
+      throw new NotFoundException(
+        `Cliente con ID de usuario ${userId} no encontrado`,
+      );
+    }
+
+    return profile as unknown as CreatedCustomerProfile;
+  }
+
+  private handleSupabaseUserMutationError(
+    error: { message: string; status?: number } | null,
+  ) {
+    if (!error) {
+      return;
+    }
+
+    const message = error.message.toLowerCase();
+
+    if (
+      message.includes('already registered') ||
+      message.includes('already been registered') ||
+      error.status === 422
+    ) {
+      throw new ConflictException('Correo ya registrado');
+    }
+
+    throw new BadRequestException(error.message);
+  }
+
   async findAll() {
     const users = await this.prisma.user.findMany({
       select: {
@@ -103,14 +260,16 @@ export class UsersService {
       throw new UnauthorizedException('User not authenticated');
     }
 
-    const normalizedEmail = data.email.trim().toLowerCase();
-    const normalizedFirstName = data.firstName.trim();
-    const normalizedLastName = data.lastName.trim();
-    const normalizedPhone = data.phone?.trim() || null;
-    const normalizedNeighborhood = data.neighborhood?.trim() || null;
-    const normalizedAddress = data.address?.trim() || null;
+    const {
+      normalizedEmail,
+      normalizedFirstName,
+      normalizedLastName,
+      normalizedPhone,
+      normalizedNeighborhood,
+      normalizedAddress,
+    } = this.normalizeCustomerFields(data);
 
-    const [existingLocalUser, department, municipality] = await Promise.all([
+    const [existingLocalUser, location] = await Promise.all([
       this.prisma.user.findFirst({
         where: {
           email: {
@@ -120,53 +279,13 @@ export class UsersService {
         },
         select: { id: true },
       }),
-      data.departmentId
-        ? this.prisma.department.findUnique({
-            where: { id: data.departmentId },
-            select: { id: true, name: true },
-          })
-        : Promise.resolve(null),
-      data.municipalityId
-        ? this.prisma.municipality.findUnique({
-            where: { id: data.municipalityId },
-            select: {
-              id: true,
-              name: true,
-              departmentId: true,
-              department: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
-            },
-          })
-        : Promise.resolve(null),
+      this.resolveCustomerLocation(data.departmentId, data.municipalityId),
     ]);
 
     if (existingLocalUser) {
       throw new ConflictException('Correo ya registrado');
     }
-
-    if (data.departmentId && !department) {
-      throw new BadRequestException('El departamento seleccionado no existe.');
-    }
-
-    if (data.municipalityId && !municipality) {
-      throw new BadRequestException('El municipio seleccionado no existe.');
-    }
-
-    if (
-      department &&
-      municipality &&
-      municipality.departmentId !== department.id
-    ) {
-      throw new BadRequestException(
-        'El municipio no corresponde al departamento seleccionado.',
-      );
-    }
-
-    const resolvedDepartment = department ?? municipality?.department ?? null;
+    const { municipality, resolvedDepartment } = location;
     const supabaseAdmin = this.getSupabaseAdmin();
 
     const { data: authResponse, error: authError } =
@@ -272,6 +391,177 @@ export class UsersService {
 
       throw error;
     }
+  }
+
+  async updateCustomer(
+    userId: string,
+    data: UpdateCustomerDto,
+    actorUserId?: string,
+  ) {
+    if (!actorUserId) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    const currentProfile = await this.findCustomerProfileOrThrow(userId);
+    const {
+      normalizedEmail,
+      normalizedFirstName,
+      normalizedLastName,
+      normalizedPhone,
+      normalizedNeighborhood,
+      normalizedAddress,
+    } = this.normalizeCustomerFields(data);
+
+    const [existingLocalUser, location] = await Promise.all([
+      this.prisma.user.findFirst({
+        where: {
+          email: {
+            equals: normalizedEmail,
+            mode: 'insensitive',
+          },
+          NOT: {
+            id: userId,
+          },
+        },
+        select: { id: true },
+      }),
+      this.resolveCustomerLocation(data.departmentId, data.municipalityId),
+    ]);
+
+    if (existingLocalUser) {
+      throw new ConflictException('Correo ya registrado');
+    }
+
+    const { municipality, resolvedDepartment } = location;
+    const currentEmail = currentProfile.email.trim().toLowerCase();
+    const shouldUpdateAuthEmail = currentEmail !== normalizedEmail;
+
+    if (shouldUpdateAuthEmail) {
+      const supabaseAdmin = this.getSupabaseAdmin();
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+        email: normalizedEmail,
+        email_confirm: true,
+        user_metadata: {
+          firstName: normalizedFirstName,
+          lastName: normalizedLastName,
+          source: 'dashboard-customer-update',
+          updatedByUserId: actorUserId,
+        },
+      });
+
+      this.handleSupabaseUserMutationError(error);
+    }
+
+    const updatedProfile = await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          email: normalizedEmail,
+        },
+      });
+
+      return tx.profile.update({
+        where: { userId },
+        data: {
+          email: normalizedEmail,
+          firstName: normalizedFirstName,
+          lastName: normalizedLastName,
+          phone: normalizedPhone,
+          department: resolvedDepartment?.name ?? null,
+          municipality: municipality?.name ?? null,
+          neighborhood: normalizedNeighborhood,
+          address: normalizedAddress,
+          departmentId: resolvedDepartment?.id ?? null,
+          municipalityId: municipality?.id ?? null,
+          metadata: this.mergeCustomerMetadata(currentProfile.metadata, {
+            source: 'dashboard-customer-update',
+            updatedByUserId: actorUserId,
+            updatedAt: new Date().toISOString(),
+          }),
+        },
+        include: {
+          user: {
+            select: { role: true, isActive: true },
+          },
+          _count: {
+            select: { orders: true },
+          },
+        },
+      }) as unknown as CreatedCustomerProfile;
+    });
+
+    return {
+      message: 'Cliente actualizado exitosamente',
+      profile: updatedProfile,
+    };
+  }
+
+  async updateCustomerStatus(
+    userId: string,
+    isActive: boolean,
+    actorUserId?: string,
+  ) {
+    if (!actorUserId) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    await this.findCustomerProfileOrThrow(userId);
+
+    const supabaseAdmin = this.getSupabaseAdmin();
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+      ban_duration: isActive ? 'none' : CUSTOMER_BAN_DURATION,
+    });
+
+    if (error) {
+      throw new BadRequestException(error.message);
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { isActive },
+    });
+
+    return {
+      message: isActive
+        ? 'Cliente activado exitosamente'
+        : 'Cliente desactivado exitosamente',
+      profile: await this.findCustomerListProfileOrThrow(userId),
+    };
+  }
+
+  async deleteCustomer(userId: string, actorUserId?: string) {
+    if (!actorUserId) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    const currentProfile = await this.findCustomerProfileOrThrow(userId);
+
+    if (currentProfile._count.orders > 0) {
+      throw new BadRequestException(
+        'No se puede eliminar el cliente porque tiene pedidos asociados.',
+      );
+    }
+
+    if (currentProfile._count.personalizationRequests > 0) {
+      throw new BadRequestException(
+        'No se puede eliminar el cliente porque tiene solicitudes de personalizacion asociadas.',
+      );
+    }
+
+    const supabaseAdmin = this.getSupabaseAdmin();
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+
+    if (error) {
+      throw new BadRequestException(error.message);
+    }
+
+    await this.prisma.user.delete({
+      where: { id: userId },
+    });
+
+    return {
+      message: 'Cliente eliminado exitosamente',
+    };
   }
 
   async updateUserRole(userId: string, newRole: Role, actorUserId?: string) {

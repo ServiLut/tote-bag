@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Req } from '@nestjs/common';
+import { Controller, ForbiddenException, Get, Query, Req } from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { RolesService } from '../roles/roles.service';
@@ -18,7 +18,7 @@ export class DashboardController {
   ) {}
 
   @Get('stats')
-  @RequirePermissions({ resource: 'orders', action: 'read' })
+  @RequirePermissions({ resource: 'dashboard', action: 'read' })
   async getStats(
     @Req() req: RequestWithUser,
     @Query('lowStockThreshold') lowStockThreshold?: string,
@@ -27,6 +27,13 @@ export class DashboardController {
     const { effectiveRole } = req.user?.id
       ? await this.rolesService.getEffectiveRole(req.user.id)
       : { effectiveRole: null };
+
+    if (
+      effectiveRole !== Role.ADMIN &&
+      effectiveRole !== Role.MANAGER
+    ) {
+      throw new ForbiddenException('Dashboard access is restricted');
+    }
 
     return this.dashboardService.getStats(
       Number.isFinite(threshold) ? threshold : 10,

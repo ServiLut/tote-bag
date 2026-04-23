@@ -44,6 +44,28 @@ export function parseDashboardDebugRoleCookie(value: string | null | undefined) 
   return normalizeDashboardRole(value);
 }
 
+export function buildDashboardDebugRoleHeader(
+  debugRole: DashboardRole | null | undefined,
+): Record<string, string> {
+  if (!debugRole) {
+    return {};
+  }
+
+  return {
+    [DASHBOARD_DEBUG_ROLE_HEADER_NAME]: debugRole,
+  };
+}
+
+export function buildDashboardAuthHeaders(
+  accessToken: string,
+  debugRole: DashboardRole | null | undefined,
+): Record<string, string> {
+  return {
+    Authorization: `Bearer ${accessToken}`,
+    ...buildDashboardDebugRoleHeader(debugRole),
+  };
+}
+
 export function normalizeEmail(email: string | null | undefined) {
   return email?.trim().toLowerCase() || null;
 }

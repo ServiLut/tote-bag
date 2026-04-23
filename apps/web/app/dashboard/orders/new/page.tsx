@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -11,6 +10,7 @@ import {
   Printer,
   Search,
   Trash2,
+  X,
 } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
 import { Badge, Input, InputGroup } from '@tote-bag/ui';
@@ -20,6 +20,15 @@ import {
   handleCurrencyInputChangeWithState,
   sanitizeIntegerInput,
 } from '@/lib/numeric-input';
+import {
+  getManualOrderContactPhone,
+  getManualOrderUnitPrice,
+} from '@/lib/manual-order';
+import {
+  extractApiErrorMessage,
+  formatApiConnectionErrorMessage,
+  getApiResponseErrorMessage,
+} from '@/lib/api-error';
 import { ApiResponse } from '@/types/api';
 import { createClient } from '@/utils/supabase/client';
 import { apiFetch } from '@/utils/api';
@@ -33,6 +42,8 @@ interface Profile {
   department?: string | null;
   municipality?: string | null;
   address?: string | null;
+  departmentId?: string | null;
+  municipalityId?: string | null;
 }
 
 interface Variant {
@@ -41,15 +52,58 @@ interface Variant {
   size?: string;
   color: string;
   stock: number;
-  salePrice?: number | null;
+  salePrice?: number | string | null;
+  minPrice?: number | string | null;
+  isActive?: boolean;
 }
 
 interface Product {
   id: string;
   name: string;
   // Transitional compatibility for legacy API consumers.
-  basePrice: number;
+  basePrice: number | string;
   variants: Variant[];
+}
+
+function normalizeCatalogMoney(value?: number | string | null) {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  return 0;
+}
+
+function getCatalogReferencePrice(product: Product) {
+  const activeVariants = product.variants.filter(
+    (variant) => variant.isActive !== false,
+  );
+  const referenceVariant =
+    activeVariants
+      .filter(
+        (variant) => normalizeCatalogMoney(variant.salePrice) > 0,
+      )
+      .sort(
+        (left, right) =>
+          normalizeCatalogMoney(left.salePrice) -
+          normalizeCatalogMoney(right.salePrice),
+      )[0]
+    || activeVariants[0]
+    || product.variants[0]
+    || null;
+
+  const referenceVariantSalePrice = normalizeCatalogMoney(
+    referenceVariant?.salePrice,
+  );
+  if (referenceVariantSalePrice > 0) {
+    return referenceVariantSalePrice;
+  }
+
+  return normalizeCatalogMoney(product.basePrice);
 }
 
 interface ShippingProvider {
@@ -79,6 +133,40 @@ interface LocationOption {
   name: string;
 }
 
+interface ManualCustomerFormState {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  departmentId: string;
+  municipalityId: string;
+  neighborhood: string;
+  address: string;
+}
+
+interface ProfilesListPayload {
+  items: Profile[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+const INITIAL_MANUAL_CUSTOMER_FORM: ManualCustomerFormState = {
+  email: '',
+  password: '',
+  firstName: '',
+  lastName: '',
+  phone: '',
+  departmentId: '',
+  municipalityId: '',
+  neighborhood: '',
+  address: '',
+};
+
 export default function NewManualOrderPage() {
   const router = useRouter();
   const supabase = createClient();
@@ -86,6 +174,7 @@ export default function NewManualOrderPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [productsError, setProductsError] = useState<string | null>(null);
   const [providersError, setProvidersError] = useState<string | null>(null);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -94,6 +183,14 @@ export default function NewManualOrderPage() {
   const [municipalities, setMunicipalities] = useState<LocationOption[]>([]);
   const [loadingMunicipalities, setLoadingMunicipalities] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<CreatedOrder | null>(null);
+  const [showCreateCustomerModal, setShowCreateCustomerModal] = useState(false);
+  const [createCustomerSubmitting, setCreateCustomerSubmitting] = useState(false);
+  const [createCustomerError, setCreateCustomerError] = useState<string | null>(null);
+  const [customerSearchLoading, setCustomerSearchLoading] = useState(false);
+  const [customerSearchError, setCustomerSearchError] = useState<string | null>(null);
+  const [hasCompletedCustomerSearch, setHasCompletedCustomerSearch] = useState(false);
+  const [createCustomerForm, setCreateCustomerForm] = useState<ManualCustomerFormState>(INITIAL_MANUAL_CUSTOMER_FORM);
+  const [createCustomerMunicipalities, setCreateCustomerMunicipalities] = useState<LocationOption[]>([]);
 
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [searchProfile, setSearchProfile] = useState('');
@@ -102,7 +199,8 @@ export default function NewManualOrderPage() {
   const [items, setItems] = useState<OrderItem[]>([]);
   const [discount, setDiscount] = useState(() => createCurrencyInputState(0));
   const [discountType, setDiscountType] = useState<'amount' | 'percent'>('amount');
-  const [initialStatus, setInitialStatus] = useState('PENDIENTE_PAGO');
+  const [initialStatus, setInitialStatus] = useState<'PENDIENTE_PAGO' | 'PAGADA'>('PENDIENTE_PAGO');
+  const [paymentReceiptUrl, setPaymentReceiptUrl] = useState('');
   const [shippingData, setShippingData] = useState({
     providerId: '',
     providerName: '',
@@ -116,6 +214,8 @@ export default function NewManualOrderPage() {
 
   const fetchData = useCallback(async () => {
     try {
+      setFormError(null);
+
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -129,10 +229,7 @@ export default function NewManualOrderPage() {
         Authorization: `Bearer ${session.access_token}`,
       };
 
-      const [profilesRes, productsRes, providersRes, departmentsRes] = await Promise.all([
-        apiFetch('/profiles?role=CUSTOMER', {
-          headers: authHeaders,
-        }),
+      const [productsResult, providersResult, departmentsResult] = await Promise.allSettled([
         apiFetch('/catalog/admin/products', {
           headers: authHeaders,
         }),
@@ -142,42 +239,56 @@ export default function NewManualOrderPage() {
         apiFetch('/locations/departments'),
       ]);
 
-      if (!profilesRes.ok || !productsRes.ok) {
-        const errors = [
-          !profilesRes.ok ? `profiles:${profilesRes.status}` : null,
-          !productsRes.ok ? `products:${productsRes.status}` : null,
-        ].filter(Boolean);
-
-        throw new Error(`No se pudo cargar la informacion del formulario. ${errors.join(' | ')}`);
-      }
-
-      const [profilesJson, productsJson]: [
-        ApiResponse<Profile[]>,
-        ApiResponse<Product[]>,
-      ] = await Promise.all([
-        profilesRes.json(),
-        productsRes.json(),
-      ]);
-
-      let providersJson: ApiResponse<ShippingProvider[]> | null = null;
-      if (providersRes.ok) {
-        providersJson = await providersRes.json();
-        setProvidersError(null);
+      if (productsResult.status === 'fulfilled') {
+        const productsRes = productsResult.value;
+        if (productsRes.ok) {
+          const productsJson: ApiResponse<Product[]> = await productsRes.json();
+          setProducts(productsJson.data || []);
+          setProductsError(null);
+        } else {
+          setProducts([]);
+          setProductsError(
+            await getApiResponseErrorMessage(
+              productsRes,
+              `No se pudieron cargar los productos (${productsRes.status}).`,
+              'productos del catalogo',
+            ),
+          );
+        }
       } else {
-        setProvidersError(`No se pudieron cargar las transportadoras (${providersRes.status}). Puedes escribirla manualmente.`);
+        setProducts([]);
+        setProductsError(
+          formatApiConnectionErrorMessage(
+            productsResult.reason instanceof Error
+              ? productsResult.reason.message
+              : 'No fue posible conectar con la API.',
+            'productos del catalogo',
+          ),
+        );
       }
 
-      let departmentsJson: ApiResponse<LocationOption[]> | null = null;
-      if (departmentsRes.ok) {
-        departmentsJson = await departmentsRes.json();
+      if (providersResult.status === 'fulfilled') {
+        const providersRes = providersResult.value;
+        if (providersRes.ok) {
+          const providersJson: ApiResponse<ShippingProvider[]> = await providersRes.json();
+          setProviders(providersJson.data || []);
+          setProvidersError(null);
+        } else {
+          setProviders([]);
+          setProvidersError(`No se pudieron cargar las transportadoras (${providersRes.status}). Puedes escribirla manualmente.`);
+        }
+      } else {
+        setProviders([]);
+        setProvidersError('No fue posible cargar las transportadoras. Puedes escribirla manualmente.');
       }
 
-      setProfiles(profilesJson.data || []);
-      setProducts(productsJson.data || []);
-      setProviders(providersJson?.data || []);
-      setDepartments(departmentsJson?.data || []);
+      if (departmentsResult.status === 'fulfilled' && departmentsResult.value.ok) {
+        const departmentsJson: ApiResponse<LocationOption[]> = await departmentsResult.value.json();
+        setDepartments(departmentsJson.data || []);
+      } else {
+        setDepartments([]);
+      }
     } catch (error) {
-      console.error(error);
       setFormError(
         error instanceof Error
           ? error.message
@@ -207,14 +318,89 @@ export default function NewManualOrderPage() {
     }
   }, []);
 
-  const filteredProfiles = useMemo(() => {
-    const term = searchProfile.trim().toLowerCase();
-    if (term.length <= 2) return [];
-    return profiles.filter((profile) => {
-      const fullName = `${profile.firstName || ''} ${profile.lastName || ''}`.trim().toLowerCase();
-      return profile.email.toLowerCase().includes(term) || fullName.includes(term);
-    });
-  }, [profiles, searchProfile]);
+  const fetchCustomerProfiles = useCallback(async (
+    term: string,
+    signal: AbortSignal,
+  ) => {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        router.push('/login');
+        return;
+      }
+
+      const params = new URLSearchParams({
+        role: 'CUSTOMER',
+        search: term,
+        page: '1',
+        pageSize: '8',
+      });
+
+      const response = await apiFetch(`/profiles?${params.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`No se pudieron buscar clientes (${response.status}).`);
+      }
+
+      const body: ApiResponse<ProfilesListPayload | Profile[]> = await response.json();
+      const payload = body.data;
+      const items = Array.isArray(payload) ? payload : payload?.items || [];
+
+      setProfiles(items);
+      setCustomerSearchError(null);
+      setHasCompletedCustomerSearch(true);
+    } catch (error) {
+      if (signal.aborted) {
+        return;
+      }
+
+      console.error('Error searching customers:', error);
+      setProfiles([]);
+      setCustomerSearchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudieron buscar clientes.',
+      );
+      setHasCompletedCustomerSearch(true);
+    } finally {
+      if (!signal.aborted) {
+        setCustomerSearchLoading(false);
+      }
+    }
+  }, [router, supabase.auth]);
+
+  useEffect(() => {
+    const term = searchProfile.trim();
+    if (selectedProfile || term.length <= 2) {
+      setProfiles([]);
+      setCustomerSearchLoading(false);
+      setCustomerSearchError(null);
+      setHasCompletedCustomerSearch(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    setCustomerSearchLoading(true);
+    setCustomerSearchError(null);
+    setHasCompletedCustomerSearch(false);
+
+    const timeoutId = window.setTimeout(() => {
+      void fetchCustomerProfiles(term, controller.signal);
+    }, 250);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeoutId);
+    };
+  }, [fetchCustomerProfiles, searchProfile, selectedProfile]);
 
   const selectedProduct = useMemo(
     () => products.find((product) => product.id === selectedProductId) || null,
@@ -235,21 +421,32 @@ export default function NewManualOrderPage() {
     }).format(amount);
 
   const handleSelectProfile = (profile: Profile) => {
+    const resolvedDepartmentId =
+      profile.departmentId ||
+      departments.find(
+        (department) =>
+          department.name.toLowerCase() === profile.department?.toLowerCase(),
+      )?.id ||
+      '';
+
     setSelectedProfile(profile);
     setSearchProfile('');
-    
-    // Try to find department ID if name matches
-    const dept = departments.find(d => d.name.toLowerCase() === profile.department?.toLowerCase());
-    if (dept) {
-      fetchMunicipalities(dept.id);
+    setCustomerSearchError(null);
+    setHasCompletedCustomerSearch(false);
+
+    if (resolvedDepartmentId) {
+      void fetchMunicipalities(resolvedDepartmentId);
+    } else {
+      setMunicipalities([]);
     }
 
     setShippingData((current) => ({
       ...current,
       address: profile.address || '',
       city: profile.municipality || '',
+      cityId: profile.municipalityId || '',
       department: profile.department || '',
-      departmentId: dept?.id || '',
+      departmentId: resolvedDepartmentId,
       phone: profile.phone || '',
     }));
   };
@@ -286,7 +483,12 @@ export default function NewManualOrderPage() {
           size: variant.size,
           color: variant.color,
           quantity: 1,
-          price: variant.salePrice ?? 0,
+          price:
+            getCatalogReferencePrice(selectedProduct) ||
+            getManualOrderUnitPrice({
+              salePrice: normalizeCatalogMoney(variant.salePrice),
+              minPrice: normalizeCatalogMoney(variant.minPrice),
+            }),
           stock: variant.stock,
         },
       ];
@@ -319,6 +521,9 @@ export default function NewManualOrderPage() {
     if (!shippingData.department.trim()) return 'Ingresa un departamento.';
     if (!shippingData.city.trim()) return 'Ingresa una ciudad o municipio.';
     if (!shippingData.address.trim()) return 'Ingresa una direccion completa.';
+    if (initialStatus === 'PAGADA' && !paymentReceiptUrl.trim()) {
+      return 'Adjunta la URL o referencia privada del soporte de pago.';
+    }
     return null;
   };
 
@@ -352,7 +557,10 @@ export default function NewManualOrderPage() {
           firstName: selectedProfile.firstName || 'Cliente',
           lastName: selectedProfile.lastName || 'Manual',
           customerEmail: selectedProfile.email,
-          customerPhone: selectedProfile.phone || shippingData.phone,
+          customerPhone: getManualOrderContactPhone(
+            shippingData.phone,
+            selectedProfile.phone,
+          ),
           department: shippingData.department,
           city: shippingData.city,
           shippingAddress: {
@@ -368,6 +576,10 @@ export default function NewManualOrderPage() {
           initialStatus,
           manualDiscountType: discountType,
           manualDiscountValue: discount.numericValue,
+          paymentReceiptUrl:
+            initialStatus === 'PAGADA'
+              ? paymentReceiptUrl.trim() || undefined
+              : undefined,
           items: items.map((item) => ({
             productId: item.productId,
             variantId: item.variantId,
@@ -398,6 +610,148 @@ export default function NewManualOrderPage() {
   const municipalityOptions = useMemo(() => 
     municipalities.map(m => ({ value: m.id, label: m.name })),
   [municipalities]);
+
+  const createCustomerMunicipalityOptions = useMemo(() =>
+    createCustomerMunicipalities.map((m) => ({ value: m.id, label: m.name })),
+  [createCustomerMunicipalities]);
+
+  const shouldShowCustomerSearchDropdown =
+    !selectedProfile && searchProfile.trim().length > 2;
+
+  useEffect(() => {
+    if (!showCreateCustomerModal || !createCustomerForm.departmentId) {
+      setCreateCustomerMunicipalities([]);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    const fetchCreateMunicipalities = async () => {
+      try {
+        const response = await apiFetch(
+          `/locations/municipalities/${createCustomerForm.departmentId}`,
+          {
+            signal: controller.signal,
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `No se pudieron cargar los municipios (${response.status}).`,
+          );
+        }
+
+        const body: ApiResponse<LocationOption[]> = await response.json();
+        setCreateCustomerMunicipalities(body.data || []);
+      } catch (error) {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        console.error('Error fetching municipalities for manual customer:', error);
+        setCreateCustomerMunicipalities([]);
+      }
+    };
+
+    void fetchCreateMunicipalities();
+
+    return () => {
+      controller.abort();
+    };
+  }, [createCustomerForm.departmentId, showCreateCustomerModal]);
+
+  const closeCreateCustomerModal = useCallback((options?: { force?: boolean }) => {
+    if (createCustomerSubmitting && !options?.force) {
+      return;
+    }
+
+    setShowCreateCustomerModal(false);
+    setCreateCustomerError(null);
+    setCreateCustomerMunicipalities([]);
+    setCreateCustomerForm(INITIAL_MANUAL_CUSTOMER_FORM);
+  }, [createCustomerSubmitting]);
+
+  const handleCreateCustomerFormChange = (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    const field = event.target.dataset.field || event.target.name;
+    const { value } = event.target;
+    setCreateCustomerForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  };
+
+  const handleCreateCustomer = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setCreateCustomerError(null);
+    setCreateCustomerSubmitting(true);
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Tu sesion expiro. Inicia sesion de nuevo.');
+      }
+
+      const response = await apiFetch('/users/customers', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: createCustomerForm.email.trim(),
+          password: createCustomerForm.password,
+          firstName: createCustomerForm.firstName.trim(),
+          lastName: createCustomerForm.lastName.trim(),
+          phone: createCustomerForm.phone.trim() || undefined,
+          departmentId: createCustomerForm.departmentId || undefined,
+          municipalityId: createCustomerForm.municipalityId || undefined,
+          neighborhood: createCustomerForm.neighborhood.trim() || undefined,
+          address: createCustomerForm.address.trim() || undefined,
+        }),
+      });
+
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(
+          extractApiErrorMessage(
+            body,
+            `No se pudo crear el cliente (${response.status}).`,
+          ),
+        );
+      }
+
+      const createdProfile = (
+        body as ApiResponse<{ message: string; profile: Profile }>
+      )?.data?.profile;
+
+      if (!createdProfile) {
+        throw new Error('El cliente se creo, pero la respuesta no devolvio el perfil.');
+      }
+
+      setProfiles((current) => {
+        const withoutDuplicate = current.filter(
+          (profile) => profile.id !== createdProfile.id,
+        );
+        return [createdProfile, ...withoutDuplicate];
+      });
+      handleSelectProfile(createdProfile);
+      closeCreateCustomerModal({ force: true });
+    } catch (error) {
+      console.error('Error creating manual customer:', error);
+      setCreateCustomerError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo crear el cliente manualmente.',
+      );
+    } finally {
+      setCreateCustomerSubmitting(false);
+    }
+  };
 
   const downloadProtectedFile = useCallback(
     async (path: string, fallbackFileName: string) => {
@@ -451,10 +805,16 @@ export default function NewManualOrderPage() {
           <h1 className="text-4xl font-black text-primary">Pedido Creado</h1>
           <p className="mt-2 text-muted">La orden #{createdOrder.orderNumber} se registro correctamente.</p>
         </div>
+        {formError && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {formError}
+          </div>
+        )}
         <div className="grid gap-3">
           <button
             onClick={async () => {
               try {
+                setFormError(null);
                 await downloadProtectedFile(
                   `/orders/${createdOrder.id}/receipt`,
                   `Recibo_Orden_${createdOrder.orderNumber}.pdf`,
@@ -473,12 +833,29 @@ export default function NewManualOrderPage() {
             <span className="flex items-center justify-center gap-2"><Printer className="h-5 w-5" />Descargar Recibo</span>
           </button>
           <button onClick={() => {
-            const phone = (selectedProfile?.phone || shippingData.phone || '').replace(/\D/g, '');
+            const phone = getManualOrderContactPhone(
+              shippingData.phone,
+              selectedProfile?.phone,
+            ).replace(/\D/g, '');
             const firstName = selectedProfile?.firstName || 'cliente';
             const message = `Hola ${firstName}. Adjunto el recibo de tu pedido #${createdOrder.orderNumber}. Gracias por tu compra en Tote Bag.`;
             window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
           }} className="rounded-2xl bg-emerald-500 p-4 font-black uppercase tracking-widest text-white transition-all hover:scale-[1.01] hover:bg-emerald-600">
             <span className="flex items-center justify-center gap-2.5"><WhatsAppIcon className="h-5 w-5 text-white" />Enviar por WhatsApp</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="rounded-2xl border border-theme bg-surface p-4 font-black uppercase tracking-widest text-primary transition-all hover:bg-base"
+          >
+            Crear Nuevo Pedido
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push('/dashboard/orders')}
+            className="rounded-2xl border border-theme bg-surface p-4 font-black uppercase tracking-widest text-primary transition-all hover:bg-base"
+          >
+            Volver a Pedidos
           </button>
         </div>
       </div>
@@ -517,36 +894,66 @@ export default function NewManualOrderPage() {
               <div className="space-y-3">
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-                  <input value={searchProfile} onChange={(event) => setSearchProfile(event.target.value)} placeholder="Buscar cliente por nombre o email..." className="w-full rounded-2xl border border-theme bg-base py-3 pl-11 pr-4 outline-none focus:ring-2 focus:ring-primary/20" />
-                  {filteredProfiles.length > 0 && (
+                  <input value={searchProfile} onChange={(event) => setSearchProfile(event.target.value)} placeholder="Buscar cliente por nombre, email o telefono..." className="w-full rounded-2xl border border-theme bg-base py-3 pl-11 pr-4 outline-none focus:ring-2 focus:ring-primary/20" />
+                  {shouldShowCustomerSearchDropdown && (
                     <div className="absolute z-10 mt-2 max-h-56 w-full overflow-y-auto rounded-2xl border border-theme bg-surface shadow-xl">
-                      {filteredProfiles.map((profile) => (
-                        <button key={profile.id} onClick={() => handleSelectProfile(profile)} className="flex w-full items-center justify-between border-b border-theme px-4 py-3 text-left hover:bg-primary/5 last:border-0">
-                          <div>
-                            <p className="text-sm font-bold text-primary">{profile.firstName || 'Sin nombre'} {profile.lastName || ''}</p>
-                            <p className="text-[10px] text-muted">{profile.email}</p>
-                          </div>
-                          <Plus className="h-4 w-4 text-primary" />
-                        </button>
-                      ))}
+                      {customerSearchLoading ? (
+                        <div className="flex items-center gap-2 px-4 py-3 text-sm text-muted">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Buscando clientes...
+                        </div>
+                      ) : customerSearchError ? (
+                        <div className="px-4 py-3 text-sm text-rose-600">
+                          {customerSearchError}
+                        </div>
+                      ) : profiles.length > 0 ? (
+                        profiles.map((profile) => (
+                          <button key={profile.id} type="button" onClick={() => handleSelectProfile(profile)} className="flex w-full items-center justify-between border-b border-theme px-4 py-3 text-left hover:bg-primary/5 last:border-0">
+                            <div>
+                              <p className="text-sm font-bold text-primary">{profile.firstName || 'Sin nombre'} {profile.lastName || ''}</p>
+                              <p className="text-[10px] text-muted">{profile.email}</p>
+                              {profile.phone ? (
+                                <p className="text-[10px] text-muted">{profile.phone}</p>
+                              ) : null}
+                            </div>
+                            <Plus className="h-4 w-4 text-primary" />
+                          </button>
+                        ))
+                      ) : hasCompletedCustomerSearch ? (
+                        <div className="px-4 py-3 text-sm text-muted">
+                          No se encontraron clientes.
+                        </div>
+                      ) : null}
                     </div>
                   )}
                 </div>
-                <Link href="/register" target="_blank" className="block rounded-2xl border border-theme bg-primary/5 px-4 py-3 text-center text-[10px] font-black uppercase tracking-widest text-primary">
-                  Crear Nuevo Cliente en Registro
-                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCreateCustomerError(null);
+                    setShowCreateCustomerModal(true);
+                  }}
+                  className="block w-full rounded-2xl border border-theme bg-primary/5 px-4 py-3 text-center text-[10px] font-black uppercase tracking-widest text-primary"
+                >
+                  Crear Nuevo Cliente
+                </button>
               </div>
             )}
           </section>
 
           <section className="space-y-4 rounded-3xl border border-theme bg-surface p-6">
             <h2 className="text-lg font-black uppercase tracking-widest text-primary">Productos</h2>
+            {productsError && (
+              <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {productsError}
+              </div>
+            )}
             <div className="grid gap-3 md:grid-cols-2">
-              <select value={selectedProductId} onChange={(event) => { setSelectedProductId(event.target.value); setSelectedVariantId(''); }} className="rounded-xl border border-theme bg-base px-4 py-3 font-medium outline-none focus:ring-2 focus:ring-primary/20">
+              <select value={selectedProductId} onChange={(event) => { setSelectedProductId(event.target.value); setSelectedVariantId(''); }} disabled={Boolean(productsError)} className="rounded-xl border border-theme bg-base px-4 py-3 font-medium outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60">
                 <option value="">Selecciona producto...</option>
                 {products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
               </select>
-              <select value={selectedVariantId} onChange={(event) => setSelectedVariantId(event.target.value)} disabled={!selectedProduct} className="rounded-xl border border-theme bg-base px-4 py-3 font-medium outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60">
+              <select value={selectedVariantId} onChange={(event) => setSelectedVariantId(event.target.value)} disabled={!selectedProduct || Boolean(productsError)} className="rounded-xl border border-theme bg-base px-4 py-3 font-medium outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60">
                 <option value="">Selecciona variante...</option>
                 {selectedProduct?.variants.map((variant) => (
                   <option key={variant.id} value={variant.id} disabled={variant.stock <= 0}>
@@ -555,7 +962,7 @@ export default function NewManualOrderPage() {
                 ))}
               </select>
             </div>
-            <button onClick={addItem} disabled={!selectedProduct || !selectedVariantId} className="rounded-2xl bg-primary px-4 py-3 text-xs font-black uppercase tracking-widest text-base-color disabled:opacity-50">
+            <button onClick={addItem} disabled={!selectedProduct || !selectedVariantId || Boolean(productsError)} className="rounded-2xl bg-primary px-4 py-3 text-xs font-black uppercase tracking-widest text-base-color disabled:opacity-50">
               Agregar Producto
             </button>
 
@@ -676,16 +1083,206 @@ export default function NewManualOrderPage() {
             </div>
             <div className="flex items-center justify-between border-t border-theme pt-3"><span className="font-black uppercase tracking-widest text-primary">Total</span><span className="text-2xl font-black text-primary">{formatCurrency(total)}</span></div>
           </div>
-          <select value={initialStatus} onChange={(event) => setInitialStatus(event.target.value)} className="w-full rounded-xl border border-theme bg-base px-4 py-3 font-black outline-none focus:ring-2 focus:ring-primary/20">
+          <select
+            value={initialStatus}
+            onChange={(event) => {
+              const nextStatus = event.target.value as 'PENDIENTE_PAGO' | 'PAGADA';
+              setInitialStatus(nextStatus);
+              if (nextStatus !== 'PAGADA') {
+                setPaymentReceiptUrl('');
+              }
+            }}
+            className="w-full rounded-xl border border-theme bg-base px-4 py-3 font-black outline-none focus:ring-2 focus:ring-primary/20"
+          >
             <option value="PENDIENTE_PAGO">Pendiente de Pago</option>
             <option value="PAGADA">Pagada / Confirmada</option>
-            <option value="EN_PRODUCCION">En Produccion</option>
           </select>
+          {initialStatus === 'PAGADA' && (
+            <input
+              type="text"
+              value={paymentReceiptUrl}
+              onChange={(event) => setPaymentReceiptUrl(event.target.value)}
+              placeholder="URL publica o referencia privada del soporte"
+              className="w-full rounded-xl border border-theme bg-base px-4 py-3 font-bold outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          )}
           <button disabled={submitting} onClick={handleSubmit} className="w-full rounded-2xl bg-primary py-4 font-black uppercase tracking-[0.2em] text-base-color disabled:opacity-50">
             {submitting ? <span className="flex items-center justify-center gap-2"><Loader2 className="h-5 w-5 animate-spin" />Creando...</span> : 'Crear Pedido'}
           </button>
         </aside>
       </div>
+
+      {showCreateCustomerModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={() => closeCreateCustomerModal()}
+        >
+          <div
+            className="w-full max-w-2xl rounded-3xl border border-theme bg-surface shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between border-b border-theme px-6 py-5">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-accent">Cliente nuevo</p>
+                <h2 className="mt-1 text-2xl font-black text-primary">Crear cliente para este pedido</h2>
+                <p className="mt-1 text-sm text-muted">El cliente se crea dentro del dashboard y queda listo para seleccionarlo en la orden manual.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => closeCreateCustomerModal()}
+                className="rounded-full p-2 text-muted transition-colors hover:bg-base hover:text-primary"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={handleCreateCustomer}
+              autoComplete="off"
+              className="space-y-6 px-6 py-6"
+            >
+              {createCustomerError && (
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {createCustomerError}
+                </div>
+              )}
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <input
+                  name="customerFirstName"
+                  data-field="firstName"
+                  value={createCustomerForm.firstName}
+                  onChange={handleCreateCustomerFormChange}
+                  placeholder="Nombre"
+                  autoComplete="off"
+                  required
+                  className="rounded-2xl border border-theme bg-base px-4 py-3 font-semibold text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                />
+                <input
+                  name="customerLastName"
+                  data-field="lastName"
+                  value={createCustomerForm.lastName}
+                  onChange={handleCreateCustomerFormChange}
+                  placeholder="Apellido"
+                  autoComplete="off"
+                  required
+                  className="rounded-2xl border border-theme bg-base px-4 py-3 font-semibold text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                />
+                <input
+                  name="customerEmail"
+                  data-field="email"
+                  type="email"
+                  value={createCustomerForm.email}
+                  onChange={handleCreateCustomerFormChange}
+                  placeholder="Correo electronico"
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  required
+                  className="rounded-2xl border border-theme bg-base px-4 py-3 font-semibold text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                />
+                <input
+                  name="customerPassword"
+                  data-field="password"
+                  type="password"
+                  value={createCustomerForm.password}
+                  onChange={handleCreateCustomerFormChange}
+                  placeholder="Contrasena temporal"
+                  autoComplete="new-password"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  minLength={6}
+                  required
+                  className="rounded-2xl border border-theme bg-base px-4 py-3 font-semibold text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                />
+                <input
+                  name="customerPhone"
+                  data-field="phone"
+                  value={createCustomerForm.phone}
+                  onChange={handleCreateCustomerFormChange}
+                  placeholder="Telefono"
+                  autoComplete="off"
+                  className="rounded-2xl border border-theme bg-base px-4 py-3 font-semibold text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-1">
+                  <p className="px-1 text-[10px] font-black uppercase text-muted">Departamento</p>
+                  <Combobox
+                    options={departmentOptions}
+                    value={createCustomerForm.departmentId}
+                    onChange={(id) => {
+                      setCreateCustomerForm((current) => ({
+                        ...current,
+                        departmentId: id,
+                        municipalityId: '',
+                      }));
+                    }}
+                    placeholder="Seleccionar departamento..."
+                    searchPlaceholder="Buscar departamento..."
+                  />
+                </div>
+                <div className="space-y-1">
+                  <p className="px-1 text-[10px] font-black uppercase text-muted">Ciudad o municipio</p>
+                  <Combobox
+                    options={createCustomerMunicipalityOptions}
+                    value={createCustomerForm.municipalityId}
+                    onChange={(id) => {
+                      setCreateCustomerForm((current) => ({
+                        ...current,
+                        municipalityId: id,
+                      }));
+                    }}
+                    placeholder="Seleccionar municipio..."
+                    searchPlaceholder="Buscar municipio..."
+                    disabled={!createCustomerForm.departmentId}
+                    emptyMessage="No hay resultados."
+                  />
+                </div>
+                <input
+                  name="customerNeighborhood"
+                  data-field="neighborhood"
+                  value={createCustomerForm.neighborhood}
+                  onChange={handleCreateCustomerFormChange}
+                  placeholder="Barrio"
+                  autoComplete="off"
+                  className="rounded-2xl border border-theme bg-base px-4 py-3 font-semibold text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                />
+                <textarea
+                  name="customerAddress"
+                  data-field="address"
+                  value={createCustomerForm.address}
+                  onChange={handleCreateCustomerFormChange}
+                  placeholder="Direccion"
+                  autoComplete="off"
+                  rows={3}
+                  className="rounded-2xl border border-theme bg-base px-4 py-3 font-semibold text-primary outline-none focus:ring-2 focus:ring-primary/20 md:col-span-2"
+                />
+              </div>
+
+              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => closeCreateCustomerModal()}
+                  className="rounded-2xl border border-theme px-5 py-3 text-sm font-bold text-muted transition-colors hover:bg-base"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={createCustomerSubmitting}
+                  className="rounded-2xl bg-primary px-5 py-3 text-sm font-black uppercase tracking-[0.14em] text-base-color transition-opacity hover:opacity-90 disabled:opacity-60"
+                >
+                  {createCustomerSubmitting ? 'Creando...' : 'Crear cliente'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
