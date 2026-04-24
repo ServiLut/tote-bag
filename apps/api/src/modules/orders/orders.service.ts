@@ -1517,6 +1517,11 @@ export class OrdersService {
           status: true,
           source: true,
           trackingNumber: true,
+          shipment: {
+            select: {
+              id: true,
+            },
+          },
           createdAt: true,
           items: {
             select: {
@@ -1590,6 +1595,11 @@ export class OrdersService {
           orderBy: { createdAt: 'desc' },
         },
         profile: true,
+        shipment: {
+          select: {
+            id: true,
+          },
+        },
         payments: {
           where: { deletedAt: null },
           orderBy: [{ paymentDate: 'desc' }, { createdAt: 'desc' }],

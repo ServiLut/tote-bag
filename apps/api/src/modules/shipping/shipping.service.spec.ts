@@ -37,6 +37,7 @@ describe('ShippingService', () => {
       findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      delete: jest.fn(),
       findMany: jest.fn(),
     },
     supplyItem: {
@@ -502,6 +503,83 @@ describe('ShippingService', () => {
 
     expect(prisma.supplyItem.findUnique).not.toHaveBeenCalled();
     expect(prisma.purchaseBatchLine.updateMany).not.toHaveBeenCalled();
+    expect(prisma.order.update).not.toHaveBeenCalled();
+  });
+
+  it('elimina un envio pendiente y limpia guia/transportadora de la orden', async () => {
+    prisma.order.findUnique.mockResolvedValue({
+      id: 'order-1',
+      orderNumber: 1001,
+      status: OrderStatus.PAGADA,
+      trackingNumber: 'TRK-1',
+      carrier: 'Servientrega',
+      shipment: {
+        id: 'shipment-1',
+        status: ShipmentStatus.PENDING,
+        trackingNumber: 'TRK-1',
+        providerId: 'provider-1',
+      },
+    });
+    prisma.shipmentSupplyUsage.findFirst.mockResolvedValue(null);
+    prisma.shipment.delete.mockResolvedValue({
+      id: 'shipment-1',
+      orderId: 'order-1',
+      status: ShipmentStatus.PENDING,
+      trackingNumber: 'TRK-1',
+      providerId: 'provider-1',
+    });
+    prisma.order.update.mockResolvedValue({});
+    prisma.auditLog.create.mockResolvedValue({});
+
+    await service.deleteShipment('order-1', 'admin-1');
+
+    expect(prisma.shipment.delete).toHaveBeenCalledWith({
+      where: { orderId: 'order-1' },
+      select: {
+        id: true,
+        orderId: true,
+        status: true,
+        trackingNumber: true,
+        providerId: true,
+      },
+    });
+    expect(prisma.order.update).toHaveBeenCalledWith({
+      where: { id: 'order-1' },
+      data: {
+        trackingNumber: null,
+        carrier: null,
+      },
+    });
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'DELETE_SHIPMENT',
+        entity: 'Shipment',
+        entityId: 'shipment-1',
+        userId: 'admin-1',
+      }) as unknown,
+    });
+  });
+
+  it('rechaza eliminar un envio despachado', async () => {
+    prisma.order.findUnique.mockResolvedValue({
+      id: 'order-1',
+      orderNumber: 1001,
+      status: OrderStatus.ENVIADA,
+      trackingNumber: 'TRK-1',
+      carrier: 'Servientrega',
+      shipment: {
+        id: 'shipment-1',
+        status: ShipmentStatus.SHIPPED,
+        trackingNumber: 'TRK-1',
+        providerId: 'provider-1',
+      },
+    });
+
+    await expect(service.deleteShipment('order-1', 'admin-1')).rejects.toThrow(
+      'Solo puedes eliminar envios pendientes o listos para etiqueta',
+    );
+
+    expect(prisma.shipment.delete).not.toHaveBeenCalled();
     expect(prisma.order.update).not.toHaveBeenCalled();
   });
 

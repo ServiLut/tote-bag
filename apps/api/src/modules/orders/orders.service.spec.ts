@@ -585,6 +585,23 @@ describe('OrdersService', () => {
     expect(tx.order.update).not.toHaveBeenCalled();
   });
 
+  it('rechaza eliminar pedidos con envio asociado', async () => {
+    tx.order.findFirst.mockResolvedValue({
+      id: 'order-1',
+      status: OrderStatus.CANCELADA,
+      amountPaid: 0,
+      items: [],
+      payments: [],
+      shipment: { id: 'shipment-1' },
+    });
+
+    await expect(service.remove('order-1')).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+
+    expect(tx.order.update).not.toHaveBeenCalled();
+  });
+
   it('rechaza eliminar pedidos en estados operativos', async () => {
     tx.order.findFirst.mockResolvedValue({
       id: 'order-1',
@@ -685,6 +702,7 @@ describe('OrdersService', () => {
         status: OrderStatus.PENDIENTE_PAGO,
         source: 'MANUAL',
         trackingNumber: null,
+        shipment: { id: 'shipment-1' },
         createdAt: new Date('2026-04-24T10:00:00.000Z'),
         items: [
           {
@@ -713,6 +731,7 @@ describe('OrdersService', () => {
     const [order] = await service.findAll();
 
     expect(order.inventoryStatus).toBe('COMMITTED_STOCK');
+    expect(order.shipment).toEqual({ id: 'shipment-1' });
   });
 
   it('expone cuando una orden ya consumio lote', async () => {

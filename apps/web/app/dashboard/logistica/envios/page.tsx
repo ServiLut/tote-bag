@@ -15,6 +15,7 @@ import {
   RefreshCcw,
   Search,
   ShieldAlert,
+  Trash2,
   Truck,
   Undo2,
 } from "lucide-react";
@@ -319,6 +320,21 @@ function getSaleLegalBlocker(order: ShipmentRecord["order"]) {
     : "Falta registrar el documento legal de venta.";
 }
 
+function getDeleteShipmentBlocker(shipment: ShipmentRecord) {
+  if (shipment.id.startsWith("pending-")) {
+    return "La orden aun no tiene un envio persistido para eliminar.";
+  }
+
+  if (
+    shipment.status !== "PENDING" &&
+    shipment.status !== "READY_TO_SHIP"
+  ) {
+    return "Solo puedes eliminar envios pendientes o listos para etiqueta.";
+  }
+
+  return null;
+}
+
 function getApiList<T>(body: unknown): T[] {
   if (Array.isArray(body)) return body as T[];
   if (
@@ -329,6 +345,18 @@ function getApiList<T>(body: unknown): T[] {
     return (body as { data: T[] }).data;
   }
   return [];
+}
+
+function getApiPayload<T>(body: unknown): T | null {
+  if (!body || typeof body !== "object") {
+    return null;
+  }
+
+  if ("data" in body) {
+    return ((body as { data?: T | null }).data ?? null) as T | null;
+  }
+
+  return body as T;
 }
 
 function formatQuantity(value: number, unit?: string) {
@@ -557,6 +585,9 @@ export default function ShippingManagementPage() {
     () => operational.filter(isException),
     [operational],
   );
+  const supplyUsages = Array.isArray(supplyUsageData?.usages)
+    ? supplyUsageData.usages
+    : [];
 
   const summary = useMemo(
     () => ({
@@ -765,10 +796,18 @@ export default function ShippingManagementPage() {
         );
       }
 
-      const body = (await response.json().catch(() => null)) as
-        | ShipmentSupplyUsageResponse
-        | null;
-      setSupplyUsageData(body);
+      const body = await response.json().catch(() => null);
+      const payload = getApiPayload<ShipmentSupplyUsageResponse>(body);
+
+      setSupplyUsageData(
+        payload && Array.isArray(payload.usages)
+          ? payload
+          : {
+              shipmentId: shipment.id,
+              orderId: shipment.orderId,
+              usages: [],
+            },
+      );
     } catch (error) {
       setSupplyUsageOpen(false);
       setMessage(
@@ -934,6 +973,48 @@ export default function ShippingManagementPage() {
       `La orden #${shipment.order.orderNumber} fue movida al area de devoluciones.`,
     );
     setTab("devoluciones");
+  };
+
+  const deleteShipment = async (shipment: ShipmentRecord) => {
+    const blocker = getDeleteShipmentBlocker(shipment);
+    if (blocker) {
+      setMessage(blocker);
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Se eliminara el envio de la orden #${shipment.order.orderNumber}. La orden volvera al estado pendiente en logistica si aun aplica. Deseas continuar?`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setSubmitting(true);
+    setMessage(null);
+    try {
+      const response = await apiFetch(`/shipping/shipments/${shipment.orderId}`, {
+        method: "DELETE",
+        headers: await getHeaders(),
+      });
+      if (!response.ok)
+        throw new Error(
+          await getErrorMessage(response, "No fue posible eliminar el envio."),
+        );
+      setActiveActionMenu(null);
+      await fetchData();
+      setMessage(
+        `Envio eliminado para la orden #${shipment.order.orderNumber}.`,
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "No fue posible eliminar el envio.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const submitLabel = async (event: FormEvent) => {
@@ -1432,6 +1513,20 @@ export default function ShippingManagementPage() {
                                           Enviar a devoluciones
                                         </button>
                                       ) : null}
+                                      {getDeleteShipmentBlocker(shipment) ===
+                                      null ? (
+                                        <button
+                                          type="button"
+                                          disabled={submitting}
+                                          onClick={() =>
+                                            void deleteShipment(shipment)
+                                          }
+                                          className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-rose-700 transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                          Eliminar envio
+                                        </button>
+                                      ) : null}
                                       {dispatchBlockers.length > 0 &&
                                       canDispatch ? (
                                         <div className="border-t border-theme bg-base/40 px-4 py-3 text-xs font-medium text-rose-700">
@@ -1920,13 +2015,13 @@ export default function ShippingManagementPage() {
               <div className="rounded-2xl border border-theme bg-base/40 px-4 py-10 text-center">
                 <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
               </div>
-            ) : !supplyUsageData || supplyUsageData.usages.length === 0 ? (
+            ) : supplyUsages.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-theme bg-base/30 px-4 py-6 text-sm italic text-muted">
                 Este envio aun no tiene consumo de insumos registrado.
               </div>
             ) : (
               <div className="space-y-4">
-                {supplyUsageData.usages.map((usage) => (
+                {supplyUsages.map((usage) => (
                   <div
                     key={usage.id}
                     className="rounded-3xl border border-theme bg-base/40 p-4"

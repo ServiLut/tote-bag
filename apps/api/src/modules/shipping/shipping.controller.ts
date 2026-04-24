@@ -176,6 +176,19 @@ export class ShippingController {
     return this.shippingService.updateShipment(orderId, dto, user.id);
   }
 
+  @Delete('shipments/:orderId')
+  @ApiOperation({ summary: 'Eliminar un envio pendiente o listo para etiqueta' })
+  async deleteShipment(
+    @Param('orderId') orderId: string,
+    @Req() req: RequestWithUser,
+  ) {
+    const user = req.user;
+    if (!user?.id) throw new UnauthorizedException();
+    await this.ensureShipmentAccessPermission(user.id, 'update');
+
+    return this.shippingService.deleteShipment(orderId, user.id);
+  }
+
   @Post('shipments/:orderId/process-return')
   @ApiOperation({ summary: 'Procesar devolucion de un envio' })
   async processReturn(

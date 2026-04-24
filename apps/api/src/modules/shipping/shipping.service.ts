@@ -35,6 +35,7 @@ import {
 
 const RETURN_ACTION = 'PROCESS_SHIPMENT_RETURN';
 const SHIPPING_BAG_CONSUMPTION_ACTION = 'CONSUME_SHIPPING_BAG_FIFO';
+const DELETE_SHIPMENT_ACTION = 'DELETE_SHIPMENT';
 
 type ShipmentListItem = {
   id: string;
@@ -1292,6 +1293,94 @@ export class ShippingService {
     }
 
     return result.shipment;
+  }
+
+  async deleteShipment(orderId: string, userId?: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id: orderId },
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          trackingNumber: true,
+          carrier: true,
+          shipment: {
+            select: {
+              id: true,
+              status: true,
+              trackingNumber: true,
+              providerId: true,
+            },
+          },
+        },
+      });
+
+      if (!order) {
+        throw new NotFoundException('Orden no encontrada');
+      }
+
+      if (!order.shipment) {
+        throw new NotFoundException('Envio no encontrado');
+      }
+
+      if (
+        order.shipment.status !== ShipmentStatus.PENDING &&
+        order.shipment.status !== ShipmentStatus.READY_TO_SHIP
+      ) {
+        throw new ForbiddenException(
+          'Solo puedes eliminar envios pendientes o listos para etiqueta',
+        );
+      }
+
+      const existingUsage = await tx.shipmentSupplyUsage.findFirst({
+        where: { shipmentId: order.shipment.id },
+        select: { id: true },
+      });
+
+      if (existingUsage) {
+        throw new ForbiddenException(
+          'No puedes eliminar un envio con consumo de insumos registrado',
+        );
+      }
+
+      const deletedShipment = await tx.shipment.delete({
+        where: { orderId },
+        select: {
+          id: true,
+          orderId: true,
+          status: true,
+          trackingNumber: true,
+          providerId: true,
+        },
+      });
+
+      await tx.order.update({
+        where: { id: orderId },
+        data: {
+          trackingNumber: null,
+          carrier: null,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          action: DELETE_SHIPMENT_ACTION,
+          entity: 'Shipment',
+          entityId: deletedShipment.id,
+          userId: userId ?? null,
+          payload: {
+            orderId,
+            orderNumber: order.orderNumber,
+            previousStatus: deletedShipment.status,
+            previousTrackingNumber: deletedShipment.trackingNumber,
+            previousProviderId: deletedShipment.providerId,
+          },
+        },
+      });
+
+      return deletedShipment;
+    });
   }
 
   async processReturn(orderId: string, dto: ProcessReturnDto, userId?: string) {

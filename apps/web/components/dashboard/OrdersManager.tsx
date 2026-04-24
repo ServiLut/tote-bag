@@ -87,6 +87,9 @@ interface OrderSummary {
   status: OrderStatus;
   source: OrderSource;
   trackingNumber?: string;
+  shipment?: {
+    id: string;
+  } | null;
   createdAt: string;
   inventoryStatus?: OrderInventoryStatus;
   items: OrderItem[];
@@ -313,14 +316,30 @@ export default function OrdersManager() {
     }
   };
 
-  const canDeleteOrder = (order: Pick<OrderSummary, 'status'>) =>
-    ['PENDIENTE_PAGO', 'CANCELADA'].includes(order.status);
+  const getDeleteOrderBlocker = (
+    order: Pick<OrderSummary, 'status' | 'shipment'>,
+  ) => {
+    if (order.shipment) {
+      return 'No puedes eliminar un pedido que ya tiene envio asociado.';
+    }
+
+    if (!['PENDIENTE_PAGO', 'CANCELADA'].includes(order.status)) {
+      return 'Solo puedes eliminar pedidos pendientes de pago o cancelados.';
+    }
+
+    return null;
+  };
+
+  const canDeleteOrder = (order: Pick<OrderSummary, 'status' | 'shipment'>) =>
+    getDeleteOrderBlocker(order) === null;
 
   const handleDeleteOrder = async (
-    order: Pick<OrderSummary, 'id' | 'orderNumber' | 'status'>,
+    order: Pick<OrderSummary, 'id' | 'orderNumber' | 'status' | 'shipment'>,
   ) => {
-    if (!canDeleteOrder(order)) {
-      alert('Solo puedes eliminar pedidos pendientes de pago o cancelados.');
+    const deleteBlocker = getDeleteOrderBlocker(order);
+
+    if (deleteBlocker) {
+      alert(deleteBlocker);
       return;
     }
 
@@ -359,12 +378,17 @@ export default function OrdersManager() {
       }
 
       if (!response.ok) {
-        throw new Error(
-          await getApiResponseErrorMessage(
-            response,
-            'No se pudo eliminar el pedido.',
-          ),
+        const message = await getApiResponseErrorMessage(
+          response,
+          'No se pudo eliminar el pedido.',
         );
+
+        if (response.status >= 400 && response.status < 500) {
+          alert(message);
+          return;
+        }
+
+        throw new Error(message);
       }
 
       setOrders((prev) => prev.filter((item) => item.id !== order.id));
@@ -1013,6 +1037,7 @@ export default function OrdersManager() {
                             <button
                               type="button"
                               onClick={() => void handleDeleteOrder(order)}
+                              title={getDeleteOrderBlocker(order) ?? undefined}
                               disabled={
                                 isReadOnly ||
                                 deletingOrderId === order.id ||
@@ -1366,20 +1391,24 @@ export default function OrdersManager() {
                     </div>
                     {!isReadOnly && (
                       <div className="flex w-full sm:w-auto flex-col sm:flex-row gap-3">
-                        {canDeleteOrder(selectedOrder) && (
-                          <button
-                            onClick={() => handleDeleteOrder(selectedOrder)}
-                            disabled={deletingOrderId === selectedOrder.id}
-                            className="w-full sm:w-auto border border-red-200 bg-red-50 text-red-600 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-[0.2em] hover:bg-red-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
-                          >
-                            {deletingOrderId === selectedOrder.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-4 h-4" />
-                            )}
-                            Eliminar pedido
-                          </button>
-                        )}
+                        <button
+                          onClick={() => handleDeleteOrder(selectedOrder)}
+                          title={
+                            getDeleteOrderBlocker(selectedOrder) ?? undefined
+                          }
+                          disabled={
+                            deletingOrderId === selectedOrder.id ||
+                            !canDeleteOrder(selectedOrder)
+                          }
+                          className="w-full sm:w-auto border border-red-200 bg-red-50 text-red-600 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-[0.2em] hover:bg-red-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                        >
+                          {deletingOrderId === selectedOrder.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                          Eliminar pedido
+                        </button>
                         <button
                           onClick={handleUpdateOrder}
                           disabled={updating}
