@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { ApiResponse } from '@/types/api';
 import { apiFetch } from '@/utils/api';
+import { createClient } from '@/utils/supabase/client';
+import { useDashboardAuth } from '@/components/dashboard/DashboardAuthContext';
 
 interface ProductVariant {
   id: string;
@@ -21,7 +23,13 @@ interface ProductVariant {
   color: string;
   stock?: number;
   stockAvailable?: number;
-  salePrice?: number;
+  salePrice?: number | null;
+  minPrice?: number | null;
+  comparePrice?: number | null;
+  costPrice?: number | null;
+  totalCost?: number | null;
+  taxRate?: number | string | null;
+  imageUrl: string;
   isActive?: boolean;
 }
 
@@ -173,6 +181,10 @@ export default function B2BPricingSimulator() {
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
   const [form, setForm] = useState<SimulatorFormState>(INITIAL_FORM);
+  const [priceDraft, setPriceDraft] = useState('');
+  const [priceInputError, setPriceInputError] = useState<string | null>(null);
+  const supabase = createClient();
+  const { accessToken } = useDashboardAuth();
 
   const selectedProduct = useMemo(
     () => products.find((product) => product.id === form.productId) ?? null,
@@ -233,6 +245,9 @@ export default function B2BPricingSimulator() {
     [selectedProduct],
   );
 
+  const selectedVariantCurrentPrice =
+    selectedVariant?.salePrice ?? selectedProduct?.basePrice ?? null;
+
   useEffect(() => {
     let active = true;
 
@@ -241,8 +256,22 @@ export default function B2BPricingSimulator() {
         setLoadingInputs(true);
         setLoadError(null);
 
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const token = session?.access_token ?? accessToken;
+        if (!token) {
+          throw new Error(
+            'Tu sesion expiro. Inicia sesion de nuevo para usar el simulador B2B.',
+          );
+        }
+
         const [productsRes, optionsRes] = await Promise.all([
-          apiFetch('/catalog/products'),
+          apiFetch('/catalog/admin/products', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
           apiFetch('/wizard-options/grouped'),
         ]);
 
@@ -282,7 +311,7 @@ export default function B2BPricingSimulator() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [accessToken, supabase.auth]);
 
   useEffect(() => {
     if (!open) {
@@ -331,6 +360,15 @@ export default function B2BPricingSimulator() {
     }));
   }, [activeVariants, lineOptions, materialOptions, qualityOptions, selectedProduct]);
 
+  useEffect(() => {
+    setPriceDraft(
+      selectedVariantCurrentPrice !== null && selectedVariantCurrentPrice !== undefined
+        ? String(selectedVariantCurrentPrice)
+        : '',
+    );
+    setPriceInputError(null);
+  }, [selectedVariantCurrentPrice]);
+
   const updateForm = <K extends keyof SimulatorFormState>(
     field: K,
     value: SimulatorFormState[K],
@@ -347,6 +385,7 @@ export default function B2BPricingSimulator() {
     event.preventDefault();
 
     const quantity = Number(form.quantity);
+    const nextPrice = Number(priceDraft);
 
     if (!form.productId || !form.variantId || !form.line || !form.material) {
       setQuoteError('Completa producto, variante, linea y material antes de calcular.');
@@ -358,8 +397,14 @@ export default function B2BPricingSimulator() {
       return;
     }
 
+    if (!Number.isFinite(nextPrice) || nextPrice < 0) {
+      setPriceInputError('Ingresa un PVP valido para la simulacion.');
+      return;
+    }
+
     setQuoteLoading(true);
     setQuoteError(null);
+    setPriceInputError(null);
 
     try {
       const response = await apiFetch('/pricing/quote?scope=B2B', {
@@ -375,6 +420,7 @@ export default function B2BPricingSimulator() {
           material: form.material,
           quality: form.quality || undefined,
           size: selectedVariant?.size || undefined,
+          simulatedPvp: nextPrice,
         }),
       });
 
@@ -408,7 +454,7 @@ export default function B2BPricingSimulator() {
         className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-base-color shadow-lg shadow-primary/10 transition-all hover:shadow-xl hover:shadow-primary/20 active:scale-95"
       >
         <Calculator className="h-4 w-4" />
-        Simulador de precios
+        Simular PVP
       </button>
 
       {open ? (
@@ -442,10 +488,10 @@ export default function B2BPricingSimulator() {
                       id="b2b-pricing-simulator-title"
                       className="text-2xl font-black tracking-tight text-primary"
                     >
-                      Simulador de precios B2B
+                      Simulador de PVP B2B
                     </h2>
                     <p className="text-sm font-medium text-muted">
-                      Estima cuanto cobrar por cantidad usando las reglas B2B reales del sistema.
+                      Estima cuanto cobrar por cantidad con un PVP temporal para la variante seleccionada.
                     </p>
                   </div>
                 </div>
@@ -467,7 +513,7 @@ export default function B2BPricingSimulator() {
                 <div className="rounded-2xl border border-theme bg-base/40 p-4">
                   <p className="text-xs font-bold leading-relaxed text-muted">
                     El calculo usa el endpoint de pricing con alcance <span className="font-black text-primary">B2B</span>.
-                    No crea cotizaciones ni modifica precios del catalogo.
+                    El PVP que ingreses aqui solo se usa para esta simulacion y no modifica el catalogo.
                   </p>
                 </div>
 
@@ -640,11 +686,27 @@ export default function B2BPricingSimulator() {
                       <div className="grid grid-cols-2 gap-3">
                         <div className="rounded-xl border border-theme bg-surface px-4 py-3">
                           <p className="text-[10px] font-black uppercase tracking-widest text-muted">
-                            PVP actual
+                            PVP para simular
                           </p>
-                          <p className="mt-1 text-sm font-black text-primary">
-                            {formatCurrency(selectedVariant?.salePrice ?? selectedProduct.basePrice)}
-                          </p>
+                          <div className="mt-2 space-y-2">
+                            <input
+                              type="number"
+                              min={0}
+                              step="0.01"
+                              value={priceDraft}
+                              onChange={(event) => {
+                                setPriceDraft(event.target.value);
+                                setPriceInputError(null);
+                              }}
+                              disabled={!selectedVariant}
+                              className="w-full rounded-xl border border-theme bg-base px-3 py-2 text-sm font-bold text-primary outline-none transition-all focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
+                            />
+                            <p className="text-[10px] font-semibold text-muted">
+                              {selectedVariantCurrentPrice !== null
+                                ? `Referencia actual: ${formatCurrency(selectedVariantCurrentPrice)}`
+                                : 'Selecciona una variante activa'}
+                            </p>
+                          </div>
                         </div>
                         <div className="rounded-xl border border-theme bg-surface px-4 py-3">
                           <p className="text-[10px] font-black uppercase tracking-widest text-muted">
@@ -655,6 +717,12 @@ export default function B2BPricingSimulator() {
                           </p>
                         </div>
                       </div>
+
+                      {priceInputError ? (
+                        <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
+                          {priceInputError}
+                        </div>
+                      ) : null}
                     </div>
                   ) : (
                     <p className="text-sm font-medium text-muted">

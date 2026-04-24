@@ -57,6 +57,11 @@ export class ProductConfigInputDto {
   @Min(1)
   quantity: number;
 
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  simulatedPvp?: number;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => PersonalizationInputDto)

@@ -161,7 +161,10 @@ export class PricingService {
     const effectiveSize = variant?.size ?? input.size ?? '';
     const { baseUnitPrice, baseMinPrice, taxRate } =
       this.getVariantCommercialPricing(variant, product);
-    const baseUnitPriceDecimal = toDecimal(baseUnitPrice);
+    const baseUnitPriceDecimal =
+      input.simulatedPvp !== undefined && input.simulatedPvp !== null
+        ? toDecimal(input.simulatedPvp)
+        : toDecimal(baseUnitPrice);
     const baseMinPriceDecimal = toDecimal(baseMinPrice);
 
     const configCode = generateConfigCode({

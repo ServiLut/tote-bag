@@ -763,14 +763,14 @@ export default function B2BQuotesManager() {
                                         </p>
                                       ) : null}
                                       {typeof item.agreedUnitPrice === 'number' ? (
-                                        <p className="mt-1 text-muted">
+                                        <p className="mt-3 text-muted">
                                           Precio acordado: ${item.agreedUnitPrice.toLocaleString('es-CO')}
                                         </p>
                                       ) : null}
                                       {item.manualSpecs?.notes ? (
                                         <p className="mt-3 rounded-xl bg-base p-3 font-medium text-muted">
                                           {String(item.manualSpecs.notes)}
-                                        </p>
+                                      </p>
                                       ) : null}
                                     </div>
                                   ))}
