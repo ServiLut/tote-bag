@@ -183,13 +183,13 @@ describe('AuthMiddleware', () => {
       data: {
         user: {
           id: 'user-4',
-          email: 'admin@tote-bag.com',
+          email: 'deybisasprilla@gmail.com',
         },
       },
       error: null,
     });
     tx.user.findUnique.mockResolvedValue({
-      role: Role.MANAGER,
+      role: Role.ADMIN,
       isActive: true,
     });
     tx.user.upsert.mockResolvedValue({});

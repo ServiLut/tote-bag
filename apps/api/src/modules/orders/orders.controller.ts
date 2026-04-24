@@ -77,19 +77,13 @@ export class OrdersController {
       );
     }
 
-    if (
-      normalizedInitialStatus === 'PAGADA' &&
-      !normalizedPaymentReceiptUrl
-    ) {
+    if (normalizedInitialStatus === 'PAGADA' && !normalizedPaymentReceiptUrl) {
       throw new BadRequestException(
         'Debes adjuntar soporte del pago para crear una orden manual pagada.',
       );
     }
 
-    if (
-      normalizedPaymentReceiptUrl &&
-      normalizedInitialStatus !== 'PAGADA'
-    ) {
+    if (normalizedPaymentReceiptUrl && normalizedInitialStatus !== 'PAGADA') {
       throw new BadRequestException(
         'El soporte de pago solo se admite al crear una orden manual pagada.',
       );

@@ -1,4 +1,10 @@
-import { Controller, ForbiddenException, Get, Query, Req } from '@nestjs/common';
+import {
+  Controller,
+  ForbiddenException,
+  Get,
+  Query,
+  Req,
+} from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { RolesService } from '../roles/roles.service';
@@ -28,10 +34,7 @@ export class DashboardController {
       ? await this.rolesService.getEffectiveRole(req.user.id)
       : { effectiveRole: null };
 
-    if (
-      effectiveRole !== Role.ADMIN &&
-      effectiveRole !== Role.MANAGER
-    ) {
+    if (effectiveRole !== Role.ADMIN && effectiveRole !== Role.MANAGER) {
       throw new ForbiddenException('Dashboard access is restricted');
     }
 

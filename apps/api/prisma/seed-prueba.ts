@@ -71,18 +71,18 @@ async function main() {
   // 2. Creación de Usuario Base (ADMIN) con UPSERT
   console.log('👤 Configurando usuario administrador...');
   const adminUser = await prisma.user.upsert({
-    where: { email: 'admin@tote-bag.com' },
+    where: { email: 'deybisasprilla@gmail.com' },
     update: { role: Role.ADMIN, isActive: true },
     create: {
       id: 'auth0|admin-test-id',
-      email: 'admin@tote-bag.com',
+      email: 'deybisasprilla@gmail.com',
       role: Role.ADMIN,
       isActive: true,
       profile: {
         create: {
-          email: 'admin@tote-bag.com',
-          firstName: 'Admin',
-          lastName: 'Sistema',
+          email: 'deybisasprilla@gmail.com',
+          firstName: 'Deybis',
+          lastName: 'Asprilla',
         }
       }
     }

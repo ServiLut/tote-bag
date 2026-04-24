@@ -27,9 +27,7 @@ describe('dashboard auth', () => {
     expect(getDashboardRoleForOperatorEmail('deybisasprilla@gmail.co')).toBe(
       'ADMIN',
     );
-    expect(getDashboardRoleForOperatorEmail('admin@tote-bag.com')).toBe(
-      'MANAGER',
-    );
+    expect(getDashboardRoleForOperatorEmail('admin@tote-bag.com')).toBeNull();
     expect(getDashboardRoleForOperatorEmail('cliente@example.com')).toBeNull();
   });
 

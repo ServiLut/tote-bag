@@ -4,7 +4,6 @@ export const PROTECTED_ADMIN_EMAILS = new Set([
 ]);
 
 export const WHITELISTED_OPERATOR_EMAILS = new Set([
-  'admin@tote-bag.com',
   'deybisasprilla@gmail.co',
   'deybisasprilla@gmail.com',
   'totebagbolsadetela@gmail.com',

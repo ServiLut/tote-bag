@@ -23,7 +23,6 @@ const PROTECTED_DASHBOARD_ADMIN_EMAILS = new Set([
 ]);
 
 const DASHBOARD_OPERATOR_EMAILS = new Set([
-  'admin@tote-bag.com',
   'deybisasprilla@gmail.co',
   'deybisasprilla@gmail.com',
 ]);

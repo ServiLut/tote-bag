@@ -2164,14 +2164,10 @@ export class FinanceService {
     const config = this.getFinancialGatewayConfig();
     const targetMargins = (
       input.targetMargins ?? [marginTarget.toNumber()]
-    ).map(
-      (value) => {
-        const decimalValue = toDecimal(value);
-        return decimalValue.greaterThan(1)
-          ? decimalValue.div(100)
-          : decimalValue;
-      },
-    );
+    ).map((value) => {
+      const decimalValue = toDecimal(value);
+      return decimalValue.greaterThan(1) ? decimalValue.div(100) : decimalValue;
+    });
     const gatewayRate = roundMoney(
       config.commissionPercent.mul(
         new Decimal(1).plus(config.commissionVatPercent),

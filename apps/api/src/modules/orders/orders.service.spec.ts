@@ -29,6 +29,8 @@ describe('OrdersService', () => {
   const prisma = {
     $transaction: jest.fn(),
     order: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
       update: jest.fn(),
     },
   };
@@ -36,6 +38,7 @@ describe('OrdersService', () => {
   const inventoryService = {
     releaseCommittedStock: jest.fn(),
     reduceStockFIFO: jest.fn(),
+    restoreConsumedStockToBatchLine: jest.fn(),
   };
   const shippingSyncService = {
     ensureShipmentForOrder: jest.fn(),
@@ -597,5 +600,186 @@ describe('OrdersService', () => {
     );
 
     expect(tx.order.update).not.toHaveBeenCalled();
+  });
+
+  it('elimina un pedido cancelado devolviendo unidades al lote original', async () => {
+    tx.order.findFirst.mockResolvedValue({
+      id: 'order-1',
+      status: OrderStatus.CANCELADA,
+      amountPaid: 0,
+      items: [
+        {
+          id: 'item-1',
+          variantId: 'variant-1',
+          quantity: 2,
+          pricingJson: {
+            inventoryConsumption: {
+              totalCOGS: 24000,
+              reductions: [
+                {
+                  purchaseBatchLineId: 'line-1',
+                  batchId: 'batch-1',
+                  supplierId: 'supplier-1',
+                  quantity: 2,
+                  unitCost: 12000,
+                  documentType: PurchaseDocumentType.INVOICE,
+                },
+              ],
+            },
+          },
+        },
+      ],
+      payments: [],
+      shipment: null,
+    });
+    tx.order.update.mockResolvedValue({
+      id: 'order-1',
+      status: OrderStatus.CANCELADA,
+      totalAmount: 0,
+      netAmount: 0,
+      taxTotal: 0,
+      amountPaid: 0,
+      balanceDue: 0,
+      deletedAt: new Date('2026-04-23T00:00:00.000Z'),
+      items: [],
+      payments: [],
+      statusHistory: [],
+      shipment: null,
+    });
+
+    await service.remove('order-1');
+
+    expect(
+      inventoryService.restoreConsumedStockToBatchLine,
+    ).toHaveBeenCalledWith('variant-1', 'line-1', 2, undefined, 'order-1', tx, {
+      source: 'ORDER_DELETE',
+      orderItemId: 'item-1',
+    });
+    expect(tx.orderItem.update).toHaveBeenCalledWith({
+      where: { id: 'item-1' },
+      data: {
+        pricingJson: null,
+      },
+    });
+    expect(tx.order.update).toHaveBeenCalledWith({
+      where: { id: 'order-1' },
+      data: expect.objectContaining({
+        deletedAt: expect.any(Date) as unknown,
+      }) as unknown,
+      include: expect.any(Object) as unknown,
+    });
+  });
+
+  it('expone cuando una orden solo tiene stock reservado', async () => {
+    prisma.order.findMany.mockResolvedValue([
+      {
+        id: 'order-1',
+        orderNumber: 23,
+        customerEmail: 'cliente@example.com',
+        city: 'Sonson',
+        totalAmount: 120000,
+        netAmount: 100840.34,
+        taxTotal: 19159.66,
+        amountPaid: 0,
+        balanceDue: 120000,
+        status: OrderStatus.PENDIENTE_PAGO,
+        source: 'MANUAL',
+        trackingNumber: null,
+        createdAt: new Date('2026-04-24T10:00:00.000Z'),
+        items: [
+          {
+            id: 'item-1',
+            sku: 'SKU-1',
+            quantity: 2,
+            pricingJson: {
+              inventoryCommitment: {
+                variantId: 'variant-1',
+                quantity: 2,
+                committedAt: '2026-04-24T10:00:00.000Z',
+              },
+            },
+            netUnitPrice: 50420.17,
+            taxAmount: 19159.66,
+            product: {
+              name: 'Bolso Tote',
+              images: [{ url: 'https://cdn.example.com/tote.jpg' }],
+            },
+          },
+        ],
+        payments: [],
+      },
+    ]);
+
+    const [order] = await service.findAll();
+
+    expect(order.inventoryStatus).toBe('COMMITTED_STOCK');
+  });
+
+  it('expone cuando una orden ya consumio lote', async () => {
+    prisma.order.findUnique.mockResolvedValue({
+      id: 'order-1',
+      orderNumber: 24,
+      customerEmail: 'cliente@example.com',
+      customerPhone: '3000000000',
+      shippingAddress: 'Calle 1',
+      city: 'Medellin',
+      totalAmount: 120000,
+      netAmount: 100840.34,
+      taxTotal: 19159.66,
+      amountPaid: 120000,
+      balanceDue: 0,
+      status: OrderStatus.PAGADA,
+      source: 'MANUAL',
+      trackingNumber: null,
+      createdAt: new Date('2026-04-24T10:00:00.000Z'),
+      deletedAt: null,
+      items: [
+        {
+          id: 'item-1',
+          sku: 'SKU-1',
+          quantity: 2,
+          pricingJson: {
+            inventoryConsumption: {
+              totalCOGS: 24000,
+              reductions: [
+                {
+                  purchaseBatchLineId: 'line-1',
+                  batchId: 'batch-1',
+                  supplierId: 'supplier-1',
+                  quantity: 2,
+                  unitCost: 12000,
+                  documentType: PurchaseDocumentType.INVOICE,
+                },
+              ],
+            },
+          },
+          netUnitPrice: 50420.17,
+          taxAmount: 19159.66,
+          product: {
+            id: 'product-1',
+            name: 'Bolso Tote',
+            description: 'Bolso',
+            basePrice: 0,
+            minPrice: 0,
+            collectionId: 'collection-1',
+            slug: 'bolso-tote',
+            deliveryTime: '5 dias',
+            material: 'Algodon',
+            printType: 'DTF',
+            isActive: true,
+            createdAt: new Date('2026-04-24T10:00:00.000Z'),
+            updatedAt: new Date('2026-04-24T10:00:00.000Z'),
+            images: [{ id: 'img-1', url: 'https://cdn.example.com/tote.jpg' }],
+          },
+        },
+      ],
+      statusHistory: [],
+      profile: null,
+      payments: [],
+    });
+
+    const order = await service.findOne('order-1');
+
+    expect(order?.inventoryStatus).toBe('CONSUMED_BATCH');
   });
 });

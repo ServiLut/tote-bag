@@ -2243,6 +2243,150 @@ export class InventoryService {
     return this.prisma.$transaction(async (tx) => execute(tx));
   }
 
+  async restoreConsumedStockToBatchLine(
+    variantId: string,
+    purchaseBatchLineId: string,
+    quantityToRestore: number,
+    userId?: string,
+    orderId?: string,
+    txClient?: Prisma.TransactionClient,
+    metadata?: Record<string, unknown>,
+  ) {
+    const quantity = this.quantityToLegacyInt(quantityToRestore);
+
+    if (quantity <= 0) {
+      throw new BadRequestException(
+        'La cantidad a devolver al lote debe ser mayor a cero',
+      );
+    }
+
+    const execute = async (tx: Prisma.TransactionClient) => {
+      const line = await tx.purchaseBatchLine.findUnique({
+        where: { id: purchaseBatchLineId },
+        include: {
+          purchaseBatch: {
+            select: {
+              id: true,
+              deletedAt: true,
+            },
+          },
+        },
+      });
+
+      if (!line || line.purchaseBatch.deletedAt) {
+        throw new BadRequestException(
+          'La linea de lote a restaurar no existe o fue anulada',
+        );
+      }
+
+      if (
+        line.itemType !== PurchaseBatchItemType.VARIANT ||
+        !line.variantId ||
+        line.variantId !== variantId
+      ) {
+        throw new BadRequestException(
+          'La variante no coincide con la linea de lote consumida',
+        );
+      }
+
+      const currentRemaining = this.quantityToNumber(line.quantityRemaining);
+      const originalQuantity = this.quantityToNumber(line.quantity);
+      const nextRemaining = currentRemaining + quantity;
+
+      if (nextRemaining > originalQuantity) {
+        throw new BadRequestException(
+          'La devolucion excede la cantidad original disponible en el lote',
+        );
+      }
+
+      await tx.purchaseBatchLine.update({
+        where: { id: line.id },
+        data: {
+          quantityRemaining: nextRemaining,
+          status:
+            nextRemaining === 0 ? BatchStatus.DEPLETED : BatchStatus.IN_STOCK,
+        },
+      });
+
+      const remainingSummary = await tx.purchaseBatchLine.aggregate({
+        where: { purchaseBatchId: line.purchaseBatchId },
+        _sum: { quantityRemaining: true },
+      });
+      const nextBatchRemaining = this.quantityToLegacyInt(
+        remainingSummary._sum.quantityRemaining ?? 0,
+      );
+
+      await tx.purchaseBatch.update({
+        where: { id: line.purchaseBatchId },
+        data: {
+          quantityRemaining: nextBatchRemaining,
+          status:
+            nextBatchRemaining === 0
+              ? BatchStatus.DEPLETED
+              : BatchStatus.IN_STOCK,
+        },
+      });
+
+      const updatedVariant = await tx.variant.update({
+        where: { id: variantId },
+        data: {
+          stock: { increment: quantity },
+        },
+      });
+
+      await this.recordInventoryMovement(tx, {
+        reason: InventoryMovementReason.RETURN_TO_STOCK,
+        itemType: InventoryAdjustmentItemType.VARIANT,
+        quantity,
+        balanceAfter: updatedVariant.stock,
+        userId: userId ?? null,
+        variantId,
+        purchaseBatchId: line.purchaseBatchId,
+        purchaseBatchLineId: line.id,
+        orderId: orderId ?? null,
+        metadata: {
+          previousRemaining: currentRemaining,
+          nextRemaining,
+          restoredToOriginalBatchLine: true,
+          ...(metadata ?? {}),
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          action: 'RESTORE_STOCK_TO_BATCH_LINE',
+          entity: 'PurchaseBatchLine',
+          entityId: line.id,
+          userId: userId ?? null,
+          payload: {
+            purchaseBatchLineId: line.id,
+            purchaseBatchId: line.purchaseBatchId,
+            variantId,
+            quantityRestored: quantity,
+            previousRemaining: currentRemaining,
+            nextRemaining,
+            orderId: orderId ?? null,
+            ...(metadata ?? {}),
+          },
+        },
+      });
+
+      return {
+        variantId,
+        purchaseBatchId: line.purchaseBatchId,
+        purchaseBatchLineId: line.id,
+        quantityRestored: quantity,
+        stockPhysical: updatedVariant.stock,
+      };
+    };
+
+    if (txClient) {
+      return execute(txClient);
+    }
+
+    return this.prisma.$transaction(async (tx) => execute(tx));
+  }
+
   async createInventoryAdjustment(
     data: CreateInventoryAdjustmentDto & { userId: string },
   ) {

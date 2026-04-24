@@ -47,6 +47,10 @@ export type OrderStatus =
   | 'CANCELADA';
 
 export type OrderSource = 'ECOMMERCE' | 'MANUAL';
+export type OrderInventoryStatus =
+  | 'NOT_ASSIGNED'
+  | 'COMMITTED_STOCK'
+  | 'CONSUMED_BATCH';
 
 const STATUS_OPTIONS: OrderStatus[] = [
   'PENDIENTE_PAGO',
@@ -84,6 +88,7 @@ interface OrderSummary {
   source: OrderSource;
   trackingNumber?: string;
   createdAt: string;
+  inventoryStatus?: OrderInventoryStatus;
   items: OrderItem[];
 }
 
@@ -199,19 +204,29 @@ export default function OrdersManager() {
         },
       });
 
-      if (res.status === 401 || res.status === 403) {
-        alert('No tienes permisos para ver el detalle de este pedido.');
+      if (res.status === 401) {
+        alert('Tu sesiÃ³n expirÃ³. Inicia sesiÃ³n de nuevo.');
         return;
       }
 
-      if (!res.ok)
-        throw new Error(`Failed to fetch order detail (${res.status})`);
+      if (!res.ok) {
+        throw new Error(
+          await getApiResponseErrorMessage(
+            res,
+            'No se pudo cargar el detalle del pedido.',
+          ),
+        );
+      }
 
       const responseBody: ApiResponse<OrderDetail> = await res.json();
       setSelectedOrder(responseBody.data);
     } catch (err) {
       console.error('Error fetching order detail:', err);
-      alert('Error cargando detalle del pedido');
+      alert(
+        err instanceof Error
+          ? err.message
+          : 'Error cargando detalle del pedido',
+      );
     } finally {
       setLoadingOrderDetail(false);
     }
@@ -244,12 +259,19 @@ export default function OrdersManager() {
         ),
       });
 
-      if (res.status === 401 || res.status === 403) {
-        alert('No tienes permisos para actualizar esta orden.');
+      if (res.status === 401) {
+        alert('Tu sesiÃ³n expirÃ³. Inicia sesiÃ³n de nuevo.');
         return false;
       }
 
-      if (!res.ok) throw new Error(`Failed to update (${res.status})`);
+      if (!res.ok) {
+        throw new Error(
+          await getApiResponseErrorMessage(
+            res,
+            'No se pudo actualizar la orden.',
+          ),
+        );
+      }
 
       // Update local state
       setOrders((prev) =>
@@ -270,7 +292,9 @@ export default function OrdersManager() {
       return true;
     } catch (err) {
       console.error('Error updating order:', err);
-      alert('Error al actualizar la orden');
+      alert(
+        err instanceof Error ? err.message : 'Error al actualizar la orden',
+      );
       return false;
     } finally {
       setUpdating(false);
@@ -329,8 +353,8 @@ export default function OrdersManager() {
         },
       });
 
-      if (response.status === 401 || response.status === 403) {
-        alert('No tienes permisos para eliminar esta orden.');
+      if (response.status === 401) {
+        alert('Tu sesion expiro. Inicia sesion de nuevo.');
         return;
       }
 
@@ -484,6 +508,31 @@ export default function OrdersManager() {
         Ecommerce
       </span>
     );
+  };
+
+  const getInventoryStatusBadge = (
+    inventoryStatus?: OrderInventoryStatus,
+  ) => {
+    switch (inventoryStatus) {
+      case 'CONSUMED_BATCH':
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-emerald-700">
+            Lote consumido
+          </span>
+        );
+      case 'COMMITTED_STOCK':
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-amber-700">
+            Stock reservado
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-zinc-500/20 bg-zinc-500/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-zinc-700">
+            Sin asignar
+          </span>
+        );
+    }
   };
 
   const formatCurrency = (amount?: number | null) =>
@@ -857,6 +906,9 @@ export default function OrdersManager() {
                           minute: '2-digit',
                         })}
                       </div>
+                      <div className="mt-2">
+                        {getInventoryStatusBadge(order.inventoryStatus)}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="font-bold text-primary text-xs">
@@ -1056,6 +1108,7 @@ export default function OrdersManager() {
                       Editar pedido #{selectedOrder.orderNumber}
                     </h3>
                     {getSourceBadge(selectedOrder.source)}
+                    {getInventoryStatusBadge(selectedOrder.inventoryStatus)}
                     <span
                       className={cn(
                         'px-2 py-0.5 rounded text-[10px] font-black uppercase border tracking-widest',
@@ -1081,6 +1134,24 @@ export default function OrdersManager() {
                       <h4 className="text-[10px] font-black text-muted uppercase tracking-[0.2em] flex items-center gap-2">
                         <MapPin className="w-3.5 h-3.5" /> Cliente
                       </h4>
+                      <div className="rounded-2xl border border-theme bg-base/40 p-4">
+                        <p className="text-[10px] font-black text-muted uppercase tracking-widest opacity-60">
+                          Inventario
+                        </p>
+                        <div className="mt-2">
+                          {getInventoryStatusBadge(
+                            selectedOrder.inventoryStatus,
+                          )}
+                        </div>
+                        <p className="mt-2 text-xs font-medium text-muted">
+                          {selectedOrder.inventoryStatus === 'CONSUMED_BATCH'
+                            ? 'Esta orden ya desconto unidades de un lote comprado.'
+                            : selectedOrder.inventoryStatus ===
+                                'COMMITTED_STOCK'
+                              ? 'Esta orden solo tiene stock reservado; todavia no consume lote.'
+                              : 'Esta orden aun no tiene inventario asignado.'}
+                        </p>
+                      </div>
                       <div className="text-sm space-y-2">
                         <p className="font-bold text-primary">
                           {selectedOrder.customerEmail}

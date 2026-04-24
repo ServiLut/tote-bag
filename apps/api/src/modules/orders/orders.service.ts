@@ -50,6 +50,11 @@ type InventoryConsumptionSnapshot = {
   reductions: InventoryConsumptionReduction[];
 };
 
+type OrderInventoryStatus =
+  | 'NOT_ASSIGNED'
+  | 'COMMITTED_STOCK'
+  | 'CONSUMED_BATCH';
+
 type SaleLegalResolution = {
   saleLegalRequirement: SaleLegalRequirement;
   saleLegalStatus: SaleLegalStatus;
@@ -696,9 +701,38 @@ export class OrdersService {
 
         return itemRecord;
       });
+
+      result.inventoryStatus = this.resolveOrderInventoryStatus(
+        result.items as Array<Record<string, unknown>>,
+      );
+    } else {
+      result.inventoryStatus = 'NOT_ASSIGNED' satisfies OrderInventoryStatus;
     }
 
     return result as T;
+  }
+
+  private resolveOrderInventoryStatus(
+    items: Array<Record<string, unknown>>,
+  ): OrderInventoryStatus {
+    let hasCommittedStock = false;
+
+    for (const item of items) {
+      const pricingJson =
+        'pricingJson' in item
+          ? (item.pricingJson as Prisma.JsonValue | null)
+          : null;
+
+      if (this.hasInventoryConsumption(pricingJson)) {
+        return 'CONSUMED_BATCH';
+      }
+
+      if (this.hasInventoryCommitment(pricingJson)) {
+        hasCommittedStock = true;
+      }
+    }
+
+    return hasCommittedStock ? 'COMMITTED_STOCK' : 'NOT_ASSIGNED';
   }
 
   async create(
@@ -1489,6 +1523,7 @@ export class OrdersService {
               id: true,
               sku: true,
               quantity: true,
+              pricingJson: true,
               netUnitPrice: true,
               taxAmount: true,
               product: {
@@ -1838,9 +1873,7 @@ export class OrdersService {
         OrderStatus.CANCELADA,
       ];
 
-      if (
-        !deletableStatuses.includes(order.status)
-      ) {
+      if (!deletableStatuses.includes(order.status)) {
         throw new ForbiddenException(
           'Solo puedes eliminar pedidos pendientes de pago o cancelados.',
         );
@@ -1858,44 +1891,67 @@ export class OrdersService {
         );
       }
 
-      if (
-        order.items.some((item) => this.hasInventoryConsumption(item.pricingJson))
-      ) {
-        throw new ForbiddenException(
-          'No puedes eliminar un pedido que ya consumo inventario.',
-        );
-      }
-
       for (const item of order.items) {
-        if (!item.variantId || !this.hasInventoryCommitment(item.pricingJson)) {
-          continue;
+        const inventoryConsumption = this.extractInventoryConsumption(
+          item.pricingJson,
+        );
+        const hasInventoryCommitment = this.hasInventoryCommitment(
+          item.pricingJson,
+        );
+
+        if (item.variantId && inventoryConsumption) {
+          for (const reduction of inventoryConsumption.reductions) {
+            if (!reduction.purchaseBatchLineId) {
+              throw new ForbiddenException(
+                'No puedes eliminar un pedido con consumo de lote sin trazabilidad suficiente.',
+              );
+            }
+
+            await this.inventoryService.restoreConsumedStockToBatchLine(
+              item.variantId,
+              reduction.purchaseBatchLineId,
+              reduction.quantity,
+              undefined,
+              id,
+              tx,
+              {
+                source: 'ORDER_DELETE',
+                orderItemId: item.id,
+              },
+            );
+          }
         }
 
-        await this.inventoryService.releaseCommittedStock(
-          item.variantId,
-          item.quantity,
-          undefined,
-          id,
-          tx,
-        );
+        if (item.variantId && hasInventoryCommitment) {
+          await this.inventoryService.releaseCommittedStock(
+            item.variantId,
+            item.quantity,
+            undefined,
+            id,
+            tx,
+          );
+        }
 
-        const basePricingJson =
-          item.pricingJson &&
-          typeof item.pricingJson === 'object' &&
-          !Array.isArray(item.pricingJson)
-            ? (item.pricingJson as Record<string, unknown>)
-            : {};
-        const pricingJsonRest = { ...basePricingJson };
-        delete pricingJsonRest.inventoryCommitment;
+        if (inventoryConsumption || hasInventoryCommitment) {
+          const basePricingJson =
+            item.pricingJson &&
+            typeof item.pricingJson === 'object' &&
+            !Array.isArray(item.pricingJson)
+              ? (item.pricingJson as Record<string, unknown>)
+              : {};
+          const pricingJsonRest = { ...basePricingJson };
+          delete pricingJsonRest.inventoryConsumption;
+          delete pricingJsonRest.inventoryCommitment;
 
-        await tx.orderItem.update({
-          where: { id: item.id },
-          data: {
-            pricingJson: Object.keys(pricingJsonRest).length
-              ? (pricingJsonRest as Prisma.InputJsonValue)
-              : (null as unknown as Prisma.InputJsonValue),
-          },
-        });
+          await tx.orderItem.update({
+            where: { id: item.id },
+            data: {
+              pricingJson: Object.keys(pricingJsonRest).length
+                ? (pricingJsonRest as Prisma.InputJsonValue)
+                : (null as unknown as Prisma.InputJsonValue),
+            },
+          });
+        }
       }
 
       const deletedOrder = await tx.order.update({

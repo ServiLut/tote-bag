@@ -5,7 +5,6 @@ export const DEBUG_ROLE_HEADER = 'x-debug-role';
 export const DEBUG_ROLE_ALLOWED_EMAILS = new Set([
   'deybisasprilla@gmail.co',
   'deybisasprilla@gmail.com',
-  'admin@tote-bag.com',
 ]);
 
 const AVAILABLE_DEBUG_ROLES = Object.values(Role);

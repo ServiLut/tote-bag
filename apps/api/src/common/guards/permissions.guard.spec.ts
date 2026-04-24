@@ -31,11 +31,35 @@ describe('PermissionsGuard', () => {
       guard.canActivate(
         createExecutionContext({
           id: 'user-1',
-          email: 'admin@tote-bag.com',
+          email: 'deybisasprilla@gmail.com',
         }),
       ),
     ).resolves.toBe(true);
     expect(rolesService.getUserPermissions).not.toHaveBeenCalled();
+  });
+
+  it('ya no concede fallback operativo a admin@tote-bag.com', async () => {
+    const reflector = {
+      getAllAndOverride: jest
+        .fn()
+        .mockReturnValue([{ resource: 'orders', action: 'read' }]),
+    } as unknown as Reflector;
+    const rolesService = {
+      getUserPermissions: jest.fn().mockResolvedValue([]),
+    };
+    const guard = new PermissionsGuard(reflector, rolesService as never);
+
+    await expect(
+      guard.canActivate(
+        createExecutionContext({
+          id: 'user-legacy-admin',
+          email: 'admin@tote-bag.com',
+        }),
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(rolesService.getUserPermissions).toHaveBeenCalledWith(
+      'user-legacy-admin',
+    );
   });
 
   it('sigue rechazando usuarios sin permisos requeridos', async () => {
