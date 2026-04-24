@@ -15,6 +15,12 @@ export class GatewayMarginGridDto {
   @IsOptional()
   taxRate?: number;
 
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @IsOptional()
+  marginTarget?: number;
+
   @IsArray()
   @IsNumber({}, { each: true })
   @IsOptional()

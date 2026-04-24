@@ -89,6 +89,7 @@ export default function ProfitCalculator() {
   const { accessToken } = useDashboardAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProductId, setSelectedProductId] = useState<string>('');
+  const [targetMarginPercent, setTargetMarginPercent] = useState('60');
   const [suggestedPrice, setSuggestedPrice] = useState(() =>
     createCurrencyInputState(0),
   );
@@ -105,10 +106,20 @@ export default function ProfitCalculator() {
     typeof referenceVariant?.taxRate === 'string'
       ? Number(referenceVariant.taxRate)
       : (referenceVariant?.taxRate ?? 0.19);
+  const parsedTargetMarginPercent = Number(
+    String(targetMarginPercent).replace(',', '.'),
+  );
+  const hasValidTargetMargin =
+    Number.isFinite(parsedTargetMarginPercent) &&
+    parsedTargetMarginPercent >= 0 &&
+    parsedTargetMarginPercent <= 100;
   const hasSelection = Boolean(selectedProductId);
   const hasRealCost = avgCost.numericValue > 0;
   const canCalculateMetrics =
-    hasSelection && hasRealCost && suggestedPrice.numericValue > 0;
+    hasSelection &&
+    hasRealCost &&
+    suggestedPrice.numericValue > 0 &&
+    hasValidTargetMargin;
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -189,7 +200,8 @@ export default function ProfitCalculator() {
             grossAmount: suggestedPrice.numericValue,
             productCost: avgCost.numericValue,
             taxRate: referenceTaxRate,
-            targetMargins: [0.6, 0.65, 0.7],
+            marginTarget: parsedTargetMarginPercent,
+            targetMargins: [parsedTargetMarginPercent],
           }),
         });
 
@@ -230,6 +242,7 @@ export default function ProfitCalculator() {
     accessToken,
     avgCost.numericValue,
     canCalculateMetrics,
+    parsedTargetMarginPercent,
     referenceTaxRate,
     suggestedPrice.numericValue,
   ]);
@@ -309,6 +322,36 @@ export default function ProfitCalculator() {
 
           <div>
             <label className="mb-2 block text-sm font-bold uppercase tracking-wider text-muted">
+              Porcentaje de Ganancia
+            </label>
+            <InputGroup
+              suffix={<span className="font-bold text-muted">%</span>}
+              className="flex items-center gap-2 rounded-xl border border-theme bg-base px-4"
+            >
+              <Input
+                type="number"
+                inputMode="decimal"
+                min={0}
+                max={100}
+                step="0.1"
+                value={targetMarginPercent}
+                disabled={!hasSelection}
+                onChange={(event) => setTargetMarginPercent(event.target.value)}
+                className="w-full bg-transparent py-3 font-bold text-primary outline-none transition-all focus:ring-0 disabled:cursor-not-allowed disabled:opacity-60"
+              />
+            </InputGroup>
+            <p className="mt-1 text-[10px] font-medium italic text-muted">
+              Meta de utilidad sobre neto de pasarela para esta simulacion.
+            </p>
+            {!hasValidTargetMargin && hasSelection ? (
+              <p className="mt-1 text-[10px] font-medium text-red-700">
+                Ingresa un porcentaje valido entre 0 y 100.
+              </p>
+            ) : null}
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-bold uppercase tracking-wider text-muted">
               PVP con IVA
             </label>
             <InputGroup
@@ -331,7 +374,7 @@ export default function ProfitCalculator() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3">
             {(grid?.targets || []).map((target) => (
               <div
                 key={target.targetMargin}
@@ -459,7 +502,7 @@ export default function ProfitCalculator() {
                 {current.alertaMargenBajo
                   ? `ALERTA: margen sobre neto de pasarela en ${formatPercentage(
                       current.margenSobreNetoPasarela,
-                    )}, por debajo del objetivo de 60%`
+                    )}, por debajo del objetivo de ${parsedTargetMarginPercent.toFixed(1)}%`
                   : `Margen sobre neto de pasarela saludable: ${formatPercentage(
                       current.margenSobreNetoPasarela,
                     )}`}

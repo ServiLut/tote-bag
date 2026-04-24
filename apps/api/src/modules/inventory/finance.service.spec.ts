@@ -491,6 +491,24 @@ describe('FinanceService PDF rendering', () => {
     expect(result.orders[0].margenSobreNetoPasarela).toBeCloseTo(0.497487, 6);
   });
 
+  it('uses a custom simulator margin target for the gateway grid', () => {
+    const service = new FinanceService({} as never);
+
+    const result = service.getGatewayMarginGrid({
+      grossAmount: 119000,
+      productCost: 40000,
+      taxRate: 0.19,
+      marginTarget: 40,
+    });
+
+    expect(result.current.alertaMargenBajo).toBe(false);
+    expect(result.targets).toHaveLength(1);
+    expect(result.targets[0]).toMatchObject({
+      targetMargin: 0.4,
+      reachable: true,
+    });
+  });
+
   it('aggregates monthly retentions as tax asset advances', async () => {
     const service = new FinanceService({
       order: {

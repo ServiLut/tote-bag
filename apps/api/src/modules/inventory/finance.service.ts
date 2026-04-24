@@ -505,6 +505,7 @@ export class FinanceService {
     reteFuenteAmount: DecimalInput;
     reteIvaAmount: DecimalInput;
     reteIcaAmount: DecimalInput;
+    marginTarget?: DecimalInput;
   }) {
     const grossAmount = roundMoney(params.grossAmount);
     const netSalesWithoutVat = roundMoney(
@@ -541,6 +542,9 @@ export class FinanceService {
     const marginOnGatewayNet = netReceivedAmount.greaterThan(0)
       ? realNetProfit.div(netReceivedAmount)
       : null;
+    const effectiveMarginTarget = toDecimal(
+      params.marginTarget ?? this.gatewayMarginTarget,
+    );
 
     return {
       grossAmount,
@@ -563,7 +567,7 @@ export class FinanceService {
       marginOnGatewayNet,
       isBelowTarget:
         marginOnGatewayNet !== null &&
-        marginOnGatewayNet.lessThan(this.gatewayMarginTarget),
+        marginOnGatewayNet.lessThan(effectiveMarginTarget),
     };
   }
 
@@ -2112,6 +2116,7 @@ export class FinanceService {
     grossAmount: number;
     productCost: number;
     taxRate?: number;
+    marginTarget?: number;
     targetMargins?: number[];
   }): GatewayMarginGridResult {
     if (!Number.isFinite(input.grossAmount) || input.grossAmount <= 0) {
@@ -2125,6 +2130,9 @@ export class FinanceService {
     }
 
     const taxRate = toDecimal(input.taxRate ?? 0.19);
+    const marginTarget = this.normalizeRateDecimal(
+      input.marginTarget ?? this.gatewayMarginTarget.toNumber(),
+    );
     if (taxRate.lessThan(0) || taxRate.greaterThan(1)) {
       throw new BadRequestException('La tarifa IVA debe estar entre 0 y 1.');
     }
@@ -2150,10 +2158,13 @@ export class FinanceService {
       reteFuenteAmount: settlement.reteFuenteAmount,
       reteIvaAmount: settlement.reteIvaAmount,
       reteIcaAmount: settlement.reteIcaAmount,
+      marginTarget,
     });
 
     const config = this.getFinancialGatewayConfig();
-    const targetMargins = (input.targetMargins ?? [0.6, 0.65, 0.7]).map(
+    const targetMargins = (
+      input.targetMargins ?? [marginTarget.toNumber()]
+    ).map(
       (value) => {
         const decimalValue = toDecimal(value);
         return decimalValue.greaterThan(1)
