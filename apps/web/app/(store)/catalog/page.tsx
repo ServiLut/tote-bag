@@ -7,6 +7,7 @@ import FilterSidebar, { type FilterState } from '@/components/store/FilterSideba
 import { Product } from '@/types/product';
 import { ApiResponse } from '@/types/api';
 import { apiFetch } from '@/utils/api';
+import { DEFAULT_CATALOG_MAX_PRICE } from '@/lib/catalog-filters';
 import { Loader2, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -52,7 +53,7 @@ function CatalogPageContent() {
 
   const [filters, setFilters] = useState<FilterState>({
     minPrice: 0,
-    maxPrice: 1000000,
+    maxPrice: DEFAULT_CATALOG_MAX_PRICE,
     collections: [],
     lines: [],
     sizes: [],
@@ -88,7 +89,7 @@ function CatalogPageContent() {
         if (filters.sizes.length > 0) params.append('sizes', filters.sizes.join(','));
         if (filters.materials.length > 0) params.append('materials', filters.materials.join(','));
         if (filters.minPrice > 0) params.append('minPrice', filters.minPrice.toString());
-        if (filters.maxPrice < 1000000) params.append('maxPrice', filters.maxPrice.toString());
+        if (filters.maxPrice < DEFAULT_CATALOG_MAX_PRICE) params.append('maxPrice', filters.maxPrice.toString());
         if (searchTerm) params.append('search', searchTerm);
 
         const res = await apiFetch(`/catalog/products?${params.toString()}`);

@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import ProductDetailClient from '@/components/store/ProductDetailClient';
 import ProductCard from '@/components/store/ProductCard';
 import { Product } from '@/types/product';
-import { ApiResponse } from '@/types/api';
+import { CatalogProductFetchResult, resolveCatalogProductResponse } from '@/lib/catalog-product';
 import { Metadata } from 'next';
 import { apiFetch } from '@/utils/api';
 
@@ -10,22 +10,16 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-async function getProduct(slug: string): Promise<Product | null> {
+async function getProduct(slug: string): Promise<CatalogProductFetchResult<Product>> {
   try {
     const res = await apiFetch(`/catalog/slug/${slug}`, {
       next: { revalidate: 60 }, // Revalidate every minute
     });
-    
-    if (!res.ok) {
-      if (res.status === 404) return null;
-      throw new Error('Failed to fetch product');
-    }
-    
-    const response: ApiResponse<Product> = await res.json();
-    return response.data;
+
+    return resolveCatalogProductResponse<Product>(res);
   } catch (error) {
     console.error(error);
-    return null;
+    return { kind: 'unavailable' };
   }
 }
 
@@ -67,13 +61,21 @@ async function getRelatedProducts(currentProductId: string, collectionId?: strin
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const product = await getProduct(slug);
+  const productResult = await getProduct(slug);
 
-  if (!product) {
+  if (productResult.kind === 'missing') {
     return {
       title: 'Producto no encontrado | Tote Bag Shop',
     };
   }
+
+  if (productResult.kind === 'unavailable') {
+    return {
+      title: 'Catalogo | Tote Bag Shop',
+    };
+  }
+
+  const { product } = productResult;
 
   return {
     title: `${product.name} | Tote Bag Shop`,
@@ -86,11 +88,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ProductPage({ params }: PageProps) {
   const { slug } = await params;
-  const product = await getProduct(slug);
+  const productResult = await getProduct(slug);
 
-  if (!product) {
+  if (productResult.kind === 'missing') {
     notFound();
   }
+
+  if (productResult.kind === 'unavailable') {
+    throw new Error(`Catalog product ${slug} is temporarily unavailable.`);
+  }
+
+  const { product } = productResult;
 
   const relatedProducts = await getRelatedProducts(product.id, product.collectionId);
 

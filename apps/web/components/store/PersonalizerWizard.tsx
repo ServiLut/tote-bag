@@ -45,6 +45,7 @@ interface GroupedOptions {
 interface PersonalizerWizardProps {
   productId?: string;
   productSlug?: string;
+  mode?: 'wizard' | 'direct';
 }
 
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -146,12 +147,14 @@ const resolveProductSelection = (product?: Partial<Product> | null): ProductReso
 export default function PersonalizerWizard({
   productId,
   productSlug = 'tote-bag-clsica',
+  mode = 'wizard',
 }: PersonalizerWizardProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const supabase = createClient();
+  const isDirectMode = mode === 'direct';
 
-  const [step, setStep] = useState<Step>(1);
+  const [step, setStep] = useState<Step>(isDirectMode ? 4 : 1);
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [optionsError, setOptionsError] = useState<string | null>(null);
   const [isPricingLoading, setIsPricingLoading] = useState(false);
@@ -189,6 +192,10 @@ export default function PersonalizerWizard({
   const [submittedRequestId, setSubmittedRequestId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setStep(isDirectMode ? 4 : 1);
+  }, [isDirectMode]);
 
   useEffect(() => {
     setResolvedProductId(productId ?? '');
@@ -786,6 +793,454 @@ export default function PersonalizerWizard({
         visualLabel: getDimensionVisualLabel(option),
       }));
 
+  if (isDirectMode) {
+    return (
+      <div className="w-full max-w-6xl mx-auto bg-surface border border-theme rounded-[2.5rem] overflow-hidden shadow-2xl">
+        <main className="p-8 md:p-12 space-y-8">
+            <section className="space-y-3">
+              <h2 className="text-2xl md:text-3xl font-serif text-primary">
+                {t('wizard_step_4_title')}
+              </h2>
+              <p className="text-muted text-sm md:text-base">
+                {t('wizard_step_4_description')}
+              </p>
+            </section>
+
+            <section className="space-y-6 rounded-[2rem] border border-theme bg-base/40 p-6 md:p-8">
+              <div>
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary">
+                  Configuracion base
+                </h3>
+                <p className="mt-2 text-sm text-muted">
+                  Estos campos siguen alimentando la cotizacion y la solicitud
+                  final, pero ya no se presentan como pasos separados.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-primary">
+                  Linea
+                </h4>
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                  {wizardOptions.LINE.map((line) => {
+                    const Icon = getLineIcon(line.code);
+                    const isSelected = selections.line === line.code;
+
+                    return (
+                      <button
+                        key={line.id}
+                        onClick={() =>
+                          setSelections((prev) => ({ ...prev, line: line.code }))
+                        }
+                        className={`flex items-center gap-3 rounded-2xl border-2 p-4 text-left transition-all ${
+                          isSelected
+                            ? 'border-primary bg-primary/5'
+                            : 'border-theme hover:border-primary/30'
+                        }`}
+                      >
+                        <div
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                            isSelected
+                              ? 'bg-primary text-white'
+                              : 'bg-base text-primary'
+                          }`}
+                        >
+                          <Icon size={18} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-black uppercase tracking-wide text-primary">
+                            {line.name}
+                          </p>
+                          <p className="mt-1 text-[11px] text-muted">
+                            {line.description}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_16rem]">
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-primary">
+                    Tamano
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    {sizeChoices.map((dim) => (
+                      <button
+                        key={dim.id}
+                        onClick={() => {
+                          const matchedVariant = commercialVariants.length > 0
+                            ? resolveVariantBySize(
+                                resolvedProduct,
+                                dim.name,
+                                resolvedVariant?.id,
+                              )
+                            : null;
+
+                          setSelections((prev) => ({ ...prev, size: dim.name }));
+
+                          if (matchedVariant?.id) {
+                            setResolvedVariant({
+                              id: matchedVariant.id,
+                              sku: matchedVariant.sku,
+                              size: matchedVariant.size || '',
+                              color: matchedVariant.color || 'Base',
+                              imageUrl: matchedVariant.imageUrl || '',
+                              stock: matchedVariant.stock || 0,
+                            });
+                          }
+                        }}
+                        className={`rounded-2xl border-2 p-4 text-center transition-all ${
+                          selections.size === dim.name
+                            ? 'border-primary bg-primary/5'
+                            : 'border-theme hover:border-primary/30'
+                        }`}
+                      >
+                        <span className="block text-[10px] font-black uppercase tracking-[0.18em] text-primary">
+                          {dim.visualLabel}
+                        </span>
+                        <span className="mt-2 block text-xs font-bold text-primary">
+                          {dim.name}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-primary">
+                      Cantidad
+                    </h4>
+                    <div className="inline-flex items-center gap-3 rounded-2xl border border-theme bg-white px-3 py-2">
+                      <button
+                        onClick={() =>
+                          setSelections((prev) => ({
+                            ...prev,
+                            quantity: Math.max(1, prev.quantity - 1),
+                          }))
+                        }
+                        className="p-1 text-primary transition-colors hover:opacity-70"
+                      >
+                        <ChevronLeft size={16} />
+                      </button>
+                      <span className="min-w-10 text-center text-sm font-black text-primary">
+                        {selections.quantity}
+                      </span>
+                      <button
+                        onClick={() =>
+                          setSelections((prev) => ({
+                            ...prev,
+                            quantity: prev.quantity + 1,
+                          }))
+                        }
+                        className="p-1 text-primary transition-colors hover:opacity-70"
+                      >
+                        <ChevronRight size={16} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-primary">
+                      Material
+                    </h4>
+                    <div className="flex flex-wrap gap-3">
+                      {wizardOptions.MATERIAL.map((mat) => (
+                        <button
+                          key={mat.id}
+                          onClick={() =>
+                            setSelections((prev) => ({
+                              ...prev,
+                              material: mat.name,
+                            }))
+                          }
+                          className={`rounded-full border-2 px-4 py-2 text-[10px] font-black uppercase tracking-wide transition-all ${
+                            selections.material === mat.name
+                              ? 'border-primary bg-primary text-white'
+                              : 'border-theme text-muted hover:border-primary/30'
+                          }`}
+                        >
+                          {mat.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="space-y-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                <div className="space-y-8">
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-black uppercase tracking-widest text-primary">
+                      {t('wizard_upload_design')}
+                    </h4>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full p-4 border-2 border-dashed border-theme rounded-2xl flex items-center justify-center gap-3 hover:border-primary hover:bg-primary/5 transition-all group"
+                    >
+                      <Upload
+                        size={20}
+                        className="text-muted group-hover:text-primary"
+                      />
+                      <span className="text-sm font-bold text-primary">
+                        {t('wizard_upload_image')}
+                      </span>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                      />
+                    </button>
+                    {isUploadingLogo && (
+                      <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted">
+                        <Loader2 size={14} className="animate-spin" />
+                        Persistiendo imagen...
+                      </div>
+                    )}
+                    {uploadedLogo && (
+                      <div className="mt-4 p-4 bg-base/50 rounded-2xl border border-theme animate-in slide-in-from-top-2">
+                        <div className="flex justify-between items-center mb-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-primary">
+                            {t('wizard_design_size')}
+                          </label>
+                          <span className="text-[10px] font-bold text-muted">
+                            {logoScale}%
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="10"
+                          max="100"
+                          value={logoScale}
+                          onChange={(e) => setLogoScale(Number(e.target.value))}
+                          className="w-full h-1.5 bg-theme rounded-lg appearance-none cursor-pointer accent-primary"
+                        />
+                      </div>
+                    )}
+                    <p className="text-[10px] text-muted uppercase text-center">
+                      {t('wizard_recommended_background')}
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-black uppercase tracking-widest text-primary">
+                      {t('wizard_marking_technique')}
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      {availableTechniqueOptions.map((technique) => (
+                        <button
+                          key={technique.id}
+                          onClick={() =>
+                            setSelections((prev) => ({
+                              ...prev,
+                              markingType: technique.code,
+                            }))
+                          }
+                          className={`py-3 rounded-xl border-2 font-bold text-[10px] transition-all uppercase tracking-tighter ${
+                            selections.markingType === technique.code
+                              ? 'border-primary bg-primary text-white shadow-lg shadow-primary/20'
+                              : 'border-theme text-muted hover:border-primary/30'
+                          }`}
+                        >
+                          {technique.name}
+                        </button>
+                      ))}
+                      {availableTechniqueOptions.length === 0 && (
+                        <div className="col-span-2 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3">
+                          <AlertCircle
+                            className="text-red-500 shrink-0"
+                            size={16}
+                          />
+                          <p className="text-[10px] font-medium text-red-700">
+                            {t('wizard_not_compatible', {
+                              material: selections.material,
+                            })}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 pb-3">
+                    <h4 className="text-xs font-black uppercase tracking-widest text-primary">
+                      {t('wizard_other_options')}
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      {availableOtherOptions.map((option) => {
+                        const isSelected = selections.extraOptions.includes(
+                          option.code,
+                        );
+
+                        return (
+                          <button
+                            key={option.id}
+                            onClick={() =>
+                              setSelections((prev) => ({
+                                ...prev,
+                                extraOptions: prev.extraOptions.includes(
+                                  option.code,
+                                )
+                                  ? prev.extraOptions.filter(
+                                      (code) => code !== option.code,
+                                    )
+                                  : [...prev.extraOptions, option.code],
+                              }))
+                            }
+                            className={`py-3 rounded-xl border-2 font-bold text-[10px] transition-all uppercase tracking-tighter ${
+                              isSelected
+                                ? 'border-primary bg-primary text-white shadow-lg shadow-primary/20'
+                                : 'border-theme text-muted hover:border-primary/30'
+                            }`}
+                          >
+                            {option.name}
+                          </button>
+                        );
+                      })}
+                      {availableOtherOptions.length === 0 &&
+                        !noPersonalizationOptionsAvailable && (
+                          <div className="col-span-2 p-4 bg-base/50 border border-theme rounded-2xl">
+                            <p className="text-[10px] font-medium text-muted">
+                              {t('wizard_other_options_empty')}
+                            </p>
+                          </div>
+                        )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center gap-4">
+                  <div className="relative w-full max-w-sm aspect-[4/6] bg-gray-100 rounded-3xl overflow-hidden shadow-inner flex items-center justify-center">
+                    {(() => {
+                      const selectedMaterial = wizardOptions.MATERIAL.find(
+                        (material) => material.name === selections.material,
+                      );
+                      const canvasImage =
+                        selectedMaterial?.imageUrl || '/placeholder.svg';
+
+                      return (
+                        <Image
+                          src={canvasImage}
+                          alt="Tote Mockup"
+                          fill
+                          sizes="(max-width: 1024px) 100vw, 384px"
+                          className="object-cover transition-opacity duration-500"
+                        />
+                      );
+                    })()}
+
+                    <div className="absolute top-[44%] left-[28%] w-[45%] h-[35%] border-2 border-dashed border-gray-400/50 rounded-lg flex items-center justify-center z-10 overflow-hidden">
+                      {uploadedLogo ? (
+                        <div className="relative w-full h-full flex items-center justify-center p-2">
+                          <Image
+                            src={uploadedLogo}
+                            alt="Logo preview"
+                            width={200}
+                            height={200}
+                            style={{
+                              width: `${logoScale}%`,
+                              height: 'auto',
+                              objectFit: 'contain',
+                            }}
+                            className="animate-in zoom-in-50 duration-300 transition-all"
+                          />
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center px-4">
+                          {t('wizard_print_area')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-[9px] text-muted font-black uppercase tracking-widest">
+                    {t('wizard_interactive_preview')}
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-[2rem] border border-primary/15 bg-primary/[0.03] p-6 md:p-8">
+              <div className="max-w-3xl space-y-5">
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-[0.2em] text-primary">
+                    Precios estimados
+                  </h3>
+                  <p className="mt-2 text-sm text-muted">
+                    Referencias comerciales orientativas para la solicitud de
+                    personalizacion.
+                  </p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-theme bg-surface px-5 py-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-muted">
+                      45 cm x 38 cm
+                    </p>
+                    <p className="mt-2 text-lg font-bold text-primary">
+                      desde $69.000 COP
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-theme bg-surface px-5 py-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-muted">
+                      30 cm x 35 cm
+                    </p>
+                    <p className="mt-2 text-lg font-bold text-primary">
+                      desde $63.750 COP
+                    </p>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-primary/20 bg-white px-5 py-4">
+                  <p className="text-sm font-semibold text-primary">
+                    Precio estimado. El precio final lo define el asesor al
+                    revisar la solicitud.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <div className="flex pt-8 border-t border-theme bg-surface sticky bottom-0 left-0 right-0 md:relative z-20 pb-4 md:pb-0">
+              <button
+                onClick={handleFinish}
+                disabled={
+                  isSubmittingRequest ||
+                  isPricingLoading ||
+                  isUploadingLogo ||
+                  !resolvedProductId ||
+                  !resolvedVariant?.id ||
+                  !selections.line ||
+                  !selections.size ||
+                  !selections.material ||
+                  !uploadedLogo ||
+                  !selections.designUrl ||
+                  !configCode
+                }
+                className="flex-1 px-8 py-4 bg-accent text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-xl shadow-accent/20 disabled:opacity-50"
+              >
+                {isSubmittingRequest ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Enviando solicitud
+                  </>
+                ) : (
+                  <>
+                    Enviar para revision <ChevronRight size={16} />
+                  </>
+                )}
+              </button>
+            </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-4xl mx-auto bg-surface border border-theme rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col md:flex-row min-h-[600px]">
       <aside className="w-full md:w-1/3 bg-primary p-8 text-base-color flex flex-col justify-between">
@@ -1144,9 +1599,9 @@ export default function PersonalizerWizard({
               onClick={nextStep}
               disabled={
                 isPricingLoading ||
-                 isUploadingLogo ||
-                 !wizardOptions ||
-                 !resolvedProductId ||
+                isUploadingLogo ||
+                !wizardOptions ||
+                !resolvedProductId ||
                  !resolvedVariant?.id ||
                 (step === 1 && !selections.line) ||
                 (step === 2 && !selections.size) ||

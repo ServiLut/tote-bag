@@ -7,6 +7,12 @@ import { CATALOG_ATTRIBUTES } from '@/utils/catalog-constants';
 import { cn } from '@/utils/cn';
 import { apiFetch } from '@/utils/api';
 import { formatCurrencyInput, parseLocalizedNumber, sanitizeDecimalInput } from '@/lib/numeric-input';
+import {
+  buildCatalogSearchParams,
+  DEFAULT_CATALOG_MAX_PRICE,
+  parseCatalogPriceFilterValue,
+  readCatalogFiltersFromSearchParams,
+} from '@/lib/catalog-filters';
 import { useTranslation } from 'react-i18next';
 
 export interface FilterState {
@@ -49,45 +55,20 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
   });
 
   const updateURL = useCallback((newFilters: FilterState) => {
-    const params = new URLSearchParams();
-    if (newFilters.collections.length > 0) params.set('collection', newFilters.collections.join(','));
-    if (newFilters.lines.length > 0) params.set('lines', newFilters.lines.join(','));
-    if (newFilters.sizes.length > 0) params.set('sizes', newFilters.sizes.join(','));
-    if (newFilters.materials.length > 0) params.set('materials', newFilters.materials.join(','));
-    if (newFilters.minPrice > 0) params.set('minPrice', newFilters.minPrice.toString());
-    if (newFilters.maxPrice < 1000000) params.set('maxPrice', newFilters.maxPrice.toString());
-
+    const params = buildCatalogSearchParams(newFilters, searchParams);
     const query = params.toString();
     router.push(`${window.location.pathname}${query ? '?' + query : ''}`, { scroll: false });
-  }, [router]);
+  }, [router, searchParams]);
 
   useEffect(() => {
-    const newFilters = { ...filters };
-    let hasChanges = false;
-
-    const sync = (key: string, field: Extract<keyof FilterState, 'collections' | 'lines' | 'sizes' | 'materials'>) => {
-      const val = searchParams.get(key);
-      if (val) {
-        (newFilters[field] as string[]) = val.split(',');
-        hasChanges = true;
-      }
-    };
-
-    sync('collection', 'collections');
-    sync('lines', 'lines');
-    sync('sizes', 'sizes');
-    sync('materials', 'materials');
-
-    const minP = searchParams.get('minPrice');
-    if (minP) {
-      newFilters.minPrice = Number(minP);
-      hasChanges = true;
-    }
-    const maxP = searchParams.get('maxPrice');
-    if (maxP) {
-      newFilters.maxPrice = Number(maxP);
-      hasChanges = true;
-    }
+    const newFilters = readCatalogFiltersFromSearchParams(searchParams, filters);
+    const hasChanges =
+      newFilters.minPrice !== filters.minPrice ||
+      newFilters.maxPrice !== filters.maxPrice ||
+      newFilters.collections.join(',') !== filters.collections.join(',') ||
+      newFilters.lines.join(',') !== filters.lines.join(',') ||
+      newFilters.sizes.join(',') !== filters.sizes.join(',') ||
+      newFilters.materials.join(',') !== filters.materials.join(',');
 
     if (hasChanges) {
       onFilterChange(newFilters);
@@ -137,7 +118,10 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
     const sanitizedValue = sanitizeDecimalInput(value);
     onFilterChange({
       ...filters,
-      [name]: sanitizedValue ? parseLocalizedNumber(sanitizedValue) : 0,
+      [name]: parseCatalogPriceFilterValue(
+        name as 'minPrice' | 'maxPrice',
+        sanitizedValue ? String(parseLocalizedNumber(sanitizedValue)) : '',
+      ),
     });
   };
 
@@ -264,7 +248,7 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
                   <label className="text-[9px] font-black uppercase text-muted tracking-widest opacity-60">{t('filters_max')}</label>
                   <div className="relative">
                     <span className="absolute left-3 top-2 text-[10px] font-bold text-muted">$</span>
-                    <input type="text" name="maxPrice" inputMode="decimal" value={filters.maxPrice === 0 ? '' : formatCurrencyInput(String(filters.maxPrice))} onChange={handlePriceChange} className="w-full pl-6 py-2 border border-theme bg-base text-primary text-xs font-bold focus:border-primary outline-none transition-all rounded-lg" placeholder="999..." />
+                    <input type="text" name="maxPrice" inputMode="decimal" value={filters.maxPrice >= DEFAULT_CATALOG_MAX_PRICE ? '' : formatCurrencyInput(String(filters.maxPrice))} onChange={handlePriceChange} className="w-full pl-6 py-2 border border-theme bg-base text-primary text-xs font-bold focus:border-primary outline-none transition-all rounded-lg" placeholder="999..." />
                   </div>
                 </div>
               </div>
