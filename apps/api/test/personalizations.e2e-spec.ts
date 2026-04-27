@@ -29,6 +29,7 @@ describe('PersonalizationsController (e2e)', () => {
 
   const rolesService = {
     getUserPermissions: jest.fn(),
+    hasPermission: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -36,6 +37,7 @@ describe('PersonalizationsController (e2e)', () => {
     rolesService.getUserPermissions.mockResolvedValue([
       { resource: 'personalizations', action: 'manage' },
     ]);
+    rolesService.hasPermission.mockResolvedValue(true);
 
     const setup = await createTestApp({
       controllers: [PersonalizationsController],
@@ -79,5 +81,58 @@ describe('PersonalizationsController (e2e)', () => {
 
     expect(rolesService.getUserPermissions).toHaveBeenCalledWith('admin-1');
     expect(personalizationsService.findAll).toHaveBeenCalled();
+  });
+
+  it('bloquea signed-upload sin usuario autenticado', async () => {
+    await request(getTestServer(app))
+      .post('/api/v1/personalizations/signed-upload')
+      .send({
+        fileName: 'logo.png',
+        mimeType: 'image/png',
+        size: 1024,
+      })
+      .expect(401);
+
+    expect(personalizationsService.createSignedUpload).not.toHaveBeenCalled();
+  });
+
+  it('permite signed-upload con usuario autenticado', async () => {
+    personalizationsService.createSignedUpload.mockResolvedValue({
+      path: 'custom-designs/logo.png',
+      token: 'signed-token',
+      publicUrl: 'https://cdn.example.com/custom-designs/logo.png',
+    });
+
+    await request(getTestServer(app))
+      .post('/api/v1/personalizations/signed-upload')
+      .set('x-test-user-id', 'customer-1')
+      .send({
+        fileName: 'logo.png',
+        mimeType: 'image/png',
+        size: 1024,
+      })
+      .expect(201)
+      .expect(({ body }) => {
+        expect(body).toEqual({
+          path: 'custom-designs/logo.png',
+          token: 'signed-token',
+          publicUrl: 'https://cdn.example.com/custom-designs/logo.png',
+        });
+      });
+
+    expect(personalizationsService.createSignedUpload).toHaveBeenCalledWith({
+      fileName: 'logo.png',
+      mimeType: 'image/png',
+      size: 1024,
+    });
+  });
+
+  it('bloquea upload-design sin usuario autenticado', async () => {
+    await request(getTestServer(app))
+      .post('/api/v1/personalizations/upload-design')
+      .attach('file', Buffer.from('fake-image'), 'logo.png')
+      .expect(401);
+
+    expect(personalizationsService.uploadDesign).not.toHaveBeenCalled();
   });
 });

@@ -65,6 +65,13 @@ type PersonalizationRequestForApproval = {
   } | null;
 };
 
+type PersonalizationRequestConfigurationRecord = Record<string, unknown> & {
+  approvalOrderId?: string;
+  approvalStartedAt?: string;
+  approvalReceiptUploadedAt?: string;
+  approvedAt?: string;
+};
+
 @Injectable()
 export class PersonalizationsService {
   constructor(
@@ -144,6 +151,81 @@ export class PersonalizationsService {
     throw error;
   }
 
+  private getConfigurationRecord(
+    value: Prisma.JsonValue | null | undefined,
+  ): PersonalizationRequestConfigurationRecord {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return {};
+    }
+
+    return { ...(value as Record<string, unknown>) };
+  }
+
+  private async lockRequestForApproval(id: string) {
+    const result = await this.prisma.personalizationRequest.updateMany({
+      where: {
+        id,
+        status: {
+          notIn: [
+            PersonalizationRequestStatus.APPROVED,
+            PersonalizationRequestStatus.IN_REVIEW,
+          ],
+        },
+      },
+      data: {
+        status: PersonalizationRequestStatus.IN_REVIEW,
+      },
+    });
+
+    if (result.count > 0) {
+      return;
+    }
+
+    const currentRequest = await this.prisma.personalizationRequest.findUnique({
+      where: { id },
+      select: { id: true, status: true },
+    });
+
+    if (!currentRequest) {
+      throw new NotFoundException(
+        `Personalization request with ID ${id} not found`,
+      );
+    }
+
+    if (currentRequest.status === PersonalizationRequestStatus.APPROVED) {
+      throw new ConflictException(
+        'La solicitud ya fue aprobada y convertida en pedido.',
+      );
+    }
+
+    throw new ConflictException(
+      'La solicitud ya se encuentra en proceso de aprobacion. Intenta de nuevo en unos segundos.',
+    );
+  }
+
+  private async restorePendingApprovalState(
+    id: string,
+    configuration: PersonalizationRequestConfigurationRecord,
+  ) {
+    try {
+      await this.prisma.personalizationRequest.update({
+        where: { id },
+        data: {
+          status: PersonalizationRequestStatus.PENDING,
+          reviewedAt: null,
+          reviewedByUserId: null,
+          configurationJson:
+            configuration as unknown as Prisma.InputJsonValue,
+        },
+      });
+    } catch (restoreError) {
+      console.error(
+        `Failed to restore personalization request ${id} after approval error:`,
+        restoreError,
+      );
+    }
+  }
+
   async createSignedUpload(data: CreateSignedDesignUploadDto) {
     this.validateFileMetadata(data.fileName, data.mimeType, data.size);
 
@@ -154,7 +236,10 @@ export class PersonalizationsService {
         console.error('Custom design cleanup error:', error);
       });
 
-    const normalizedName = data.fileName
+    const normalizedName = this.ensureSupportedImageFileName(
+      data.fileName,
+      data.mimeType,
+    )
       .replace(/\s+/g, '-')
       .replace(/[^a-zA-Z0-9._-]/g, '');
     const path = `custom-designs/${Date.now()}-${normalizedName}`;
@@ -176,7 +261,10 @@ export class PersonalizationsService {
   async uploadDesign(file: Express.Multer.File) {
     this.validateFileMetadata(file.originalname, file.mimetype, file.size);
 
-    const normalizedName = file.originalname
+    const normalizedName = this.ensureSupportedImageFileName(
+      file.originalname,
+      file.mimetype,
+    )
       .replace(/\s+/g, '-')
       .replace(/[^a-zA-Z0-9._-]/g, '');
     const path = `custom-designs/${Date.now()}-${normalizedName}`;
@@ -758,6 +846,9 @@ export class PersonalizationsService {
     actorUserId: string,
     receiptFile?: Express.Multer.File,
   ) {
+    let shouldRestorePendingState = false;
+    let configurationRecord: PersonalizationRequestConfigurationRecord = {};
+
     try {
       if (!receiptFile) {
         throw new BadRequestException(
@@ -766,6 +857,9 @@ export class PersonalizationsService {
       }
 
       this.validateReceiptFile(receiptFile);
+
+      await this.lockRequestForApproval(id);
+      shouldRestorePendingState = true;
 
       const request = (await this.prisma.personalizationRequest.findUnique({
         where: { id },
@@ -784,15 +878,60 @@ export class PersonalizationsService {
         );
       }
 
-      const createdOrder = await this.ordersService.create(
-        this.buildOrderPayloadFromRequest(request),
-        actorUserId,
+      configurationRecord = this.getConfigurationRecord(
+        request.configurationJson,
       );
+
+      const existingOrderId =
+        typeof configurationRecord.approvalOrderId === 'string' &&
+        configurationRecord.approvalOrderId.trim().length > 0
+          ? configurationRecord.approvalOrderId.trim()
+          : null;
+
+      let orderId = existingOrderId;
+      let existingOrder = orderId
+        ? await this.prisma.order.findUnique({
+            where: { id: orderId },
+            select: { id: true, paymentReceiptUrl: true },
+          })
+        : null;
+
+      if (!existingOrder) {
+        const createdOrder = await this.ordersService.create(
+          this.buildOrderPayloadFromRequest(request),
+          actorUserId,
+        );
+
+        orderId = createdOrder.id;
+        existingOrder = {
+          id: createdOrder.id,
+          paymentReceiptUrl: createdOrder.paymentReceiptUrl ?? null,
+        };
+        configurationRecord = {
+          ...configurationRecord,
+          approvalOrderId: orderId,
+          approvalStartedAt: new Date().toISOString(),
+        };
+
+        await this.prisma.personalizationRequest.update({
+          where: { id },
+          data: {
+            configurationJson:
+              configurationRecord as unknown as Prisma.InputJsonValue,
+          },
+        });
+      }
+
+      if (!orderId) {
+        throw new BadRequestException(
+          'No fue posible resolver el pedido asociado a la aprobacion.',
+        );
+      }
 
       const normalizedName = receiptFile.originalname
         .replace(/\s+/g, '-')
         .replace(/[^a-zA-Z0-9._-]/g, '');
-      const receiptPath = `receipts/order/${createdOrder.id}-${Date.now()}-${normalizedName}`;
+      const receiptPath = `receipts/order/${orderId}-${Date.now()}-${normalizedName}`;
       const receiptUrl = await this.storageService.uploadFile(
         'payment-receipts',
         receiptPath,
@@ -800,21 +939,37 @@ export class PersonalizationsService {
       );
 
       await this.prisma.order.update({
-        where: { id: createdOrder.id },
+        where: { id: orderId },
         data: { paymentReceiptUrl: receiptUrl },
       });
 
-      return await this.prisma.personalizationRequest.update({
+      configurationRecord = {
+        ...configurationRecord,
+        approvalOrderId: orderId,
+        approvalReceiptUploadedAt: new Date().toISOString(),
+        approvedAt: new Date().toISOString(),
+      };
+
+      const approvedRequest = await this.prisma.personalizationRequest.update({
         where: { id },
         data: {
           status: PersonalizationRequestStatus.APPROVED,
-          reviewNotes: data.reviewNotes,
+          reviewNotes: data.reviewNotes?.trim() || null,
           reviewedAt: new Date(),
           reviewedByUserId: actorUserId,
+          configurationJson:
+            configurationRecord as unknown as Prisma.InputJsonValue,
         },
         include: this.getRequestInclude(),
       });
+
+      shouldRestorePendingState = false;
+      return approvedRequest;
     } catch (error) {
+      if (shouldRestorePendingState) {
+        await this.restorePendingApprovalState(id, configurationRecord);
+      }
+
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         (error.code === 'P2021' || error.code === 'P2022')
@@ -846,8 +1001,9 @@ export class PersonalizationsService {
       'image/jpg',
       'image/webp',
     ]);
-    const lowerName = fileName.toLowerCase();
+    const lowerName = fileName.trim().toLowerCase();
     const allowedExtensions = ['.png', '.jpg', '.jpeg', '.webp'];
+    const hasAnyExtension = /\.[a-z0-9]+$/i.test(lowerName);
 
     if (!allowedMimeTypes.has(mimeType)) {
       throw new BadRequestException(
@@ -855,7 +1011,10 @@ export class PersonalizationsService {
       );
     }
 
-    if (!allowedExtensions.some((extension) => lowerName.endsWith(extension))) {
+    if (
+      hasAnyExtension &&
+      !allowedExtensions.some((extension) => lowerName.endsWith(extension))
+    ) {
       throw new BadRequestException(
         'El archivo debe tener extension PNG, JPG o WEBP.',
       );
@@ -865,6 +1024,33 @@ export class PersonalizationsService {
       throw new BadRequestException(
         'El archivo supera el limite de 5 MB permitido.',
       );
+    }
+  }
+
+  private ensureSupportedImageFileName(fileName: string, mimeType: string) {
+    const trimmedName = fileName.trim() || 'diseno-personalizado';
+    const hasAllowedExtension = /\.(png|jpe?g|webp)$/i.test(trimmedName);
+
+    if (hasAllowedExtension) {
+      return trimmedName;
+    }
+
+    return `${trimmedName}${this.getAllowedImageExtensionForMimeType(mimeType)}`;
+  }
+
+  private getAllowedImageExtensionForMimeType(mimeType: string) {
+    switch (mimeType) {
+      case 'image/png':
+        return '.png';
+      case 'image/jpeg':
+      case 'image/jpg':
+        return '.jpg';
+      case 'image/webp':
+        return '.webp';
+      default:
+        throw new BadRequestException(
+          'Solo se permiten imagenes PNG, JPG o WEBP.',
+        );
     }
   }
 

@@ -42,6 +42,14 @@ export class PersonalizationsController {
     private readonly rolesService: RolesService,
   ) {}
 
+  private getAuthenticatedUserId(req: RequestWithUser) {
+    if (!req.user?.id) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    return req.user.id;
+  }
+
   @Get()
   @Header('Deprecation', 'true')
   @Header('Sunset', 'Tue, 30 Jun 2026 23:59:59 GMT')
@@ -59,13 +67,22 @@ export class PersonalizationsController {
   }
 
   @Post('signed-upload')
-  async createSignedUpload(@Body() data: CreateSignedDesignUploadDto) {
+  async createSignedUpload(
+    @Req() req: RequestWithUser,
+    @Body() data: CreateSignedDesignUploadDto,
+  ) {
+    this.getAuthenticatedUserId(req);
     return this.personalizationsService.createSignedUpload(data);
   }
 
   @Post('upload-design')
   @UseInterceptors(FileInterceptor('file'))
-  async uploadDesign(@UploadedFile() file: Express.Multer.File) {
+  async uploadDesign(
+    @Req() req: RequestWithUser,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    this.getAuthenticatedUserId(req);
+
     if (!file) {
       throw new BadRequestException('Debes seleccionar un archivo para subir.');
     }
@@ -92,9 +109,7 @@ export class PersonalizationsController {
     @Req() req: RequestWithUser,
     @Body() data: CreatePersonalizationRequestDto,
   ) {
-    if (!req.user?.id) {
-      throw new UnauthorizedException('User not authenticated');
-    }
+    const userId = this.getAuthenticatedUserId(req);
 
     let allowProfileOverride = false;
 
@@ -103,7 +118,7 @@ export class PersonalizationsController {
       data.profileId.trim().length > 0
     ) {
       allowProfileOverride = await this.rolesService.hasPermission(
-        req.user.id,
+        userId,
         'personalizations',
         'manage',
       );
@@ -113,7 +128,7 @@ export class PersonalizationsController {
       }
     }
 
-    return this.personalizationsService.createRequest(req.user.id, data, {
+    return this.personalizationsService.createRequest(userId, data, {
       allowProfileOverride,
     });
   }
@@ -125,11 +140,9 @@ export class PersonalizationsController {
     @Body() data: UpdatePersonalizationRequestDto,
     @Req() req: RequestWithUser,
   ) {
-    if (!req.user?.id) {
-      throw new UnauthorizedException('User not authenticated');
-    }
+    const userId = this.getAuthenticatedUserId(req);
 
-    return this.personalizationsService.updateRequest(id, data, req.user.id);
+    return this.personalizationsService.updateRequest(id, data, userId);
   }
 
   @Delete('requests/:id')
@@ -149,14 +162,12 @@ export class PersonalizationsController {
     @UploadedFile() file: Express.Multer.File | undefined,
     @Req() req: RequestWithUser,
   ) {
-    if (!req.user?.id) {
-      throw new UnauthorizedException('User not authenticated');
-    }
+    const userId = this.getAuthenticatedUserId(req);
 
     return this.personalizationsService.approveRequest(
       id,
       data,
-      req.user.id,
+      userId,
       file,
     );
   }
