@@ -72,6 +72,12 @@ type PersonalizationRequestConfigurationRecord = Record<string, unknown> & {
   approvedAt?: string;
 };
 
+type PersonalizationRequestApprovalSnapshot = {
+  status: PersonalizationRequestStatus;
+  reviewedAt: Date | null;
+  reviewedByUserId: string | null;
+};
+
 @Injectable()
 export class PersonalizationsService {
   constructor(
@@ -161,29 +167,30 @@ export class PersonalizationsService {
     return { ...(value as Record<string, unknown>) };
   }
 
-  private async lockRequestForApproval(id: string) {
-    const result = await this.prisma.personalizationRequest.updateMany({
-      where: {
-        id,
-        status: {
-          notIn: [
-            PersonalizationRequestStatus.APPROVED,
-            PersonalizationRequestStatus.IN_REVIEW,
-          ],
-        },
-      },
-      data: {
-        status: PersonalizationRequestStatus.IN_REVIEW,
-      },
-    });
-
-    if (result.count > 0) {
-      return;
+  private ensureRequestPatchDoesNotBypassApproval(
+    status?: PersonalizationRequestStatus,
+  ) {
+    if (
+      status === PersonalizationRequestStatus.APPROVED ||
+      status === PersonalizationRequestStatus.IN_REVIEW
+    ) {
+      throw new BadRequestException(
+        'La aprobacion solo se puede registrar desde el endpoint de aprobacion con comprobante.',
+      );
     }
+  }
 
+  private async lockRequestForApproval(
+    id: string,
+  ): Promise<PersonalizationRequestApprovalSnapshot> {
     const currentRequest = await this.prisma.personalizationRequest.findUnique({
       where: { id },
-      select: { id: true, status: true },
+      select: {
+        id: true,
+        status: true,
+        reviewedAt: true,
+        reviewedByUserId: true,
+      },
     });
 
     if (!currentRequest) {
@@ -198,22 +205,47 @@ export class PersonalizationsService {
       );
     }
 
-    throw new ConflictException(
-      'La solicitud ya se encuentra en proceso de aprobacion. Intenta de nuevo en unos segundos.',
-    );
+    if (currentRequest.status === PersonalizationRequestStatus.IN_REVIEW) {
+      throw new ConflictException(
+        'La solicitud ya se encuentra en proceso de aprobacion. Intenta de nuevo en unos segundos.',
+      );
+    }
+
+    const result = await this.prisma.personalizationRequest.updateMany({
+      where: {
+        id,
+        status: currentRequest.status,
+      },
+      data: {
+        status: PersonalizationRequestStatus.IN_REVIEW,
+      },
+    });
+
+    if (result.count === 0) {
+      throw new ConflictException(
+        'La solicitud cambio de estado mientras se intentaba aprobar. Intenta de nuevo en unos segundos.',
+      );
+    }
+
+    return {
+      status: currentRequest.status,
+      reviewedAt: currentRequest.reviewedAt,
+      reviewedByUserId: currentRequest.reviewedByUserId,
+    };
   }
 
-  private async restorePendingApprovalState(
+  private async restoreApprovalState(
     id: string,
+    snapshot: PersonalizationRequestApprovalSnapshot,
     configuration: PersonalizationRequestConfigurationRecord,
   ) {
     try {
       await this.prisma.personalizationRequest.update({
         where: { id },
         data: {
-          status: PersonalizationRequestStatus.PENDING,
-          reviewedAt: null,
-          reviewedByUserId: null,
+          status: snapshot.status,
+          reviewedAt: snapshot.reviewedAt,
+          reviewedByUserId: snapshot.reviewedByUserId,
           configurationJson:
             configuration as unknown as Prisma.InputJsonValue,
         },
@@ -224,6 +256,65 @@ export class PersonalizationsService {
         restoreError,
       );
     }
+  }
+
+  private async ensureDefaultProfileForUser(
+    userId: string,
+    userEmail?: string | null,
+  ) {
+    const existingProfile = await this.prisma.profile.findUnique({
+      where: { userId },
+      select: {
+        id: true,
+        userId: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        email: true,
+        department: true,
+        municipality: true,
+        neighborhood: true,
+        address: true,
+      },
+    });
+
+    if (existingProfile) {
+      return existingProfile;
+    }
+
+    const normalizedEmail =
+      userEmail?.trim() ||
+      (
+        await this.prisma.user.findUnique({
+          where: { id: userId },
+          select: { email: true },
+        })
+      )?.email?.trim();
+
+    if (!normalizedEmail) {
+      throw new BadRequestException(
+        'No fue posible resolver un perfil valido para la solicitud.',
+      );
+    }
+
+    return this.prisma.profile.create({
+      data: {
+        email: normalizedEmail,
+        userId,
+      },
+      select: {
+        id: true,
+        userId: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        email: true,
+        department: true,
+        municipality: true,
+        neighborhood: true,
+        address: true,
+      },
+    });
   }
 
   async createSignedUpload(data: CreateSignedDesignUploadDto) {
@@ -336,10 +427,7 @@ export class PersonalizationsService {
             where: { id: requestedProfileId },
             select: { id: true, userId: true },
           })
-        : this.prisma.profile.findUnique({
-            where: { userId },
-            select: { id: true, userId: true },
-          }),
+        : this.ensureDefaultProfileForUser(userId),
       data.variantId
         ? this.prisma.variant.findUnique({
             where: { id: data.variantId },
@@ -348,7 +436,7 @@ export class PersonalizationsService {
         : Promise.resolve(null),
     ]);
 
-    if (requestedProfileId && !profile) {
+    if (!profile) {
       throw new BadRequestException('El perfil seleccionado no existe.');
     }
 
@@ -395,8 +483,8 @@ export class PersonalizationsService {
     try {
       return await this.prisma.personalizationRequest.create({
         data: {
-          userId: profile?.userId ?? userId,
-          profileId: profile?.id ?? null,
+          userId: profile.userId,
+          profileId: profile.id,
           productId: data.productId,
           variantId: resolvedVariantId,
           quantity: data.quantity,
@@ -475,6 +563,14 @@ export class PersonalizationsService {
         );
       }
 
+      if (currentRequest.status === PersonalizationRequestStatus.IN_REVIEW) {
+        throw new ConflictException(
+          'La solicitud ya se encuentra en proceso de aprobacion.',
+        );
+      }
+
+      this.ensureRequestPatchDoesNotBypassApproval(data.status);
+
       const nextProfileId = data.profileId ?? currentRequest.profileId;
       const nextProductId = data.productId ?? currentRequest.productId;
       const nextVariantId = data.variantId ?? currentRequest.variantId;
@@ -540,7 +636,7 @@ export class PersonalizationsService {
               where: { id: nextProfileId },
               select: { id: true, userId: true },
             })
-          : Promise.resolve(null),
+          : this.ensureDefaultProfileForUser(currentRequest.userId),
         nextVariantId
           ? this.prisma.variant.findUnique({
               where: { id: nextVariantId },
@@ -549,7 +645,7 @@ export class PersonalizationsService {
           : Promise.resolve(null),
       ]);
 
-      if (nextProfileId && !profile) {
+      if (!profile) {
         throw new BadRequestException('El perfil seleccionado no existe.');
       }
 
@@ -603,8 +699,8 @@ export class PersonalizationsService {
       return await this.prisma.personalizationRequest.update({
         where: { id },
         data: {
-          userId: profile?.userId ?? currentRequest.userId,
-          profileId: profile?.id ?? null,
+          userId: profile.userId,
+          profileId: profile.id,
           productId: nextProductId,
           variantId: resolvedVariantId,
           quantity: nextQuantity,
@@ -716,6 +812,10 @@ export class PersonalizationsService {
       throw new BadRequestException(
         'El comprobante debe tener extension PNG, JPG, WEBP o PDF.',
       );
+    }
+
+    if (file.size < 1) {
+      throw new BadRequestException('El comprobante seleccionado esta vacio.');
     }
 
     if (file.size > 10 * 1024 * 1024) {
@@ -848,6 +948,7 @@ export class PersonalizationsService {
   ) {
     let shouldRestorePendingState = false;
     let configurationRecord: PersonalizationRequestConfigurationRecord = {};
+    let approvalSnapshot: PersonalizationRequestApprovalSnapshot | null = null;
 
     try {
       if (!receiptFile) {
@@ -858,7 +959,7 @@ export class PersonalizationsService {
 
       this.validateReceiptFile(receiptFile);
 
-      await this.lockRequestForApproval(id);
+      approvalSnapshot = await this.lockRequestForApproval(id);
       shouldRestorePendingState = true;
 
       const request = (await this.prisma.personalizationRequest.findUnique({
@@ -881,6 +982,33 @@ export class PersonalizationsService {
       configurationRecord = this.getConfigurationRecord(
         request.configurationJson,
       );
+
+      if (!request.profile) {
+        const resolvedProfile = await this.ensureDefaultProfileForUser(
+          request.user.id,
+          request.user.email,
+        );
+
+        request.profileId = resolvedProfile.id;
+        request.profile = {
+          id: resolvedProfile.id,
+          firstName: resolvedProfile.firstName,
+          lastName: resolvedProfile.lastName,
+          phone: resolvedProfile.phone,
+          email: resolvedProfile.email,
+          department: resolvedProfile.department,
+          municipality: resolvedProfile.municipality,
+          neighborhood: resolvedProfile.neighborhood,
+          address: resolvedProfile.address,
+        };
+
+        await this.prisma.personalizationRequest.update({
+          where: { id },
+          data: {
+            profileId: resolvedProfile.id,
+          },
+        });
+      }
 
       const existingOrderId =
         typeof configurationRecord.approvalOrderId === 'string' &&
@@ -938,6 +1066,13 @@ export class PersonalizationsService {
         receiptFile,
       );
 
+      await this.ordersService.confirmPendingOrderPayment(
+        orderId,
+        actorUserId,
+        undefined,
+        receiptUrl,
+      );
+
       await this.prisma.order.update({
         where: { id: orderId },
         data: { paymentReceiptUrl: receiptUrl },
@@ -966,8 +1101,8 @@ export class PersonalizationsService {
       shouldRestorePendingState = false;
       return approvedRequest;
     } catch (error) {
-      if (shouldRestorePendingState) {
-        await this.restorePendingApprovalState(id, configurationRecord);
+      if (shouldRestorePendingState && approvalSnapshot) {
+        await this.restoreApprovalState(id, approvalSnapshot, configurationRecord);
       }
 
       if (
@@ -993,7 +1128,7 @@ export class PersonalizationsService {
   private validateFileMetadata(
     fileName: string,
     mimeType: string,
-    size?: number,
+    size: number,
   ) {
     const allowedMimeTypes = new Set([
       'image/png',
@@ -1020,7 +1155,11 @@ export class PersonalizationsService {
       );
     }
 
-    if (size && size > 5 * 1024 * 1024) {
+    if (size < 1) {
+      throw new BadRequestException('El archivo seleccionado esta vacio.');
+    }
+
+    if (size > 5 * 1024 * 1024) {
       throw new BadRequestException(
         'El archivo supera el limite de 5 MB permitido.',
       );

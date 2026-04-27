@@ -76,10 +76,75 @@ const getLineIcon = (code: string) => {
   return Box;
 };
 
-const isOtherTechniqueOption = (option: WizardOption) => {
+const isOtherTechniqueOption = (option: PersonalizerTechniqueOption) => {
   const normalized = `${option.code} ${option.name}`.toLowerCase();
   return normalized.includes('cierre') || normalized.includes('boton') || normalized.includes('botón');
 };
+
+/* personalizer-wizard-test-helpers:start */
+export interface PersonalizerTechniqueOption {
+  code: string;
+  name: string;
+  allowedMaterialValues?: string[];
+}
+
+export interface PersonalizerTechniqueActionGuard {
+  hasCompatibleTechniqueOptions: boolean;
+  hasUploadedLogo: boolean;
+  hasDesignUrl: boolean;
+  hasConfigCode: boolean;
+  isUploadingLogo?: boolean;
+  isPricingLoading?: boolean;
+}
+
+const isOtherTechniqueOptionForGuard = (option: PersonalizerTechniqueOption) => {
+  const normalized = `${option.code} ${option.name}`.toLowerCase();
+  return normalized.includes('cierre') || normalized.includes('boton') || normalized.includes('botón');
+};
+
+const isTechniqueCompatibleWithMaterial = (
+  option: PersonalizerTechniqueOption,
+  material: string,
+) =>
+  !option.allowedMaterialValues ||
+  option.allowedMaterialValues.length === 0 ||
+  option.allowedMaterialValues.includes(material);
+
+export const getCompatibleTechniqueOptions = (
+  options: PersonalizerTechniqueOption[],
+  material: string,
+) =>
+  options.filter(
+    (option) =>
+      !isOtherTechniqueOptionForGuard(option) &&
+      isTechniqueCompatibleWithMaterial(option, material),
+  );
+
+export const getCompatibleOtherOptions = (
+  options: PersonalizerTechniqueOption[],
+  material: string,
+) =>
+  options.filter(
+    (option) =>
+      isOtherTechniqueOptionForGuard(option) &&
+      isTechniqueCompatibleWithMaterial(option, material),
+  );
+
+export const isTechniqueActionBlocked = ({
+  hasCompatibleTechniqueOptions,
+  hasUploadedLogo,
+  hasDesignUrl,
+  hasConfigCode,
+  isUploadingLogo = false,
+  isPricingLoading = false,
+}: PersonalizerTechniqueActionGuard) =>
+  isPricingLoading ||
+  isUploadingLogo ||
+  !hasCompatibleTechniqueOptions ||
+  !hasUploadedLogo ||
+  !hasDesignUrl ||
+  !hasConfigCode;
+/* personalizer-wizard-test-helpers:end */
 
 const getDimensionVisualLabel = (option: WizardOption) => {
   const candidate = option.description?.trim();
@@ -628,7 +693,35 @@ export default function PersonalizerWizard({
     }
   };
 
-  const nextStep = () => setStep(prev => (prev < 5 ? (prev + 1) as Step : prev));
+  const techniqueOptions = wizardOptions?.TECHNIQUE || [];
+  const availableTechniqueOptions = getCompatibleTechniqueOptions(
+    techniqueOptions,
+    selections.material,
+  );
+  const availableOtherOptions = getCompatibleOtherOptions(
+    techniqueOptions,
+    selections.material,
+  );
+  const hasCompatibleTechniqueOptions = availableTechniqueOptions.length > 0;
+  const techniqueActionBlocked = isTechniqueActionBlocked({
+    hasCompatibleTechniqueOptions,
+    hasUploadedLogo: !!uploadedLogo,
+    hasDesignUrl: !!selections.designUrl,
+    hasConfigCode: !!configCode,
+    isUploadingLogo,
+    isPricingLoading,
+  });
+
+  const nextStep = () => {
+    if (step === 4 && techniqueActionBlocked) {
+      if (!hasCompatibleTechniqueOptions) {
+        toast.error(t('wizard_not_compatible', { material: selections.material }));
+      }
+      return;
+    }
+
+    setStep(prev => (prev < 5 ? (prev + 1) as Step : prev));
+  };
   const prevStep = () => setStep(prev => (prev > 1 ? (prev - 1) as Step : prev));
 
   const handleFinish = async () => {
@@ -644,6 +737,11 @@ export default function PersonalizerWizard({
 
     if (!selections.line || !selections.size || !selections.material) {
       toast.error(t('wizard_complete_configuration'));
+      return;
+    }
+
+    if (!hasCompatibleTechniqueOptions) {
+      toast.error(t('wizard_not_compatible', { material: selections.material }));
       return;
     }
 
@@ -793,51 +891,16 @@ export default function PersonalizerWizard({
     );
   }
 
-  const availableTechniqueOptions =
-    wizardOptions.TECHNIQUE.filter(
-      (option) =>
-        !isOtherTechniqueOption(option) &&
-        (!option.allowedMaterialValues ||
-          option.allowedMaterialValues.length === 0 ||
-          option.allowedMaterialValues.includes(selections.material)),
-    ) || [];
-
-  const availableOtherOptions =
-    wizardOptions.TECHNIQUE.filter(
-      (option) =>
-        isOtherTechniqueOption(option) &&
-        (!option.allowedMaterialValues ||
-          option.allowedMaterialValues.length === 0 ||
-          option.allowedMaterialValues.includes(selections.material)),
-    ) || [];
-
   const noPersonalizationOptionsAvailable =
     availableTechniqueOptions.length === 0 && availableOtherOptions.length === 0;
   const estimatedPriceLabel =
     selections.quantity > 1 ? t('estimated_total') : t('estimated_price');
   const commercialVariants = getActiveCommercialVariants(resolvedProduct);
-  const commercialSizeChoices = Array.from(
-    new Set(commercialVariants.map((variant) => variant.size).filter(Boolean)),
-  ) as string[];
-  const sizeChoices = commercialSizeChoices.length > 0
-    ? commercialSizeChoices.map((size) => {
-        const matchingDimension = wizardOptions.DIMENSION.find(
-          (option) => option.name.toLowerCase() === size.toLowerCase(),
-        );
-
-        return {
-          id: size,
-          name: size,
-          visualLabel: matchingDimension
-            ? getDimensionVisualLabel(matchingDimension)
-            : size,
-        };
-      })
-    : wizardOptions.DIMENSION.map((option) => ({
-        id: option.id,
-        name: option.name,
-        visualLabel: getDimensionVisualLabel(option),
-      }));
+  const sizeChoices = wizardOptions.DIMENSION.map((option) => ({
+    id: option.id,
+    name: option.name,
+    visualLabel: getDimensionVisualLabel(option),
+  }));
   const selectedBaseLine = wizardOptions.LINE.find(
     (line) => line.code === selections.line,
   );
@@ -1327,7 +1390,7 @@ export default function PersonalizerWizard({
             </section>
 
             <section className="rounded-[2rem] border border-primary/15 bg-primary/[0.03] p-6 md:p-8">
-              <div className="max-w-3xl space-y-5">
+              <div className="mx-auto w-full max-w-3xl space-y-5">
                 <div>
                   <h3 className="text-sm font-black uppercase tracking-[0.2em] text-primary">
                     Precios estimados
@@ -1372,16 +1435,12 @@ export default function PersonalizerWizard({
                 onClick={handleFinish}
                 disabled={
                   isSubmittingRequest ||
-                  isPricingLoading ||
-                  isUploadingLogo ||
                   !resolvedProductId ||
                   !resolvedVariant?.id ||
                   !selections.line ||
                   !selections.size ||
                   !selections.material ||
-                  !uploadedLogo ||
-                  !selections.designUrl ||
-                  !configCode
+                  techniqueActionBlocked
                 }
                 className="flex-1 px-8 py-4 bg-accent text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-xl shadow-accent/20 disabled:opacity-50"
               >
@@ -1759,8 +1818,6 @@ export default function PersonalizerWizard({
             <button
               onClick={nextStep}
               disabled={
-                isPricingLoading ||
-                isUploadingLogo ||
                 !wizardOptions ||
                 !resolvedProductId ||
                  !resolvedVariant?.id ||
@@ -1768,7 +1825,7 @@ export default function PersonalizerWizard({
                 (step === 2 && !selections.size) ||
                 (step === 3 && !selections.material) ||
                 (step === 4 &&
-                  (!uploadedLogo || !selections.designUrl || !configCode))
+                  techniqueActionBlocked)
               }
               className="flex-1 px-8 py-4 bg-primary text-base-color rounded-2xl font-black uppercase tracking-widest text-[10px] hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-xl shadow-primary/20 disabled:opacity-50"
             >

@@ -35,6 +35,9 @@ interface RequestWithUser {
   };
 }
 
+const EMPTY_UPLOAD_MESSAGE = 'El archivo seleccionado esta vacio.';
+const EMPTY_RECEIPT_MESSAGE = 'El comprobante seleccionado esta vacio.';
+
 @Controller('personalizations')
 export class PersonalizationsController {
   constructor(
@@ -85,6 +88,10 @@ export class PersonalizationsController {
 
     if (!file) {
       throw new BadRequestException('Debes seleccionar un archivo para subir.');
+    }
+
+    if (file.size < 1) {
+      throw new BadRequestException(EMPTY_UPLOAD_MESSAGE);
     }
 
     return this.personalizationsService.uploadDesign(file);
@@ -163,6 +170,16 @@ export class PersonalizationsController {
     @Req() req: RequestWithUser,
   ) {
     const userId = this.getAuthenticatedUserId(req);
+
+    if (!file) {
+      throw new BadRequestException(
+        'Debes adjuntar un comprobante antes de aprobar la solicitud.',
+      );
+    }
+
+    if (file.size < 1) {
+      throw new BadRequestException(EMPTY_RECEIPT_MESSAGE);
+    }
 
     return this.personalizationsService.approveRequest(
       id,

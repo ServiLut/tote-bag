@@ -127,6 +127,20 @@ describe('PersonalizationsController (e2e)', () => {
     });
   });
 
+  it('rechaza signed-upload con tamano vacio', async () => {
+    await request(getTestServer(app))
+      .post('/api/v1/personalizations/signed-upload')
+      .set('x-test-user-id', 'customer-1')
+      .send({
+        fileName: 'logo.png',
+        mimeType: 'image/png',
+        size: 0,
+      })
+      .expect(400);
+
+    expect(personalizationsService.createSignedUpload).not.toHaveBeenCalled();
+  });
+
   it('bloquea upload-design sin usuario autenticado', async () => {
     await request(getTestServer(app))
       .post('/api/v1/personalizations/upload-design')
@@ -134,5 +148,27 @@ describe('PersonalizationsController (e2e)', () => {
       .expect(401);
 
     expect(personalizationsService.uploadDesign).not.toHaveBeenCalled();
+  });
+
+  it('rechaza upload-design con archivo vacio', async () => {
+    await request(getTestServer(app))
+      .post('/api/v1/personalizations/upload-design')
+      .set('x-test-user-id', 'customer-1')
+      .attach('file', Buffer.alloc(0), 'logo.png')
+      .expect(400);
+
+    expect(personalizationsService.uploadDesign).not.toHaveBeenCalled();
+  });
+
+  it('rechaza aprobacion con comprobante vacio', async () => {
+    await request(getTestServer(app))
+      .patch(
+        '/api/v1/personalizations/requests/11111111-1111-4111-8111-111111111111/approve',
+      )
+      .set('x-test-user-id', 'admin-1')
+      .attach('file', Buffer.alloc(0), 'comprobante.pdf')
+      .expect(400);
+
+    expect(personalizationsService.approveRequest).not.toHaveBeenCalled();
   });
 });
