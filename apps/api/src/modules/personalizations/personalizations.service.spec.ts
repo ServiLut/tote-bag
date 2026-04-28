@@ -36,6 +36,7 @@ describe('PersonalizationsService', () => {
 
   const ordersService = {
     create: jest.fn(),
+    remove: jest.fn(),
     confirmPendingOrderPayment: jest.fn(),
   };
 
@@ -78,6 +79,8 @@ describe('PersonalizationsService', () => {
     material: 'Lona',
     quality: null,
     configCode: 'CFG-123',
+    unitPrice: 12000,
+    totalPrice: 144000,
     currency: 'COP',
     designUrl: 'https://cdn.example.com/custom-designs/logo.png',
     personalizations: [],
@@ -230,6 +233,8 @@ describe('PersonalizationsService', () => {
         status: PersonalizationRequestStatus.REJECTED,
         reviewedAt,
         reviewedByUserId: 'reviewer-1',
+        unitPrice: 12000,
+        totalPrice: 144000,
       })
       .mockResolvedValueOnce({
         ...baseRequest,
@@ -263,7 +268,12 @@ describe('PersonalizationsService', () => {
     storageService.uploadFile.mockRejectedValueOnce(new Error('storage down'));
 
     await expect(
-      service.approveRequest('request-1', {}, 'admin-1', receiptFile),
+      service.approveRequest(
+        'request-1',
+        { approvedUnitPrice: 45000 },
+        'admin-1',
+        receiptFile,
+      ),
     ).rejects.toThrow('storage down');
 
     expect(ordersService.create).toHaveBeenCalledTimes(1);
@@ -275,6 +285,8 @@ describe('PersonalizationsService', () => {
           status: PersonalizationRequestStatus.REJECTED,
           reviewedAt,
           reviewedByUserId: 'reviewer-1',
+          unitPrice: baseRequest.unitPrice,
+          totalPrice: baseRequest.totalPrice,
           configurationJson: expect.objectContaining({
             approvalOrderId: 'order-1',
           }) as never,
@@ -340,6 +352,180 @@ describe('PersonalizationsService', () => {
         paymentReceiptUrl: 'https://cdn.example.com/receipts/order-1.pdf',
       },
     });
+  });
+
+  it('crea la orden con el precio unitario aprobado por el asesor', async () => {
+    prisma.personalizationRequest.findUnique
+      .mockResolvedValueOnce({
+        id: 'request-1',
+        status: PersonalizationRequestStatus.PENDING,
+        reviewedAt: null,
+        reviewedByUserId: null,
+      })
+      .mockResolvedValueOnce(baseRequest);
+    prisma.personalizationRequest.updateMany.mockResolvedValueOnce({
+      count: 1,
+    });
+    ordersService.create.mockResolvedValueOnce({
+      id: 'order-1',
+      paymentReceiptUrl: null,
+    });
+    storageService.uploadFile.mockResolvedValueOnce(
+      'https://cdn.example.com/receipts/order-1.pdf',
+    );
+    ordersService.confirmPendingOrderPayment.mockResolvedValueOnce({
+      id: 'order-1',
+    });
+    prisma.order.update.mockResolvedValueOnce({
+      id: 'order-1',
+      paymentReceiptUrl: 'https://cdn.example.com/receipts/order-1.pdf',
+    });
+    prisma.personalizationRequest.update
+      .mockResolvedValueOnce({
+        ...baseRequest,
+        unitPrice: 45000,
+        totalPrice: 540000,
+        configurationJson: {
+          ...baseRequest.configurationJson,
+          approvalOrderId: 'order-1',
+          approvedUnitPrice: 45000,
+          approvedTotalPrice: 540000,
+        },
+      })
+      .mockResolvedValueOnce({
+        ...baseRequest,
+        status: PersonalizationRequestStatus.APPROVED,
+        unitPrice: 45000,
+        totalPrice: 540000,
+        configurationJson: {
+          ...baseRequest.configurationJson,
+          approvalOrderId: 'order-1',
+          approvedUnitPrice: 45000,
+          approvedTotalPrice: 540000,
+        },
+      });
+
+    await service.approveRequest(
+      'request-1',
+      { approvedUnitPrice: 45000 },
+      'admin-1',
+      receiptFile,
+    );
+
+    expect(ordersService.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        items: [
+          expect.objectContaining({
+            productId: 'product-1',
+            variantId: 'variant-1',
+            quantity: 12,
+            price: 45000,
+          }),
+        ],
+      }),
+      'admin-1',
+    );
+    expect(prisma.personalizationRequest.update).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        where: { id: 'request-1' },
+        data: expect.objectContaining({
+          unitPrice: 45000,
+          totalPrice: 540000,
+        }) as never,
+      }),
+    );
+  });
+
+  it('recrea la orden pendiente previa cuando el precio aprobado cambia en el reintento', async () => {
+    prisma.personalizationRequest.findUnique
+      .mockResolvedValueOnce({
+        id: 'request-1',
+        status: PersonalizationRequestStatus.PENDING,
+        reviewedAt: null,
+        reviewedByUserId: null,
+        unitPrice: 12000,
+        totalPrice: 144000,
+      })
+      .mockResolvedValueOnce({
+        ...baseRequest,
+        configurationJson: {
+          ...baseRequest.configurationJson,
+          approvalOrderId: 'order-1',
+          approvedUnitPrice: 45000,
+          approvedTotalPrice: 540000,
+        },
+      });
+    prisma.personalizationRequest.updateMany.mockResolvedValueOnce({
+      count: 1,
+    });
+    prisma.order.findUnique.mockResolvedValueOnce({
+      id: 'order-1',
+      paymentReceiptUrl: null,
+    });
+    ordersService.remove.mockResolvedValueOnce({
+      id: 'order-1',
+    });
+    ordersService.create.mockResolvedValueOnce({
+      id: 'order-2',
+      paymentReceiptUrl: null,
+    });
+    storageService.uploadFile.mockResolvedValueOnce(
+      'https://cdn.example.com/receipts/order-2.pdf',
+    );
+    ordersService.confirmPendingOrderPayment.mockResolvedValueOnce({
+      id: 'order-2',
+    });
+    prisma.order.update.mockResolvedValueOnce({
+      id: 'order-2',
+      paymentReceiptUrl: 'https://cdn.example.com/receipts/order-2.pdf',
+    });
+    prisma.personalizationRequest.update
+      .mockResolvedValueOnce({
+        ...baseRequest,
+        unitPrice: 48000,
+        totalPrice: 576000,
+        configurationJson: {
+          ...baseRequest.configurationJson,
+          approvalOrderId: 'order-2',
+          approvedUnitPrice: 48000,
+          approvedTotalPrice: 576000,
+        },
+      })
+      .mockResolvedValueOnce({
+        ...baseRequest,
+        status: PersonalizationRequestStatus.APPROVED,
+        unitPrice: 48000,
+        totalPrice: 576000,
+        configurationJson: {
+          ...baseRequest.configurationJson,
+          approvalOrderId: 'order-2',
+          approvedUnitPrice: 48000,
+          approvedTotalPrice: 576000,
+        },
+      });
+
+    await service.approveRequest(
+      'request-1',
+      { approvedUnitPrice: 48000 },
+      'admin-1',
+      receiptFile,
+    );
+
+    expect(ordersService.remove).toHaveBeenCalledWith('order-1');
+    expect(ordersService.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        items: [
+          expect.objectContaining({
+            productId: 'product-1',
+            variantId: 'variant-1',
+            quantity: 12,
+            price: 48000,
+          }),
+        ],
+      }),
+      'admin-1',
+    );
   });
 
   it('crea y asocia un perfil por defecto al aprobar una solicitud legacy sin perfil', async () => {

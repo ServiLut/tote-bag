@@ -882,6 +882,13 @@ export class OrdersService {
 
             const salePrice = toDecimal(resolvedVariant.salePrice ?? 0);
             const minPrice = toDecimal(resolvedVariant.minPrice ?? 0);
+            const manualUnitPrice =
+              sourceToSet === OrderSource.MANUAL &&
+              typeof item.price === 'number' &&
+              Number.isFinite(item.price) &&
+              item.price > 0
+                ? roundMoney(item.price)
+                : null;
             let unitPrice = salePrice.greaterThan(minPrice)
               ? salePrice
               : minPrice;
@@ -933,6 +940,19 @@ export class OrdersService {
               };
 
               imageUrl = item.configuration.customImageURL ?? null;
+            }
+
+            if (manualUnitPrice) {
+              unitPrice = manualUnitPrice;
+              totalPrice = roundMoney(unitPrice.mul(item.quantity));
+              pricingJsonPayload = {
+                ...pricingJsonPayload,
+                manualUnitPriceOverride: {
+                  unitPrice: decimalToNumber(manualUnitPrice),
+                  appliedByUserId: userId ?? null,
+                  appliedAt: new Date().toISOString(),
+                },
+              };
             }
 
             let inventoryConsumption: {

@@ -1,15 +1,17 @@
 'use client';
 
+import Link from 'next/link';
 import { Menu, Sun, Moon, Bell, PanelLeftClose, PanelLeftOpen, Search, UserCircle } from 'lucide-react';
-import { useState, useEffect, useSyncExternalStore } from 'react';
+import { useState, useEffect, useRef, useSyncExternalStore } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import { useTheme } from '@/components/theme-provider';
+import { ThemeProvider, useTheme } from '@/components/theme-provider';
 import Sidebar from '@/components/dashboard/Sidebar';
 import { DashboardAuthProvider, type DashboardRole } from '@/components/dashboard/DashboardAuthContext';
 import { DashboardRoleSwitcher } from '@/components/dashboard/DashboardRoleSwitcher';
 import { DASHBOARD_DEBUG_ROLE_COOKIE_NAME } from '@/lib/dashboard-auth';
 import { resolveDashboardLayoutRedirect } from '@/lib/frontend-routing';
+import { useDashboardNotifications } from '@/components/dashboard/useDashboardNotifications';
 
 interface DashboardLayoutClientProps {
   children: React.ReactNode;
@@ -37,7 +39,6 @@ export default function DashboardLayoutClient({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [hasLoadedSidebarPreference, setHasLoadedSidebarPreference] = useState(false);
   const supabase = createClient();
-  const { theme, setTheme } = useTheme();
   const accessRedirect = resolveDashboardLayoutRedirect({
     hasSession: !!accessToken,
     role,
@@ -112,6 +113,230 @@ export default function DashboardLayoutClient({
 
   return (
     <DashboardAuthProvider role={role} accessToken={accessToken}>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <DashboardLayoutFrame
+          userEmail={userEmail}
+          role={role}
+          debugRoleAllowed={debugRoleAllowed}
+          accessToken={accessToken}
+          isMobileMenuOpen={isMobileMenuOpen}
+          setIsMobileMenuOpen={setIsMobileMenuOpen}
+          isSidebarCollapsed={isSidebarCollapsed}
+          setIsSidebarCollapsed={setIsSidebarCollapsed}
+          hasLoadedSidebarPreference={hasLoadedSidebarPreference}
+          mounted={mounted}
+          handleLogout={handleLogout}
+        >
+          {children}
+        </DashboardLayoutFrame>
+      </ThemeProvider>
+    </DashboardAuthProvider>
+  );
+}
+
+interface DashboardLayoutFrameProps {
+  children: React.ReactNode;
+  userEmail?: string | null;
+  role: DashboardRole;
+  debugRoleAllowed: boolean;
+  accessToken: string | null;
+  isMobileMenuOpen: boolean;
+  setIsMobileMenuOpen: (open: boolean) => void;
+  isSidebarCollapsed: boolean;
+  setIsSidebarCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
+  hasLoadedSidebarPreference: boolean;
+  mounted: boolean;
+  handleLogout: () => Promise<void>;
+}
+
+type DashboardNotificationItem = {
+  href: string;
+  label: string;
+  count: number;
+};
+
+const DASHBOARD_NOTIFICATION_META: Array<{
+  href: string;
+  label: string;
+}> = [
+  { href: '/dashboard/orders', label: 'Pedidos pendientes de pago' },
+  { href: '/dashboard/b2b', label: 'Cotizaciones B2B pendientes' },
+  { href: '/dashboard/personalizaciones', label: 'Solicitudes de personalizacion pendientes' },
+  { href: '/dashboard/pqrs', label: 'PQRS nuevas' },
+  { href: '/dashboard/logistica/envios', label: 'Envios pendientes' },
+];
+
+function NotificationMenuButton({
+  items,
+  total,
+  desktop = false,
+}: {
+  items: DashboardNotificationItem[];
+  total: number;
+  desktop?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const hasNotifications = total > 0;
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      if (!containerRef.current) {
+        return;
+      }
+
+      const target = event.target;
+      if (target instanceof Node && !containerRef.current.contains(target)) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isOpen]);
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen((current) => !current)}
+        className={
+          desktop
+            ? `relative flex h-14 w-14 items-center justify-center rounded-2xl border bg-base shadow-sm transition-all active:scale-95 ${
+                hasNotifications
+                  ? 'border-rose-200 text-rose-600 hover:border-rose-300 dark:border-rose-900/60 dark:text-rose-300'
+                  : 'border-theme text-muted hover:border-primary/30 hover:text-primary'
+              }`
+            : `relative rounded-lg p-2 ${
+                hasNotifications
+                  ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-300'
+                  : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300'
+              }`
+        }
+        title={hasNotifications ? `Notificaciones pendientes: ${total}` : 'Notificaciones'}
+        aria-label="Notificaciones"
+        aria-expanded={isOpen}
+        aria-haspopup="menu"
+      >
+        <Bell className={desktop ? 'h-5 w-5' : 'w-5 h-5'} />
+        {hasNotifications ? (
+          <span
+            className={
+              desktop
+                ? 'absolute right-2 top-2 rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] font-black text-rose-700 dark:bg-rose-950/60 dark:text-rose-200'
+                : 'absolute -right-1 -top-1 rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] font-black text-rose-700 dark:bg-rose-950/80 dark:text-rose-200'
+            }
+          >
+            {total}
+          </span>
+        ) : null}
+      </button>
+
+      {isOpen ? (
+        <div
+          className={
+            desktop
+              ? 'absolute right-0 top-[calc(100%+0.75rem)] z-30 w-80 rounded-[24px] border border-theme bg-surface p-3 shadow-2xl shadow-black/10'
+              : 'absolute right-0 top-[calc(100%+0.5rem)] z-30 w-72 rounded-[22px] border border-theme bg-surface p-3 shadow-2xl shadow-black/10'
+          }
+        >
+          <div className={desktop ? 'mb-3 flex items-center justify-between gap-3 px-2' : 'px-2'}>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">
+                Notificaciones
+              </p>
+              {desktop ? (
+                <p className="mt-1 text-sm font-bold text-primary">
+                  {hasNotifications ? `${total} pendientes por revisar` : 'Sin pendientes'}
+                </p>
+              ) : null}
+            </div>
+            {desktop && hasNotifications ? (
+              <span className="rounded-full bg-rose-100 px-2 py-1 text-[10px] font-black text-rose-700 dark:bg-rose-950/60 dark:text-rose-200">
+                {total}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="mt-3 space-y-2">
+            {items.length > 0 ? (
+              items.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-theme bg-base px-4 py-3 text-sm font-bold text-primary transition-all hover:border-primary/20 hover:bg-primary/5"
+                >
+                  <span className="min-w-0 truncate">{item.label}</span>
+                  <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-black text-rose-700 dark:bg-rose-950/60 dark:text-rose-200">
+                    {item.count}
+                  </span>
+                </Link>
+              ))
+            ) : (
+              <div
+                className={
+                  desktop
+                    ? 'rounded-2xl border border-dashed border-theme px-4 py-5 text-center text-sm font-medium text-muted'
+                    : 'rounded-2xl border border-dashed border-theme px-4 py-4 text-center text-sm font-medium text-muted'
+                }
+              >
+                No hay notificaciones pendientes.
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function DashboardLayoutFrame({
+  children,
+  userEmail,
+  role,
+  debugRoleAllowed,
+  accessToken,
+  isMobileMenuOpen,
+  setIsMobileMenuOpen,
+  isSidebarCollapsed,
+  setIsSidebarCollapsed,
+  hasLoadedSidebarPreference,
+  mounted,
+  handleLogout,
+}: DashboardLayoutFrameProps) {
+  const { theme, setTheme } = useTheme();
+  const notificationCounts = useDashboardNotifications();
+  const notificationItems = DASHBOARD_NOTIFICATION_META
+    .map<DashboardNotificationItem>((item) => ({
+      ...item,
+      count: notificationCounts.byHref[item.href] ?? 0,
+    }))
+    .filter((item) => item.count > 0);
+
+  return (
       <div className="flex h-screen bg-base text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300 dashboard-bg-custom">
         <Sidebar
           user={{ email: userEmail }}
@@ -121,6 +346,7 @@ export default function DashboardLayoutClient({
           setIsMobileMenuOpen={setIsMobileMenuOpen}
           isCollapsed={isSidebarCollapsed}
           shouldAnimate={hasLoadedSidebarPreference}
+          notificationCounts={notificationCounts}
         />
 
         <main className={`flex-1 flex min-h-screen flex-col bg-base ${hasLoadedSidebarPreference ? 'transition-[margin] duration-300 ease-in-out' : 'transition-none'} ${isSidebarCollapsed ? 'md:ml-24' : 'md:ml-72'}`}>
@@ -145,13 +371,11 @@ export default function DashboardLayoutClient({
               </div>
 
               <div className="flex items-center gap-3">
-                <button
-                  className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-theme bg-base text-muted shadow-sm transition-all hover:border-primary/30 hover:text-primary active:scale-95"
-                  title="Notificaciones"
-                  aria-label="Notificaciones"
-                >
-                  <Bell className="h-5 w-5" />
-                </button>
+                <NotificationMenuButton
+                  items={notificationItems}
+                  total={notificationCounts.total}
+                  desktop
+                />
                 {mounted ? (
                   <button
                     onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -192,13 +416,10 @@ export default function DashboardLayoutClient({
               <span className="font-bold tracking-tight text-zinc-900 dark:text-zinc-100">Tote Bag Co.</span>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  className="rounded-lg bg-zinc-100 p-2 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300"
-                  title="Notificaciones"
-                  aria-label="Notificaciones"
-                >
-                  <Bell className="w-5 h-5" />
-                </button>
+                <NotificationMenuButton
+                  items={notificationItems}
+                  total={notificationCounts.total}
+                />
                 {mounted && (
                   <button
                     onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -219,6 +440,5 @@ export default function DashboardLayoutClient({
           </div>
         </main>
       </div>
-    </DashboardAuthProvider>
   );
 }

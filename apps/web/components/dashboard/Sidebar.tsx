@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -26,12 +25,10 @@ import {
   Inbox,
   ChevronDown,
 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
-import { createClient } from '@/utils/supabase/client';
-import { apiFetch } from '@/utils/api';
-import { getAuthHeaders } from '@/utils/supabase/auth';
+import { useState } from 'react';
 import { DashboardRole } from './DashboardAuthContext';
 import { canAccessDashboardPath } from '@/lib/frontend-routing';
+import type { DashboardNotificationCounts } from './useDashboardNotifications';
 
 type MenuLinkItem = {
   name: string;
@@ -152,6 +149,7 @@ interface SidebarProps {
   setIsMobileMenuOpen: (open: boolean) => void;
   isCollapsed: boolean;
   shouldAnimate?: boolean;
+  notificationCounts: DashboardNotificationCounts;
 }
 
 export default function Sidebar({
@@ -162,12 +160,10 @@ export default function Sidebar({
   setIsMobileMenuOpen,
   isCollapsed,
   shouldAnimate = true,
+  notificationCounts,
 }: SidebarProps) {
   const pathname = usePathname();
-  const [newPqrsCount, setNewPqrsCount] = useState(0);
   const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
-  const supabase = createClient();
-  const canAccessPqrs = canAccessDashboardPath(role, '/dashboard/pqrs');
 
   const isItemActive = (href: string) => {
     if (
@@ -183,83 +179,10 @@ export default function Sidebar({
   const isSubmenuActive = (item: MenuSubmenuItem) =>
     item.items.some((child) => isItemActive(child.href));
 
-  const loadPqrsCount = useCallback(async () => {
-    if (!canAccessPqrs) {
-      setNewPqrsCount(0);
-      return;
-    }
+  const getItemBadgeCount = (href: string) => notificationCounts.byHref[href] ?? 0;
 
-    try {
-      const headers = await getAuthHeaders();
-
-      if (!headers.Authorization) {
-        setNewPqrsCount(0);
-        return;
-      }
-
-      const response = await apiFetch('/pqrs/count?status=NUEVO', {
-        headers,
-      });
-
-      if (!response.ok) {
-        setNewPqrsCount(0);
-        return;
-      }
-
-      const body = await response.json();
-      const payload = body.data || body || {};
-      const count =
-        payload && typeof payload === 'object' && 'count' in payload
-          ? Number((payload as { count: unknown }).count)
-          : 0;
-      setNewPqrsCount(Number.isFinite(count) ? count : 0);
-    } catch (error) {
-      console.error('Error loading PQRS count:', error);
-      setNewPqrsCount(0);
-    }
-  }, [canAccessPqrs]);
-
-  useEffect(() => {
-    const triggerLoad = () => {
-      void loadPqrsCount();
-    };
-
-    const timeoutId = window.setTimeout(triggerLoad, 0);
-    const intervalId = window.setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        triggerLoad();
-      }
-    }, 15000);
-
-    window.addEventListener('focus', triggerLoad);
-    document.addEventListener('visibilitychange', triggerLoad);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-      window.clearInterval(intervalId);
-      window.removeEventListener('focus', triggerLoad);
-      document.removeEventListener('visibilitychange', triggerLoad);
-    };
-  }, [loadPqrsCount]);
-
-  useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(
-      (_event: AuthChangeEvent, session: Session | null) => {
-        if (!session?.access_token) {
-          setNewPqrsCount(0);
-          return;
-        }
-
-        void loadPqrsCount();
-      },
-    );
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [loadPqrsCount, supabase.auth]);
+  const getSubmenuBadgeCount = (item: MenuSubmenuItem) =>
+    item.items.reduce((sum, child) => sum + getItemBadgeCount(child.href), 0);
 
   const filteredMenuGroups = menuGroups
     .map((group) => ({
@@ -290,7 +213,8 @@ export default function Sidebar({
   const renderDesktopLink = (item: MenuLinkItem, nested = false, forceExpanded = false) => {
     const isActive = isItemActive(item.href);
     const Icon = item.icon;
-    const showPqrsBadge = item.href === '/dashboard/pqrs' && newPqrsCount > 0;
+    const badgeCount = getItemBadgeCount(item.href);
+    const showBadge = badgeCount > 0;
     const renderCollapsed = isCollapsed && !forceExpanded;
 
     return (
@@ -318,19 +242,19 @@ export default function Sidebar({
           }`}
         >
           <span className="truncate">{item.name}</span>
-          {showPqrsBadge ? (
+          {showBadge ? (
             <span
               className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
                 isActive ? 'bg-base-color/15 text-base-color' : 'bg-rose-100 text-rose-700'
               }`}
             >
-              {newPqrsCount}
+              {badgeCount}
             </span>
           ) : null}
         </span>
-        {renderCollapsed && showPqrsBadge ? (
+        {renderCollapsed && showBadge ? (
           <span className="absolute right-2 top-1 rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] font-black text-rose-700">
-            {newPqrsCount}
+            {badgeCount}
           </span>
         ) : null}
       </Link>
@@ -339,7 +263,8 @@ export default function Sidebar({
 
   const renderMobileLink = (item: MenuLinkItem, nested = false) => {
     const active = isItemActive(item.href);
-    const showPqrsBadge = item.href === '/dashboard/pqrs' && newPqrsCount > 0;
+    const badgeCount = getItemBadgeCount(item.href);
+    const showBadge = badgeCount > 0;
 
     return (
       <Link
@@ -355,13 +280,13 @@ export default function Sidebar({
         <item.icon className={`h-5 w-5 ${active ? 'text-base-color' : 'text-muted'}`} />
         <span className="flex min-w-0 flex-1 items-center justify-between gap-3">
           <span className="truncate">{item.name}</span>
-          {showPqrsBadge ? (
+          {showBadge ? (
             <span
               className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
                 active ? 'bg-base-color/15 text-base-color' : 'bg-rose-100 text-rose-700'
               }`}
             >
-              {newPqrsCount}
+              {badgeCount}
             </span>
           ) : null}
         </span>
@@ -424,6 +349,11 @@ export default function Sidebar({
 
                   return (
                     <div key={item.key} className="relative">
+                      {(() => {
+                        const badgeCount = getSubmenuBadgeCount(item);
+                        const showBadge = badgeCount > 0;
+
+                        return (
                       <button
                         type="button"
                         onClick={() =>
@@ -438,28 +368,52 @@ export default function Sidebar({
                             ? 'bg-primary/10 text-primary'
                             : 'text-muted hover:bg-primary/5 hover:text-primary'
                         } ${isCollapsed ? 'justify-center gap-0 px-0 py-2.5' : 'gap-3 px-4 py-2.5'}`}
-                      >
-                        <Icon
-                          className={`h-4 w-4 transition-colors ${
-                            isActive ? 'text-primary' : 'text-muted group-hover:text-primary'
-                          }`}
-                        />
-                        <span
-                          aria-hidden={isCollapsed}
-                          className={`min-w-0 flex-1 overflow-hidden truncate whitespace-nowrap text-left transition-all duration-200 ${
-                            isCollapsed
-                              ? 'max-w-0 translate-x-1 opacity-0'
-                              : 'max-w-52 translate-x-0 opacity-100 delay-100'
-                          }`}
                         >
-                          {item.name}
-                        </span>
-                        <ChevronDown
-                          className={`transition-transform duration-200 ${
-                            isOpen ? 'rotate-180 text-primary' : 'text-muted'
-                          } ${isCollapsed ? 'absolute -bottom-0.5 right-1 h-3 w-3' : 'h-4 w-4'}`}
-                        />
+                          <Icon
+                            className={`h-4 w-4 transition-colors ${
+                              isActive ? 'text-primary' : 'text-muted group-hover:text-primary'
+                            }`}
+                          />
+                          <span
+                            aria-hidden={isCollapsed}
+                            className={`min-w-0 flex-1 overflow-hidden truncate whitespace-nowrap text-left transition-all duration-200 ${
+                              isCollapsed
+                                ? 'max-w-0 translate-x-1 opacity-0'
+                                : 'max-w-52 translate-x-0 opacity-100 delay-100'
+                            }`}
+                          >
+                            {item.name}
+                          </span>
+                          {!isCollapsed ? (
+                            <span className="flex items-center gap-2">
+                              {showBadge ? (
+                                <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-black text-rose-700">
+                                  {badgeCount}
+                                </span>
+                              ) : null}
+                              <ChevronDown
+                                className={`h-4 w-4 transition-transform duration-200 ${
+                                  isOpen ? 'rotate-180 text-primary' : 'text-muted'
+                                }`}
+                              />
+                            </span>
+                          ) : (
+                            <>
+                              {showBadge ? (
+                                <span className="absolute right-1.5 top-1 rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] font-black text-rose-700">
+                                  {badgeCount}
+                                </span>
+                              ) : null}
+                              <ChevronDown
+                                className={`absolute -bottom-0.5 right-1 h-3 w-3 transition-transform duration-200 ${
+                                  isOpen ? 'rotate-180 text-primary' : 'text-muted'
+                                }`}
+                              />
+                            </>
+                          )}
                       </button>
+                        );
+                      })()}
 
                       {!isCollapsed && isOpen ? (
                         <div className="mt-1 space-y-1">
@@ -557,6 +511,11 @@ export default function Sidebar({
 
                     return (
                       <div key={item.key} className="space-y-2">
+                        {(() => {
+                          const badgeCount = getSubmenuBadgeCount(item);
+                          const showBadge = badgeCount > 0;
+
+                          return (
                         <button
                           type="button"
                           onClick={() =>
@@ -573,12 +532,21 @@ export default function Sidebar({
                         >
                           <Icon className={`h-5 w-5 ${isActive ? 'text-primary' : 'text-muted'}`} />
                           <span className="min-w-0 flex-1 text-left">{item.name}</span>
-                          <ChevronDown
-                            className={`h-4 w-4 transition-transform duration-200 ${
-                              isOpen ? 'rotate-180 text-primary' : 'text-muted'
-                            }`}
-                          />
+                          <span className="flex items-center gap-2">
+                            {showBadge ? (
+                              <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-black text-rose-700">
+                                {badgeCount}
+                              </span>
+                            ) : null}
+                            <ChevronDown
+                              className={`h-4 w-4 transition-transform duration-200 ${
+                                isOpen ? 'rotate-180 text-primary' : 'text-muted'
+                              }`}
+                            />
+                          </span>
                         </button>
+                          );
+                        })()}
                         {isOpen ? (
                           <div className="space-y-2">
                             {item.items.map((child) => renderMobileLink(child, true))}

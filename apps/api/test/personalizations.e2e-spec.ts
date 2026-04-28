@@ -171,4 +171,31 @@ describe('PersonalizationsController (e2e)', () => {
 
     expect(personalizationsService.approveRequest).not.toHaveBeenCalled();
   });
+
+  it('reenvia el precio aprobado al servicio durante la aprobacion', async () => {
+    personalizationsService.approveRequest.mockResolvedValue({
+      id: 'request-1',
+      status: 'APPROVED',
+    });
+
+    await request(getTestServer(app))
+      .patch(
+        '/api/v1/personalizations/requests/11111111-1111-4111-8111-111111111111/approve',
+      )
+      .set('x-test-user-id', 'admin-1')
+      .field('approvedUnitPrice', '45000')
+      .attach('file', Buffer.from('fake-receipt'), 'comprobante.pdf')
+      .expect(200);
+
+    expect(personalizationsService.approveRequest).toHaveBeenCalledWith(
+      '11111111-1111-4111-8111-111111111111',
+      expect.objectContaining({
+        approvedUnitPrice: 45000,
+      }),
+      'admin-1',
+      expect.objectContaining({
+        originalname: 'comprobante.pdf',
+      }),
+    );
+  });
 });

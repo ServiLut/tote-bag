@@ -248,10 +248,17 @@ export default function PersonalizationRequestsManager() {
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
   const [receiptFiles, setReceiptFiles] = useState<Record<string, File | undefined>>({});
+  const [approvalUnitPrices, setApprovalUnitPrices] = useState<Record<string, string>>({});
   const { role, accessToken } = useDashboardAuth();
   const supabase = createClient();
   const isReadOnly = isDashboardReadOnlyRole(role);
   const ITEMS_PER_PAGE = 8;
+
+  const getApprovalUnitPriceValue = useCallback(
+    (request: NormalizedPersonalizationRequest) =>
+      approvalUnitPrices[request.id] ?? (request.unitPrice != null ? String(request.unitPrice) : ''),
+    [approvalUnitPrices],
+  );
 
   const loadRequests = useCallback(async (options?: { silent?: boolean }) => {
     const silent = options?.silent ?? false;
@@ -352,10 +359,13 @@ export default function PersonalizationRequestsManager() {
     };
   }, [loadRequests]);
 
-  const handleApprove = async (id: string, e: React.MouseEvent) => {
+  const handleApprove = async (
+    request: NormalizedPersonalizationRequest,
+    e: React.MouseEvent,
+  ) => {
     e.stopPropagation();
     setActiveActionMenu(null);
-    setProcessingId(id);
+    setProcessingId(request.id);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -365,18 +375,26 @@ export default function PersonalizationRequestsManager() {
         return;
       }
 
-      const selectedReceipt = receiptFiles[id];
+      const selectedReceipt = receiptFiles[request.id];
       if (!selectedReceipt) {
         alert('Adjunta un comprobante antes de aprobar la solicitud.');
         return;
       }
 
+      const approvedUnitPriceRaw = getApprovalUnitPriceValue(request).trim();
+      const approvedUnitPrice = Number(approvedUnitPriceRaw);
+      if (!approvedUnitPriceRaw || !Number.isFinite(approvedUnitPrice) || approvedUnitPrice <= 0) {
+        alert('Ingresa un precio unitario valido antes de aprobar la solicitud.');
+        return;
+      }
+
       const formData = new FormData();
       formData.append('file', selectedReceipt);
+      formData.append('approvedUnitPrice', String(approvedUnitPrice));
 
       let response: Response | null = null;
       for (const buildEndpoint of APPROVE_ENDPOINTS) {
-        response = await apiFetch(buildEndpoint(id), {
+        response = await apiFetch(buildEndpoint(request.id), {
           method: 'PATCH',
           headers: { Authorization: `Bearer ${token}` },
           body: formData,
@@ -409,15 +427,29 @@ export default function PersonalizationRequestsManager() {
       }
 
       setRequests((prev) =>
-        prev.map((request) =>
-          request.id === id
-            ? { ...request, status: 'READY_TO_CLOSE', reviewedAt: new Date().toISOString() }
-            : request,
+        prev.map((currentRequest) =>
+          currentRequest.id === request.id
+            ? {
+                ...currentRequest,
+                status: 'READY_TO_CLOSE',
+                reviewedAt: new Date().toISOString(),
+                unitPrice: approvedUnitPrice,
+                totalPrice:
+                  typeof currentRequest.quantity === 'number'
+                    ? approvedUnitPrice * currentRequest.quantity
+                    : currentRequest.totalPrice,
+              }
+            : currentRequest,
         ),
       );
       setReceiptFiles((prev) => {
         const next = { ...prev };
-        delete next[id];
+        delete next[request.id];
+        return next;
+      });
+      setApprovalUnitPrices((prev) => {
+        const next = { ...prev };
+        delete next[request.id];
         return next;
       });
     } catch (error) {
@@ -472,6 +504,13 @@ export default function PersonalizationRequestsManager() {
     setReceiptFiles((prev) => ({
       ...prev,
       [id]: file,
+    }));
+  };
+
+  const handleApprovalUnitPriceChange = (id: string, value: string) => {
+    setApprovalUnitPrices((prev) => ({
+      ...prev,
+      [id]: value,
     }));
   };
 
@@ -537,6 +576,11 @@ export default function PersonalizationRequestsManager() {
       setRequests((prev) => prev.filter((request) => request.id !== id));
       setExpandedRowId((current) => (current === id ? null : current));
       setReceiptFiles((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      setApprovalUnitPrices((prev) => {
         const next = { ...prev };
         delete next[id];
         return next;
@@ -776,9 +820,37 @@ export default function PersonalizationRequestsManager() {
                                       <FileText className="h-4 w-4" />
                                       {receiptFiles[request.id] ? 'Cambiar comprobante' : 'Agregar comprobante'}
                                     </label>
+                                    <div
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="space-y-2 border-t border-theme/70 px-4 py-3"
+                                    >
+                                      <label
+                                        htmlFor={`approval-price-${request.id}`}
+                                        className="block text-[10px] font-black uppercase tracking-widest text-muted"
+                                      >
+                                        Precio unitario aprobado
+                                      </label>
+                                      <input
+                                        id={`approval-price-${request.id}`}
+                                        type="number"
+                                        min="1"
+                                        step="1"
+                                        inputMode="numeric"
+                                        value={getApprovalUnitPriceValue(request)}
+                                        onChange={(e) =>
+                                          handleApprovalUnitPriceChange(
+                                            request.id,
+                                            e.target.value,
+                                          )
+                                        }
+                                        disabled={!!processingId || isReadOnly || isDeleting}
+                                        className="w-full rounded-xl border border-theme bg-base px-3 py-2 text-sm font-bold text-primary outline-none transition-colors focus:border-primary disabled:cursor-not-allowed disabled:opacity-50"
+                                        placeholder="Ej: 45000"
+                                      />
+                                    </div>
                                     <button
                                       type="button"
-                                      onClick={(e) => handleApprove(request.id, e)}
+                                      onClick={(e) => handleApprove(request, e)}
                                       disabled={!!processingId || isReadOnly || !receiptFiles[request.id] || isDeleting}
                                       className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-primary transition-colors hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-50"
                                     >

@@ -22,6 +22,7 @@ import { UpdatePersonalizationRequestDto } from './dto/update-personalization-re
 import { ApprovePersonalizationRequestDto } from './dto/approve-personalization-request.dto';
 import { normalizeSnapshotPersonalizations } from '../../common/interfaces/snapshots.interface';
 import { CreateOrderDto } from '../orders/dto/create-order.dto';
+import { decimalToNumber, roundMoney, toDecimal } from '../../common/utils/sales-tax.util';
 
 type PersonalizationRequestForApproval = {
   id: string;
@@ -35,6 +36,8 @@ type PersonalizationRequestForApproval = {
   material: string;
   quality: string | null;
   configCode: string;
+  unitPrice: Prisma.Decimal;
+  totalPrice: Prisma.Decimal;
   currency: string;
   designUrl: string | null;
   personalizations: Prisma.JsonValue;
@@ -70,12 +73,18 @@ type PersonalizationRequestConfigurationRecord = Record<string, unknown> & {
   approvalStartedAt?: string;
   approvalReceiptUploadedAt?: string;
   approvedAt?: string;
+  approvedUnitPrice?: number;
+  approvedTotalPrice?: number;
+  priceApprovedAt?: string;
+  priceApprovedByUserId?: string;
 };
 
 type PersonalizationRequestApprovalSnapshot = {
   status: PersonalizationRequestStatus;
   reviewedAt: Date | null;
   reviewedByUserId: string | null;
+  unitPrice: Prisma.Decimal;
+  totalPrice: Prisma.Decimal;
 };
 
 @Injectable()
@@ -190,6 +199,8 @@ export class PersonalizationsService {
         status: true,
         reviewedAt: true,
         reviewedByUserId: true,
+        unitPrice: true,
+        totalPrice: true,
       },
     });
 
@@ -231,6 +242,8 @@ export class PersonalizationsService {
       status: currentRequest.status,
       reviewedAt: currentRequest.reviewedAt,
       reviewedByUserId: currentRequest.reviewedByUserId,
+      unitPrice: currentRequest.unitPrice,
+      totalPrice: currentRequest.totalPrice,
     };
   }
 
@@ -246,6 +259,8 @@ export class PersonalizationsService {
           status: snapshot.status,
           reviewedAt: snapshot.reviewedAt,
           reviewedByUserId: snapshot.reviewedByUserId,
+          unitPrice: snapshot.unitPrice,
+          totalPrice: snapshot.totalPrice,
           configurationJson: configuration as unknown as Prisma.InputJsonValue,
         },
       });
@@ -826,6 +841,7 @@ export class PersonalizationsService {
 
   private buildOrderPayloadFromRequest(
     request: PersonalizationRequestForApproval | null,
+    approvedUnitPrice?: number,
   ): CreateOrderDto {
     if (!request) {
       throw new NotFoundException(
@@ -917,6 +933,11 @@ export class PersonalizationsService {
           variantId: request.variant.id,
           sku: request.variant?.sku || request.configCode,
           quantity: request.quantity,
+          ...(typeof approvedUnitPrice === 'number'
+            ? {
+                price: approvedUnitPrice,
+              }
+            : {}),
           configuration: {
             productId: request.product.id,
             variantId: request.variant.id,
@@ -982,6 +1003,23 @@ export class PersonalizationsService {
         request.configurationJson,
       );
 
+      const requestedApprovedUnitPrice =
+        typeof data.approvedUnitPrice === 'number' &&
+        Number.isFinite(data.approvedUnitPrice) &&
+        data.approvedUnitPrice > 0
+          ? decimalToNumber(data.approvedUnitPrice)
+          : decimalToNumber(request.unitPrice);
+      const hasApprovedUnitPriceOverride =
+        typeof data.approvedUnitPrice === 'number' &&
+        Number.isFinite(data.approvedUnitPrice) &&
+        data.approvedUnitPrice > 0;
+      let approvedUnitPrice = decimalToNumber(
+        roundMoney(requestedApprovedUnitPrice),
+      );
+      let approvedTotalPrice = decimalToNumber(
+        roundMoney(toDecimal(approvedUnitPrice).mul(request.quantity)),
+      );
+
       if (!request.profile) {
         const resolvedProfile = await this.ensureDefaultProfileForUser(
           request.user.id,
@@ -1023,9 +1061,33 @@ export class PersonalizationsService {
           })
         : null;
 
+      if (
+        existingOrder &&
+        hasApprovedUnitPriceOverride &&
+        approvedUnitPrice !== decimalToNumber(roundMoney(request.unitPrice))
+      ) {
+        await this.ordersService.remove(orderId);
+        orderId = null;
+        existingOrder = null;
+
+        const {
+          approvalOrderId: _approvalOrderId,
+          approvalStartedAt: _approvalStartedAt,
+          approvalReceiptUploadedAt: _approvalReceiptUploadedAt,
+          approvedAt: _approvedAt,
+          approvedUnitPrice: _approvedUnitPrice,
+          approvedTotalPrice: _approvedTotalPrice,
+          priceApprovedAt: _priceApprovedAt,
+          priceApprovedByUserId: _priceApprovedByUserId,
+          ...nextConfigurationRecord
+        } = configurationRecord;
+
+        configurationRecord = nextConfigurationRecord;
+      }
+
       if (!existingOrder) {
         const createdOrder = await this.ordersService.create(
-          this.buildOrderPayloadFromRequest(request),
+          this.buildOrderPayloadFromRequest(request, approvedUnitPrice),
           actorUserId,
         );
 
@@ -1038,15 +1100,33 @@ export class PersonalizationsService {
           ...configurationRecord,
           approvalOrderId: orderId,
           approvalStartedAt: new Date().toISOString(),
+          approvedUnitPrice,
+          approvedTotalPrice,
+          priceApprovedAt: new Date().toISOString(),
+          priceApprovedByUserId: actorUserId,
         };
 
         await this.prisma.personalizationRequest.update({
           where: { id },
           data: {
+            unitPrice: approvedUnitPrice,
+            totalPrice: approvedTotalPrice,
             configurationJson:
               configurationRecord as unknown as Prisma.InputJsonValue,
           },
         });
+      } else {
+        approvedUnitPrice = decimalToNumber(request.unitPrice);
+        approvedTotalPrice = decimalToNumber(request.totalPrice);
+        configurationRecord = {
+          ...configurationRecord,
+          approvedUnitPrice,
+          approvedTotalPrice,
+          priceApprovedAt:
+            configurationRecord.priceApprovedAt ?? new Date().toISOString(),
+          priceApprovedByUserId:
+            configurationRecord.priceApprovedByUserId ?? actorUserId,
+        };
       }
 
       if (!orderId) {
@@ -1088,6 +1168,8 @@ export class PersonalizationsService {
         where: { id },
         data: {
           status: PersonalizationRequestStatus.APPROVED,
+          unitPrice: approvedUnitPrice,
+          totalPrice: approvedTotalPrice,
           reviewNotes: data.reviewNotes?.trim() || null,
           reviewedAt: new Date(),
           reviewedByUserId: actorUserId,
