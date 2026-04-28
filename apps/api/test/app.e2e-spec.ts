@@ -46,7 +46,7 @@ describe('AppController (e2e)', () => {
     return request(app.getHttpServer())
       .get('/api/v1/health')
       .expect(200)
-      .expect(({ body }) => {
+      .expect(({ body }: { body: Record<string, unknown> }) => {
         expect(body.status).toBe('ok');
         expect(typeof body.timestamp).toBe('string');
         expect(typeof body.uptimeSeconds).toBe('number');
@@ -57,7 +57,7 @@ describe('AppController (e2e)', () => {
     return request(app.getHttpServer())
       .get('/api/v1/ready')
       .expect(200)
-      .expect(({ body }) => {
+      .expect(({ body }: { body: Record<string, unknown> }) => {
         expect(body.status).toBe('ready');
         expect(body.dependencies).toEqual({ database: 'up' });
       });

@@ -246,8 +246,7 @@ export class PersonalizationsService {
           status: snapshot.status,
           reviewedAt: snapshot.reviewedAt,
           reviewedByUserId: snapshot.reviewedByUserId,
-          configurationJson:
-            configuration as unknown as Prisma.InputJsonValue,
+          configurationJson: configuration as unknown as Prisma.InputJsonValue,
         },
       });
     } catch (restoreError) {
@@ -1102,7 +1101,11 @@ export class PersonalizationsService {
       return approvedRequest;
     } catch (error) {
       if (shouldRestorePendingState && approvalSnapshot) {
-        await this.restoreApprovalState(id, approvalSnapshot, configurationRecord);
+        await this.restoreApprovalState(
+          id,
+          approvalSnapshot,
+          configurationRecord,
+        );
       }
 
       if (

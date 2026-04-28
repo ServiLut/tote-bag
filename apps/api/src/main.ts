@@ -37,8 +37,11 @@ async function bootstrap() {
     }),
   );
 
-  const httpAdapter = app.getHttpAdapter().getInstance();
-  httpAdapter.set('trust proxy', 1);
+  (
+    app.getHttpAdapter().getInstance() as {
+      set: (key: string, value: number) => void;
+    }
+  ).set('trust proxy', 1);
 
   app.use(json({ limit: bodyLimit }));
   app.use(urlencoded({ extended: true, limit: bodyLimit }));

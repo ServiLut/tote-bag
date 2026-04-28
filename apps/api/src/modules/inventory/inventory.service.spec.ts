@@ -1,5 +1,11 @@
 import { BadRequestException } from '@nestjs/common';
 import { InventoryService } from './inventory.service';
+import {
+  BatchInputStatus,
+  PurchaseBatchLineItemTypeInput,
+  PurchaseDocumentTypeInput,
+} from './dto/create-purchase-batch.dto';
+import { NonCommercialInventoryOutputReasonInput } from './dto/create-non-commercial-output.dto';
 
 describe('InventoryService', () => {
   type PurchaseBatchCreateInput = {
@@ -184,10 +190,10 @@ describe('InventoryService', () => {
     await service.createPurchaseBatch({
       supplierId: 'supplier-1',
       totalCost: 1,
-      status: 'RECIBIDO',
+      status: BatchInputStatus.RECIBIDO,
       purchaseDate: '2026-03-25',
       userId: 'admin-1',
-      documentType: 'INVOICE',
+      documentType: PurchaseDocumentTypeInput.INVOICE,
       supportUrl: 'private://support-documents/purchase-batches/test.pdf',
       items: [
         {
@@ -230,10 +236,10 @@ describe('InventoryService', () => {
       service.createPurchaseBatch({
         supplierId: 'supplier-1',
         totalCost: 0,
-        status: 'RECIBIDO',
+        status: BatchInputStatus.RECIBIDO,
         purchaseDate: '2026-03-25',
         userId: 'admin-1',
-        documentType: 'INVOICE',
+        documentType: PurchaseDocumentTypeInput.INVOICE,
         supportUrl: 'private://support-documents/purchase-batches/test.pdf',
         items: [],
       }),
@@ -245,10 +251,10 @@ describe('InventoryService', () => {
       service.createPurchaseBatch({
         supplierId: 'supplier-1',
         totalCost: 15000,
-        status: 'RECIBIDO',
+        status: BatchInputStatus.RECIBIDO,
         purchaseDate: '2026-03-25',
         userId: 'admin-1',
-        documentType: 'INVOICE',
+        documentType: PurchaseDocumentTypeInput.INVOICE,
         supportUrl: '   ',
         items: [
           {
@@ -279,14 +285,14 @@ describe('InventoryService', () => {
     await service.createPurchaseBatch({
       supplierId: 'supplier-1',
       totalCost: 5000,
-      status: 'RECIBIDO',
+      status: BatchInputStatus.RECIBIDO,
       purchaseDate: '2026-04-14',
       userId: 'admin-1',
-      documentType: 'INVOICE',
+      documentType: PurchaseDocumentTypeInput.INVOICE,
       supportUrl: 'private://support-documents/purchase-batches/test.pdf',
       items: [
         {
-          itemType: 'VARIANT',
+          itemType: PurchaseBatchLineItemTypeInput.VARIANT,
           productId: 'product-1',
           variantId: 'variant-1',
           cantidad: 5,
@@ -298,7 +304,7 @@ describe('InventoryService', () => {
 
     expect(tx.purchaseBatchLine.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        itemType: 'VARIANT',
+        itemType: PurchaseBatchLineItemTypeInput.VARIANT,
         variantId: 'variant-1',
         supplyItemId: null,
         quantity: 5,
@@ -327,14 +333,14 @@ describe('InventoryService', () => {
     await service.createPurchaseBatch({
       supplierId: 'supplier-1',
       totalCost: 2400,
-      status: 'RECIBIDO',
+      status: BatchInputStatus.RECIBIDO,
       purchaseDate: '2026-04-14',
       userId: 'admin-1',
-      documentType: 'DELIVERY_NOTE',
+      documentType: PurchaseDocumentTypeInput.DELIVERY_NOTE,
       supportUrl: 'private://support-documents/purchase-batches/test.jpg',
       items: [
         {
-          itemType: 'SUPPLY',
+          itemType: PurchaseBatchLineItemTypeInput.SUPPLY,
           supplyItemId: 'supply-1',
           cantidad: 12,
           unitOfMeasure: 'und',
@@ -345,7 +351,7 @@ describe('InventoryService', () => {
 
     expect(tx.purchaseBatchLine.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        itemType: 'SUPPLY',
+        itemType: PurchaseBatchLineItemTypeInput.SUPPLY,
         variantId: null,
         supplyItemId: 'supply-1',
         itemName: 'Bolsa de envio',
@@ -369,14 +375,14 @@ describe('InventoryService', () => {
     await service.createPurchaseBatch({
       supplierId: 'supplier-1',
       totalCost: 45000,
-      status: 'RECIBIDO',
+      status: BatchInputStatus.RECIBIDO,
       purchaseDate: '2026-04-14',
       userId: 'admin-1',
-      documentType: 'INVOICE',
+      documentType: PurchaseDocumentTypeInput.INVOICE,
       supportUrl: 'private://support-documents/purchase-batches/test.pdf',
       items: [
         {
-          itemType: 'TOOL',
+          itemType: PurchaseBatchLineItemTypeInput.TOOL,
           itemName: 'Tijeras industriales',
           cantidad: 1,
           unitOfMeasure: 'und',
@@ -387,7 +393,7 @@ describe('InventoryService', () => {
 
     expect(tx.purchaseBatchLine.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        itemType: 'TOOL',
+        itemType: PurchaseBatchLineItemTypeInput.TOOL,
         variantId: null,
         supplyItemId: null,
         itemName: 'Tijeras industriales',
@@ -404,14 +410,14 @@ describe('InventoryService', () => {
     await service.createPurchaseBatch({
       supplierId: 'supplier-1',
       totalCost: 15000,
-      status: 'RECIBIDO',
+      status: BatchInputStatus.RECIBIDO,
       purchaseDate: '2026-04-14',
       userId: 'admin-1',
-      documentType: 'DELIVERY_NOTE',
+      documentType: PurchaseDocumentTypeInput.DELIVERY_NOTE,
       supportUrl: 'private://support-documents/purchase-batches/test.jpg',
       items: [
         {
-          itemType: 'OTHER',
+          itemType: PurchaseBatchLineItemTypeInput.OTHER,
           description: 'Elemento operativo no catalogado',
           cantidad: 3,
           unitOfMeasure: 'und',
@@ -422,7 +428,7 @@ describe('InventoryService', () => {
 
     expect(tx.purchaseBatchLine.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        itemType: 'OTHER',
+        itemType: PurchaseBatchLineItemTypeInput.OTHER,
         variantId: null,
         supplyItemId: null,
         itemName: null,
@@ -453,14 +459,14 @@ describe('InventoryService', () => {
     await service.createPurchaseBatch({
       supplierId: 'supplier-1',
       totalCost: 67500,
-      status: 'RECIBIDO',
+      status: BatchInputStatus.RECIBIDO,
       purchaseDate: '2026-04-14',
       userId: 'admin-1',
-      documentType: 'INVOICE',
+      documentType: PurchaseDocumentTypeInput.INVOICE,
       supportUrl: 'private://support-documents/purchase-batches/test.pdf',
       items: [
         {
-          itemType: 'VARIANT',
+          itemType: PurchaseBatchLineItemTypeInput.VARIANT,
           productId: 'product-1',
           variantId: 'variant-1',
           cantidad: 2,
@@ -468,21 +474,21 @@ describe('InventoryService', () => {
           costoUnitario: 1000,
         },
         {
-          itemType: 'SUPPLY',
+          itemType: PurchaseBatchLineItemTypeInput.SUPPLY,
           supplyItemId: 'supply-1',
           cantidad: 10,
           unitOfMeasure: 'und',
           costoUnitario: 250,
         },
         {
-          itemType: 'TOOL',
+          itemType: PurchaseBatchLineItemTypeInput.TOOL,
           itemName: 'Regla metalica',
           cantidad: 1,
           unitOfMeasure: 'und',
           costoUnitario: 18000,
         },
         {
-          itemType: 'OTHER',
+          itemType: PurchaseBatchLineItemTypeInput.OTHER,
           itemName: 'Ajuste operativo',
           cantidad: 3,
           unitOfMeasure: 'und',
@@ -503,28 +509,28 @@ describe('InventoryService', () => {
     expect(tx.purchaseBatchLine.create).toHaveBeenCalledTimes(4);
     expect(tx.purchaseBatchLine.create).toHaveBeenNthCalledWith(1, {
       data: expect.objectContaining({
-        itemType: 'VARIANT',
+        itemType: PurchaseBatchLineItemTypeInput.VARIANT,
         variantId: 'variant-1',
         supplyItemId: null,
       }) as unknown,
     });
     expect(tx.purchaseBatchLine.create).toHaveBeenNthCalledWith(2, {
       data: expect.objectContaining({
-        itemType: 'SUPPLY',
+        itemType: PurchaseBatchLineItemTypeInput.SUPPLY,
         variantId: null,
         supplyItemId: 'supply-1',
       }) as unknown,
     });
     expect(tx.purchaseBatchLine.create).toHaveBeenNthCalledWith(3, {
       data: expect.objectContaining({
-        itemType: 'TOOL',
+        itemType: PurchaseBatchLineItemTypeInput.TOOL,
         variantId: null,
         supplyItemId: null,
       }) as unknown,
     });
     expect(tx.purchaseBatchLine.create).toHaveBeenNthCalledWith(4, {
       data: expect.objectContaining({
-        itemType: 'OTHER',
+        itemType: PurchaseBatchLineItemTypeInput.OTHER,
         variantId: null,
         supplyItemId: null,
       }) as unknown,
@@ -578,7 +584,7 @@ describe('InventoryService', () => {
 
     expect(prisma.purchaseBatchLine.findMany).toHaveBeenCalledWith({
       where: {
-        itemType: 'VARIANT',
+        itemType: PurchaseBatchLineItemTypeInput.VARIANT,
         variantId: { not: null },
         status: 'IN_STOCK',
         quantityRemaining: { gt: 0 },
@@ -646,7 +652,7 @@ describe('InventoryService', () => {
           id: 'batch-1',
           supplierId: 'supplier-1',
           variantId: 'variant-1',
-          documentType: 'DELIVERY_NOTE',
+          documentType: PurchaseDocumentTypeInput.DELIVERY_NOTE,
           createdAt: new Date('2026-04-01T00:00:00.000Z'),
         },
       },
@@ -685,7 +691,7 @@ describe('InventoryService', () => {
         supplierId: 'supplier-1',
         quantity: 2,
         unitCost: 12000,
-        documentType: 'DELIVERY_NOTE',
+        documentType: PurchaseDocumentTypeInput.DELIVERY_NOTE,
       },
     ]);
   });
@@ -712,7 +718,7 @@ describe('InventoryService', () => {
           id: 'batch-1',
           supplierId: 'supplier-1',
           variantId: 'variant-1',
-          documentType: 'INVOICE',
+          documentType: PurchaseDocumentTypeInput.INVOICE,
           createdAt: new Date('2026-04-01T00:00:00.000Z'),
         },
       },
@@ -757,7 +763,7 @@ describe('InventoryService', () => {
     const result = await service.createNonCommercialOutput({
       variantId: 'variant-1',
       quantity: 3,
-      reason: 'GIFT',
+      reason: NonCommercialInventoryOutputReasonInput.GIFT,
       notes: 'Salida de cortesia',
       supportUrl: 'private://support-documents/non-commercial/gift.pdf',
       userId: 'admin-1',
@@ -806,7 +812,7 @@ describe('InventoryService', () => {
       data: {
         variantId: 'variant-1',
         quantity: 3,
-        reason: 'GIFT',
+        reason: NonCommercialInventoryOutputReasonInput.GIFT,
         stockBefore: 10,
         stockAfter: 7,
         userId: 'admin-1',
@@ -846,7 +852,7 @@ describe('InventoryService', () => {
       service.createNonCommercialOutput({
         variantId: 'variant-1',
         quantity: 2,
-        reason: 'OTHER',
+        reason: NonCommercialInventoryOutputReasonInput.OTHER,
         notes: 'Uso interno',
         userId: 'admin-1',
       }),
@@ -892,7 +898,7 @@ describe('InventoryService', () => {
       variantId: 'variant-2',
       quantityReceived: 8,
       unitCost: 6000,
-      status: 'RECIBIDO',
+      status: BatchInputStatus.RECIBIDO,
       purchaseDate: '2026-04-09',
       userId: 'admin-1',
     });
@@ -992,7 +998,7 @@ describe('InventoryService', () => {
         variantId: 'variant-1',
         quantityReceived: 10,
         unitCost: 3000,
-        status: 'RECIBIDO',
+        status: BatchInputStatus.RECIBIDO,
         purchaseDate: '2026-04-09',
         userId: 'admin-1',
       }),
@@ -1008,14 +1014,14 @@ describe('InventoryService', () => {
     await service.createPurchaseBatch({
       supplierId: 'supplier-1',
       totalCost: 45000,
-      status: 'RECIBIDO',
+      status: BatchInputStatus.RECIBIDO,
       purchaseDate: '2026-04-14',
       userId: 'admin-1',
-      documentType: 'INVOICE',
+      documentType: PurchaseDocumentTypeInput.INVOICE,
       supportUrl: 'private://support-documents/purchase-batches/test.pdf',
       items: [
         {
-          itemType: 'TOOL',
+          itemType: PurchaseBatchLineItemTypeInput.TOOL,
           itemName: 'Tijeras industriales',
           cantidad: 1,
           unitOfMeasure: 'und',

@@ -177,7 +177,9 @@ export class ShippingController {
   }
 
   @Delete('shipments/:orderId')
-  @ApiOperation({ summary: 'Eliminar un envio pendiente o listo para etiqueta' })
+  @ApiOperation({
+    summary: 'Eliminar un envio pendiente o listo para etiqueta',
+  })
   async deleteShipment(
     @Param('orderId') orderId: string,
     @Req() req: RequestWithUser,

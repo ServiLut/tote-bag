@@ -18,10 +18,7 @@ import { CreatePayrollWorkerDto } from './dto/create-payroll-worker.dto';
 import { UpdatePayrollStatementStatusDto } from './dto/update-payroll-statement-status.dto';
 import { UpdatePayrollShiftDto } from './dto/update-payroll-shift.dto';
 import { UpdatePayrollWorkerDto } from './dto/update-payroll-worker.dto';
-import {
-  decimalToNumber,
-  DecimalInput,
-} from '../../common/utils/sales-tax.util';
+import { decimalToNumber } from '../../common/utils/sales-tax.util';
 
 type PayrollShiftFiles = {
   entryPhoto?: Express.Multer.File[];

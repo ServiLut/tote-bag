@@ -12,13 +12,13 @@ import {
 } from '../utils/debug-role.util';
 import { getOperatorRoleForEmail } from '../utils/protected-admin.util';
 
-type RequestUser = {
+export type RequestUser = {
   id: string;
   email?: string | null;
   role?: Role | null;
 };
 
-type RequestWithUser = Request & {
+export type RequestWithUser = Request & {
   user?: RequestUser;
 };
 

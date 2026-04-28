@@ -1260,7 +1260,7 @@ export default function PersonalizerWizard({
                     <div className="grid grid-cols-2 gap-3">
                       {availableTechniqueOptions.map((technique) => (
                         <button
-                          key={technique.id}
+                          key={technique.code}
                           onClick={() =>
                             setSelections((prev) => ({
                               ...prev,
@@ -1304,7 +1304,7 @@ export default function PersonalizerWizard({
 
                         return (
                           <button
-                            key={option.id}
+                            key={option.code}
                             onClick={() =>
                               setSelections((prev) => ({
                                 ...prev,
@@ -1664,7 +1664,7 @@ export default function PersonalizerWizard({
                     <div className="grid grid-cols-2 gap-3">
                       {availableTechniqueOptions.map(t => (
                         <button
-                          key={t.id}
+                          key={t.code}
                           onClick={() => setSelections(prev => ({ ...prev, markingType: t.code }))}
                           className={`py-3 rounded-xl border-2 font-bold text-[10px] transition-all uppercase tracking-tighter ${selections.markingType === t.code ? 'border-primary bg-primary text-white shadow-lg shadow-primary/20' : 'border-theme text-muted hover:border-primary/30'}`}
                         >
@@ -1689,7 +1689,7 @@ export default function PersonalizerWizard({
                         const isSelected = selections.extraOptions.includes(option.code);
                         return (
                           <button
-                            key={option.id}
+                            key={option.code}
                             onClick={() =>
                               setSelections((prev) => ({
                                 ...prev,

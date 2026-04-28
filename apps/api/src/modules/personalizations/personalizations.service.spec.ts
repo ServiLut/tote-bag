@@ -40,10 +40,10 @@ describe('PersonalizationsService', () => {
   };
 
   const service = new PersonalizationsService(
-    prisma as any,
-    storageService as any,
-    pricingService as any,
-    ordersService as any,
+    prisma as never,
+    storageService as never,
+    pricingService as never,
+    ordersService as never,
   );
 
   const receiptFile = {
@@ -165,7 +165,7 @@ describe('PersonalizationsService', () => {
       material: 'Lona',
       quantity: 2,
       personalizations: [],
-    } as any);
+    } as never);
 
     expect(prisma.profile.create).toHaveBeenCalledWith({
       data: {
@@ -190,7 +190,7 @@ describe('PersonalizationsService', () => {
         data: expect.objectContaining({
           userId: 'user-1',
           profileId: 'profile-1',
-        }),
+        }) as never,
       }),
     );
   });
@@ -203,7 +203,7 @@ describe('PersonalizationsService', () => {
     await expect(
       service.updateRequest(
         'request-1',
-        { status: PersonalizationRequestStatus.APPROVED } as any,
+        { status: PersonalizationRequestStatus.APPROVED } as never,
         'admin-1',
       ),
     ).rejects.toBeInstanceOf(BadRequestException);
@@ -277,8 +277,8 @@ describe('PersonalizationsService', () => {
           reviewedByUserId: 'reviewer-1',
           configurationJson: expect.objectContaining({
             approvalOrderId: 'order-1',
-          }),
-        }),
+          }) as never,
+        }) as never,
       }),
     );
     expect(ordersService.confirmPendingOrderPayment).not.toHaveBeenCalled();

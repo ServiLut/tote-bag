@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import ProductDetailClient from '@/components/store/ProductDetailClient';
 import ProductCard from '@/components/store/ProductCard';
 import { Product } from '@/types/product';
+import { ApiResponse } from '@/types/api';
 import { CatalogProductFetchResult, resolveCatalogProductResponse } from '@/lib/catalog-product';
 import { Metadata } from 'next';
 import { apiFetch } from '@/utils/api';
@@ -39,7 +40,7 @@ async function getRelatedProducts(currentProductId: string, collectionId?: strin
     }
 
     // Filter out current product
-    let related = products.filter(p => p.id !== currentProductId);
+    let related = products.filter((p: Product) => p.id !== currentProductId);
 
     // 2. If no products found (or only the current one existed in collection), fetch general list
     if (related.length === 0) {
@@ -47,7 +48,7 @@ async function getRelatedProducts(currentProductId: string, collectionId?: strin
       if (res.ok) {
         const response: ApiResponse<Product[]> = await res.json();
         // Filter out current product from general list
-        related = response.data.filter(p => p.id !== currentProductId);
+        related = response.data.filter((p: Product) => p.id !== currentProductId);
       }
     }
     

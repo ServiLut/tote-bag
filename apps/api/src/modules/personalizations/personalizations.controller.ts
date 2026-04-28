@@ -181,12 +181,7 @@ export class PersonalizationsController {
       throw new BadRequestException(EMPTY_RECEIPT_MESSAGE);
     }
 
-    return this.personalizationsService.approveRequest(
-      id,
-      data,
-      userId,
-      file,
-    );
+    return this.personalizationsService.approveRequest(id, data, userId, file);
   }
 
   @Put(':id')

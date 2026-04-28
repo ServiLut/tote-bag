@@ -730,7 +730,9 @@ describe('OrdersService', () => {
 
     const [order] = await service.findAll();
 
-    expect(order.inventoryStatus).toBe('COMMITTED_STOCK');
+    expect(
+      (order as unknown as { inventoryStatus: string }).inventoryStatus,
+    ).toBe('COMMITTED_STOCK');
     expect(order.shipment).toEqual({ id: 'shipment-1' });
   });
 
@@ -799,6 +801,8 @@ describe('OrdersService', () => {
 
     const order = await service.findOne('order-1');
 
-    expect(order?.inventoryStatus).toBe('CONSUMED_BATCH');
+    expect(
+      (order as unknown as { inventoryStatus: string })?.inventoryStatus,
+    ).toBe('CONSUMED_BATCH');
   });
 });

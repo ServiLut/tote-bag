@@ -1,6 +1,7 @@
 import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { Role } from '../../generated/client/client';
 import { InventoryController } from './inventory.controller';
+import { NonCommercialInventoryOutputReasonInput } from './dto/create-non-commercial-output.dto';
 
 describe('InventoryController suppliers access', () => {
   const inventoryService = {
@@ -13,6 +14,9 @@ describe('InventoryController suppliers access', () => {
   const rolesService = {
     getEffectiveRole: jest.fn(),
   };
+  const storageService = {
+    uploadPrivateFile: jest.fn(),
+  };
 
   let controller: InventoryController;
 
@@ -22,6 +26,7 @@ describe('InventoryController suppliers access', () => {
       inventoryService as never,
       financeService as never,
       rolesService as never,
+      storageService as never,
     );
   });
 
@@ -79,7 +84,7 @@ describe('InventoryController suppliers access', () => {
       {
         variantId: 'variant-1',
         quantity: 2,
-        reason: 'GIFT',
+        reason: NonCommercialInventoryOutputReasonInput.GIFT,
         notes: 'Salida de cortesia',
       },
       { user: { id: 'admin-1' } } as never,
@@ -88,7 +93,7 @@ describe('InventoryController suppliers access', () => {
     expect(inventoryService.createNonCommercialOutput).toHaveBeenCalledWith({
       variantId: 'variant-1',
       quantity: 2,
-      reason: 'GIFT',
+      reason: NonCommercialInventoryOutputReasonInput.GIFT,
       notes: 'Salida de cortesia',
       userId: 'admin-1',
     });

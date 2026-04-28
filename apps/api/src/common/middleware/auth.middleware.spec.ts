@@ -2,7 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { NextFunction, Request, Response } from 'express';
 import { Role } from '../../generated/client/enums';
 import { DebugRoleContextService } from '../context/debug-role-context.service';
-import { AuthMiddleware } from './auth.middleware';
+import { AuthMiddleware, RequestWithUser } from './auth.middleware';
 
 const getUserMock = jest.fn();
 
@@ -233,7 +233,7 @@ describe('AuthMiddleware', () => {
       headers: {
         authorization: 'Bearer valid-token',
       },
-    } as unknown as Request & { user?: unknown };
+    } as unknown as RequestWithUser;
     const next = jest.fn() as NextFunction;
 
     await middleware.use(req, {} as Response, next);

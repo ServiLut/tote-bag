@@ -378,10 +378,10 @@ describe('PurchasesService', () => {
     const [updateArgs] = updateInvoice.mock.calls[0] as [
       PurchaseInvoiceUpdateArgs,
     ];
-    expect(updateArgs.data.paidAmount.equals(new Prisma.Decimal('100'))).toBe(
+    expect(updateArgs.data.paidAmount?.equals(new Prisma.Decimal('100'))).toBe(
       true,
     );
-    expect(updateArgs.data.balanceDue.equals(new Prisma.Decimal('0'))).toBe(
+    expect(updateArgs.data.balanceDue?.equals(new Prisma.Decimal('0'))).toBe(
       true,
     );
     expect(updateArgs.data.status).toBe(PurchaseInvoiceStatus.PAID);
@@ -425,10 +425,10 @@ describe('PurchasesService', () => {
     const [updateArgs] = updateInvoice.mock.calls[0] as [
       PurchaseInvoiceUpdateArgs,
     ];
-    expect(updateArgs.data.paidAmount.equals(new Prisma.Decimal('30'))).toBe(
+    expect(updateArgs.data.paidAmount?.equals(new Prisma.Decimal('30'))).toBe(
       true,
     );
-    expect(updateArgs.data.balanceDue.equals(new Prisma.Decimal('70'))).toBe(
+    expect(updateArgs.data.balanceDue?.equals(new Prisma.Decimal('70'))).toBe(
       true,
     );
     expect(updateArgs.data.status).toBe(PurchaseInvoiceStatus.PARTIAL);

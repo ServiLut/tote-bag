@@ -1898,10 +1898,15 @@ export class FinanceService {
           doc
             .font('Helvetica-Bold')
             .fillColor('#DC2626')
-            .text(drawMoney(-order.totalAmount), 420, y, {
-              width: 140,
-              align: 'right',
-            });
+            .text(
+              drawMoney(toDecimal(order.totalAmount).negated().toNumber()),
+              420,
+              y,
+              {
+                width: 140,
+                align: 'right',
+              },
+            );
           y += 18;
           drawLine(y, '#F3F4F6');
           y += 6;

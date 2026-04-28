@@ -6,7 +6,6 @@ import {
   SaleLegalStatus,
   ShipmentStatus,
 } from '../../generated/client/client';
-import { decimalToNumber } from '../../common/utils/sales-tax.util';
 import { PrismaService } from '../../prisma/prisma.service';
 
 type NormalizedShippingAddress = Record<string, unknown> & {

@@ -99,7 +99,7 @@ export class ShippingPdfService {
 
     doc.fontSize(8).font('Helvetica-Bold').text(`ORDEN: #${order.orderNumber}`);
     doc.text(`GUIA: ${trackingReference}`);
-    doc.text(`PESO: ${shipment.weight || 0} Kg`);
+    doc.text(`PESO: ${shipment.weight?.toString() || 0} Kg`);
     doc.text(`DIMENSIONES: ${sanitizeLabelText(shipment.dimensions || 'N/A')}`);
     doc.moveDown();
 
