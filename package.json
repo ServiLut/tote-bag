@@ -11,7 +11,8 @@
     "lint": "turbo lint",
     "start": "turbo start",
     "install:all": "pnpm install",
-    "api": "bruno open api-docs"
+    "api": "bruno open api-docs",
+    "smoke:staging": "node ./scripts/smoke-staging.mjs"
   },
   "devDependencies": {
     "turbo": "^2.8.1"

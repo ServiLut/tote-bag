@@ -4,10 +4,13 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { VersioningType } from '@nestjs/common';
+import { PrismaService } from '../src/prisma/prisma.service';
+import { resetRuntimeDependencyState } from '../src/runtime-dependency-state';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
   const originalRedisUrl = process.env.REDIS_URL;
+  let queryRawMock: jest.Mock;
 
   beforeAll(() => {
     process.env.REDIS_URL = '';
@@ -15,12 +18,20 @@ describe('AppController (e2e)', () => {
 
   afterAll(() => {
     process.env.REDIS_URL = originalRedisUrl;
+    resetRuntimeDependencyState();
   });
 
   beforeEach(async () => {
+    queryRawMock = jest.fn().mockResolvedValue([{ '?column?': 1 }]);
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(PrismaService)
+      .useValue({
+        $queryRaw: queryRawMock,
+      })
+      .compile();
 
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix('api');
@@ -47,9 +58,17 @@ describe('AppController (e2e)', () => {
       .get('/api/v1/health')
       .expect(200)
       .expect(({ body }: { body: Record<string, unknown> }) => {
-        expect(body.status).toBe('ok');
+        expect(body.status).toBe('degraded');
         expect(typeof body.timestamp).toBe('string');
         expect(typeof body.uptimeSeconds).toBe('number');
+        expect(body.dependencies).toEqual({
+          cache: {
+            status: 'degraded',
+            mode: 'memory',
+            configured: false,
+            reason: 'missing_url',
+          },
+        });
       });
   });
 
@@ -58,8 +77,17 @@ describe('AppController (e2e)', () => {
       .get('/api/v1/ready')
       .expect(200)
       .expect(({ body }: { body: Record<string, unknown> }) => {
+        expect(queryRawMock).toHaveBeenCalledTimes(1);
         expect(body.status).toBe('ready');
-        expect(body.dependencies).toEqual({ database: 'up' });
+        expect(body.dependencies).toEqual({
+          database: 'up',
+          cache: {
+            status: 'degraded',
+            mode: 'memory',
+            configured: false,
+            reason: 'missing_url',
+          },
+        });
       });
   });
 });

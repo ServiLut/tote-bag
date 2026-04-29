@@ -68,6 +68,9 @@ describe('frontend routing guards', () => {
   });
 
   it('canoniza aliases del dashboard a la ruta oficial', () => {
+    expect(resolveCanonicalDashboardPath('/dashboard/finance')).toBe(
+      '/dashboard/finanzas',
+    );
     expect(resolveCanonicalDashboardPath('/dashboard/finance/opex')).toBe(
       '/dashboard/finanzas/opex',
     );

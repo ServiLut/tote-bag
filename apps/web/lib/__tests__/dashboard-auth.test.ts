@@ -1,10 +1,13 @@
 import {
+  buildForwardedDashboardRoleContextHeaders,
   buildDashboardAuthHeaders,
   buildDashboardDebugRoleHeader,
   canUseDashboardDebugRole,
+  extractDashboardRoleContextFromProfilePayload,
   extractDebugRoleAllowedFromProfilePayload,
   extractRoleFromProfilePayload,
   getDashboardRoleForOperatorEmail,
+  readForwardedDashboardRoleContext,
 } from '../dashboard-auth';
 
 describe('dashboard auth', () => {
@@ -46,6 +49,20 @@ describe('dashboard auth', () => {
     expect(canUseDashboardDebugRole(true, 'development')).toBe(true);
   });
 
+  it('extrae el contexto completo de rol desde el payload del perfil', () => {
+    expect(
+      extractDashboardRoleContextFromProfilePayload({
+        data: {
+          user: { role: 'VIEWER' },
+          debugRoleAllowed: true,
+        },
+      }),
+    ).toEqual({
+      role: 'MANAGER',
+      debugRoleAllowed: true,
+    });
+  });
+
   it('construye headers de debug role y auth para SSR y cliente', () => {
     expect(buildDashboardDebugRoleHeader(null)).toEqual({});
     expect(buildDashboardDebugRoleHeader('MANAGER')).toEqual({
@@ -54,6 +71,26 @@ describe('dashboard auth', () => {
     expect(buildDashboardAuthHeaders('token-123', 'CUSTOMER')).toEqual({
       Authorization: 'Bearer token-123',
       'x-debug-role': 'CUSTOMER',
+    });
+  });
+
+  it('serializa y lee el contexto de rol reenviado por el proxy', () => {
+    const forwardedHeaders = new Headers(
+      buildForwardedDashboardRoleContextHeaders({
+        role: 'ADMIN',
+        debugRoleAllowed: true,
+      }),
+    );
+
+    expect(readForwardedDashboardRoleContext(forwardedHeaders)).toEqual({
+      resolved: true,
+      role: 'ADMIN',
+      debugRoleAllowed: true,
+    });
+    expect(readForwardedDashboardRoleContext(new Headers())).toEqual({
+      resolved: false,
+      role: null,
+      debugRoleAllowed: false,
     });
   });
 });

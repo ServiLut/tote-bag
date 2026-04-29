@@ -1074,20 +1074,15 @@ export class PersonalizationsService {
         orderId = null;
         existingOrder = null;
 
-        /* eslint-disable @typescript-eslint/no-unused-vars */
-        const {
-          approvalOrderId: _approvalOrderId,
-          approvalStartedAt: _approvalStartedAt,
-          approvalReceiptUploadedAt: _approvalReceiptUploadedAt,
-          approvedAt: _approvedAt,
-          approvedUnitPrice: _approvedUnitPrice,
-          approvedTotalPrice: _approvedTotalPrice,
-          priceApprovedAt: _priceApprovedAt,
-          priceApprovedByUserId: _priceApprovedByUserId,
-          ...nextConfigurationRecord
-        } = configurationRecord;
-        /* eslint-enable @typescript-eslint/no-unused-vars */
-
+        const nextConfigurationRecord = { ...configurationRecord };
+        delete nextConfigurationRecord.approvalOrderId;
+        delete nextConfigurationRecord.approvalStartedAt;
+        delete nextConfigurationRecord.approvalReceiptUploadedAt;
+        delete nextConfigurationRecord.approvedAt;
+        delete nextConfigurationRecord.approvedUnitPrice;
+        delete nextConfigurationRecord.approvedTotalPrice;
+        delete nextConfigurationRecord.priceApprovedAt;
+        delete nextConfigurationRecord.priceApprovedByUserId;
         configurationRecord = nextConfigurationRecord;
       }
 

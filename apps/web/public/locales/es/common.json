@@ -388,6 +388,8 @@
   "checkout_exact_address": "Dirección Exacta",
   "checkout_exact_address_placeholder": "Calle 123 # 45-67, Apto 101",
   "checkout_continue_wompi": "Continuar a Pago con Wompi",
+  "checkout_wompi_loading": "Cargando Wompi...",
+  "checkout_wompi_unavailable": "La pasarela de pago no está disponible en este momento. Intenta de nuevo en unos segundos.",
   "checkout_redirect_notice": "Serás redirigido a la pasarela de pagos segura de Wompi Bancolombia.",
   "checkout_summary": "Resumen de Compra",
   "checkout_shipping_calc": "Por calcular"

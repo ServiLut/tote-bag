@@ -1,6 +1,6 @@
 import { createBrowserClient } from '@supabase/ssr'
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js'
-import { tryGetSupabaseEnv } from '@/lib/env'
+import { getSupabaseEnv, tryGetSupabaseEnv } from '@/lib/env'
 
 type BrowserSupabaseClient = ReturnType<typeof createBrowserClient>;
 
@@ -110,7 +110,10 @@ let client: BrowserSupabaseClient | MissingSupabaseClient | null = null;
 export function createClient(): BrowserSupabaseClient | MissingSupabaseClient {
   if (client) return client;
 
-  const env = tryGetSupabaseEnv();
+  const env =
+    process.env.NODE_ENV === 'production'
+      ? getSupabaseEnv()
+      : tryGetSupabaseEnv();
 
   if (!env) {
     client = createMissingSupabaseClient();

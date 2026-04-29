@@ -1,0 +1,178 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - practicantes
+      - staging
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      web: ${{ steps.filter.outputs.web }}
+      shared: ${{ steps.filter.outputs.shared }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed surfaces
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            shared:
+              - '.github/workflows/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'turbo.json'
+              - 'packages/**'
+              - 'shared/**'
+            api:
+              - 'apps/api/**'
+            web:
+              - 'apps/web/**'
+
+  api:
+    name: API
+    needs: changes
+    if: needs.changes.outputs.api == 'true' || needs.changes.outputs.shared == 'true'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: tote_bag_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d tote_bag_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/tote_bag_ci
+      DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:5432/tote_bag_ci
+      DATABASE_SSL: "false"
+      NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+      SUPABASE_URL: https://ci-placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+      SUPABASE_ANON_KEY: ci-placeholder-anon-key
+      SERVICE_ROLE: ci-placeholder-service-role
+      JWT_SECRET: ci-placeholder-jwt-secret
+      NEXT_PUBLIC_WOMPI_PUBLIC_KEY: ci-placeholder-wompi-public-key
+      FRONTEND_URL: http://localhost:3000
+      REDIS_URL: ""
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.2
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply Prisma migrations
+        run: pnpm --filter api exec prisma migrate deploy
+
+      - name: Lint API
+        run: pnpm --filter api exec eslint "{src,apps,libs,test}/**/*.ts"
+
+      - name: Run API unit tests
+        run: pnpm --filter api exec jest --runInBand
+
+      - name: Run API e2e tests
+        run: pnpm --filter api exec jest --config ./test/jest-e2e.json --runInBand
+
+      - name: Build API
+        run: pnpm --filter api build
+
+      - name: Build API image
+        run: docker build -f apps/api/Dockerfile -t tote-bag-api:ci .
+
+  web:
+    name: Web
+    needs: changes
+    if: needs.changes.outputs.web == 'true' || needs.changes.outputs.shared == 'true'
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
+      NEXT_PUBLIC_BASE_URL: https://staging.example.com
+      NEXT_PUBLIC_API_URL: https://api.staging.example.com/api/v1
+      NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+      NEXT_IMAGE_REMOTE_HOSTS: ci-placeholder.supabase.co
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.2
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint shared UI package
+        run: pnpm --filter @tote-bag/ui lint
+
+      - name: Lint web
+        run: pnpm --filter web exec eslint .
+
+      - name: Run web tests
+        run: pnpm --filter web exec jest --config ./jest.config.cjs --runInBand
+
+      - name: Build shared UI package
+        run: pnpm --filter @tote-bag/ui build
+
+      - name: Build web
+        env:
+          NODE_ENV: production
+        run: pnpm --filter web build
+
+      - name: Build web image
+        run: >
+          docker build
+          -f apps/web/Dockerfile
+          -t tote-bag-web:ci
+          --build-arg NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
+          --build-arg NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+          --build-arg NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+          --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+          --build-arg NEXT_IMAGE_REMOTE_HOSTS=${NEXT_IMAGE_REMOTE_HOSTS}
+          .

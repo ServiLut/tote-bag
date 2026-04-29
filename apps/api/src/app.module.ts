@@ -7,6 +7,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { SentryModule } from '@sentry/nestjs/setup';
 import { SentryGlobalFilter } from '@sentry/nestjs/setup';
+import { NextFunction, Request, Response } from 'express';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { B2BModule } from './modules/b2b/b2b.module';
@@ -41,6 +42,7 @@ import { PermissionsGuard } from './common/guards/permissions.guard';
 import { RolesModule } from './modules/roles/roles.module';
 import { StorageModule } from './common/storage/storage.module';
 import { DebugRoleContextModule } from './common/context/debug-role-context.module';
+import { PrismaConnectionExceptionFilter } from './common/filters/prisma-connection.filter';
 import { HealthController } from './health.controller';
 import envValidationSchema from './config/env.validation';
 import appConfig from './config/app.config';
@@ -48,6 +50,192 @@ import authConfig from './config/auth.config';
 import databaseConfig from './config/database.config';
 import paymentConfig from './config/payment.config';
 import cacheConfig from './config/cache.config';
+import { setCacheRuntimeStatus } from './runtime-dependency-state';
+
+type MetricsAccessPolicy = 'public' | 'private' | 'token' | 'disabled';
+
+type MetricsRequest = Pick<
+  Request,
+  'headers' | 'ip' | 'originalUrl' | 'path' | 'socket' | 'url'
+>;
+
+const metricsPathPattern = /^\/(?:api\/)?metrics\/?$/i;
+
+function normalizeRequestPath(path: string | undefined): string {
+  if (!path) {
+    return '';
+  }
+
+  const [pathname] = path.split('?');
+  const normalizedPath = pathname.replace(/\/+$/, '');
+
+  return normalizedPath || '/';
+}
+
+function getHeaderValue(
+  value: string | string[] | undefined,
+): string | undefined {
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+
+  return value;
+}
+
+function getRequestPath(request: MetricsRequest): string {
+  return normalizeRequestPath(
+    request.path || request.originalUrl || request.url,
+  );
+}
+
+function getClientIp(request: MetricsRequest): string | null {
+  const forwardedFor = getHeaderValue(request.headers['x-forwarded-for']);
+  const forwardedIp = forwardedFor?.split(',')[0]?.trim();
+  const rawIp = forwardedIp || request.ip || request.socket?.remoteAddress;
+
+  if (!rawIp) {
+    return null;
+  }
+
+  return rawIp.startsWith('::ffff:') ? rawIp.slice(7) : rawIp;
+}
+
+function getBearerToken(
+  headerValue: string | string[] | undefined,
+): string | null {
+  const authorizationHeader = getHeaderValue(headerValue);
+
+  if (!authorizationHeader) {
+    return null;
+  }
+
+  const [scheme, token] = authorizationHeader.split(' ');
+
+  if (scheme?.toLowerCase() !== 'bearer' || !token?.trim()) {
+    return null;
+  }
+
+  return token.trim();
+}
+
+export function resolveMetricsAccessPolicy(
+  env: NodeJS.ProcessEnv = process.env,
+): MetricsAccessPolicy {
+  const configuredPolicy = env.METRICS_ACCESS_POLICY?.trim().toLowerCase();
+
+  if (
+    configuredPolicy === 'public' ||
+    configuredPolicy === 'private' ||
+    configuredPolicy === 'token' ||
+    configuredPolicy === 'disabled'
+  ) {
+    return configuredPolicy;
+  }
+
+  return env.NODE_ENV === 'production' ? 'private' : 'public';
+}
+
+export function isPrivateOrLoopbackIp(
+  ipAddress: string | null | undefined,
+): boolean {
+  if (!ipAddress) {
+    return false;
+  }
+
+  const normalizedIp = ipAddress
+    .trim()
+    .toLowerCase()
+    .replace(/^::ffff:/, '');
+
+  if (!normalizedIp) {
+    return false;
+  }
+
+  if (
+    normalizedIp === '::1' ||
+    normalizedIp === '0:0:0:0:0:0:0:1' ||
+    normalizedIp.startsWith('fc') ||
+    normalizedIp.startsWith('fd') ||
+    normalizedIp.startsWith('fe80:')
+  ) {
+    return true;
+  }
+
+  const ipv4Match = normalizedIp.match(
+    /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/,
+  );
+
+  if (!ipv4Match) {
+    return false;
+  }
+
+  const [firstOctet, secondOctet, thirdOctet, fourthOctet] = ipv4Match
+    .slice(1)
+    .map((segment) => Number(segment));
+
+  if (
+    [firstOctet, secondOctet, thirdOctet, fourthOctet].some(
+      (segment) => segment < 0 || segment > 255,
+    )
+  ) {
+    return false;
+  }
+
+  return (
+    firstOctet === 10 ||
+    firstOctet === 127 ||
+    (firstOctet === 169 && secondOctet === 254) ||
+    (firstOctet === 172 && secondOctet >= 16 && secondOctet <= 31) ||
+    (firstOctet === 192 && secondOctet === 168)
+  );
+}
+
+export function isMetricsRequestAllowed(
+  request: MetricsRequest,
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
+  const requestPath = getRequestPath(request);
+
+  if (!metricsPathPattern.test(requestPath)) {
+    return true;
+  }
+
+  switch (resolveMetricsAccessPolicy(env)) {
+    case 'public':
+      return true;
+    case 'disabled':
+      return false;
+    case 'token': {
+      const expectedToken = env.METRICS_BEARER_TOKEN?.trim();
+
+      if (!expectedToken) {
+        return false;
+      }
+
+      const providedToken =
+        getHeaderValue(request.headers['x-metrics-token'])?.trim() ||
+        getBearerToken(request.headers.authorization);
+
+      return providedToken === expectedToken;
+    }
+    case 'private':
+    default:
+      return isPrivateOrLoopbackIp(getClientIp(request));
+  }
+}
+
+export function createMetricsAccessMiddleware(
+  env: NodeJS.ProcessEnv = process.env,
+) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (isMetricsRequestAllowed(req, env)) {
+      next();
+      return;
+    }
+
+    res.status(403).send('Forbidden');
+  };
+}
 
 @Module({
   imports: [
@@ -63,6 +251,12 @@ import cacheConfig from './config/cache.config';
       useFactory: async (configService: ConfigService) => {
         const redisUrl = configService.get<string>('REDIS_URL');
         if (!redisUrl) {
+          setCacheRuntimeStatus({
+            status: 'degraded',
+            mode: 'memory',
+            configured: false,
+            reason: 'missing_url',
+          });
           return { ttl: 600 * 1000 };
         }
 
@@ -75,10 +269,20 @@ import cacheConfig from './config/cache.config';
               connectTimeout: 10000,
             },
           });
+          setCacheRuntimeStatus({
+            status: 'up',
+            mode: 'redis',
+            configured: true,
+          });
           return { store: store as unknown as never };
         } catch (error) {
           console.error('[Redis] Failed to connect:', error);
-          // Fallback to in-memory store
+          setCacheRuntimeStatus({
+            status: 'degraded',
+            mode: 'memory',
+            configured: true,
+            reason: 'connection_failed',
+          });
           return { ttl: 600 * 1000 };
         }
       },
@@ -130,6 +334,10 @@ import cacheConfig from './config/cache.config';
       useClass: SentryGlobalFilter,
     },
     {
+      provide: APP_FILTER,
+      useClass: PrismaConnectionExceptionFilter,
+    },
+    {
       provide: APP_INTERCEPTOR,
       useClass: AuditInterceptor,
     },
@@ -145,6 +353,7 @@ import cacheConfig from './config/cache.config';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
+    consumer.apply(createMetricsAccessMiddleware()).forRoutes('*');
     consumer.apply(AuthMiddleware).forRoutes('*');
   }
 }

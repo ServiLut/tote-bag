@@ -5,8 +5,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { PrismaService } from './prisma/prisma.service';
-
-type HealthDependencyStatus = 'up' | 'down';
+import { getCacheRuntimeStatus, type RuntimeDependencyStatus } from './runtime-dependency-state';
 
 @Controller()
 export class HealthController {
@@ -16,16 +15,22 @@ export class HealthController {
 
   @Get('health')
   getHealth() {
+    const cache = getCacheRuntimeStatus();
+
     return {
-      status: 'ok',
+      status: cache.status === 'up' ? 'ok' : 'degraded',
       timestamp: new Date().toISOString(),
       uptimeSeconds: Math.floor(process.uptime()),
+      dependencies: {
+        cache,
+      },
     };
   }
 
   @Get('ready')
   async getReady() {
     const checkedAt = new Date().toISOString();
+    const cache = getCacheRuntimeStatus();
 
     try {
       await this.prisma.$queryRaw`SELECT 1`;
@@ -34,7 +39,8 @@ export class HealthController {
         status: 'ready',
         checkedAt,
         dependencies: {
-          database: 'up' as HealthDependencyStatus,
+          database: 'up' as RuntimeDependencyStatus,
+          cache,
         },
       };
     } catch (error) {
@@ -44,7 +50,8 @@ export class HealthController {
         status: 'not_ready',
         checkedAt,
         dependencies: {
-          database: 'down' as HealthDependencyStatus,
+          database: 'down' as RuntimeDependencyStatus,
+          cache,
         },
       });
     }

@@ -5,6 +5,9 @@ import { Toaster } from 'sonner';
 import { CartProvider } from "@/context/CartContext";
 import { ThemeProvider } from "@/components/theme-provider";
 import { CookieConsent } from "@/components/ui/CookieConsent";
+import { getPublicAppBaseUrl } from '@/lib/env';
+
+const metadataBase = getPublicAppBaseUrl();
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,7 +20,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
+  ...(metadataBase ? { metadataBase } : {}),
   title: {
     default: "Tote Bag Shop | Bolsos Artesanales",
     template: "%s | Tote Bag Shop"

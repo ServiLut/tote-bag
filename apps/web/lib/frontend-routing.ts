@@ -2,6 +2,7 @@ import {
   isDashboardPrivilegedRole,
   type DashboardRole,
 } from '@/lib/dashboard-auth';
+import { resolveDashboardRouteAlias } from '@/lib/dashboard-route-aliases';
 
 export type CheckoutAuthStep = 'CHOICE' | 'GUEST_FORM' | 'AUTHENTICATED';
 
@@ -123,15 +124,7 @@ export function getCheckoutEmptyCartRedirectPath() {
 }
 
 export function resolveCanonicalDashboardPath(pathname: string) {
-  const aliases: Array<[string, string]> = [
-    ['/dashboard/finance/cash-flow', '/dashboard/finanzas/cash-flow'],
-    ['/dashboard/finance/opex', '/dashboard/finanzas/opex'],
-    ['/dashboard/logistics/inventory', '/dashboard/logistica/inventario'],
-    ['/dashboard/logistics/suppliers', '/dashboard/logistica/insumos'],
-    ['/dashboard/compras/proveedores', '/dashboard/logistica/insumos'],
-  ];
-
-  return aliases.find(([from]) => pathname === from)?.[1] ?? null;
+  return resolveDashboardRouteAlias(pathname);
 }
 
 export function canAccessDashboardPath(

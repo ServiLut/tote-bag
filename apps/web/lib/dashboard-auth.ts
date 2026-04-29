@@ -1,9 +1,18 @@
 import { getApiCandidates as getSharedApiCandidates } from '@/lib/api-config';
 
 export type DashboardRole = 'ADMIN' | 'MANAGER' | 'CUSTOMER';
+export type DashboardRoleContext = {
+  role: DashboardRole | null;
+  debugRoleAllowed: boolean;
+};
 
 export const DASHBOARD_DEBUG_ROLE_COOKIE_NAME = 'dashboard_debug_role';
 export const DASHBOARD_DEBUG_ROLE_HEADER_NAME = 'x-debug-role';
+export const DASHBOARD_ROLE_CONTEXT_RESOLVED_HEADER_NAME =
+  'x-tote-bag-dashboard-role-context';
+export const DASHBOARD_ROLE_HEADER_NAME = 'x-tote-bag-dashboard-role';
+export const DASHBOARD_DEBUG_ROLE_ALLOWED_HEADER_NAME =
+  'x-tote-bag-dashboard-debug-role-allowed';
 
 export const DASHBOARD_DEBUG_ROLE_OPTIONS: readonly DashboardRole[] = [
   'ADMIN',
@@ -152,4 +161,55 @@ export function extractDebugRoleAllowedFromProfilePayload(body: unknown) {
     payload?.data?.debugRoleAllowed === true ||
     payload?.debugRoleAllowed === true
   );
+}
+
+export function extractDashboardRoleContextFromProfilePayload(
+  body: unknown,
+): DashboardRoleContext {
+  return {
+    role: extractRoleFromProfilePayload(body),
+    debugRoleAllowed: extractDebugRoleAllowedFromProfilePayload(body),
+  };
+}
+
+export function buildForwardedDashboardRoleContextHeaders(
+  context: DashboardRoleContext | null | undefined,
+): Record<string, string> {
+  if (!context) {
+    return {};
+  }
+
+  return {
+    [DASHBOARD_ROLE_CONTEXT_RESOLVED_HEADER_NAME]: '1',
+    [DASHBOARD_DEBUG_ROLE_ALLOWED_HEADER_NAME]: context.debugRoleAllowed
+      ? '1'
+      : '0',
+    ...(context.role
+      ? {
+          [DASHBOARD_ROLE_HEADER_NAME]: context.role,
+        }
+      : {}),
+  };
+}
+
+export function readForwardedDashboardRoleContext(
+  headers: Pick<Headers, 'get'>,
+) {
+  const resolved =
+    headers.get(DASHBOARD_ROLE_CONTEXT_RESOLVED_HEADER_NAME) === '1';
+
+  if (!resolved) {
+    return {
+      resolved: false,
+      role: null,
+      debugRoleAllowed: false,
+    } as const;
+  }
+
+  return {
+    resolved: true,
+    role: normalizeDashboardRole(headers.get(DASHBOARD_ROLE_HEADER_NAME)),
+    debugRoleAllowed:
+      headers.get(DASHBOARD_DEBUG_ROLE_ALLOWED_HEADER_NAME) === '1',
+  } as const;
 }

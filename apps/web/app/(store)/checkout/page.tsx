@@ -16,6 +16,7 @@ import {
   getCheckoutInitialAuthStep,
   getCheckoutLoginHref,
 } from '@/lib/frontend-routing';
+import { resolveWompiWidgetStatus } from '@/lib/wompi';
 
 interface WompiWidgetOptions {
   currency: string;
@@ -208,6 +209,16 @@ function CheckoutPageContent() {
   const [selectedDeptId, setSelectedDeptId] = useState<string>('');
   const [selectedCityId, setSelectedCityId] = useState<string>('');
   const [guestErrors, setGuestErrors] = useState<GuestValidationErrors>({});
+  const [wompiScriptLoaded, setWompiScriptLoaded] = useState(false);
+  const [wompiScriptFailed, setWompiScriptFailed] = useState(false);
+
+  const wompiWidgetStatus = resolveWompiWidgetStatus({
+    scriptLoaded: wompiScriptLoaded,
+    scriptFailed: wompiScriptFailed,
+    widgetCheckout:
+      typeof window === 'undefined' ? undefined : window.WidgetCheckout,
+  });
+  const isWompiWidgetReady = wompiWidgetStatus === 'ready';
 
   useEffect(() => {
     const checkSession = async () => {
@@ -365,6 +376,15 @@ function CheckoutPageContent() {
   };
 
   const processCheckout = async (payload: OrderPayload) => {
+    if (!isWompiWidgetReady) {
+      const message =
+        wompiWidgetStatus === 'loading'
+          ? t('checkout_wompi_loading')
+          : t('checkout_wompi_unavailable');
+      toast.error(message);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const res = await apiFetch('/orders', {
@@ -392,8 +412,13 @@ function CheckoutPageContent() {
 
       const signResult = await signRes.json();
       const signData = signResult.data;
+      const widgetCheckout = window.WidgetCheckout;
 
-      const checkout = new window.WidgetCheckout({
+      if (typeof widgetCheckout !== 'function') {
+        throw new Error(t('checkout_wompi_unavailable'));
+      }
+
+      const checkout = new widgetCheckout({
         currency: signData.currency,
         amountInCents: signData.amountInCents,
         reference: signData.reference,
@@ -558,7 +583,18 @@ function CheckoutPageContent() {
 
   return (
     <>
-      <Script src="https://checkout.wompi.co/widget.js" strategy="lazyOnload" />
+      <Script
+        src="https://checkout.wompi.co/widget.js"
+        strategy="lazyOnload"
+        onLoad={() => {
+          setWompiScriptLoaded(true);
+          setWompiScriptFailed(false);
+        }}
+        onError={() => {
+          setWompiScriptLoaded(false);
+          setWompiScriptFailed(true);
+        }}
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <h1 className="text-3xl font-serif font-bold text-primary mb-8">{t('checkout_title')}</h1>
@@ -671,11 +707,20 @@ function CheckoutPageContent() {
                     ))}
                     <button
                       onClick={handleAuthenticatedCheckout}
-                      disabled={isLoading || !selectedAddressId}
+                      disabled={isLoading || !selectedAddressId || !isWompiWidgetReady}
                       className="mt-6 w-full py-4 bg-primary text-base-color font-bold uppercase tracking-widest rounded-sm disabled:opacity-50"
                     >
-                      {isLoading ? t('checkout_processing') : t('checkout_pay_wompi')}
+                      {isLoading
+                        ? t('checkout_processing')
+                        : wompiWidgetStatus === 'loading'
+                          ? t('checkout_wompi_loading')
+                          : t('checkout_pay_wompi')}
                     </button>
+                    <p className="mt-3 text-center text-xs text-muted">
+                      {wompiWidgetStatus === 'unavailable'
+                        ? t('checkout_wompi_unavailable')
+                        : t('checkout_redirect_notice')}
+                    </p>
                   </div>
                 )}
               </div>
@@ -796,12 +841,20 @@ function CheckoutPageContent() {
                   <div className="col-span-full pt-4">
                     <button
                       type="submit"
-                      disabled={isLoading}
+                      disabled={isLoading || !isWompiWidgetReady}
                       className="w-full py-4 btn-primary font-bold uppercase tracking-widest rounded-sm disabled:opacity-50"
                     >
-                      {isLoading ? t('checkout_processing') : t('checkout_continue_wompi')}
+                      {isLoading
+                        ? t('checkout_processing')
+                        : wompiWidgetStatus === 'loading'
+                          ? t('checkout_wompi_loading')
+                          : t('checkout_continue_wompi')}
                     </button>
-                    <p className="text-center text-xs text-muted mt-4">{t('checkout_redirect_notice')}</p>
+                    <p className="text-center text-xs text-muted mt-4">
+                      {wompiWidgetStatus === 'unavailable'
+                        ? t('checkout_wompi_unavailable')
+                        : t('checkout_redirect_notice')}
+                    </p>
                   </div>
                 </form>
               </div>

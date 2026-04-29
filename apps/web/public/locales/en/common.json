@@ -388,6 +388,8 @@
   "checkout_exact_address": "Exact Address",
   "checkout_exact_address_placeholder": "Street 123 # 45-67, Apt 101",
   "checkout_continue_wompi": "Continue to Wompi Payment",
+  "checkout_wompi_loading": "Loading Wompi...",
+  "checkout_wompi_unavailable": "The payment gateway is not available right now. Please try again in a few seconds.",
   "checkout_redirect_notice": "You will be redirected to Wompi Bancolombia's secure payment gateway.",
   "checkout_summary": "Purchase Summary",
   "checkout_shipping_calc": "To be calculated"

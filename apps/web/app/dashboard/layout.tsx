@@ -1,16 +1,17 @@
 import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { createClient } from '@/utils/supabase/server';
 import DashboardLayoutClient from '@/components/dashboard/DashboardLayoutClient';
 import { ThemeProvider } from '@/components/theme-provider';
 import {
   buildDashboardAuthHeaders,
-  extractRoleFromProfilePayload,
-  extractDebugRoleAllowedFromProfilePayload,
+  extractDashboardRoleContextFromProfilePayload,
   getDashboardRoleForOperatorEmail,
   getApiCandidates,
   DASHBOARD_DEBUG_ROLE_COOKIE_NAME,
+  readForwardedDashboardRoleContext,
   parseDashboardDebugRoleCookie,
+  type DashboardRoleContext,
   type DashboardRole,
 } from '@/lib/dashboard-auth';
 import {
@@ -20,7 +21,7 @@ import {
 async function getCurrentRoleContext(
   accessToken: string,
   debugRole: DashboardRole | null,
-): Promise<{ role: DashboardRole | null; debugRoleAllowed: boolean }> {
+): Promise<DashboardRoleContext> {
   for (const apiUrl of getApiCandidates()) {
     try {
       const res = await fetch(`${apiUrl}/profiles/me`, {
@@ -31,13 +32,7 @@ async function getCurrentRoleContext(
       if (!res.ok) continue;
 
       const body = await res.json();
-      const role = extractRoleFromProfilePayload(body);
-      if (role) {
-        return {
-          role,
-          debugRoleAllowed: extractDebugRoleAllowedFromProfilePayload(body),
-        };
-      }
+      return extractDashboardRoleContextFromProfilePayload(body);
     } catch {
       continue;
     }
@@ -53,6 +48,7 @@ export default async function DashboardLayout({
 }) {
   const pathname = '/dashboard';
   const cookieStore = await cookies();
+  const requestHeaders = await headers();
   const supabase = await createClient();
   const {
     data: { session },
@@ -74,10 +70,10 @@ export default async function DashboardLayout({
     redirect('/login');
   }
 
-  const roleContext = await getCurrentRoleContext(
-    session.access_token,
-    debugRole,
-  );
+  const forwardedRoleContext = readForwardedDashboardRoleContext(requestHeaders);
+  const roleContext = forwardedRoleContext.resolved
+    ? forwardedRoleContext
+    : await getCurrentRoleContext(session.access_token, debugRole);
   const role =
     roleContext.role ?? getDashboardRoleForOperatorEmail(session.user.email);
 

@@ -1,41 +1,36 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import {
-  extractRoleFromProfilePayload,
+  buildDashboardAuthHeaders,
+  buildForwardedDashboardRoleContextHeaders,
+  DASHBOARD_DEBUG_ROLE_ALLOWED_HEADER_NAME,
   DASHBOARD_DEBUG_ROLE_COOKIE_NAME,
-  DASHBOARD_DEBUG_ROLE_HEADER_NAME,
+  DASHBOARD_ROLE_CONTEXT_RESOLVED_HEADER_NAME,
+  DASHBOARD_ROLE_HEADER_NAME,
+  extractDashboardRoleContextFromProfilePayload,
   getApiCandidates,
   parseDashboardDebugRoleCookie,
+  type DashboardRoleContext,
   type DashboardRole,
 } from '@/lib/dashboard-auth';
 import { tryGetSupabaseEnv } from '@/lib/env';
 import { resolveProxyAccess } from '@/lib/frontend-routing';
 
-async function getRoleFromApi(
+async function getRoleContextFromApi(
   accessToken: string,
   debugRole: DashboardRole | null,
-): Promise<DashboardRole | null> {
+): Promise<DashboardRoleContext | null> {
   for (const apiUrl of getApiCandidates()) {
     try {
       const res = await fetch(`${apiUrl}/profiles/me`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          ...(debugRole
-            ? {
-                [DASHBOARD_DEBUG_ROLE_HEADER_NAME]: debugRole,
-              }
-            : {}),
-        },
+        headers: buildDashboardAuthHeaders(accessToken, debugRole),
         cache: 'no-store',
       });
 
       if (!res.ok) continue;
 
       const body = await res.json();
-      const role = extractRoleFromProfilePayload(body);
-      if (role) {
-        return role;
-      }
+      return extractDashboardRoleContextFromProfilePayload(body);
     } catch {
       continue;
     }
@@ -46,11 +41,32 @@ async function getRoleFromApi(
 
 export async function proxy(request: NextRequest) {
   const env = tryGetSupabaseEnv();
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  });
+  const requestHeaders = new Headers(request.headers);
+  const pendingCookies: Array<{
+    name: string;
+    value: string;
+    options?: Parameters<NextResponse['cookies']['set']>[2];
+  }> = [];
+  requestHeaders.delete(DASHBOARD_ROLE_CONTEXT_RESOLVED_HEADER_NAME);
+  requestHeaders.delete(DASHBOARD_ROLE_HEADER_NAME);
+  requestHeaders.delete(DASHBOARD_DEBUG_ROLE_ALLOWED_HEADER_NAME);
+
+  const buildResponse = (kind: 'next' | 'redirect', redirectUrl?: URL) => {
+    const nextResponse =
+      kind === 'redirect' && redirectUrl
+        ? NextResponse.redirect(redirectUrl)
+        : NextResponse.next({
+            request: {
+              headers: requestHeaders,
+            },
+          });
+
+    pendingCookies.forEach(({ name, value, options }) =>
+      nextResponse.cookies.set(name, value, options),
+    );
+
+    return nextResponse;
+  };
 
   if (!env) {
     const redirectPath = resolveProxyAccess({
@@ -61,8 +77,8 @@ export async function proxy(request: NextRequest) {
     });
 
     return redirectPath
-      ? NextResponse.redirect(new URL(redirectPath, request.url))
-      : response;
+      ? buildResponse('redirect', new URL(redirectPath, request.url))
+      : buildResponse('next');
   }
 
   const supabase = createServerClient(env.supabaseUrl, env.supabaseAnonKey, {
@@ -70,16 +86,30 @@ export async function proxy(request: NextRequest) {
       getAll() {
         return request.cookies.getAll();
       },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) => {
+      setAll(cookiesBatch) {
+        cookiesBatch.forEach(({ name, value }) => {
           request.cookies.set(name, value);
         });
-        response = NextResponse.next({
-          request,
+        cookiesBatch.forEach(({ name, value, options }) => {
+          const existingCookieIndex = pendingCookies.findIndex(
+            (cookie) => cookie.name === name,
+          );
+
+          if (existingCookieIndex >= 0) {
+            pendingCookies[existingCookieIndex] = {
+              name,
+              value,
+              options,
+            };
+            return;
+          }
+
+          pendingCookies.push({
+            name,
+            value,
+            options,
+          });
         });
-        cookiesToSet.forEach(({ name, value, options }) =>
-          response.cookies.set(name, value, options),
-        );
       },
     },
   });
@@ -98,7 +128,19 @@ export async function proxy(request: NextRequest) {
     } = await supabase.auth.getSession();
 
     if (session?.access_token) {
-      role = await getRoleFromApi(session.access_token, debugRole);
+      const roleContext = await getRoleContextFromApi(
+        session.access_token,
+        debugRole,
+      );
+      if (roleContext) {
+        role = roleContext.role;
+
+        for (const [name, value] of Object.entries(
+          buildForwardedDashboardRoleContextHeaders(roleContext),
+        )) {
+          requestHeaders.set(name, value);
+        }
+      }
     }
   }
 
@@ -109,10 +151,10 @@ export async function proxy(request: NextRequest) {
     requestedRedirect: request.nextUrl.searchParams.get('redirect'),
   });
   if (redirectPath) {
-    return NextResponse.redirect(new URL(redirectPath, request.url));
+    return buildResponse('redirect', new URL(redirectPath, request.url));
   }
 
-  return response;
+  return buildResponse('next');
 }
 
 export const config = {

@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { tryGetSupabaseEnv } from '@/lib/env'
+import { getSupabaseEnv, tryGetSupabaseEnv } from '@/lib/env'
 
 type MissingServerSupabaseClient = {
   auth: {
@@ -35,12 +35,16 @@ function createMissingServerClient(): MissingServerSupabaseClient {
 }
 
 export async function createClient() {
-  const cookieStore = await cookies()
-  const env = tryGetSupabaseEnv()
+  const env =
+    process.env.NODE_ENV === 'production'
+      ? getSupabaseEnv()
+      : tryGetSupabaseEnv()
 
   if (!env) {
     return createMissingServerClient()
   }
+
+  const cookieStore = await cookies()
 
   return createServerClient(
     env.supabaseUrl,
