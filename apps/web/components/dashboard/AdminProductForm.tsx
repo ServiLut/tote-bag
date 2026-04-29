@@ -126,6 +126,28 @@ const DEFAULT_PRICING_RULES: PricingRuleData[] = [];
 
 const normalizeVariantField = (value: string) => value.trim().toLowerCase();
 
+const coerceNumericValue = (value: unknown, fallback = 0) => {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : fallback;
+  }
+
+  if (typeof value === 'string') {
+    const sanitizedValue = sanitizeDecimalInput(value);
+    if (!sanitizedValue) {
+      return fallback;
+    }
+
+    const parsedValue = parseLocalizedNumber(sanitizedValue);
+    return Number.isFinite(parsedValue) ? parsedValue : fallback;
+  }
+
+  if (value !== null && value !== undefined) {
+    return coerceNumericValue(String(value), fallback);
+  }
+
+  return fallback;
+};
+
 const cleanSkuToken = (value: string) =>
   value
     .normalize('NFD')
@@ -241,17 +263,31 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
                 sku: variant.sku || '',
                 color: variant.color || '',
                 imageUrl: variant.imageUrl || '',
-                costPrice: variant.costPrice ?? 0,
-                totalCost: variant.totalCost ?? variant.costPrice ?? 0,
-                salePrice: variant.salePrice ?? 0,
-                netSalePrice: variant.netSalePrice ?? null,
-                netPrice: variant.netPrice ?? variant.netSalePrice ?? null,
-                taxAmount: variant.taxAmount ?? null,
-                marginPercentage: variant.marginPercentage ?? null,
+                costPrice: coerceNumericValue(variant.costPrice, 0),
+                totalCost: coerceNumericValue(variant.totalCost ?? variant.costPrice, 0),
+                salePrice: coerceNumericValue(variant.salePrice, 0),
+                netSalePrice:
+                  variant.netSalePrice === null || variant.netSalePrice === undefined
+                    ? null
+                    : coerceNumericValue(variant.netSalePrice, 0),
+                netPrice:
+                  variant.netPrice === null || variant.netPrice === undefined
+                    ? variant.netSalePrice === null || variant.netSalePrice === undefined
+                      ? null
+                      : coerceNumericValue(variant.netSalePrice, 0)
+                    : coerceNumericValue(variant.netPrice, 0),
+                taxAmount:
+                  variant.taxAmount === null || variant.taxAmount === undefined
+                    ? null
+                    : coerceNumericValue(variant.taxAmount, 0),
+                marginPercentage:
+                  variant.marginPercentage === null || variant.marginPercentage === undefined
+                    ? null
+                    : coerceNumericValue(variant.marginPercentage, 0),
                 taxRate: normalizeTaxRateValue(variant.taxRate),
-                minPrice: variant.minPrice ?? 0,
-                comparePrice: variant.comparePrice ?? 0,
-                stock: variant.stock ?? 0,
+                minPrice: coerceNumericValue(variant.minPrice, 0),
+                comparePrice: coerceNumericValue(variant.comparePrice, 0),
+                stock: coerceNumericValue(variant.stock, 0),
                 isActive: variant.isActive ?? true,
               }))
             : INITIAL_STATE.variants,
@@ -261,12 +297,27 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
                 .map((attribute) => ({
                   type: attribute.type,
                   value: attribute.value,
-                  priceModifier: attribute.priceModifier,
-                  sortOrder: attribute.sortOrder,
+                  priceModifier: coerceNumericValue(attribute.priceModifier, 0),
+                  sortOrder: coerceNumericValue(attribute.sortOrder, 0),
                 }))
             : [],
           pricingRules: initialData.pricingRules && initialData.pricingRules.length > 0
-            ? initialData.pricingRules
+            ? initialData.pricingRules.map((rule) => ({
+                scope: rule.scope,
+                minQty: coerceNumericValue(rule.minQty, 1),
+                maxQty:
+                  rule.maxQty === null || rule.maxQty === undefined
+                    ? undefined
+                    : coerceNumericValue(rule.maxQty, 0),
+                discountPct:
+                  rule.discountPct === null || rule.discountPct === undefined
+                    ? undefined
+                    : coerceNumericValue(rule.discountPct, 0),
+                fixedUnitPrice:
+                  rule.fixedUnitPrice === null || rule.fixedUnitPrice === undefined
+                    ? undefined
+                    : coerceNumericValue(rule.fixedUnitPrice, 0),
+              }))
             : [],
         }
       : INITIAL_STATE
@@ -282,20 +333,26 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [isLoadingCollections, setIsLoadingCollections] = useState(false);
 
-  const formatBackendCurrency = (value?: number | null) =>
-    typeof value === 'number' && Number.isFinite(value)
-      ? `$${value.toLocaleString('es-CO')}`
+  const formatBackendCurrency = (value?: number | string | null) => {
+    const numericValue = coerceNumericValue(value, Number.NaN);
+    return Number.isFinite(numericValue)
+      ? `$${numericValue.toLocaleString('es-CO')}`
       : 'Se calcula al guardar';
+  };
 
-  const formatBackendWholeCurrency = (value?: number | null) =>
-    typeof value === 'number' && Number.isFinite(value)
-      ? `$${value.toLocaleString('es-CO', { maximumFractionDigits: 0 })}`
+  const formatBackendWholeCurrency = (value?: number | string | null) => {
+    const numericValue = coerceNumericValue(value, Number.NaN);
+    return Number.isFinite(numericValue)
+      ? `$${numericValue.toLocaleString('es-CO', { maximumFractionDigits: 0 })}`
       : 'Se calcula al guardar';
+  };
 
-  const formatBackendPercentage = (value?: number | null) =>
-    typeof value === 'number' && Number.isFinite(value)
-      ? `${value.toFixed(2)}%`
+  const formatBackendPercentage = (value?: number | string | null) => {
+    const numericValue = coerceNumericValue(value, Number.NaN);
+    return Number.isFinite(numericValue)
+      ? `${numericValue.toFixed(2)}%`
       : 'Se calcula al guardar';
+  };
 
   const variantPricePreviewSignature = JSON.stringify(
     formData.variants.map((variant) => ({
@@ -503,7 +560,7 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
 
               const responseBody: ApiResponse<VariantPricePreviewData> = await response.json();
               const preview = responseBody.data;
-              const backendSalePrice = preview.salePrice ?? preview.price ?? 0;
+              const backendSalePrice = coerceNumericValue(preview.salePrice ?? preview.price, 0);
 
               if (isCancelled) {
                 return;
@@ -530,9 +587,12 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
                 nextVariants[input.index] = {
                   ...currentVariant,
                   salePrice: backendSalePrice,
-                  netPrice: preview.netPrice,
-                  taxAmount: preview.taxAmount,
-                  marginPercentage: preview.marginPercentage,
+                  netPrice: coerceNumericValue(preview.netPrice, 0),
+                  taxAmount: coerceNumericValue(preview.taxAmount, 0),
+                  marginPercentage:
+                    preview.marginPercentage === null || preview.marginPercentage === undefined
+                      ? null
+                      : coerceNumericValue(preview.marginPercentage, 0),
                   taxRate: preview.taxRate,
                 };
 
@@ -641,12 +701,14 @@ export const AdminProductForm = ({ initialData }: AdminProductFormProps) => {
   const activeVariants = formData.variants.filter((variant) => variant.isActive);
   const referenceVariants = activeVariants.length > 0 ? activeVariants : formData.variants;
   const lowestVariantPrice = referenceVariants.reduce(
-    (min, variant) =>
-      variant.salePrice > 0 && variant.salePrice < min ? variant.salePrice : min,
+    (min, variant) => {
+      const salePrice = coerceNumericValue(variant.salePrice, 0);
+      return salePrice > 0 && salePrice < min ? salePrice : min;
+    },
     Number.POSITIVE_INFINITY,
   );
   const highestVariantPrice = referenceVariants.reduce(
-    (max, variant) => Math.max(max, variant.salePrice),
+    (max, variant) => Math.max(max, coerceNumericValue(variant.salePrice, 0)),
     0,
   );
 
@@ -1094,7 +1156,27 @@ const addVariant = () => {
       });
 
       if (response.status === 401 || response.status === 403) {
-        toast.error('No tienes permisos para guardar productos');
+        let errorMsg = 'No tienes permisos para guardar productos';
+
+        try {
+          const errorData = await response.json();
+          const responseMessage =
+            typeof errorData?.message === 'string' || Array.isArray(errorData?.message)
+              ? errorData.message
+              : typeof errorData?.error === 'string'
+                ? errorData.error
+                : undefined;
+
+          if (Array.isArray(responseMessage)) {
+            errorMsg = responseMessage.join(', ');
+          } else if (responseMessage) {
+            errorMsg = responseMessage;
+          }
+        } catch {
+          // Keep fallback permission message if response JSON is invalid.
+        }
+
+        toast.error(errorMsg);
         return;
       }
 

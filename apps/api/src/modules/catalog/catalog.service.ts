@@ -178,6 +178,20 @@ export class CatalogService {
     return value?.trim().toLowerCase() ?? '';
   }
 
+  private async ensureProductIsActive(id: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        isActive: true,
+      },
+    });
+
+    if (!product || !product.isActive) {
+      throw new NotFoundException(`Product with ID ${id} not found`);
+    }
+  }
+
   private normalizeSkuToken(value?: string | null) {
     return (
       value
@@ -1042,6 +1056,12 @@ export class CatalogService {
         );
       }
 
+      if (!collection.isActive) {
+        throw new BadRequestException(
+          `Collection with ID ${collectionId} is inactive and cannot be assigned to active products`,
+        );
+      }
+
       return collection;
     }
 
@@ -1059,6 +1079,12 @@ export class CatalogService {
     let collection = await this.prisma.collection.findFirst({
       where: { OR: [{ name: collectionName }, { slug }] },
     });
+
+    if (collection && !collection.isActive) {
+      throw new BadRequestException(
+        `Collection "${collectionName}" is inactive and cannot be assigned to active products`,
+      );
+    }
 
     if (!collection) {
       collection = await this.prisma.collection.create({
@@ -1219,6 +1245,8 @@ export class CatalogService {
     updateProductDto: UpdateProductDto,
     actorUserId?: string,
   ): Promise<ProductWithCalculatedVariantPricing> {
+    await this.ensureProductIsActive(id);
+
     const {
       variants,
       images,
@@ -1898,6 +1926,11 @@ export class CatalogService {
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
+
+    if (!product.isActive) {
+      throw new NotFoundException(`Product with ID ${id} not found`);
+    }
+
     return this.withCalculatedVariantPricing(product);
   }
 

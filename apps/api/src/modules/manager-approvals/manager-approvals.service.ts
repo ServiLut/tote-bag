@@ -102,7 +102,7 @@ export class ManagerApprovalsService {
     const role = await this.getEffectiveRole(input.actorUserId);
     const tx = input.tx ?? this.prisma;
 
-    if (role === Role.MANAGER) {
+    if (role === Role.MANAGER || role === Role.ADMIN) {
       return this.createInlineManagerApproval(input, tx);
     }
 
@@ -213,9 +213,9 @@ export class ManagerApprovalsService {
   private async assertManager(userId: string) {
     const role = await this.getEffectiveRole(userId);
 
-    if (role !== Role.MANAGER) {
+    if (role !== Role.MANAGER && role !== Role.ADMIN) {
       throw new ForbiddenException(
-        'Solo los usuarios GERENTE pueden emitir aprobaciones gerenciales.',
+        'Solo los usuarios GERENTE o ADMIN pueden emitir aprobaciones gerenciales.',
       );
     }
   }

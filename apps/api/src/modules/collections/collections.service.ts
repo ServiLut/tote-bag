@@ -15,6 +15,9 @@ export class CollectionsService {
 
   async findAll() {
     return this.prisma.collection.findMany({
+      where: {
+        isActive: true,
+      },
       include: {
         _count: {
           select: { products: true },

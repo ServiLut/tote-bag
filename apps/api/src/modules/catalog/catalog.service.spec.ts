@@ -1,5 +1,5 @@
 import { CatalogService } from './catalog.service';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 describe('CatalogService', () => {
   const tx = {
@@ -47,8 +47,14 @@ describe('CatalogService', () => {
     personalizationRequest: {
       count: jest.fn(),
     },
+    collection: {
+      findUnique: jest.fn(),
+      findFirst: jest.fn(),
+      create: jest.fn(),
+    },
     product: {
       findMany: jest.fn(),
+      findUnique: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
     },
@@ -62,6 +68,12 @@ describe('CatalogService', () => {
     prisma.purchaseBatchLine.count.mockResolvedValue(0);
     prisma.variant.count.mockResolvedValue(0);
     prisma.product.findMany.mockResolvedValue([]);
+    prisma.product.findUnique.mockResolvedValue({
+      id: 'product-1',
+      isActive: true,
+    });
+    prisma.collection.findUnique.mockResolvedValue(null);
+    prisma.collection.findFirst.mockResolvedValue(null);
     tx.purchaseBatchLine.findMany.mockResolvedValue([]);
     service = new CatalogService(
       prisma as never,
@@ -660,6 +672,60 @@ describe('CatalogService', () => {
       where: { id: 'product-1' },
       data: { isActive: false, status: 'BAJO_PEDIDO' },
     });
+  });
+
+  it('rejects assigning inactive collections by id', async () => {
+    prisma.collection.findUnique.mockResolvedValue({
+      id: 'collection-1',
+      name: 'Archivada',
+      isActive: false,
+    });
+
+    await expect(
+      service['resolveCollection']({ collectionId: 'collection-1' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects assigning inactive collections by name', async () => {
+    prisma.collection.findFirst.mockResolvedValue({
+      id: 'collection-1',
+      name: 'Archivada',
+      slug: 'archivada',
+      isActive: false,
+    });
+
+    await expect(
+      service['resolveCollection']({ collectionName: 'Archivada' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects loading archived products in the admin detail endpoint', async () => {
+    prisma.product.findUnique.mockResolvedValue({
+      id: 'product-archived',
+      isActive: false,
+      variants: [],
+      images: [],
+      collection: null,
+      attributes: [],
+      pricingRules: [],
+    });
+
+    await expect(
+      service.findOneAdmin('product-archived'),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('rejects updating archived products', async () => {
+    prisma.product.findUnique.mockResolvedValue({
+      id: 'product-archived',
+      isActive: false,
+    });
+
+    await expect(service.update('product-archived', {})).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
   it('hard-deletes products that have no historical references', async () => {

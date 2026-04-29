@@ -15,6 +15,7 @@ import { useEffect, useState } from 'react';
 import { ApiResponse } from '@/types/api';
 import { apiFetch } from '@/utils/api';
 import { useDashboardAuth } from '@/components/dashboard/DashboardAuthContext';
+import { createClient } from '@/utils/supabase/client';
 
 interface Product {
   id: string;
@@ -43,22 +44,36 @@ export default function EditProductPage() {
   const [productData, setProductData] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const supabase = createClient();
 
   useEffect(() => {
     if (!id) return;
 
     const fetchProduct = async () => {
       try {
-        if (!accessToken) {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token ?? accessToken;
+
+        if (!token) {
           throw new Error('Tu sesion expiro. Inicia sesion de nuevo.');
         }
 
         const res = await apiFetch(`/catalog/admin/${id}`, {
           headers: {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
           },
         });
-        if (!res.ok) throw new Error('No se pudo cargar el producto');
+
+        if (res.status === 401 || res.status === 403) {
+          throw new Error(
+            'No tienes permisos para editar productos con esta sesion.',
+          );
+        }
+
+        if (!res.ok) {
+          throw new Error('No se pudo cargar el producto');
+        }
+
         const responseBody: ApiResponse<Product> = await res.json();
         setProductData(responseBody.data);
       } catch (err) {
@@ -70,7 +85,7 @@ export default function EditProductPage() {
     };
 
     fetchProduct();
-  }, [accessToken, id]);
+  }, [accessToken, id, supabase.auth]);
 
   if (loading) {
     return (

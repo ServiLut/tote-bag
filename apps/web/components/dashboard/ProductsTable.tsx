@@ -26,6 +26,8 @@ interface Variant {
   size?: string;
   color: string;
   stock: number;
+  stockCommitted?: number;
+  stockAvailable?: number;
   salePrice?: number | null;
   netSalePrice?: number | null;
   netPrice?: number | null;
@@ -60,6 +62,7 @@ interface Attribute {
   type: 'SIZE' | 'MATERIAL' | 'QUALITY' | 'LINE';
   value: string;
   priceModifier: number;
+  isActive?: boolean;
 }
 
 interface PricingRule {
@@ -68,6 +71,7 @@ interface PricingRule {
   minQty: number;
   discountPct?: number;
   fixedUnitPrice?: number;
+  isActive?: boolean;
 }
 
 interface Product {
@@ -91,14 +95,38 @@ function ensureArray<T>(value: T[] | null | undefined): T[] {
   return Array.isArray(value) ? value : [];
 }
 
+function getActiveVariants(variants: Variant[]) {
+  return variants.filter((variant) => variant.isActive !== false);
+}
+
+function getActiveAttributes(attributes: Attribute[]) {
+  return attributes.filter((attribute) => attribute.isActive !== false);
+}
+
+function getActivePricingRules(pricingRules: PricingRule[]) {
+  return pricingRules.filter((rule) => rule.isActive !== false);
+}
+
 function getReferenceVariant(variants: Variant[]) {
-  const activeVariants = variants.filter((variant) => variant.isActive !== false);
+  const activeVariants = getActiveVariants(variants);
   return activeVariants
     .filter((variant) => typeof variant.salePrice === 'number')
     .sort((left, right) => (left.salePrice ?? 0) - (right.salePrice ?? 0))[0]
     || activeVariants[0]
     || variants[0]
     || null;
+}
+
+function getVariantAvailableStock(variant: Variant) {
+  if (typeof variant.stockAvailable === 'number') {
+    return variant.stockAvailable;
+  }
+
+  const stockCommitted = typeof variant.stockCommitted === 'number'
+    ? variant.stockCommitted
+    : 0;
+
+  return Math.max(variant.stock - stockCommitted, 0);
 }
 
 function formatProductStatus(status: Product['status']) {
@@ -340,7 +368,7 @@ export default function ProductsTable() {
           <tbody className="divide-y divide-theme">
             {products.map((product) => {
               const productImages = ensureArray(product.images);
-              const productVariants = ensureArray(product.variants);
+              const productVariants = getActiveVariants(ensureArray(product.variants));
               const referenceVariant = getReferenceVariant(productVariants);
               const referenceSalePrice =
                 referenceVariant?.salePrice ?? product.basePrice;
@@ -485,9 +513,9 @@ export default function ProductsTable() {
       {selectedProduct && (
         (() => {
           const selectedImages = ensureArray(selectedProduct.images);
-          const selectedVariants = ensureArray(selectedProduct.variants);
-          const selectedAttributes = ensureArray(selectedProduct.attributes);
-          const selectedPricingRules = ensureArray(selectedProduct.pricingRules);
+          const selectedVariants = getActiveVariants(ensureArray(selectedProduct.variants));
+          const selectedAttributes = getActiveAttributes(ensureArray(selectedProduct.attributes));
+          const selectedPricingRules = getActivePricingRules(ensureArray(selectedProduct.pricingRules));
           const selectedReferenceVariant = getReferenceVariant(selectedVariants);
           const selectedReferenceSalePrice =
             selectedReferenceVariant?.salePrice ?? selectedProduct.basePrice;
@@ -625,8 +653,8 @@ export default function ProductsTable() {
                                 </td>
                                 <td className="px-4 py-2.5 text-right">
                                   <div className="flex items-center justify-end gap-3">
-                                    <span className="font-black text-primary bg-base/50 px-2 py-0.5 rounded-md border border-theme/30" title="Stock actual (solo lectura)">
-                                      {v.stock}
+                                    <span className="font-black text-primary bg-base/50 px-2 py-0.5 rounded-md border border-theme/30" title="Stock disponible (descuenta reservas)">
+                                      {getVariantAvailableStock(v)}
                                     </span>
                                     {canOpenPurchaseReception ? (
                                       <Link
