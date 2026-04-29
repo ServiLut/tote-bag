@@ -1,5 +1,4 @@
 'use client';
-
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { Product, Variant } from '@/types/product';
@@ -46,6 +45,15 @@ interface PricingSnapshot {
   configCode: string;
   minPriceGuardApplied: boolean;
   [key: string]: unknown;
+}
+
+function normalizeConfigCode(value: unknown): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const trimmedValue = value.trim();
+  return trimmedValue.length > 0 ? trimmedValue : undefined;
 }
 
 export default function ProductDetailClient({ product }: ProductDetailClientProps) {
@@ -148,13 +156,16 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
           data.unitPrice || selectedVariant.salePrice || fallbackVariantPrice,
         );
         if (data.snapshot) {
-          setConfigCode(data.snapshot.configCode);
+          setConfigCode(normalizeConfigCode(data.snapshot.configCode));
           setPricingSnapshot(data.snapshot);
+        } else {
+          setConfigCode(undefined);
         }
       }
     } catch (err) {
       console.error('Pricing calculation error:', err);
       setCalculatedPrice(selectedVariant.salePrice ?? fallbackVariantPrice);
+      setConfigCode(undefined);
     } finally {
       setIsPricingLoading(false);
     }
@@ -215,7 +226,6 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     ? activeVariants.filter((variant) => variant.size === selections.size)
     : activeVariants;
   const colorOptions = variantsForSelectedSize.length > 0 ? variantsForSelectedSize : activeVariants;
-
   const groupedAttributes = (config?.attributes || []).reduce((acc, attr) => {
     if (!acc[attr.type]) acc[attr.type] = [];
     acc[attr.type].push(attr);
@@ -269,7 +279,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
               <span className="text-[10px] font-bold uppercase tracking-wide text-muted">
                 IVA incluido
               </span>
-              {selectedVariant.comparePrice && selectedVariant.comparePrice > calculatedPrice && (
+              {typeof selectedVariant.comparePrice === 'number' && selectedVariant.comparePrice > calculatedPrice && (
                 <span className="text-sm text-muted line-through">
                   {formatWholeCurrency(selectedVariant.comparePrice)}
                 </span>

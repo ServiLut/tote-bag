@@ -141,12 +141,17 @@ function getRequiredVariantId(item: CartItem) {
 
 const CUSTOM_TOTE_FALLBACK_IMAGE = '/tote_bag_lifestyle.png';
 
+function getPrimaryProductImage(item: CartItem) {
+  return [...(item.product.images || [])]
+    .sort((left, right) => left.position - right.position)[0]?.url;
+}
+
 function getCheckoutItemImage(item: CartItem) {
   if (item.isCustom) {
     return item.customImageURL || CUSTOM_TOTE_FALLBACK_IMAGE;
   }
 
-  return item.product.images[0]?.url || item.variant.imageUrl || CUSTOM_TOTE_FALLBACK_IMAGE;
+  return getPrimaryProductImage(item) || item.variant.imageUrl || CUSTOM_TOTE_FALLBACK_IMAGE;
 }
 
 function CheckoutItemImage({ item }: { item: CartItem }) {

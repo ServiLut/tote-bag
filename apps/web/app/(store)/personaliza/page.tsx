@@ -9,14 +9,37 @@ export const metadata: Metadata = {
     'Sube tu diseno, elige la configuracion base y envia tu solicitud de personalizacion.',
 };
 
-export default async function PersonalizaPage() {
+interface PageProps {
+  searchParams: Promise<{
+    product?: string;
+    productId?: string;
+  }>;
+}
+
+export default async function PersonalizaPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const requestedProductId =
+    typeof params.productId === 'string' && params.productId.trim().length > 0
+      ? params.productId.trim()
+      : undefined;
+  const requestedProduct =
+    typeof params.product === 'string' && params.product.trim().length > 0
+      ? params.product.trim()
+      : 'tote-bag-clasica';
+  const personalizationParams = new URLSearchParams();
+  if (requestedProductId) {
+    personalizationParams.set('productId', requestedProductId);
+  } else {
+    personalizationParams.set('product', requestedProduct);
+  }
+  const personalizationPath = `/personaliza?${personalizationParams.toString()}`;
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/login?redirect=/personaliza');
+    redirect(`/login?redirect=${encodeURIComponent(personalizationPath)}`);
   }
 
   return (
@@ -32,7 +55,11 @@ export default async function PersonalizaPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-0 md:px-4 pb-20">
-        <PersonalizerWizard productSlug="tote-bag-clasica" mode="direct" />
+        <PersonalizerWizard
+          productId={requestedProductId}
+          productSlug={requestedProduct}
+          mode="direct"
+        />
       </div>
     </div>
   );

@@ -20,6 +20,7 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import {
   AttributeType,
   BatchStatus,
+  PurchaseBatchItemType,
   ProductStatus,
 } from '../../generated/client/enums';
 import {
@@ -568,6 +569,12 @@ export class CatalogService {
     };
   }
 
+  private hasPublicVariants(
+    product: Pick<ProductWithCalculatedVariantPricing, 'variants'>,
+  ) {
+    return product.variants.some((variant) => variant.isActive);
+  }
+
   private preparePricingRules(rules?: CreatePricingRuleDto[]) {
     return (rules ?? []).map((rule) => ({
       scope: rule.scope,
@@ -583,6 +590,12 @@ export class CatalogService {
     variants: PreparedVariant[],
     attributes?: CreateProductAttributeDto[],
   ) {
+    if (!variants.some((variant) => variant.isActive)) {
+      throw new BadRequestException(
+        'Debes mantener al menos una variante activa vendible.',
+      );
+    }
+
     const duplicateSkuCheck = new Set<string>();
     const duplicateCombinationCheck = new Set<string>();
     const requiresSize = this.hasVariantBasedSizing(variants, attributes);
@@ -1073,7 +1086,23 @@ export class CatalogService {
         where: { productId },
       }),
       this.prisma.purchaseBatch.count({
-        where: { productId },
+        where: {
+          OR: [
+            { productId },
+            {
+              lines: {
+                some: {
+                  itemType: PurchaseBatchItemType.VARIANT,
+                  variant: {
+                    is: {
+                      productId,
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        },
       }),
       this.prisma.personalizationRequest.count({
         where: { productId },
@@ -1089,23 +1118,45 @@ export class CatalogService {
   }
 
   private async hasActiveInventory(productId: string) {
-    const [activeBatchesCount, variantsWithStockCount] = await Promise.all([
-      this.prisma.purchaseBatch.count({
-        where: {
-          productId,
-          status: BatchStatus.IN_STOCK,
-          quantityRemaining: { gt: 0 },
-        },
-      }),
-      this.prisma.variant.count({
-        where: {
-          productId,
-          stock: { gt: 0 },
-        },
-      }),
-    ]);
+    const [activeBatchesCount, activeBatchLinesCount, variantsWithStockCount] =
+      await Promise.all([
+        this.prisma.purchaseBatch.count({
+          where: {
+            productId,
+            deletedAt: null,
+            status: BatchStatus.IN_STOCK,
+            quantityRemaining: { gt: 0 },
+          },
+        }),
+        this.prisma.purchaseBatchLine.count({
+          where: {
+            itemType: PurchaseBatchItemType.VARIANT,
+            status: BatchStatus.IN_STOCK,
+            quantityRemaining: { gt: 0 },
+            variant: {
+              is: {
+                productId,
+              },
+            },
+            purchaseBatch: {
+              status: BatchStatus.IN_STOCK,
+              deletedAt: null,
+            },
+          },
+        }),
+        this.prisma.variant.count({
+          where: {
+            productId,
+            stock: { gt: 0 },
+          },
+        }),
+      ]);
 
-    return activeBatchesCount > 0 || variantsWithStockCount > 0;
+    return (
+      activeBatchesCount > 0 ||
+      activeBatchLinesCount > 0 ||
+      variantsWithStockCount > 0
+    );
   }
 
   private async assertVariantsCanBeDeactivated(
@@ -1116,7 +1167,7 @@ export class CatalogService {
       return;
     }
 
-    const [variantsWithStock, activeBatches] = await Promise.all([
+    const [variantsWithStock, activeBatchLines] = await Promise.all([
       tx.variant.findMany({
         where: {
           id: { in: variantIds },
@@ -1126,11 +1177,16 @@ export class CatalogService {
           sku: true,
         },
       }),
-      tx.purchaseBatch.findMany({
+      tx.purchaseBatchLine.findMany({
         where: {
           variantId: { in: variantIds },
+          itemType: PurchaseBatchItemType.VARIANT,
           status: BatchStatus.IN_STOCK,
           quantityRemaining: { gt: 0 },
+          purchaseBatch: {
+            status: BatchStatus.IN_STOCK,
+            deletedAt: null,
+          },
         },
         select: {
           variant: {
@@ -1145,8 +1201,8 @@ export class CatalogService {
     const blockedSkus = Array.from(
       new Set([
         ...variantsWithStock.map((variant) => variant.sku),
-        ...activeBatches
-          .map((batch) => batch.variant?.sku)
+        ...activeBatchLines
+          .map((line) => line.variant?.sku)
           .filter((sku): sku is string => !!sku),
       ]),
     );
@@ -1614,7 +1670,9 @@ export class CatalogService {
 
   async findAll(filters: CatalogFilters): Promise<PublicProduct[]> {
     const products = await this.findAllAdmin(filters);
-    return products.map((product) => this.toPublicProduct(product));
+    return products
+      .filter((product) => this.hasPublicVariants(product))
+      .map((product) => this.toPublicProduct(product));
   }
 
   async findAllAdmin(
@@ -1760,6 +1818,11 @@ export class CatalogService {
     const products = await this.prisma.product.findMany({
       where: {
         isActive: true,
+        variants: {
+          some: {
+            isActive: true,
+          },
+        },
         OR: [
           { name: { contains: trimmed, mode: 'insensitive' } },
           { description: { contains: trimmed, mode: 'insensitive' } },
@@ -1815,7 +1878,7 @@ export class CatalogService {
 
   async findOne(id: string): Promise<PublicProduct> {
     const product = await this.findOneAdmin(id);
-    if (!product.isActive) {
+    if (!product.isActive || !this.hasPublicVariants(product)) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
     return this.toPublicProduct(product);
@@ -1852,7 +1915,11 @@ export class CatalogService {
     if (!product) {
       throw new NotFoundException(`Product with slug ${slug} not found`);
     }
-    return this.toPublicProduct(this.withCalculatedVariantPricing(product));
+    const publicProduct = this.withCalculatedVariantPricing(product);
+    if (!this.hasPublicVariants(publicProduct)) {
+      throw new NotFoundException(`Product with slug ${slug} not found`);
+    }
+    return this.toPublicProduct(publicProduct);
   }
 
   async getProductConfig(slug: string) {
@@ -1872,7 +1939,7 @@ export class CatalogService {
       },
     });
 
-    if (!product) {
+    if (!product || product.variants.length === 0) {
       throw new NotFoundException(`Product with slug ${slug} not found`);
     }
 

@@ -16,6 +16,39 @@ export interface CartItem {
   customImageURL?: string;
 }
 
+function getConfigurationImage(
+  configuration?: Record<string, unknown>,
+): string | undefined {
+  if (typeof configuration?.customImageURL === 'string') {
+    return configuration.customImageURL;
+  }
+
+  if (typeof configuration?.previewUrl === 'string') {
+    return configuration.previewUrl;
+  }
+
+  if (
+    configuration?.customizationSettings
+    && typeof configuration.customizationSettings === 'object'
+    && typeof (configuration.customizationSettings as Record<string, unknown>).customImageURL === 'string'
+  ) {
+    return (configuration.customizationSettings as Record<string, unknown>).customImageURL as string;
+  }
+
+  return undefined;
+}
+
+function normalizeCartItem(item: CartItem): CartItem {
+  const configurationImage = getConfigurationImage(item.configuration);
+  const isCustom = Boolean(item.configCode || configurationImage);
+
+  return {
+    ...item,
+    isCustom,
+    customImageURL: configurationImage,
+  };
+}
+
 interface CartContextType {
   items: CartItem[];
   isOpen: boolean;
@@ -50,7 +83,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const parsed = JSON.parse(savedCart);
         if (Array.isArray(parsed)) {
            // eslint-disable-next-line react-hooks/set-state-in-effect
-           setItems(parsed);
+           setItems(parsed.map((item) => normalizeCartItem(item as CartItem)));
         }
       } catch (e) {
         console.error('Failed to parse cart', e);
@@ -78,19 +111,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   ) => {
     setItems((currentItems) => {
       const itemId = configCode ? `${variant.sku}-${configCode}` : variant.sku;
-      const configurationImage =
-        typeof configuration?.customImageURL === 'string'
-          ? configuration.customImageURL
-          : typeof configuration?.previewUrl === 'string'
-            ? configuration.previewUrl
-            : configuration?.customizationSettings &&
-                typeof configuration.customizationSettings === 'object' &&
-                typeof (configuration.customizationSettings as Record<string, unknown>)
-                  .customImageURL === 'string'
-              ? ((configuration.customizationSettings as Record<string, unknown>)
-                  .customImageURL as string)
-            : undefined;
-      const customImageURL = configurationImage || variant.imageUrl || undefined;
+      const configurationImage = getConfigurationImage(configuration);
+      const customImageURL = configurationImage;
       const isCustom = Boolean(configCode || customImageURL);
       const existingItemIndex = currentItems.findIndex(
         (item) => item.id === itemId

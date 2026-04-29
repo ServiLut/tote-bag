@@ -10,7 +10,7 @@ describe('CatalogService', () => {
       update: jest.fn(),
       create: jest.fn(),
     },
-    purchaseBatch: {
+    purchaseBatchLine: {
       findMany: jest.fn(),
     },
     product: {
@@ -38,6 +38,9 @@ describe('CatalogService', () => {
     purchaseBatch: {
       count: jest.fn(),
     },
+    purchaseBatchLine: {
+      count: jest.fn(),
+    },
     variant: {
       count: jest.fn(),
     },
@@ -56,9 +59,10 @@ describe('CatalogService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     prisma.purchaseBatch.count.mockResolvedValue(0);
+    prisma.purchaseBatchLine.count.mockResolvedValue(0);
     prisma.variant.count.mockResolvedValue(0);
     prisma.product.findMany.mockResolvedValue([]);
-    tx.purchaseBatch.findMany.mockResolvedValue([]);
+    tx.purchaseBatchLine.findMany.mockResolvedValue([]);
     service = new CatalogService(
       prisma as never,
       cacheManager as never,
@@ -135,6 +139,97 @@ describe('CatalogService', () => {
         },
       }),
     );
+  });
+
+  it('excludes products without active variants from the public catalog', async () => {
+    prisma.product.findMany.mockResolvedValue([
+      {
+        id: 'product-hidden',
+        name: 'Oculto',
+        slug: 'oculto',
+        description: 'sin variantes activas',
+        basePrice: 100,
+        comparePrice: null,
+        status: 'DISPONIBLE',
+        collectionId: 'collection-1',
+        collection: null,
+        images: [],
+        tags: [],
+        deliveryTime: '3 dias',
+        material: 'Algodon',
+        dimensions: null,
+        careInstructions: null,
+        printType: 'DTF',
+        seoTitle: null,
+        seoDescription: null,
+        attributes: [],
+        pricingRules: [],
+        variants: [
+          {
+            id: 'variant-hidden',
+            sku: 'SKU-HIDDEN',
+            size: null,
+            color: 'Negro',
+            imageUrl: 'https://example.com/hidden.jpg',
+            salePrice: 100,
+            comparePrice: null,
+            costPrice: 50,
+            totalCost: null,
+            taxRate: 0.19,
+            stock: 0,
+            stockCommitted: 0,
+            reorderPoint: null,
+            isActive: false,
+          },
+        ],
+      },
+      {
+        id: 'product-visible',
+        name: 'Visible',
+        slug: 'visible',
+        description: 'con variante activa',
+        basePrice: 120,
+        comparePrice: null,
+        status: 'DISPONIBLE',
+        collectionId: 'collection-1',
+        collection: null,
+        images: [],
+        tags: [],
+        deliveryTime: '3 dias',
+        material: 'Algodon',
+        dimensions: null,
+        careInstructions: null,
+        printType: 'DTF',
+        seoTitle: null,
+        seoDescription: null,
+        attributes: [],
+        pricingRules: [],
+        variants: [
+          {
+            id: 'variant-visible',
+            sku: 'SKU-VISIBLE',
+            size: null,
+            color: 'Blanco',
+            imageUrl: 'https://example.com/visible.jpg',
+            salePrice: 120,
+            comparePrice: null,
+            costPrice: 60,
+            totalCost: null,
+            taxRate: 0.19,
+            stock: 4,
+            stockCommitted: 1,
+            reorderPoint: null,
+            isActive: true,
+          },
+        ],
+      },
+    ]);
+
+    const result = await service.findAll({});
+
+    expect(result).toHaveLength(1);
+    expect(result[0]?.id).toBe('product-visible');
+    expect(result[0]?.variants).toHaveLength(1);
   });
 
   it('auto-generates the SKU for an existing variant during product updates', async () => {
@@ -369,6 +464,13 @@ describe('CatalogService', () => {
           sku: 'TB-BASICOS-TOTEBAGCLASICA-M-NEGRO',
         },
       ]);
+    tx.purchaseBatchLine.findMany.mockResolvedValueOnce([
+      {
+        variant: {
+          sku: 'TB-BASICOS-TOTEBAGCLASICA-M-NEGRO',
+        },
+      },
+    ]);
 
     await expect(
       service.update('product-1', {
@@ -389,6 +491,61 @@ describe('CatalogService', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
 
     expect(tx.variant.updateMany).not.toHaveBeenCalled();
+    expect(tx.variant.update).not.toHaveBeenCalled();
+    expect(tx.product.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects updates that leave a product without active variants', async () => {
+    prisma.$transaction.mockImplementation(
+      (callback: (client: typeof tx) => unknown) => callback(tx),
+    );
+    tx.product.findUnique.mockResolvedValue({
+      id: 'product-1',
+      name: 'Tote Bag Clasica',
+      collection: {
+        name: 'Basicos',
+      },
+    });
+    tx.variant.findFirst.mockResolvedValue({
+      id: 'variant-1',
+    });
+    tx.variant.findMany
+      .mockResolvedValueOnce([
+        {
+          id: 'variant-1',
+          sku: 'TB-BASICOS-TOTEBAGCLASICA-M-NEGRO',
+          productId: 'product-1',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 'variant-1',
+          sku: 'TB-BASICOS-TOTEBAGCLASICA-M-NEGRO',
+        },
+      ]);
+
+    await expect(
+      service.update(
+        'product-1',
+        {
+          variants: [
+            {
+              id: 'variant-1',
+              sku: '',
+              size: 'M',
+              color: 'Negro',
+              imageUrl: 'https://example.com/variant.jpg',
+              salePrice: 100,
+              minPrice: 90,
+              costPrice: 50,
+              isActive: false,
+            },
+          ],
+        },
+        'admin-1',
+      ),
+    ).rejects.toThrow('Debes mantener al menos una variante activa vendible.');
+
     expect(tx.variant.update).not.toHaveBeenCalled();
     expect(tx.product.update).not.toHaveBeenCalled();
   });
@@ -438,9 +595,70 @@ describe('CatalogService', () => {
     expect(prisma.purchaseBatch.count).toHaveBeenCalledWith({
       where: {
         productId: 'product-1',
+        deletedAt: null,
         status: 'IN_STOCK',
         quantityRemaining: { gt: 0 },
       },
+    });
+  });
+
+  it('counts line-linked batches as active inventory when deleting', async () => {
+    prisma.purchaseBatchLine.count.mockResolvedValueOnce(1);
+
+    await expect(service.remove('product-1')).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+
+    expect(prisma.purchaseBatchLine.count).toHaveBeenCalledWith({
+      where: {
+        itemType: 'VARIANT',
+        status: 'IN_STOCK',
+        quantityRemaining: { gt: 0 },
+        variant: {
+          is: {
+            productId: 'product-1',
+          },
+        },
+        purchaseBatch: {
+          status: 'IN_STOCK',
+          deletedAt: null,
+        },
+      },
+    });
+  });
+
+  it('counts line-linked batches as historical references before hard delete', async () => {
+    prisma.$transaction.mockResolvedValue([0, 0, 1, 0]);
+    prisma.product.update.mockResolvedValue({
+      id: 'product-1',
+      isActive: false,
+      status: 'BAJO_PEDIDO',
+    });
+
+    await service.remove('product-1');
+
+    expect(prisma.purchaseBatch.count).toHaveBeenCalledWith({
+      where: {
+        OR: [
+          { productId: 'product-1' },
+          {
+            lines: {
+              some: {
+                itemType: 'VARIANT',
+                variant: {
+                  is: {
+                    productId: 'product-1',
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+    });
+    expect(prisma.product.update).toHaveBeenCalledWith({
+      where: { id: 'product-1' },
+      data: { isActive: false, status: 'BAJO_PEDIDO' },
     });
   });
 

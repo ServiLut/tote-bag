@@ -255,9 +255,18 @@ export default function PersonalizerWizard({
   const router = useRouter();
   const supabase = createClient();
   const isDirectMode = mode === 'direct';
-  const loginRedirectPath = isDirectMode
+  const loginRedirectBasePath = isDirectMode
     ? '/personaliza'
     : '/personaliza/configurador';
+  const loginRedirectParams = new URLSearchParams();
+  if (productId) {
+    loginRedirectParams.set('productId', productId);
+  } else if (productSlug) {
+    loginRedirectParams.set('product', productSlug);
+  }
+  const loginRedirectPath = loginRedirectParams.size > 0
+    ? `${loginRedirectBasePath}?${loginRedirectParams.toString()}`
+    : loginRedirectBasePath;
 
   const [step, setStep] = useState<Step>(isDirectMode ? 4 : 1);
   const [loadingOptions, setLoadingOptions] = useState(true);

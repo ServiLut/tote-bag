@@ -24,6 +24,7 @@ import { getAuthHeaders } from '@/utils/supabase/auth';
 
 type InventoryBatch = {
   id: string;
+  lineId: string;
   quantityReceived: number;
   quantityRemaining: number;
   unitCost: number;
@@ -552,7 +553,7 @@ export default function InventoryDashboardPage() {
                                 <table className="w-full border-collapse text-left">
                                   <thead className="bg-base/50">
                                     <tr className="border-b border-theme text-[9px] font-black uppercase tracking-widest text-muted/50">
-                                      <th className="px-6 py-3">Lote ID</th>
+                                      <th className="px-6 py-3">Lote / Linea</th>
                                       <th className="px-6 py-3">Ingreso</th>
                                       <th className="px-6 py-3">Cant. Inicial</th>
                                       <th className="px-6 py-3">Disponible</th>
@@ -569,11 +570,14 @@ export default function InventoryDashboardPage() {
 
                                       return (
                                         <tr
-                                          key={batch.id}
+                                          key={batch.lineId}
                                           className="text-xs transition-colors hover:bg-base/30"
                                         >
                                           <td className="px-6 py-4 font-mono text-[10px] text-muted">
-                                            {batch.id.substring(0, 8)}
+                                            <div className="flex flex-col gap-1">
+                                              <span>Lote {batch.id.substring(0, 8)}</span>
+                                              <span>Linea {batch.lineId.substring(0, 8)}</span>
+                                            </div>
                                           </td>
                                           <td className="px-6 py-4 font-bold text-primary">
                                             {formatDate(batch.createdAt)}

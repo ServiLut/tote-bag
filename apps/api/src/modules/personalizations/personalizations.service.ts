@@ -22,7 +22,11 @@ import { UpdatePersonalizationRequestDto } from './dto/update-personalization-re
 import { ApprovePersonalizationRequestDto } from './dto/approve-personalization-request.dto';
 import { normalizeSnapshotPersonalizations } from '../../common/interfaces/snapshots.interface';
 import { CreateOrderDto } from '../orders/dto/create-order.dto';
-import { decimalToNumber, roundMoney, toDecimal } from '../../common/utils/sales-tax.util';
+import {
+  decimalToNumber,
+  roundMoney,
+  toDecimal,
+} from '../../common/utils/sales-tax.util';
 
 type PersonalizationRequestForApproval = {
   id: string;
@@ -1066,7 +1070,7 @@ export class PersonalizationsService {
         hasApprovedUnitPriceOverride &&
         approvedUnitPrice !== decimalToNumber(roundMoney(request.unitPrice))
       ) {
-        await this.ordersService.remove(orderId);
+        await this.ordersService.remove(existingOrder.id);
         orderId = null;
         existingOrder = null;
 

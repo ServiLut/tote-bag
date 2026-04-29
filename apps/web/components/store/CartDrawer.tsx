@@ -6,15 +6,21 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { formatWholeCurrency } from '@/lib/numeric-input';
 
 const CUSTOM_TOTE_FALLBACK_IMAGE = '/tote_bag_lifestyle.png';
+
+function getPrimaryProductImage(item: CartItem) {
+  return [...(item.product.images || [])]
+    .sort((left, right) => left.position - right.position)[0]?.url;
+}
 
 function getCartItemImage(item: CartItem) {
   if (item.isCustom) {
     return item.customImageURL || CUSTOM_TOTE_FALLBACK_IMAGE;
   }
 
-  return item.product.images[0]?.url || item.variant.imageUrl || CUSTOM_TOTE_FALLBACK_IMAGE;
+  return getPrimaryProductImage(item) || item.variant.imageUrl || CUSTOM_TOTE_FALLBACK_IMAGE;
 }
 
 function CartDrawerItemImage({ item }: { item: CartItem }) {
@@ -114,7 +120,7 @@ export default function CartDrawer() {
                       {[item.variant.size, item.variant.color].filter(Boolean).join(' / ')}
                     </p>
                     <p className="text-sm font-semibold mt-1 text-primary">
-                      ${item.unitPrice.toLocaleString('es-CO')}
+                      {formatWholeCurrency(item.unitPrice)}
                     </p>
                     <p className="text-[10px] font-bold uppercase tracking-wide text-muted">
                       IVA incluido
@@ -151,7 +157,7 @@ export default function CartDrawer() {
               <div className="flex justify-between text-sm">
                 <span className="text-muted">{t('cart_subtotal')}</span>
                 <span className="text-right">
-                  <span className="block font-semibold text-primary">${subtotal.toLocaleString('es-CO')}</span>
+                  <span className="block font-semibold text-primary">{formatWholeCurrency(subtotal)}</span>
                   <span className="block text-[10px] font-bold uppercase tracking-wide text-muted">IVA incluido</span>
                 </span>
               </div>

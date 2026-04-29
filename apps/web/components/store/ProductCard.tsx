@@ -81,7 +81,6 @@ export default function ProductCard({
   const allVariantImages = activeVariants?.map(v => v.imageUrl).filter(Boolean) || [];
   const orderedImages = [...allMainImages, ...allVariantImages];
   const displayImage = userSelectedImage || orderedImages[0] || '/placeholder.png';
-
   return (
     <div className="group relative flex flex-col gap-3">
       <Link href={`/catalog/${product.slug}`} className="block">
