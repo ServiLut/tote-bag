@@ -1074,6 +1074,7 @@ export class PersonalizationsService {
         orderId = null;
         existingOrder = null;
 
+        /* eslint-disable @typescript-eslint/no-unused-vars */
         const {
           approvalOrderId: _approvalOrderId,
           approvalStartedAt: _approvalStartedAt,
@@ -1085,6 +1086,7 @@ export class PersonalizationsService {
           priceApprovedByUserId: _priceApprovedByUserId,
           ...nextConfigurationRecord
         } = configurationRecord;
+        /* eslint-enable @typescript-eslint/no-unused-vars */
 
         configurationRecord = nextConfigurationRecord;
       }
