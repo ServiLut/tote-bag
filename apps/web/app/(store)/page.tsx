@@ -23,10 +23,10 @@ export default function Home() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await apiFetch('/catalog/products');
+        const res = await apiFetch('/catalog/products?limit=4');
         if (!res.ok) throw new Error(t('home_load_error'));
         const responseBody: ApiResponse<Product[]> = await res.json();
-        setProducts(responseBody.data.slice(0, 4));
+        setProducts(responseBody.data);
       } catch (err) {
         console.error(err);
         setError(t('home_products_unavailable'));

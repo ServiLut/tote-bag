@@ -30,7 +30,7 @@ async function getRelatedProducts(currentProductId: string, collectionId?: strin
 
     // 1. Try fetching from same collection if available
     if (collectionId) {
-      const res = await apiFetch(`/catalog/products?collection=${collectionId}`, {
+      const res = await apiFetch(`/catalog/products?collection=${collectionId}&limit=5`, {
         next: { revalidate: 60 },
       });
       if (res.ok) {
@@ -44,7 +44,7 @@ async function getRelatedProducts(currentProductId: string, collectionId?: strin
 
     // 2. If no products found (or only the current one existed in collection), fetch general list
     if (related.length === 0) {
-      const res = await apiFetch('/catalog/products', { next: { revalidate: 60 } });
+      const res = await apiFetch('/catalog/products?limit=5', { next: { revalidate: 60 } });
       if (res.ok) {
         const response: ApiResponse<Product[]> = await res.json();
         // Filter out current product from general list

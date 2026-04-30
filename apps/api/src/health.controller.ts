@@ -5,7 +5,10 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { PrismaService } from './prisma/prisma.service';
-import { getCacheRuntimeStatus, type RuntimeDependencyStatus } from './runtime-dependency-state';
+import {
+  getCacheRuntimeStatus,
+  type RuntimeDependencyStatus,
+} from './runtime-dependency-state';
 
 @Controller()
 export class HealthController {

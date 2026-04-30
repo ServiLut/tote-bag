@@ -1,26 +1,56 @@
 import { Role } from '../../generated/client/enums';
 import { ManagerApprovalsService } from './manager-approvals.service';
 
+type ManagerApprovalCreateArgs = {
+  data: {
+    requestedByUserId?: string | null;
+    approvedByUserId?: string | null;
+    usedByUserId?: string | null;
+  };
+};
+
+type ManagerApprovalRecord = {
+  id: string;
+  status?: string;
+  resource?: string;
+  action?: string;
+  entity?: string;
+  entityId?: string | null;
+  expiresAt?: Date;
+};
+
 describe('ManagerApprovalsService', () => {
+  const createManagerApproval =
+    jest.fn<
+      (args: ManagerApprovalCreateArgs) => Promise<ManagerApprovalRecord>
+    >();
+  const findManyManagerApprovals = jest.fn<() => Promise<unknown[]>>();
+  const createAuditLog = jest.fn<() => Promise<Record<string, never>>>();
+  const getEffectiveRole =
+    jest.fn<(userId: string) => Promise<{ effectiveRole: Role }>>();
+
   const prisma = {
     managerApproval: {
-      create: jest.fn(),
-      findMany: jest.fn(),
+      create: createManagerApproval,
+      findMany: findManyManagerApprovals,
     },
     auditLog: {
-      create: jest.fn(),
+      create: createAuditLog,
     },
   };
 
   const rolesService = {
-    getEffectiveRole: jest.fn(),
+    getEffectiveRole,
   };
 
   let service: ManagerApprovalsService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new ManagerApprovalsService(prisma as never, rolesService as never);
+    service = new ManagerApprovalsService(
+      prisma as never,
+      rolesService as never,
+    );
   });
 
   it('auto-approves inline for ADMIN users', async () => {
@@ -41,13 +71,15 @@ describe('ManagerApprovalsService', () => {
       entityId: 'product-1',
     });
 
-    expect(prisma.managerApproval.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          requestedByUserId: 'admin-1',
-          approvedByUserId: 'admin-1',
-          usedByUserId: 'admin-1',
-        }),
+    const expectedCreateData = expect.objectContaining({
+      requestedByUserId: 'admin-1',
+      approvedByUserId: 'admin-1',
+      usedByUserId: 'admin-1',
+    }) as unknown as ManagerApprovalCreateArgs['data'];
+
+    expect(createManagerApproval).toHaveBeenCalledWith(
+      expect.objectContaining<ManagerApprovalCreateArgs>({
+        data: expectedCreateData,
       }),
     );
     expect(result).toEqual({

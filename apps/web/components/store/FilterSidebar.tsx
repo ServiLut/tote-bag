@@ -56,8 +56,16 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
 
   const updateURL = useCallback((newFilters: FilterState) => {
     const params = buildCatalogSearchParams(newFilters, searchParams);
+    params.delete('page');
     const query = params.toString();
-    router.push(`${window.location.pathname}${query ? '?' + query : ''}`, { scroll: false });
+    const nextUrl = `${window.location.pathname}${query ? '?' + query : ''}`;
+    const currentUrl = `${window.location.pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+
+    if (nextUrl === currentUrl) {
+      return;
+    }
+
+    router.replace(nextUrl, { scroll: false });
   }, [router, searchParams]);
 
   useEffect(() => {
@@ -73,7 +81,7 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
     if (hasChanges) {
       onFilterChange(newFilters);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const fetchWizardOptions = async () => {
@@ -94,7 +102,7 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
   useEffect(() => {
     const timer = setTimeout(() => {
       updateURL(filters);
-    }, 500);
+    }, 250);
     return () => clearTimeout(timer);
   }, [filters, updateURL]);
 
@@ -110,7 +118,6 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
 
     const nextFilters = { ...filters, [field]: newValues };
     onFilterChange(nextFilters);
-    updateURL(nextFilters);
   };
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {

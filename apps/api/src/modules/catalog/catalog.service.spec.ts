@@ -53,6 +53,7 @@ describe('CatalogService', () => {
       create: jest.fn(),
     },
     product: {
+      count: jest.fn(),
       findMany: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
@@ -67,6 +68,7 @@ describe('CatalogService', () => {
     prisma.purchaseBatch.count.mockResolvedValue(0);
     prisma.purchaseBatchLine.count.mockResolvedValue(0);
     prisma.variant.count.mockResolvedValue(0);
+    prisma.product.count.mockResolvedValue(0);
     prisma.product.findMany.mockResolvedValue([]);
     prisma.product.findUnique.mockResolvedValue({
       id: 'product-1',
@@ -239,9 +241,131 @@ describe('CatalogService', () => {
 
     const result = await service.findAll({});
 
+    if (!Array.isArray(result)) {
+      throw new Error('Expected non-paginated public catalog response');
+    }
+
     expect(result).toHaveLength(1);
-    expect(result[0]?.id).toBe('product-visible');
-    expect(result[0]?.variants).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      id: 'product-visible',
+      variants: [
+        {
+          id: 'variant-visible',
+        },
+      ],
+    });
+  });
+
+  it('paginates public catalog results without loading the full public list', async () => {
+    prisma.product.count.mockResolvedValue(3);
+    prisma.product.findMany.mockResolvedValue([
+      {
+        id: 'product-visible',
+        name: 'Visible',
+        slug: 'visible',
+        description: 'con variante activa',
+        basePrice: 150,
+        comparePrice: 180,
+        status: 'DISPONIBLE',
+        collectionId: 'collection-1',
+        collection: null,
+        images: [],
+        tags: ['visible'],
+        deliveryTime: '3 dias',
+        material: 'Algodon',
+        dimensions: null,
+        careInstructions: null,
+        printType: 'DTF',
+        seoTitle: null,
+        seoDescription: null,
+        attributes: [],
+        pricingRules: [],
+        variants: [
+          {
+            id: 'variant-visible',
+            sku: 'SKU-VISIBLE',
+            size: 'M',
+            color: 'Blanco',
+            imageUrl: 'https://example.com/visible.jpg',
+            salePrice: 150,
+            comparePrice: 180,
+            costPrice: 60,
+            totalCost: null,
+            taxRate: 0.19,
+            stock: 4,
+            stockCommitted: 1,
+            reorderPoint: null,
+            isActive: true,
+          },
+        ],
+      },
+    ]);
+
+    const result = await service.findAll({
+      minPrice: 100,
+      maxPrice: 200,
+      page: 2,
+      limit: 1,
+    });
+
+    if (Array.isArray(result)) {
+      throw new Error('Expected paginated public catalog response');
+    }
+
+    expect(prisma.product.count).toHaveBeenCalledWith({
+      where: {
+        isActive: true,
+        variants: {
+          some: {
+            isActive: true,
+          },
+        },
+        basePrice: {
+          gte: 100,
+          lte: 200,
+        },
+      },
+    });
+    expect(prisma.product.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          isActive: true,
+          variants: {
+            some: {
+              isActive: true,
+            },
+          },
+          basePrice: {
+            gte: 100,
+            lte: 200,
+          },
+        },
+        skip: 1,
+        take: 1,
+      }),
+    );
+    expect(result).toMatchObject({
+      total: 3,
+      page: 2,
+      limit: 1,
+      totalPages: 3,
+      items: [
+        {
+          id: 'product-visible',
+          basePrice: 150,
+          comparePrice: 180,
+          variants: [
+            {
+              id: 'variant-visible',
+              stock: 3,
+              stockPhysical: 4,
+              stockCommitted: 1,
+              stockAvailable: 3,
+            },
+          ],
+        },
+      ],
+    });
   });
 
   it('auto-generates the SKU for an existing variant during product updates', async () => {

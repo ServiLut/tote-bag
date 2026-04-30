@@ -122,6 +122,16 @@ type CatalogFilters = {
   minPrice?: number;
   maxPrice?: number;
   search?: string;
+  page?: number;
+  limit?: number;
+};
+
+type PaginatedPublicProducts = {
+  items: PublicProduct[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 };
 
 type PublicVariant = {
@@ -1017,6 +1027,138 @@ export class CatalogService {
     return activeVariantPrice ?? decimalToNumber(product.basePrice);
   }
 
+  private normalizePagination(page?: number, limit?: number) {
+    if (page === undefined && limit === undefined) {
+      return null;
+    }
+
+    const normalizedLimit = Number.isFinite(limit)
+      ? Math.min(Math.max(Math.trunc(limit as number), 1), 48)
+      : 12;
+    const normalizedPage = Number.isFinite(page)
+      ? Math.max(Math.trunc(page as number), 1)
+      : 1;
+
+    return {
+      page: normalizedPage,
+      limit: normalizedLimit,
+      skip: (normalizedPage - 1) * normalizedLimit,
+    };
+  }
+
+  private buildPublicCatalogWhere(
+    filters: CatalogFilters,
+  ): Prisma.ProductWhereInput {
+    const {
+      collectionId,
+      line,
+      size,
+      quality,
+      material,
+      status,
+      minPrice,
+      maxPrice,
+      search,
+    } = filters;
+
+    const where: Prisma.ProductWhereInput = {
+      isActive: true,
+      variants: {
+        some: {
+          isActive: true,
+        },
+      },
+    };
+
+    if (collectionId) {
+      const collectionIds = this.splitFilterValues(collectionId);
+      if (collectionIds.length > 0) {
+        where.collectionId =
+          collectionIds.length === 1 ? collectionIds[0] : { in: collectionIds };
+      }
+    }
+
+    if (status) {
+      where.status = status as ProductStatus;
+    }
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { slug: { contains: search, mode: 'insensitive' } },
+        { tags: { hasSome: [search.toLowerCase(), search] } },
+        {
+          collection: {
+            name: { contains: search, mode: 'insensitive' },
+          },
+        },
+      ];
+    }
+
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      where.basePrice = {
+        ...(minPrice !== undefined ? { gte: minPrice } : {}),
+        ...(maxPrice !== undefined ? { lte: maxPrice } : {}),
+      };
+    }
+
+    const andFilters: Prisma.ProductWhereInput[] = [];
+
+    if (line) {
+      const values = this.splitFilterValues(line);
+      andFilters.push({
+        attributes: {
+          some: { type: 'LINE', value: { in: values, mode: 'insensitive' } },
+        },
+      });
+    }
+
+    if (size) {
+      const values = this.splitFilterValues(size);
+      andFilters.push({
+        OR: [
+          {
+            variants: {
+              some: {
+                isActive: true,
+                size: { in: values, mode: 'insensitive' },
+              },
+            },
+          },
+          this.buildLegacySizeFilter(values),
+        ],
+      });
+    }
+
+    if (quality) {
+      const values = this.splitFilterValues(quality);
+      andFilters.push({
+        attributes: {
+          some: { type: 'QUALITY', value: { in: values, mode: 'insensitive' } },
+        },
+      });
+    }
+
+    if (material) {
+      const values = this.splitFilterValues(material);
+      andFilters.push({
+        attributes: {
+          some: {
+            type: 'MATERIAL',
+            value: { in: values, mode: 'insensitive' },
+          },
+        },
+      });
+    }
+
+    if (andFilters.length > 0) {
+      where.AND = andFilters;
+    }
+
+    return where;
+  }
+
   private buildLegacySizeFilter(values: string[]): Prisma.ProductWhereInput {
     return {
       AND: [
@@ -1696,11 +1838,49 @@ export class CatalogService {
     }
   }
 
-  async findAll(filters: CatalogFilters): Promise<PublicProduct[]> {
-    const products = await this.findAllAdmin(filters);
-    return products
+  async findAll(
+    filters: CatalogFilters,
+  ): Promise<PublicProduct[] | PaginatedPublicProducts> {
+    const pagination = this.normalizePagination(filters.page, filters.limit);
+    const where = this.buildPublicCatalogWhere(filters);
+
+    const [products, total] = await Promise.all([
+      this.prisma.product.findMany({
+        where,
+        include: {
+          variants: true,
+          images: true,
+          collection: true,
+          attributes: true,
+          pricingRules: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        ...(pagination
+          ? {
+              skip: pagination.skip,
+              take: pagination.limit,
+            }
+          : {}),
+      }),
+      pagination ? this.prisma.product.count({ where }) : Promise.resolve(0),
+    ]);
+
+    const publicProducts = products
+      .map((product) => this.withCalculatedVariantPricing(product))
       .filter((product) => this.hasPublicVariants(product))
       .map((product) => this.toPublicProduct(product));
+
+    if (!pagination) {
+      return publicProducts;
+    }
+
+    return {
+      items: publicProducts,
+      total,
+      page: pagination.page,
+      limit: pagination.limit,
+      totalPages: total === 0 ? 0 : Math.ceil(total / pagination.limit),
+    };
   }
 
   async findAllAdmin(

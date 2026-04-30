@@ -18,13 +18,13 @@ describe('public env', () => {
   });
 
   it('normaliza la URL publica a un origen absoluto sin ruta', () => {
-    expect(
-      getPublicAppBaseUrl(
-        ' "https://shop.example.com/catalog?preview=true#hero" ',
-        undefined,
-        'production',
-      ).toString(),
-    ).toBe('https://shop.example.com/');
+    const publicAppBaseUrl = getPublicAppBaseUrl(
+      ' "https://shop.example.com/catalog?preview=true#hero" ',
+      undefined,
+      'production',
+    );
+
+    expect(publicAppBaseUrl?.toString()).toBe('https://shop.example.com/');
   });
 
   it('usa el host de despliegue cuando falta la URL publica explicita', () => {

@@ -11,8 +11,9 @@ import {
   HttpCode,
   HttpStatus,
   Req,
+  Res,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { CatalogService } from './catalog.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -82,7 +83,7 @@ export class CatalogController {
   }
 
   @Get('products')
-  findAll(
+  async findAll(
     @Query('collection') collection?: string,
     @Query('lines') lines?: string,
     @Query('sizes') sizes?: string,
@@ -93,8 +94,11 @@ export class CatalogController {
     @Query('minPrice') minPrice?: string,
     @Query('maxPrice') maxPrice?: string,
     @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Res({ passthrough: true }) res?: Response,
   ) {
-    return this.catalogService.findAll({
+    const result = await this.catalogService.findAll({
       collectionId: collection,
       line: lines,
       size: sizes,
@@ -105,7 +109,20 @@ export class CatalogController {
       minPrice: minPrice ? Number(minPrice) : undefined,
       maxPrice: maxPrice ? Number(maxPrice) : undefined,
       search,
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
     });
+
+    if (Array.isArray(result)) {
+      return result;
+    }
+
+    res?.setHeader('X-Total-Count', String(result.total));
+    res?.setHeader('X-Page', String(result.page));
+    res?.setHeader('X-Page-Size', String(result.limit));
+    res?.setHeader('X-Total-Pages', String(result.totalPages));
+
+    return result.items;
   }
 
   @Get('search')

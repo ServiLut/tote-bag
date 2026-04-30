@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import ProductGrid from '@/components/store/ProductGrid';
 import FilterSidebar, { type FilterState } from '@/components/store/FilterSidebar';
 import { Product } from '@/types/product';
@@ -44,12 +44,15 @@ async function resolveApiErrorMessage(
 
 function CatalogPageContent() {
   const { t } = useTranslation();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
+  const [totalProducts, setTotalProducts] = useState(0);
   const [collections, setCollections] = useState<{ id: string, name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const ITEMS_PER_PAGE = 12;
 
   const [filters, setFilters] = useState<FilterState>({
     minPrice: 0,
@@ -63,6 +66,10 @@ function CatalogPageContent() {
   });
 
   const searchTerm = searchParams.get('search')?.trim() || '';
+  const pageParam = Number(searchParams.get('page') || '1');
+  const currentPage = Number.isFinite(pageParam) && pageParam > 0
+    ? Math.trunc(pageParam)
+    : 1;
 
   useEffect(() => {
     const fetchCollections = async () => {
@@ -83,14 +90,9 @@ function CatalogPageContent() {
     const fetchProducts = async () => {
       setLoading(true);
       try {
-        const params = new URLSearchParams();
-        if (filters.collections.length > 0) params.append('collection', filters.collections.join(','));
-        if (filters.lines.length > 0) params.append('lines', filters.lines.join(','));
-        if (filters.sizes.length > 0) params.append('sizes', filters.sizes.join(','));
-        if (filters.materials.length > 0) params.append('materials', filters.materials.join(','));
-        if (filters.minPrice > 0) params.append('minPrice', filters.minPrice.toString());
-        if (filters.maxPrice < DEFAULT_CATALOG_MAX_PRICE) params.append('maxPrice', filters.maxPrice.toString());
-        if (searchTerm) params.append('search', searchTerm);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('page', currentPage.toString());
+        params.set('limit', ITEMS_PER_PAGE.toString());
 
         const res = await apiFetch(`/catalog/products?${params.toString()}`);
         if (!res.ok) {
@@ -99,15 +101,23 @@ function CatalogPageContent() {
             t('catalog_unavailable'),
           );
           setProducts([]);
+          setTotalProducts(0);
           setError(message);
           return;
         }
 
         const responseBody: ApiResponse<Product[]> = await res.json();
         setProducts(responseBody.data);
+        const totalCountHeader = Number(res.headers.get('x-total-count') || '0');
+        setTotalProducts(
+          Number.isFinite(totalCountHeader) && totalCountHeader >= 0
+            ? totalCountHeader
+            : responseBody.data.length,
+        );
         setError(null);
       } catch {
         setProducts([]);
+        setTotalProducts(0);
         setError(t('catalog_unavailable'));
       } finally {
         setLoading(false);
@@ -115,21 +125,30 @@ function CatalogPageContent() {
     };
 
     fetchProducts();
-  }, [filters, searchTerm, t]);
+  }, [ITEMS_PER_PAGE, currentPage, searchParams, t]);
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 12;
+  const totalPages = Math.ceil(totalProducts / ITEMS_PER_PAGE);
+  const currentRangeStart = totalProducts === 0 || products.length === 0
+    ? 0
+    : (currentPage - 1) * ITEMS_PER_PAGE + 1;
+  const currentRangeEnd = totalProducts === 0 || products.length === 0
+    ? 0
+    : currentRangeStart + products.length - 1;
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filters, searchTerm]);
+  const goToPage = (page: number) => {
+    const nextPage = Math.max(page, 1);
+    const params = new URLSearchParams(searchParams.toString());
 
-  const totalPages = Math.ceil(products.length / ITEMS_PER_PAGE);
+    if (nextPage <= 1) {
+      params.delete('page');
+    } else {
+      params.set('page', nextPage.toString());
+    }
 
-  const paginatedProducts = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return products.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [products, currentPage]);
+    const query = params.toString();
+    router.push(`/catalog${query ? `?${query}` : ''}`, { scroll: false });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <>
@@ -172,9 +191,9 @@ function CatalogPageContent() {
             <span className="text-sm text-muted">
               {products.length > 0
                 ? t('catalog_results_summary', {
-                    start: (currentPage - 1) * ITEMS_PER_PAGE + 1,
-                    end: Math.min(currentPage * ITEMS_PER_PAGE, products.length),
-                    total: products.length,
+                    start: currentRangeStart,
+                    end: currentRangeEnd,
+                    total: totalProducts,
                   })
                 : t('catalog_empty_results')}
             </span>
@@ -188,15 +207,12 @@ function CatalogPageContent() {
             <div className="text-center py-20 text-accent font-medium">{error}</div>
           ) : (
             <>
-              <ProductGrid products={paginatedProducts} showVariantIndicator={false} />
+              <ProductGrid products={products} showVariantIndicator={false} />
 
               {totalPages > 1 && (
                 <div className="mt-12 flex justify-center items-center gap-2">
                   <button
-                    onClick={() => {
-                      setCurrentPage(prev => Math.max(prev - 1, 1));
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
+                    onClick={() => goToPage(currentPage - 1)}
                     disabled={currentPage === 1}
                     className="p-2 border border-theme disabled:opacity-30 disabled:cursor-not-allowed hover:bg-theme/5 transition-colors rounded-sm"
                   >
@@ -207,10 +223,7 @@ function CatalogPageContent() {
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                       <button
                         key={page}
-                        onClick={() => {
-                          setCurrentPage(page);
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
+                        onClick={() => goToPage(page)}
                         className={`min-w-[40px] h-10 flex items-center justify-center border transition-colors rounded-sm text-sm font-medium ${
                           currentPage === page
                             ? 'bg-primary text-base border-primary'
@@ -223,10 +236,7 @@ function CatalogPageContent() {
                   </div>
 
                   <button
-                    onClick={() => {
-                      setCurrentPage(prev => Math.min(prev + 1, totalPages));
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
+                    onClick={() => goToPage(currentPage + 1)}
                     disabled={currentPage === totalPages}
                     className="p-2 border border-theme disabled:opacity-30 disabled:cursor-not-allowed hover:bg-theme/5 transition-colors rounded-sm"
                   >
