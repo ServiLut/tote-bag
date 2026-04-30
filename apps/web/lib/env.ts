@@ -11,13 +11,15 @@ const DISALLOWED_PRODUCTION_HOSTNAMES = new Set([
   '[::1]',
 ]);
 
-const PUBLIC_ENV = {
-  NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
-  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  VERCEL_PROJECT_PRODUCTION_URL: process.env.VERCEL_PROJECT_PRODUCTION_URL,
-  VERCEL_URL: process.env.VERCEL_URL,
-} as const;
+function getPublicEnv() {
+  return {
+    NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    VERCEL_PROJECT_PRODUCTION_URL: process.env.VERCEL_PROJECT_PRODUCTION_URL,
+    VERCEL_URL: process.env.VERCEL_URL,
+  } as const;
+}
 
 function stripWrappingQuotes(value: string) {
   if (
@@ -31,7 +33,8 @@ function stripWrappingQuotes(value: string) {
 }
 
 function readRequiredEnv(name: 'NEXT_PUBLIC_SUPABASE_URL' | 'NEXT_PUBLIC_SUPABASE_ANON_KEY') {
-  const rawValue = PUBLIC_ENV[name]?.trim();
+  const env = getPublicEnv();
+  const rawValue = env[name]?.trim();
   const value = rawValue ? stripWrappingQuotes(rawValue) : rawValue;
 
   if (!value) {
@@ -105,11 +108,12 @@ export function getPublicAppBaseUrl(
     | typeof OMITTED = OMITTED,
   nodeEnv: string | undefined | typeof OMITTED = OMITTED,
 ) {
+  const env = getPublicEnv();
   const resolvedRawValue =
-    rawValue === OMITTED ? PUBLIC_ENV.NEXT_PUBLIC_BASE_URL : rawValue;
+    rawValue === OMITTED ? env.NEXT_PUBLIC_BASE_URL : rawValue;
   const resolvedDeploymentHost =
     deploymentHost === OMITTED
-      ? PUBLIC_ENV.VERCEL_PROJECT_PRODUCTION_URL ?? PUBLIC_ENV.VERCEL_URL
+      ? env.VERCEL_PROJECT_PRODUCTION_URL ?? env.VERCEL_URL
       : deploymentHost;
   const resolvedNodeEnv = nodeEnv === OMITTED ? process.env.NODE_ENV : nodeEnv;
 

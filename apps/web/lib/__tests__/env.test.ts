@@ -1,6 +1,21 @@
 import { getPublicAppBaseUrl } from '../env';
 
 describe('public env', () => {
+  const originalEnv = process.env;
+
+  beforeEach(() => {
+    jest.resetModules();
+    process.env = { ...originalEnv };
+    // Clear relevant env vars to ensure test independence from CI environment
+    delete process.env.NEXT_PUBLIC_BASE_URL;
+    delete process.env.VERCEL_PROJECT_PRODUCTION_URL;
+    delete process.env.VERCEL_URL;
+  });
+
+  afterAll(() => {
+    process.env = originalEnv;
+  });
+
   it('usa localhost en desarrollo cuando no hay base publica configurada', () => {
     expect(getPublicAppBaseUrl(undefined, undefined, 'development')?.toString()).toBe(
       'http://localhost:3000/',
