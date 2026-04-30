@@ -2,6 +2,7 @@ const PLACEHOLDER_SUPABASE_URL = 'https://placeholder.supabase.co';
 const PLACEHOLDER_SUPABASE_KEY = 'placeholder-key';
 const DEFAULT_PUBLIC_APP_URL = 'http://localhost:3000';
 const PUBLIC_APP_URL_ENV_NAME = 'NEXT_PUBLIC_BASE_URL';
+const OMITTED = Symbol('omitted');
 const DISALLOWED_PRODUCTION_HOSTNAMES = new Set([
   'localhost',
   '127.0.0.1',
@@ -97,18 +98,26 @@ function parseDeploymentHostAsPublicAppUrl(value: string) {
 }
 
 export function getPublicAppBaseUrl(
-  rawValue: string | undefined = PUBLIC_ENV.NEXT_PUBLIC_BASE_URL,
+  rawValue: string | undefined | typeof OMITTED = OMITTED,
   deploymentHost:
     | string
-    | undefined = PUBLIC_ENV.VERCEL_PROJECT_PRODUCTION_URL ??
-    PUBLIC_ENV.VERCEL_URL,
-  nodeEnv: string | undefined = process.env.NODE_ENV,
+    | undefined
+    | typeof OMITTED = OMITTED,
+  nodeEnv: string | undefined | typeof OMITTED = OMITTED,
 ) {
-  const trimmedValue = rawValue?.trim();
+  const resolvedRawValue =
+    rawValue === OMITTED ? PUBLIC_ENV.NEXT_PUBLIC_BASE_URL : rawValue;
+  const resolvedDeploymentHost =
+    deploymentHost === OMITTED
+      ? PUBLIC_ENV.VERCEL_PROJECT_PRODUCTION_URL ?? PUBLIC_ENV.VERCEL_URL
+      : deploymentHost;
+  const resolvedNodeEnv = nodeEnv === OMITTED ? process.env.NODE_ENV : nodeEnv;
+
+  const trimmedValue = resolvedRawValue?.trim();
   const value = trimmedValue ? stripWrappingQuotes(trimmedValue) : trimmedValue;
 
-  if (!value && deploymentHost?.trim()) {
-    const url = parseDeploymentHostAsPublicAppUrl(deploymentHost);
+  if (!value && resolvedDeploymentHost?.trim()) {
+    const url = parseDeploymentHostAsPublicAppUrl(resolvedDeploymentHost);
 
     if (DISALLOWED_PRODUCTION_HOSTNAMES.has(url.hostname.toLowerCase())) {
       throw new Error(
@@ -120,14 +129,14 @@ export function getPublicAppBaseUrl(
   }
 
   if (!value) {
-    return nodeEnv === 'production'
+    return resolvedNodeEnv === 'production'
       ? undefined
       : new URL(DEFAULT_PUBLIC_APP_URL);
   }
 
   const url = parsePublicAppUrl(value);
 
-  if (nodeEnv === 'production') {
+  if (resolvedNodeEnv === 'production') {
     if (url.protocol !== 'https:') {
       throw new Error(
         `[env] ${PUBLIC_APP_URL_ENV_NAME} must use https in production.`,

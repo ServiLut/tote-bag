@@ -1,6 +1,109 @@
 CREATE SCHEMA IF NOT EXISTS "tote-bag";
 
 DO $$
+DECLARE
+  legacy_type_name TEXT;
+BEGIN
+  FOREACH legacy_type_name IN ARRAY ARRAY[
+    'OrderStatus',
+    'Role',
+    'ProductStatus',
+    'PrintType',
+    'AttributeType',
+    'ProductLine',
+    'PriceRuleScope'
+  ]
+  LOOP
+    IF EXISTS (
+      SELECT 1
+      FROM pg_type t
+      JOIN pg_namespace n ON n.oid = t.typnamespace
+      WHERE t.typname = legacy_type_name
+        AND n.nspname = 'public'
+    ) AND NOT EXISTS (
+      SELECT 1
+      FROM pg_type t
+      JOIN pg_namespace n ON n.oid = t.typnamespace
+      WHERE t.typname = legacy_type_name
+        AND n.nspname = 'tote-bag'
+    ) THEN
+      EXECUTE format(
+        'ALTER TYPE public.%I SET SCHEMA %I',
+        legacy_type_name,
+        'tote-bag'
+      );
+    END IF;
+  END LOOP;
+END $$;
+
+DO $$
+DECLARE
+  legacy_table_name TEXT;
+BEGIN
+  FOREACH legacy_table_name IN ARRAY ARRAY[
+    'products',
+    'product_images',
+    'collections',
+    'variants',
+    'orders',
+    'order_status_history',
+    'order_items',
+    'users',
+    'profiles',
+    'departments',
+    'municipalities',
+    'b2b_quotes',
+    'audit_logs',
+    'addresses',
+    'product_attributes',
+    'personalization_options',
+    'pricing_rules',
+    'b2b_quote_items',
+    'personalization_rules'
+  ]
+  LOOP
+    IF EXISTS (
+      SELECT 1
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+        AND table_name = legacy_table_name
+    ) AND NOT EXISTS (
+      SELECT 1
+      FROM information_schema.tables
+      WHERE table_schema = 'tote-bag'
+        AND table_name = legacy_table_name
+    ) THEN
+      EXECUTE format(
+        'ALTER TABLE public.%I SET SCHEMA %I',
+        legacy_table_name,
+        'tote-bag'
+      );
+    END IF;
+  END LOOP;
+END $$;
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relkind = 'S'
+      AND c.relname = 'orders_order_number_seq'
+      AND n.nspname = 'public'
+  ) AND NOT EXISTS (
+    SELECT 1
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relkind = 'S'
+      AND c.relname = 'orders_order_number_seq'
+      AND n.nspname = 'tote-bag'
+  ) THEN
+    ALTER SEQUENCE public."orders_order_number_seq" SET SCHEMA "tote-bag";
+  END IF;
+END $$;
+
+DO $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1
