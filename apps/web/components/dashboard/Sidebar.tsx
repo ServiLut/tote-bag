@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   ShoppingBag,
   Package,
+  BookOpen,
   Briefcase,
   Sparkles,
   LogOut,
@@ -92,6 +93,7 @@ const menuGroups = [
       { name: 'Corporativo (B2B)', href: '/dashboard/b2b', icon: Briefcase },
       { name: 'Personalizaciones', href: '/dashboard/personalizaciones', icon: Sparkles },
       { name: 'PQRS', href: '/dashboard/pqrs', icon: Inbox },
+      { name: 'Centro Informativo', href: '/dashboard/conocimiento', icon: BookOpen },
     ],
   },
   {

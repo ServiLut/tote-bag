@@ -197,6 +197,7 @@ export type UserWhereInput = {
   profile?: Prisma.XOR<Prisma.ProfileNullableScalarRelationFilter, Prisma.ProfileWhereInput> | null
   personalizationRequests?: Prisma.PersonalizationRequestListRelationFilter
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestListRelationFilter
+  knowledgePosts?: Prisma.KnowledgePostListRelationFilter
   roles?: Prisma.UserRoleListRelationFilter
   managerApprovalsRequested?: Prisma.ManagerApprovalListRelationFilter
   managerApprovalsApproved?: Prisma.ManagerApprovalListRelationFilter
@@ -218,6 +219,7 @@ export type UserOrderByWithRelationInput = {
   profile?: Prisma.ProfileOrderByWithRelationInput
   personalizationRequests?: Prisma.PersonalizationRequestOrderByRelationAggregateInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestOrderByRelationAggregateInput
+  knowledgePosts?: Prisma.KnowledgePostOrderByRelationAggregateInput
   roles?: Prisma.UserRoleOrderByRelationAggregateInput
   managerApprovalsRequested?: Prisma.ManagerApprovalOrderByRelationAggregateInput
   managerApprovalsApproved?: Prisma.ManagerApprovalOrderByRelationAggregateInput
@@ -242,6 +244,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   profile?: Prisma.XOR<Prisma.ProfileNullableScalarRelationFilter, Prisma.ProfileWhereInput> | null
   personalizationRequests?: Prisma.PersonalizationRequestListRelationFilter
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestListRelationFilter
+  knowledgePosts?: Prisma.KnowledgePostListRelationFilter
   roles?: Prisma.UserRoleListRelationFilter
   managerApprovalsRequested?: Prisma.ManagerApprovalListRelationFilter
   managerApprovalsApproved?: Prisma.ManagerApprovalListRelationFilter
@@ -287,6 +290,7 @@ export type UserCreateInput = {
   profile?: Prisma.ProfileCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutApprovedByInput
+  knowledgePosts?: Prisma.KnowledgePostCreateNestedManyWithoutAuthorInput
   roles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
   managerApprovalsRequested?: Prisma.ManagerApprovalCreateNestedManyWithoutRequestedByInput
   managerApprovalsApproved?: Prisma.ManagerApprovalCreateNestedManyWithoutApprovedByInput
@@ -308,6 +312,7 @@ export type UserUncheckedCreateInput = {
   profile?: Prisma.ProfileUncheckedCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutApprovedByInput
+  knowledgePosts?: Prisma.KnowledgePostUncheckedCreateNestedManyWithoutAuthorInput
   roles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutRequestedByInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutApprovedByInput
@@ -329,6 +334,7 @@ export type UserUpdateInput = {
   profile?: Prisma.ProfileUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutApprovedByNestedInput
+  knowledgePosts?: Prisma.KnowledgePostUpdateManyWithoutAuthorNestedInput
   roles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUpdateManyWithoutRequestedByNestedInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUpdateManyWithoutApprovedByNestedInput
@@ -350,6 +356,7 @@ export type UserUncheckedUpdateInput = {
   profile?: Prisma.ProfileUncheckedUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+  knowledgePosts?: Prisma.KnowledgePostUncheckedUpdateManyWithoutAuthorNestedInput
   roles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutRequestedByNestedInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutApprovedByNestedInput
@@ -604,6 +611,22 @@ export type UserUpdateOneWithoutManagerApprovalsUsedNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutManagerApprovalsUsedInput, Prisma.UserUpdateWithoutManagerApprovalsUsedInput>, Prisma.UserUncheckedUpdateWithoutManagerApprovalsUsedInput>
 }
 
+export type UserCreateNestedOneWithoutKnowledgePostsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutKnowledgePostsInput, Prisma.UserUncheckedCreateWithoutKnowledgePostsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutKnowledgePostsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneWithoutKnowledgePostsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutKnowledgePostsInput, Prisma.UserUncheckedCreateWithoutKnowledgePostsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutKnowledgePostsInput
+  upsert?: Prisma.UserUpsertWithoutKnowledgePostsInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutKnowledgePostsInput, Prisma.UserUpdateWithoutKnowledgePostsInput>, Prisma.UserUncheckedUpdateWithoutKnowledgePostsInput>
+}
+
 export type UserCreateWithoutRolesInput = {
   id: string
   email: string
@@ -619,6 +642,7 @@ export type UserCreateWithoutRolesInput = {
   profile?: Prisma.ProfileCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutApprovedByInput
+  knowledgePosts?: Prisma.KnowledgePostCreateNestedManyWithoutAuthorInput
   managerApprovalsRequested?: Prisma.ManagerApprovalCreateNestedManyWithoutRequestedByInput
   managerApprovalsApproved?: Prisma.ManagerApprovalCreateNestedManyWithoutApprovedByInput
   managerApprovalsUsed?: Prisma.ManagerApprovalCreateNestedManyWithoutUsedByInput
@@ -639,6 +663,7 @@ export type UserUncheckedCreateWithoutRolesInput = {
   profile?: Prisma.ProfileUncheckedCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutApprovedByInput
+  knowledgePosts?: Prisma.KnowledgePostUncheckedCreateNestedManyWithoutAuthorInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutRequestedByInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutApprovedByInput
   managerApprovalsUsed?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutUsedByInput
@@ -675,6 +700,7 @@ export type UserUpdateWithoutRolesInput = {
   profile?: Prisma.ProfileUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutApprovedByNestedInput
+  knowledgePosts?: Prisma.KnowledgePostUpdateManyWithoutAuthorNestedInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUpdateManyWithoutRequestedByNestedInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUpdateManyWithoutApprovedByNestedInput
   managerApprovalsUsed?: Prisma.ManagerApprovalUpdateManyWithoutUsedByNestedInput
@@ -695,6 +721,7 @@ export type UserUncheckedUpdateWithoutRolesInput = {
   profile?: Prisma.ProfileUncheckedUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+  knowledgePosts?: Prisma.KnowledgePostUncheckedUpdateManyWithoutAuthorNestedInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutRequestedByNestedInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutApprovedByNestedInput
   managerApprovalsUsed?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutUsedByNestedInput
@@ -714,6 +741,7 @@ export type UserCreateWithoutProfileInput = {
   nonCommercialInventoryOutputs?: Prisma.NonCommercialInventoryOutputCreateNestedManyWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutApprovedByInput
+  knowledgePosts?: Prisma.KnowledgePostCreateNestedManyWithoutAuthorInput
   roles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
   managerApprovalsRequested?: Prisma.ManagerApprovalCreateNestedManyWithoutRequestedByInput
   managerApprovalsApproved?: Prisma.ManagerApprovalCreateNestedManyWithoutApprovedByInput
@@ -734,6 +762,7 @@ export type UserUncheckedCreateWithoutProfileInput = {
   nonCommercialInventoryOutputs?: Prisma.NonCommercialInventoryOutputUncheckedCreateNestedManyWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutApprovedByInput
+  knowledgePosts?: Prisma.KnowledgePostUncheckedCreateNestedManyWithoutAuthorInput
   roles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutRequestedByInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutApprovedByInput
@@ -770,6 +799,7 @@ export type UserUpdateWithoutProfileInput = {
   nonCommercialInventoryOutputs?: Prisma.NonCommercialInventoryOutputUpdateManyWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutApprovedByNestedInput
+  knowledgePosts?: Prisma.KnowledgePostUpdateManyWithoutAuthorNestedInput
   roles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUpdateManyWithoutRequestedByNestedInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUpdateManyWithoutApprovedByNestedInput
@@ -790,6 +820,7 @@ export type UserUncheckedUpdateWithoutProfileInput = {
   nonCommercialInventoryOutputs?: Prisma.NonCommercialInventoryOutputUncheckedUpdateManyWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+  knowledgePosts?: Prisma.KnowledgePostUncheckedUpdateManyWithoutAuthorNestedInput
   roles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutRequestedByNestedInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutApprovedByNestedInput
@@ -810,6 +841,7 @@ export type UserCreateWithoutAuditLogsInput = {
   profile?: Prisma.ProfileCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutApprovedByInput
+  knowledgePosts?: Prisma.KnowledgePostCreateNestedManyWithoutAuthorInput
   roles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
   managerApprovalsRequested?: Prisma.ManagerApprovalCreateNestedManyWithoutRequestedByInput
   managerApprovalsApproved?: Prisma.ManagerApprovalCreateNestedManyWithoutApprovedByInput
@@ -830,6 +862,7 @@ export type UserUncheckedCreateWithoutAuditLogsInput = {
   profile?: Prisma.ProfileUncheckedCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutApprovedByInput
+  knowledgePosts?: Prisma.KnowledgePostUncheckedCreateNestedManyWithoutAuthorInput
   roles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutRequestedByInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutApprovedByInput
@@ -866,6 +899,7 @@ export type UserUpdateWithoutAuditLogsInput = {
   profile?: Prisma.ProfileUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutApprovedByNestedInput
+  knowledgePosts?: Prisma.KnowledgePostUpdateManyWithoutAuthorNestedInput
   roles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUpdateManyWithoutRequestedByNestedInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUpdateManyWithoutApprovedByNestedInput
@@ -886,6 +920,7 @@ export type UserUncheckedUpdateWithoutAuditLogsInput = {
   profile?: Prisma.ProfileUncheckedUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+  knowledgePosts?: Prisma.KnowledgePostUncheckedUpdateManyWithoutAuthorNestedInput
   roles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutRequestedByNestedInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutApprovedByNestedInput
@@ -906,6 +941,7 @@ export type UserCreateWithoutReviewedPersonalizationRequestsInput = {
   nonCommercialInventoryOutputs?: Prisma.NonCommercialInventoryOutputCreateNestedManyWithoutUserInput
   profile?: Prisma.ProfileCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutUserInput
+  knowledgePosts?: Prisma.KnowledgePostCreateNestedManyWithoutAuthorInput
   roles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
   managerApprovalsRequested?: Prisma.ManagerApprovalCreateNestedManyWithoutRequestedByInput
   managerApprovalsApproved?: Prisma.ManagerApprovalCreateNestedManyWithoutApprovedByInput
@@ -926,6 +962,7 @@ export type UserUncheckedCreateWithoutReviewedPersonalizationRequestsInput = {
   nonCommercialInventoryOutputs?: Prisma.NonCommercialInventoryOutputUncheckedCreateNestedManyWithoutUserInput
   profile?: Prisma.ProfileUncheckedCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutUserInput
+  knowledgePosts?: Prisma.KnowledgePostUncheckedCreateNestedManyWithoutAuthorInput
   roles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutRequestedByInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutApprovedByInput
@@ -951,6 +988,7 @@ export type UserCreateWithoutPersonalizationRequestsInput = {
   nonCommercialInventoryOutputs?: Prisma.NonCommercialInventoryOutputCreateNestedManyWithoutUserInput
   profile?: Prisma.ProfileCreateNestedOneWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutApprovedByInput
+  knowledgePosts?: Prisma.KnowledgePostCreateNestedManyWithoutAuthorInput
   roles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
   managerApprovalsRequested?: Prisma.ManagerApprovalCreateNestedManyWithoutRequestedByInput
   managerApprovalsApproved?: Prisma.ManagerApprovalCreateNestedManyWithoutApprovedByInput
@@ -971,6 +1009,7 @@ export type UserUncheckedCreateWithoutPersonalizationRequestsInput = {
   nonCommercialInventoryOutputs?: Prisma.NonCommercialInventoryOutputUncheckedCreateNestedManyWithoutUserInput
   profile?: Prisma.ProfileUncheckedCreateNestedOneWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutApprovedByInput
+  knowledgePosts?: Prisma.KnowledgePostUncheckedCreateNestedManyWithoutAuthorInput
   roles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutRequestedByInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutApprovedByInput
@@ -1007,6 +1046,7 @@ export type UserUpdateWithoutReviewedPersonalizationRequestsInput = {
   nonCommercialInventoryOutputs?: Prisma.NonCommercialInventoryOutputUpdateManyWithoutUserNestedInput
   profile?: Prisma.ProfileUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutUserNestedInput
+  knowledgePosts?: Prisma.KnowledgePostUpdateManyWithoutAuthorNestedInput
   roles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUpdateManyWithoutRequestedByNestedInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUpdateManyWithoutApprovedByNestedInput
@@ -1027,6 +1067,7 @@ export type UserUncheckedUpdateWithoutReviewedPersonalizationRequestsInput = {
   nonCommercialInventoryOutputs?: Prisma.NonCommercialInventoryOutputUncheckedUpdateManyWithoutUserNestedInput
   profile?: Prisma.ProfileUncheckedUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutUserNestedInput
+  knowledgePosts?: Prisma.KnowledgePostUncheckedUpdateManyWithoutAuthorNestedInput
   roles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutRequestedByNestedInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutApprovedByNestedInput
@@ -1058,6 +1099,7 @@ export type UserUpdateWithoutPersonalizationRequestsInput = {
   nonCommercialInventoryOutputs?: Prisma.NonCommercialInventoryOutputUpdateManyWithoutUserNestedInput
   profile?: Prisma.ProfileUpdateOneWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutApprovedByNestedInput
+  knowledgePosts?: Prisma.KnowledgePostUpdateManyWithoutAuthorNestedInput
   roles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUpdateManyWithoutRequestedByNestedInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUpdateManyWithoutApprovedByNestedInput
@@ -1078,6 +1120,7 @@ export type UserUncheckedUpdateWithoutPersonalizationRequestsInput = {
   nonCommercialInventoryOutputs?: Prisma.NonCommercialInventoryOutputUncheckedUpdateManyWithoutUserNestedInput
   profile?: Prisma.ProfileUncheckedUpdateOneWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+  knowledgePosts?: Prisma.KnowledgePostUncheckedUpdateManyWithoutAuthorNestedInput
   roles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutRequestedByNestedInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutApprovedByNestedInput
@@ -1098,6 +1141,7 @@ export type UserCreateWithoutInventoryAdjustmentsInput = {
   profile?: Prisma.ProfileCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutApprovedByInput
+  knowledgePosts?: Prisma.KnowledgePostCreateNestedManyWithoutAuthorInput
   roles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
   managerApprovalsRequested?: Prisma.ManagerApprovalCreateNestedManyWithoutRequestedByInput
   managerApprovalsApproved?: Prisma.ManagerApprovalCreateNestedManyWithoutApprovedByInput
@@ -1118,6 +1162,7 @@ export type UserUncheckedCreateWithoutInventoryAdjustmentsInput = {
   profile?: Prisma.ProfileUncheckedCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutApprovedByInput
+  knowledgePosts?: Prisma.KnowledgePostUncheckedCreateNestedManyWithoutAuthorInput
   roles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutRequestedByInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutApprovedByInput
@@ -1154,6 +1199,7 @@ export type UserUpdateWithoutInventoryAdjustmentsInput = {
   profile?: Prisma.ProfileUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutApprovedByNestedInput
+  knowledgePosts?: Prisma.KnowledgePostUpdateManyWithoutAuthorNestedInput
   roles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUpdateManyWithoutRequestedByNestedInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUpdateManyWithoutApprovedByNestedInput
@@ -1174,6 +1220,7 @@ export type UserUncheckedUpdateWithoutInventoryAdjustmentsInput = {
   profile?: Prisma.ProfileUncheckedUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+  knowledgePosts?: Prisma.KnowledgePostUncheckedUpdateManyWithoutAuthorNestedInput
   roles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutRequestedByNestedInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutApprovedByNestedInput
@@ -1194,6 +1241,7 @@ export type UserCreateWithoutNonCommercialInventoryOutputsInput = {
   profile?: Prisma.ProfileCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutApprovedByInput
+  knowledgePosts?: Prisma.KnowledgePostCreateNestedManyWithoutAuthorInput
   roles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
   managerApprovalsRequested?: Prisma.ManagerApprovalCreateNestedManyWithoutRequestedByInput
   managerApprovalsApproved?: Prisma.ManagerApprovalCreateNestedManyWithoutApprovedByInput
@@ -1214,6 +1262,7 @@ export type UserUncheckedCreateWithoutNonCommercialInventoryOutputsInput = {
   profile?: Prisma.ProfileUncheckedCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutApprovedByInput
+  knowledgePosts?: Prisma.KnowledgePostUncheckedCreateNestedManyWithoutAuthorInput
   roles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutRequestedByInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutApprovedByInput
@@ -1250,6 +1299,7 @@ export type UserUpdateWithoutNonCommercialInventoryOutputsInput = {
   profile?: Prisma.ProfileUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutApprovedByNestedInput
+  knowledgePosts?: Prisma.KnowledgePostUpdateManyWithoutAuthorNestedInput
   roles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUpdateManyWithoutRequestedByNestedInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUpdateManyWithoutApprovedByNestedInput
@@ -1270,6 +1320,7 @@ export type UserUncheckedUpdateWithoutNonCommercialInventoryOutputsInput = {
   profile?: Prisma.ProfileUncheckedUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+  knowledgePosts?: Prisma.KnowledgePostUncheckedUpdateManyWithoutAuthorNestedInput
   roles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutRequestedByNestedInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutApprovedByNestedInput
@@ -1290,6 +1341,7 @@ export type UserCreateWithoutInventoryMovementsInput = {
   profile?: Prisma.ProfileCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutApprovedByInput
+  knowledgePosts?: Prisma.KnowledgePostCreateNestedManyWithoutAuthorInput
   roles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
   managerApprovalsRequested?: Prisma.ManagerApprovalCreateNestedManyWithoutRequestedByInput
   managerApprovalsApproved?: Prisma.ManagerApprovalCreateNestedManyWithoutApprovedByInput
@@ -1310,6 +1362,7 @@ export type UserUncheckedCreateWithoutInventoryMovementsInput = {
   profile?: Prisma.ProfileUncheckedCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutApprovedByInput
+  knowledgePosts?: Prisma.KnowledgePostUncheckedCreateNestedManyWithoutAuthorInput
   roles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutRequestedByInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutApprovedByInput
@@ -1346,6 +1399,7 @@ export type UserUpdateWithoutInventoryMovementsInput = {
   profile?: Prisma.ProfileUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutApprovedByNestedInput
+  knowledgePosts?: Prisma.KnowledgePostUpdateManyWithoutAuthorNestedInput
   roles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUpdateManyWithoutRequestedByNestedInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUpdateManyWithoutApprovedByNestedInput
@@ -1366,6 +1420,7 @@ export type UserUncheckedUpdateWithoutInventoryMovementsInput = {
   profile?: Prisma.ProfileUncheckedUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+  knowledgePosts?: Prisma.KnowledgePostUncheckedUpdateManyWithoutAuthorNestedInput
   roles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutRequestedByNestedInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutApprovedByNestedInput
@@ -1386,6 +1441,7 @@ export type UserCreateWithoutFinancialTransactionsInput = {
   profile?: Prisma.ProfileCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutApprovedByInput
+  knowledgePosts?: Prisma.KnowledgePostCreateNestedManyWithoutAuthorInput
   roles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
   managerApprovalsRequested?: Prisma.ManagerApprovalCreateNestedManyWithoutRequestedByInput
   managerApprovalsApproved?: Prisma.ManagerApprovalCreateNestedManyWithoutApprovedByInput
@@ -1406,6 +1462,7 @@ export type UserUncheckedCreateWithoutFinancialTransactionsInput = {
   profile?: Prisma.ProfileUncheckedCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutApprovedByInput
+  knowledgePosts?: Prisma.KnowledgePostUncheckedCreateNestedManyWithoutAuthorInput
   roles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutRequestedByInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutApprovedByInput
@@ -1442,6 +1499,7 @@ export type UserUpdateWithoutFinancialTransactionsInput = {
   profile?: Prisma.ProfileUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutApprovedByNestedInput
+  knowledgePosts?: Prisma.KnowledgePostUpdateManyWithoutAuthorNestedInput
   roles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUpdateManyWithoutRequestedByNestedInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUpdateManyWithoutApprovedByNestedInput
@@ -1462,6 +1520,7 @@ export type UserUncheckedUpdateWithoutFinancialTransactionsInput = {
   profile?: Prisma.ProfileUncheckedUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+  knowledgePosts?: Prisma.KnowledgePostUncheckedUpdateManyWithoutAuthorNestedInput
   roles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutRequestedByNestedInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutApprovedByNestedInput
@@ -1483,6 +1542,7 @@ export type UserCreateWithoutManagerApprovalsRequestedInput = {
   profile?: Prisma.ProfileCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutApprovedByInput
+  knowledgePosts?: Prisma.KnowledgePostCreateNestedManyWithoutAuthorInput
   roles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
   managerApprovalsApproved?: Prisma.ManagerApprovalCreateNestedManyWithoutApprovedByInput
   managerApprovalsUsed?: Prisma.ManagerApprovalCreateNestedManyWithoutUsedByInput
@@ -1503,6 +1563,7 @@ export type UserUncheckedCreateWithoutManagerApprovalsRequestedInput = {
   profile?: Prisma.ProfileUncheckedCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutApprovedByInput
+  knowledgePosts?: Prisma.KnowledgePostUncheckedCreateNestedManyWithoutAuthorInput
   roles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutApprovedByInput
   managerApprovalsUsed?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutUsedByInput
@@ -1528,6 +1589,7 @@ export type UserCreateWithoutManagerApprovalsApprovedInput = {
   profile?: Prisma.ProfileCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutApprovedByInput
+  knowledgePosts?: Prisma.KnowledgePostCreateNestedManyWithoutAuthorInput
   roles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
   managerApprovalsRequested?: Prisma.ManagerApprovalCreateNestedManyWithoutRequestedByInput
   managerApprovalsUsed?: Prisma.ManagerApprovalCreateNestedManyWithoutUsedByInput
@@ -1548,6 +1610,7 @@ export type UserUncheckedCreateWithoutManagerApprovalsApprovedInput = {
   profile?: Prisma.ProfileUncheckedCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutApprovedByInput
+  knowledgePosts?: Prisma.KnowledgePostUncheckedCreateNestedManyWithoutAuthorInput
   roles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutRequestedByInput
   managerApprovalsUsed?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutUsedByInput
@@ -1573,6 +1636,7 @@ export type UserCreateWithoutManagerApprovalsUsedInput = {
   profile?: Prisma.ProfileCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutApprovedByInput
+  knowledgePosts?: Prisma.KnowledgePostCreateNestedManyWithoutAuthorInput
   roles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
   managerApprovalsRequested?: Prisma.ManagerApprovalCreateNestedManyWithoutRequestedByInput
   managerApprovalsApproved?: Prisma.ManagerApprovalCreateNestedManyWithoutApprovedByInput
@@ -1593,6 +1657,7 @@ export type UserUncheckedCreateWithoutManagerApprovalsUsedInput = {
   profile?: Prisma.ProfileUncheckedCreateNestedOneWithoutUserInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutUserInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutApprovedByInput
+  knowledgePosts?: Prisma.KnowledgePostUncheckedCreateNestedManyWithoutAuthorInput
   roles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutRequestedByInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutApprovedByInput
@@ -1629,6 +1694,7 @@ export type UserUpdateWithoutManagerApprovalsRequestedInput = {
   profile?: Prisma.ProfileUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutApprovedByNestedInput
+  knowledgePosts?: Prisma.KnowledgePostUpdateManyWithoutAuthorNestedInput
   roles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUpdateManyWithoutApprovedByNestedInput
   managerApprovalsUsed?: Prisma.ManagerApprovalUpdateManyWithoutUsedByNestedInput
@@ -1649,6 +1715,7 @@ export type UserUncheckedUpdateWithoutManagerApprovalsRequestedInput = {
   profile?: Prisma.ProfileUncheckedUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+  knowledgePosts?: Prisma.KnowledgePostUncheckedUpdateManyWithoutAuthorNestedInput
   roles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutApprovedByNestedInput
   managerApprovalsUsed?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutUsedByNestedInput
@@ -1680,6 +1747,7 @@ export type UserUpdateWithoutManagerApprovalsApprovedInput = {
   profile?: Prisma.ProfileUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutApprovedByNestedInput
+  knowledgePosts?: Prisma.KnowledgePostUpdateManyWithoutAuthorNestedInput
   roles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUpdateManyWithoutRequestedByNestedInput
   managerApprovalsUsed?: Prisma.ManagerApprovalUpdateManyWithoutUsedByNestedInput
@@ -1700,6 +1768,7 @@ export type UserUncheckedUpdateWithoutManagerApprovalsApprovedInput = {
   profile?: Prisma.ProfileUncheckedUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+  knowledgePosts?: Prisma.KnowledgePostUncheckedUpdateManyWithoutAuthorNestedInput
   roles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutRequestedByNestedInput
   managerApprovalsUsed?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutUsedByNestedInput
@@ -1731,6 +1800,7 @@ export type UserUpdateWithoutManagerApprovalsUsedInput = {
   profile?: Prisma.ProfileUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutApprovedByNestedInput
+  knowledgePosts?: Prisma.KnowledgePostUpdateManyWithoutAuthorNestedInput
   roles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUpdateManyWithoutRequestedByNestedInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUpdateManyWithoutApprovedByNestedInput
@@ -1751,9 +1821,110 @@ export type UserUncheckedUpdateWithoutManagerApprovalsUsedInput = {
   profile?: Prisma.ProfileUncheckedUpdateOneWithoutUserNestedInput
   personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutUserNestedInput
   reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+  knowledgePosts?: Prisma.KnowledgePostUncheckedUpdateManyWithoutAuthorNestedInput
   roles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
   managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutRequestedByNestedInput
   managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutApprovedByNestedInput
+}
+
+export type UserCreateWithoutKnowledgePostsInput = {
+  id: string
+  email: string
+  role?: $Enums.Role
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
+  financialTransactions?: Prisma.FinancialTransactionCreateNestedManyWithoutUserInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentCreateNestedManyWithoutUserInput
+  inventoryMovements?: Prisma.InventoryMovementCreateNestedManyWithoutUserInput
+  nonCommercialInventoryOutputs?: Prisma.NonCommercialInventoryOutputCreateNestedManyWithoutUserInput
+  profile?: Prisma.ProfileCreateNestedOneWithoutUserInput
+  personalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutUserInput
+  reviewedPersonalizationRequests?: Prisma.PersonalizationRequestCreateNestedManyWithoutApprovedByInput
+  roles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
+  managerApprovalsRequested?: Prisma.ManagerApprovalCreateNestedManyWithoutRequestedByInput
+  managerApprovalsApproved?: Prisma.ManagerApprovalCreateNestedManyWithoutApprovedByInput
+  managerApprovalsUsed?: Prisma.ManagerApprovalCreateNestedManyWithoutUsedByInput
+}
+
+export type UserUncheckedCreateWithoutKnowledgePostsInput = {
+  id: string
+  email: string
+  role?: $Enums.Role
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
+  financialTransactions?: Prisma.FinancialTransactionUncheckedCreateNestedManyWithoutUserInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedCreateNestedManyWithoutUserInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedCreateNestedManyWithoutUserInput
+  nonCommercialInventoryOutputs?: Prisma.NonCommercialInventoryOutputUncheckedCreateNestedManyWithoutUserInput
+  profile?: Prisma.ProfileUncheckedCreateNestedOneWithoutUserInput
+  personalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutUserInput
+  reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedCreateNestedManyWithoutApprovedByInput
+  roles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
+  managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutRequestedByInput
+  managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutApprovedByInput
+  managerApprovalsUsed?: Prisma.ManagerApprovalUncheckedCreateNestedManyWithoutUsedByInput
+}
+
+export type UserCreateOrConnectWithoutKnowledgePostsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutKnowledgePostsInput, Prisma.UserUncheckedCreateWithoutKnowledgePostsInput>
+}
+
+export type UserUpsertWithoutKnowledgePostsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutKnowledgePostsInput, Prisma.UserUncheckedUpdateWithoutKnowledgePostsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutKnowledgePostsInput, Prisma.UserUncheckedCreateWithoutKnowledgePostsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutKnowledgePostsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutKnowledgePostsInput, Prisma.UserUncheckedUpdateWithoutKnowledgePostsInput>
+}
+
+export type UserUpdateWithoutKnowledgePostsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
+  financialTransactions?: Prisma.FinancialTransactionUpdateManyWithoutUserNestedInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUpdateManyWithoutUserNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUpdateManyWithoutUserNestedInput
+  nonCommercialInventoryOutputs?: Prisma.NonCommercialInventoryOutputUpdateManyWithoutUserNestedInput
+  profile?: Prisma.ProfileUpdateOneWithoutUserNestedInput
+  personalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutUserNestedInput
+  reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUpdateManyWithoutApprovedByNestedInput
+  roles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
+  managerApprovalsRequested?: Prisma.ManagerApprovalUpdateManyWithoutRequestedByNestedInput
+  managerApprovalsApproved?: Prisma.ManagerApprovalUpdateManyWithoutApprovedByNestedInput
+  managerApprovalsUsed?: Prisma.ManagerApprovalUpdateManyWithoutUsedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutKnowledgePostsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
+  financialTransactions?: Prisma.FinancialTransactionUncheckedUpdateManyWithoutUserNestedInput
+  inventoryAdjustments?: Prisma.InventoryAdjustmentUncheckedUpdateManyWithoutUserNestedInput
+  inventoryMovements?: Prisma.InventoryMovementUncheckedUpdateManyWithoutUserNestedInput
+  nonCommercialInventoryOutputs?: Prisma.NonCommercialInventoryOutputUncheckedUpdateManyWithoutUserNestedInput
+  profile?: Prisma.ProfileUncheckedUpdateOneWithoutUserNestedInput
+  personalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutUserNestedInput
+  reviewedPersonalizationRequests?: Prisma.PersonalizationRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+  roles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
+  managerApprovalsRequested?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutRequestedByNestedInput
+  managerApprovalsApproved?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutApprovedByNestedInput
+  managerApprovalsUsed?: Prisma.ManagerApprovalUncheckedUpdateManyWithoutUsedByNestedInput
 }
 
 
@@ -1769,6 +1940,7 @@ export type UserCountOutputType = {
   nonCommercialInventoryOutputs: number
   personalizationRequests: number
   reviewedPersonalizationRequests: number
+  knowledgePosts: number
   roles: number
   managerApprovalsRequested: number
   managerApprovalsApproved: number
@@ -1783,6 +1955,7 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   nonCommercialInventoryOutputs?: boolean | UserCountOutputTypeCountNonCommercialInventoryOutputsArgs
   personalizationRequests?: boolean | UserCountOutputTypeCountPersonalizationRequestsArgs
   reviewedPersonalizationRequests?: boolean | UserCountOutputTypeCountReviewedPersonalizationRequestsArgs
+  knowledgePosts?: boolean | UserCountOutputTypeCountKnowledgePostsArgs
   roles?: boolean | UserCountOutputTypeCountRolesArgs
   managerApprovalsRequested?: boolean | UserCountOutputTypeCountManagerApprovalsRequestedArgs
   managerApprovalsApproved?: boolean | UserCountOutputTypeCountManagerApprovalsApprovedArgs
@@ -1851,6 +2024,13 @@ export type UserCountOutputTypeCountReviewedPersonalizationRequestsArgs<ExtArgs 
 /**
  * UserCountOutputType without action
  */
+export type UserCountOutputTypeCountKnowledgePostsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.KnowledgePostWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
 export type UserCountOutputTypeCountRolesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.UserRoleWhereInput
 }
@@ -1892,6 +2072,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   profile?: boolean | Prisma.User$profileArgs<ExtArgs>
   personalizationRequests?: boolean | Prisma.User$personalizationRequestsArgs<ExtArgs>
   reviewedPersonalizationRequests?: boolean | Prisma.User$reviewedPersonalizationRequestsArgs<ExtArgs>
+  knowledgePosts?: boolean | Prisma.User$knowledgePostsArgs<ExtArgs>
   roles?: boolean | Prisma.User$rolesArgs<ExtArgs>
   managerApprovalsRequested?: boolean | Prisma.User$managerApprovalsRequestedArgs<ExtArgs>
   managerApprovalsApproved?: boolean | Prisma.User$managerApprovalsApprovedArgs<ExtArgs>
@@ -1936,6 +2117,7 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   profile?: boolean | Prisma.User$profileArgs<ExtArgs>
   personalizationRequests?: boolean | Prisma.User$personalizationRequestsArgs<ExtArgs>
   reviewedPersonalizationRequests?: boolean | Prisma.User$reviewedPersonalizationRequestsArgs<ExtArgs>
+  knowledgePosts?: boolean | Prisma.User$knowledgePostsArgs<ExtArgs>
   roles?: boolean | Prisma.User$rolesArgs<ExtArgs>
   managerApprovalsRequested?: boolean | Prisma.User$managerApprovalsRequestedArgs<ExtArgs>
   managerApprovalsApproved?: boolean | Prisma.User$managerApprovalsApprovedArgs<ExtArgs>
@@ -1956,6 +2138,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     profile: Prisma.$ProfilePayload<ExtArgs> | null
     personalizationRequests: Prisma.$PersonalizationRequestPayload<ExtArgs>[]
     reviewedPersonalizationRequests: Prisma.$PersonalizationRequestPayload<ExtArgs>[]
+    knowledgePosts: Prisma.$KnowledgePostPayload<ExtArgs>[]
     roles: Prisma.$UserRolePayload<ExtArgs>[]
     managerApprovalsRequested: Prisma.$ManagerApprovalPayload<ExtArgs>[]
     managerApprovalsApproved: Prisma.$ManagerApprovalPayload<ExtArgs>[]
@@ -2370,6 +2553,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   profile<T extends Prisma.User$profileArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$profileArgs<ExtArgs>>): Prisma.Prisma__ProfileClient<runtime.Types.Result.GetResult<Prisma.$ProfilePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   personalizationRequests<T extends Prisma.User$personalizationRequestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$personalizationRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PersonalizationRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   reviewedPersonalizationRequests<T extends Prisma.User$reviewedPersonalizationRequestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$reviewedPersonalizationRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PersonalizationRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  knowledgePosts<T extends Prisma.User$knowledgePostsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$knowledgePostsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$KnowledgePostPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   roles<T extends Prisma.User$rolesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$rolesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserRolePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   managerApprovalsRequested<T extends Prisma.User$managerApprovalsRequestedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$managerApprovalsRequestedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ManagerApprovalPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   managerApprovalsApproved<T extends Prisma.User$managerApprovalsApprovedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$managerApprovalsApprovedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ManagerApprovalPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -2981,6 +3165,30 @@ export type User$reviewedPersonalizationRequestsArgs<ExtArgs extends runtime.Typ
   take?: number
   skip?: number
   distinct?: Prisma.PersonalizationRequestScalarFieldEnum | Prisma.PersonalizationRequestScalarFieldEnum[]
+}
+
+/**
+ * User.knowledgePosts
+ */
+export type User$knowledgePostsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the KnowledgePost
+   */
+  select?: Prisma.KnowledgePostSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the KnowledgePost
+   */
+  omit?: Prisma.KnowledgePostOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.KnowledgePostInclude<ExtArgs> | null
+  where?: Prisma.KnowledgePostWhereInput
+  orderBy?: Prisma.KnowledgePostOrderByWithRelationInput | Prisma.KnowledgePostOrderByWithRelationInput[]
+  cursor?: Prisma.KnowledgePostWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.KnowledgePostScalarFieldEnum | Prisma.KnowledgePostScalarFieldEnum[]
 }
 
 /**

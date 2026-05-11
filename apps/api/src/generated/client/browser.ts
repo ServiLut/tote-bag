@@ -256,3 +256,8 @@ export type OpexCategory = Prisma.OpexCategoryModel
  * 
  */
 export type ManagerApproval = Prisma.ManagerApprovalModel
+/**
+ * Model KnowledgePost
+ * 
+ */
+export type KnowledgePost = Prisma.KnowledgePostModel

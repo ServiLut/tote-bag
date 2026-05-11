@@ -176,6 +176,10 @@ async function seedRolesAndPermissions(prisma: PrismaClient) {
     { resource: 'audit', action: 'read' },
     { resource: 'b2b', action: 'manage' },
     { resource: 'personalizations', action: 'manage' },
+    { resource: 'knowledge-posts', action: 'create' },
+    { resource: 'knowledge-posts', action: 'read' },
+    { resource: 'knowledge-posts', action: 'update' },
+    { resource: 'knowledge-posts', action: 'delete' },
   ];
 
   for (const permission of permissions) {
@@ -215,7 +219,9 @@ async function seedRolesAndPermissions(prisma: PrismaClient) {
       permissionsToAssign = allPermissions.filter((permission) =>
         ['products', 'orders', 'b2b', 'shipping', 'personalizations'].includes(
           permission.resource,
-        ),
+        ) ||
+        (permission.resource === 'knowledge-posts' &&
+          permission.action === 'read'),
       );
     } else if (roleInput.name === 'customer') {
       permissionsToAssign = allPermissions.filter(

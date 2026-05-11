@@ -26,17 +26,23 @@ const ALL_PERMISSIONS: readonly RolePermission[] = [
   { resource: 'audit', action: 'read' },
   { resource: 'b2b', action: 'manage' },
   { resource: 'personalizations', action: 'manage' },
+  { resource: 'knowledge-posts', action: 'create' },
+  { resource: 'knowledge-posts', action: 'read' },
+  { resource: 'knowledge-posts', action: 'update' },
+  { resource: 'knowledge-posts', action: 'delete' },
 ];
 
-const MANAGER_PERMISSIONS = ALL_PERMISSIONS.filter((permission) =>
-  [
-    'dashboard',
-    'products',
-    'orders',
-    'b2b',
-    'shipping',
-    'personalizations',
-  ].includes(permission.resource),
+const MANAGER_PERMISSIONS = ALL_PERMISSIONS.filter(
+  (permission) =>
+    [
+      'dashboard',
+      'products',
+      'orders',
+      'b2b',
+      'shipping',
+      'personalizations',
+    ].includes(permission.resource) ||
+    (permission.resource === 'knowledge-posts' && permission.action === 'read'),
 );
 
 const CUSTOMER_PERMISSIONS = ALL_PERMISSIONS.filter(

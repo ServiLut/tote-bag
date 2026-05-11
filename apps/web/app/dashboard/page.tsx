@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { cookies } from 'next/headers';
 import {
   ArrowRight,
+  BookOpen,
   Boxes,
   Briefcase,
   Clock3,
@@ -580,6 +581,16 @@ export default async function DashboardPage() {
               icon={<Inbox className="h-4 w-4" />}
               href="/dashboard/pqrs"
               tone={stats.newPqrsCount > 0 ? 'warning' : 'default'}
+            />
+            <InfoBadge
+              label="Centro Informativo"
+              value="Abrir publicaciones internas"
+              icon={<BookOpen className="h-4 w-4" />}
+              href={getAccessibleDashboardHref(
+                role,
+                '/dashboard/conocimiento',
+                '/dashboard',
+              )}
             />
             <InfoBadge
               label="Lotes estancados"

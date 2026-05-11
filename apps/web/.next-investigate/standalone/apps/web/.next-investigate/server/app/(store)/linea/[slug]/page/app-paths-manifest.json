@@ -1,0 +1,3 @@
+{
+  "/(store)/linea/[slug]/page": "app/(store)/linea/[slug]/page.js"
+}

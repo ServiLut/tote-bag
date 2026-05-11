@@ -6,8 +6,80 @@
 - Environments: .env
 
   Creating an optimized production build ...
-✓ Compiled successfully in 13.3s
+✓ Compiled successfully in 25.4s
   Running TypeScript ...
-Debug Failure. Expected C:/Users/user/Desktop/deybis/tote-bag/apps/web/.next/cache/.tsbuildinfo === C:\Users\user\Desktop\deybis\tote-bag\apps\web\.next\cache\.tsbuildinfo. 
-Next.js build worker exited with code: 1 and signal: null
- ELIFECYCLE  Command failed with exit code 1.
+  Finished TypeScript in 37.7s ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/52) ...
+🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
+🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
+🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
+  Generating static pages using 7 workers (13/52) 
+  Generating static pages using 7 workers (26/52) 
+  Generating static pages using 7 workers (39/52) 
+✓ Generating static pages using 7 workers (52/52) in 2.1s
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /about
+├ ƒ /api/proxy/[...path]
+├ ƒ /api/v1/[...path]
+├ ƒ /auth/signout
+├ ○ /b2b
+├ ○ /beneficios
+├ ○ /catalog
+├ ƒ /catalog/[slug]
+├ ○ /checkout
+├ ○ /checkout/confirmacion
+├ ○ /corporativo
+├ ƒ /dashboard
+├ ƒ /dashboard/audit
+├ ƒ /dashboard/b2b
+├ ƒ /dashboard/compras/facturacion
+├ ƒ /dashboard/compras/recepcion
+├ ƒ /dashboard/conocimiento
+├ ƒ /dashboard/customers
+├ ƒ /dashboard/finanzas
+├ ƒ /dashboard/finanzas/cash-flow
+├ ƒ /dashboard/finanzas/nomina
+├ ƒ /dashboard/finanzas/opex
+├ ƒ /dashboard/logistica/envios
+├ ƒ /dashboard/logistica/insumos
+├ ƒ /dashboard/logistica/inventario
+├ ƒ /dashboard/logistica/inventario/salidas-no-comerciales
+├ ƒ /dashboard/logistica/proveedores
+├ ƒ /dashboard/orders
+├ ƒ /dashboard/orders/new
+├ ƒ /dashboard/personalizaciones
+├ ƒ /dashboard/personalizaciones/nueva
+├ ƒ /dashboard/pqrs
+├ ƒ /dashboard/products
+├ ƒ /dashboard/products/[id]/edit
+├ ƒ /dashboard/products/new
+├ ƒ /dashboard/reportes
+├ ƒ /dashboard/settings
+├ ƒ /dashboard/settings/users
+├ ƒ /dashboard/strategy/pricing
+├ ○ /envios
+├ ○ /forgot-password
+├ ○ /legal/cookies
+├ ○ /legal/data-processing
+├ ○ /legal/privacy
+├ ƒ /linea/[slug]
+├ ○ /lineas
+├ ○ /login
+├ ƒ /personaliza
+├ ƒ /personaliza/configurador
+├ ○ /pqrs
+├ ○ /profile
+├ ○ /register
+└ ○ /reset-password
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

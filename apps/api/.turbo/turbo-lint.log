@@ -3,30 +3,3 @@
 > eslint "{src,apps,libs,test}/**/*.ts" --fix
 
 
-C:\Users\user\Desktop\deybis\tote-bag\apps\api\src\main.ts
-  40:9   error  Unsafe assignment of an `any` value          @typescript-eslint/no-unsafe-assignment
-  41:3   error  Unsafe call of an `any` typed value          @typescript-eslint/no-unsafe-call
-  41:15  error  Unsafe member access .set on an `any` value  @typescript-eslint/no-unsafe-member-access
-
-C:\Users\user\Desktop\deybis\tote-bag\apps\api\src\modules\inventory\finance.service.ts
-  1897:29  error  Argument of unary negation should be assignable to number | bigint but is Decimal instead  @typescript-eslint/no-unsafe-unary-minus
-
-C:\Users\user\Desktop\deybis\tote-bag\apps\api\src\modules\payroll\payroll.service.ts
-  23:3  error  'DecimalInput' is defined but never used  @typescript-eslint/no-unused-vars
-
-C:\Users\user\Desktop\deybis\tote-bag\apps\api\src\modules\shipping\shipping-sync.service.ts
-  9:10  error  'decimalToNumber' is defined but never used  @typescript-eslint/no-unused-vars
-
-C:\Users\user\Desktop\deybis\tote-bag\apps\api\src\modules\shipping\shipping.pdf.service.ts
-  102:23  error  Invalid type "0 | Decimal" of template literal expression  @typescript-eslint/restrict-template-expressions
-
-C:\Users\user\Desktop\deybis\tote-bag\apps\api\test\app.e2e-spec.ts
-  50:21  error  Unsafe member access .status on an `any` value         @typescript-eslint/no-unsafe-member-access
-  51:28  error  Unsafe member access .timestamp on an `any` value      @typescript-eslint/no-unsafe-member-access
-  52:28  error  Unsafe member access .uptimeSeconds on an `any` value  @typescript-eslint/no-unsafe-member-access
-  61:21  error  Unsafe member access .status on an `any` value         @typescript-eslint/no-unsafe-member-access
-  62:21  error  Unsafe member access .dependencies on an `any` value   @typescript-eslint/no-unsafe-member-access
-
-✖ 12 problems (12 errors, 0 warnings)
-
- ELIFECYCLE  Command failed with exit code 1.

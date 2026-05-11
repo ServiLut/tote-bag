@@ -969,6 +969,57 @@ export type EnumManagerApprovalStatusWithAggregatesFilter<$PrismaModel = never> 
   _max?: Prisma.NestedEnumManagerApprovalStatusFilter<$PrismaModel>
 }
 
+export type EnumKnowledgeCategoryFilter<$PrismaModel = never> = {
+  equals?: $Enums.KnowledgeCategory | Prisma.EnumKnowledgeCategoryFieldRefInput<$PrismaModel>
+  in?: $Enums.KnowledgeCategory[] | Prisma.ListEnumKnowledgeCategoryFieldRefInput<$PrismaModel>
+  notIn?: $Enums.KnowledgeCategory[] | Prisma.ListEnumKnowledgeCategoryFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumKnowledgeCategoryFilter<$PrismaModel> | $Enums.KnowledgeCategory
+}
+
+export type EnumKnowledgeStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.KnowledgeStatus | Prisma.EnumKnowledgeStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.KnowledgeStatus[] | Prisma.ListEnumKnowledgeStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.KnowledgeStatus[] | Prisma.ListEnumKnowledgeStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumKnowledgeStatusFilter<$PrismaModel> | $Enums.KnowledgeStatus
+}
+
+export type EnumKnowledgePriorityFilter<$PrismaModel = never> = {
+  equals?: $Enums.KnowledgePriority | Prisma.EnumKnowledgePriorityFieldRefInput<$PrismaModel>
+  in?: $Enums.KnowledgePriority[] | Prisma.ListEnumKnowledgePriorityFieldRefInput<$PrismaModel>
+  notIn?: $Enums.KnowledgePriority[] | Prisma.ListEnumKnowledgePriorityFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumKnowledgePriorityFilter<$PrismaModel> | $Enums.KnowledgePriority
+}
+
+export type EnumKnowledgeCategoryWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.KnowledgeCategory | Prisma.EnumKnowledgeCategoryFieldRefInput<$PrismaModel>
+  in?: $Enums.KnowledgeCategory[] | Prisma.ListEnumKnowledgeCategoryFieldRefInput<$PrismaModel>
+  notIn?: $Enums.KnowledgeCategory[] | Prisma.ListEnumKnowledgeCategoryFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumKnowledgeCategoryWithAggregatesFilter<$PrismaModel> | $Enums.KnowledgeCategory
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumKnowledgeCategoryFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumKnowledgeCategoryFilter<$PrismaModel>
+}
+
+export type EnumKnowledgeStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.KnowledgeStatus | Prisma.EnumKnowledgeStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.KnowledgeStatus[] | Prisma.ListEnumKnowledgeStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.KnowledgeStatus[] | Prisma.ListEnumKnowledgeStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumKnowledgeStatusWithAggregatesFilter<$PrismaModel> | $Enums.KnowledgeStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumKnowledgeStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumKnowledgeStatusFilter<$PrismaModel>
+}
+
+export type EnumKnowledgePriorityWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.KnowledgePriority | Prisma.EnumKnowledgePriorityFieldRefInput<$PrismaModel>
+  in?: $Enums.KnowledgePriority[] | Prisma.ListEnumKnowledgePriorityFieldRefInput<$PrismaModel>
+  notIn?: $Enums.KnowledgePriority[] | Prisma.ListEnumKnowledgePriorityFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumKnowledgePriorityWithAggregatesFilter<$PrismaModel> | $Enums.KnowledgePriority
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumKnowledgePriorityFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumKnowledgePriorityFilter<$PrismaModel>
+}
+
 export type NestedStringFilter<$PrismaModel = never> = {
   equals?: string | Prisma.StringFieldRefInput<$PrismaModel>
   in?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
@@ -1882,6 +1933,57 @@ export type NestedEnumManagerApprovalStatusWithAggregatesFilter<$PrismaModel = n
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumManagerApprovalStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumManagerApprovalStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumKnowledgeCategoryFilter<$PrismaModel = never> = {
+  equals?: $Enums.KnowledgeCategory | Prisma.EnumKnowledgeCategoryFieldRefInput<$PrismaModel>
+  in?: $Enums.KnowledgeCategory[] | Prisma.ListEnumKnowledgeCategoryFieldRefInput<$PrismaModel>
+  notIn?: $Enums.KnowledgeCategory[] | Prisma.ListEnumKnowledgeCategoryFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumKnowledgeCategoryFilter<$PrismaModel> | $Enums.KnowledgeCategory
+}
+
+export type NestedEnumKnowledgeStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.KnowledgeStatus | Prisma.EnumKnowledgeStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.KnowledgeStatus[] | Prisma.ListEnumKnowledgeStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.KnowledgeStatus[] | Prisma.ListEnumKnowledgeStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumKnowledgeStatusFilter<$PrismaModel> | $Enums.KnowledgeStatus
+}
+
+export type NestedEnumKnowledgePriorityFilter<$PrismaModel = never> = {
+  equals?: $Enums.KnowledgePriority | Prisma.EnumKnowledgePriorityFieldRefInput<$PrismaModel>
+  in?: $Enums.KnowledgePriority[] | Prisma.ListEnumKnowledgePriorityFieldRefInput<$PrismaModel>
+  notIn?: $Enums.KnowledgePriority[] | Prisma.ListEnumKnowledgePriorityFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumKnowledgePriorityFilter<$PrismaModel> | $Enums.KnowledgePriority
+}
+
+export type NestedEnumKnowledgeCategoryWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.KnowledgeCategory | Prisma.EnumKnowledgeCategoryFieldRefInput<$PrismaModel>
+  in?: $Enums.KnowledgeCategory[] | Prisma.ListEnumKnowledgeCategoryFieldRefInput<$PrismaModel>
+  notIn?: $Enums.KnowledgeCategory[] | Prisma.ListEnumKnowledgeCategoryFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumKnowledgeCategoryWithAggregatesFilter<$PrismaModel> | $Enums.KnowledgeCategory
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumKnowledgeCategoryFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumKnowledgeCategoryFilter<$PrismaModel>
+}
+
+export type NestedEnumKnowledgeStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.KnowledgeStatus | Prisma.EnumKnowledgeStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.KnowledgeStatus[] | Prisma.ListEnumKnowledgeStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.KnowledgeStatus[] | Prisma.ListEnumKnowledgeStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumKnowledgeStatusWithAggregatesFilter<$PrismaModel> | $Enums.KnowledgeStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumKnowledgeStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumKnowledgeStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumKnowledgePriorityWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.KnowledgePriority | Prisma.EnumKnowledgePriorityFieldRefInput<$PrismaModel>
+  in?: $Enums.KnowledgePriority[] | Prisma.ListEnumKnowledgePriorityFieldRefInput<$PrismaModel>
+  notIn?: $Enums.KnowledgePriority[] | Prisma.ListEnumKnowledgePriorityFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumKnowledgePriorityWithAggregatesFilter<$PrismaModel> | $Enums.KnowledgePriority
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumKnowledgePriorityFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumKnowledgePriorityFilter<$PrismaModel>
 }
 
 

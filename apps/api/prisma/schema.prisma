@@ -278,6 +278,7 @@ model User {
   profile                         Profile?
   personalizationRequests         PersonalizationRequest[] @relation("PersonalizationRequestUser")
   reviewedPersonalizationRequests PersonalizationRequest[] @relation("PersonalizationRequestReviewedBy")
+  knowledgePosts                  KnowledgePost[]
   roles                           UserRole[]
   managerApprovalsRequested       ManagerApproval[]       @relation("ManagerApprovalRequestedBy")
   managerApprovalsApproved        ManagerApproval[]       @relation("ManagerApprovalApprovedBy")
@@ -1074,6 +1075,31 @@ model ManagerApproval {
   @@schema("tote-bag")
 }
 
+model KnowledgePost {
+  id          String             @id @default(uuid()) @map("id")
+  title       String             @map("title")
+  slug        String             @unique @map("slug")
+  summary     String?            @map("summary")
+  content     String             @map("content")
+  imageUrls   String[]           @default([]) @map("image_urls")
+  attachments Json?              @map("attachments")
+  category    KnowledgeCategory  @default(GENERAL) @map("category")
+  status      KnowledgeStatus    @default(BORRADOR) @map("status")
+  priority    KnowledgePriority  @default(MEDIA) @map("priority")
+  tags        String[]           @default([]) @map("tags")
+  authorId    String?            @map("author_id")
+  publishedAt DateTime?          @map("published_at")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+  author      User?              @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([category, status])
+  @@index([priority, updatedAt])
+  @@index([authorId])
+  @@map("knowledge_posts")
+  @@schema("tote-bag")
+}
+
 enum ShipmentStatus {
   PENDING
   READY_TO_SHIP
@@ -1382,6 +1408,34 @@ enum ManagerApprovalStatus {
   USED
   EXPIRED
   REVOKED
+
+  @@schema("tote-bag")
+}
+
+enum KnowledgeCategory {
+  GENERAL
+  VENTAS
+  NOTICIAS
+  OPERACION
+  FINANZAS
+  ESTRATEGIA
+
+  @@schema("tote-bag")
+}
+
+enum KnowledgeStatus {
+  BORRADOR
+  PUBLICADO
+  ARCHIVADO
+
+  @@schema("tote-bag")
+}
+
+enum KnowledgePriority {
+  BAJA
+  MEDIA
+  ALTA
+  CRITICA
 
   @@schema("tote-bag")
 }

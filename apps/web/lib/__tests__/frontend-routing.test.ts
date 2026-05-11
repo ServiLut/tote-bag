@@ -191,6 +191,9 @@ describe('frontend routing guards', () => {
     expect(
       canAccessDashboardPath('MANAGER', '/dashboard/personalizaciones'),
     ).toBe(true);
+    expect(canAccessDashboardPath('MANAGER', '/dashboard/conocimiento')).toBe(
+      true,
+    );
     expect(canAccessDashboardPath('CUSTOMER', '/dashboard/orders')).toBe(false);
     expect(canAccessDashboardPath('CUSTOMER', '/dashboard/products')).toBe(
       false,
@@ -199,6 +202,9 @@ describe('frontend routing guards', () => {
       false,
     );
     expect(canAccessDashboardPath('CUSTOMER', '/dashboard/pqrs')).toBe(false);
+    expect(canAccessDashboardPath('CUSTOMER', '/dashboard/conocimiento')).toBe(
+      false,
+    );
   });
 
   it('ya no expone roles de solo lectura dedicados', () => {

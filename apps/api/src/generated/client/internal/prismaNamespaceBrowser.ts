@@ -97,7 +97,8 @@ export const ModelName = {
   PayrollShift: 'PayrollShift',
   PayrollBillingStatement: 'PayrollBillingStatement',
   OpexCategory: 'OpexCategory',
-  ManagerApproval: 'ManagerApproval'
+  ManagerApproval: 'ManagerApproval',
+  KnowledgePost: 'KnowledgePost'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -970,6 +971,27 @@ export const ManagerApprovalScalarFieldEnum = {
 } as const
 
 export type ManagerApprovalScalarFieldEnum = (typeof ManagerApprovalScalarFieldEnum)[keyof typeof ManagerApprovalScalarFieldEnum]
+
+
+export const KnowledgePostScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  slug: 'slug',
+  summary: 'summary',
+  content: 'content',
+  imageUrls: 'imageUrls',
+  attachments: 'attachments',
+  category: 'category',
+  status: 'status',
+  priority: 'priority',
+  tags: 'tags',
+  authorId: 'authorId',
+  publishedAt: 'publishedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type KnowledgePostScalarFieldEnum = (typeof KnowledgePostScalarFieldEnum)[keyof typeof KnowledgePostScalarFieldEnum]
 
 
 export const SortOrder = {

@@ -26,6 +26,9 @@ const DASHBOARD_ROUTE_MATCHERS = {
     pathname.startsWith('/dashboard/personalizaciones/'),
   pqrs: (pathname: string) =>
     pathname === '/dashboard/pqrs' || pathname.startsWith('/dashboard/pqrs/'),
+  knowledge: (pathname: string) =>
+    pathname === '/dashboard/conocimiento' ||
+    pathname.startsWith('/dashboard/conocimiento/'),
   finance: (pathname: string) =>
     pathname === '/dashboard/finanzas' ||
     pathname.startsWith('/dashboard/finanzas/') ||
@@ -154,6 +157,7 @@ export function canAccessDashboardPath(
       DASHBOARD_ROUTE_MATCHERS.b2b(pathname) ||
       DASHBOARD_ROUTE_MATCHERS.personalizations(pathname) ||
       DASHBOARD_ROUTE_MATCHERS.pqrs(pathname) ||
+      DASHBOARD_ROUTE_MATCHERS.knowledge(pathname) ||
       DASHBOARD_ROUTE_MATCHERS.logistics(pathname) ||
       DASHBOARD_ROUTE_MATCHERS.strategy(pathname)
     );
