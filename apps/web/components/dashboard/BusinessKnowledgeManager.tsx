@@ -330,6 +330,14 @@ export default function BusinessKnowledgeManager() {
   }, [deferredSearch, categoryFilter, priorityFilter, statusFilter]);
 
   useEffect(() => {
+    if (page <= totalPages) {
+      return;
+    }
+
+    setPage(Math.max(1, totalPages));
+  }, [page, totalPages]);
+
+  useEffect(() => {
     if (!(showFormModal || selectedPost || deleteTarget)) {
       return;
     }
@@ -549,7 +557,13 @@ export default function BusinessKnowledgeManager() {
         setSelectedPost(null);
       }
 
-      await loadPosts();
+      const shouldGoBackOnePage = posts.length === 1 && page > 1;
+
+      if (shouldGoBackOnePage) {
+        setPage((currentPage) => Math.max(1, currentPage - 1));
+      } else {
+        await loadPosts();
+      }
     } catch (deleteError) {
       console.error('Knowledge post delete failed:', deleteError);
       toast.error(

@@ -24,7 +24,9 @@ interface ProfileData {
   lastName: string;
   phone: string;
   department: string;
+  departmentId: string;
   municipality: string;
+  municipalityId: string;
   neighborhood: string;
   address: string;
 }
@@ -45,7 +47,9 @@ export default function SettingsPage() {
     lastName: '',
     phone: '',
     department: '',
+    departmentId: '',
     municipality: '',
+    municipalityId: '',
     neighborhood: '',
     address: '',
   });
@@ -84,7 +88,9 @@ export default function SettingsPage() {
               lastName: data.lastName || '',
               phone: data.phone || '',
               department: data.department || '',
+              departmentId: data.departmentId || '',
               municipality: data.municipality || '',
+              municipalityId: data.municipalityId || '',
               neighborhood: data.neighborhood || '',
               address: data.address || '',
             });
@@ -110,23 +116,53 @@ export default function SettingsPage() {
 
   // Handle department change to fetch municipalities
   useEffect(() => {
-    if (!formData.department) {
+    if (!formData.departmentId) {
       setMunicipalities([]);
       return;
     }
 
-    const deptId = departments.find(d => d.name === formData.department)?.id;
-    if (!deptId) return;
-
     const fetchMuncipalities = async () => {
       try {
         const headers = await getAuthHeaders();
-        const res = await apiFetch(`/locations/municipalities/${deptId}`, {
+        const res = await apiFetch(`/locations/municipalities/${formData.departmentId}`, {
           headers,
         });
         if (res.ok) {
           const { data } = await res.json();
-          setMunicipalities(data || []);
+          const nextMunicipalities = data || [];
+          setMunicipalities(nextMunicipalities);
+          setFormData((current) => {
+            if (
+              current.municipalityId &&
+              !nextMunicipalities.some(
+                (municipality: Municipality) =>
+                  municipality.id === current.municipalityId,
+              )
+            ) {
+              return {
+                ...current,
+                municipality: '',
+                municipalityId: '',
+              };
+            }
+
+            if (!current.municipalityId && current.municipality) {
+              const matchedMunicipality = nextMunicipalities.find(
+                (municipality: Municipality) =>
+                  municipality.name === current.municipality,
+              );
+
+              if (matchedMunicipality) {
+                return {
+                  ...current,
+                  municipality: matchedMunicipality.name,
+                  municipalityId: matchedMunicipality.id,
+                };
+              }
+            }
+
+            return current;
+          });
         }
       } catch (error) {
         console.error('Error fetching municipalities:', error);
@@ -134,15 +170,60 @@ export default function SettingsPage() {
     };
 
     fetchMuncipalities();
-  }, [formData.department, departments, supabase.auth]);
+  }, [formData.departmentId, supabase.auth]);
+
+  useEffect(() => {
+    if (!departments.length || formData.departmentId || !formData.department) {
+      return;
+    }
+
+    const matchedDepartment = departments.find(
+      (department) => department.name === formData.department,
+    );
+
+    if (!matchedDepartment) {
+      return;
+    }
+
+    setFormData((current) => ({
+      ...current,
+      department: matchedDepartment.name,
+      departmentId: matchedDepartment.id,
+    }));
+  }, [departments, formData.department, formData.departmentId]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+
+    if (name === 'departmentId') {
+      const selectedDepartment =
+        departments.find((department) => department.id === value) ?? null;
+
+      setFormData((prev) => ({
+        ...prev,
+        department: selectedDepartment?.name ?? '',
+        departmentId: selectedDepartment?.id ?? '',
+        municipality: '',
+        municipalityId: '',
+      }));
+      return;
+    }
+
+    if (name === 'municipalityId') {
+      const selectedMunicipality =
+        municipalities.find((municipality) => municipality.id === value) ?? null;
+
+      setFormData((prev) => ({
+        ...prev,
+        municipality: selectedMunicipality?.name ?? '',
+        municipalityId: selectedMunicipality?.id ?? '',
+      }));
+      return;
+    }
+
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
-      // If department changes, clear municipality
-      ...(name === 'department' ? { municipality: '' } : {})
     }));
   };
 
@@ -152,13 +233,24 @@ export default function SettingsPage() {
 
     try {
       const headers = await getAuthHeaders();
+      const payload = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone,
+        department: formData.department,
+        departmentId: formData.departmentId || null,
+        municipality: formData.municipality,
+        municipalityId: formData.municipalityId || null,
+        neighborhood: formData.neighborhood,
+        address: formData.address,
+      };
       const res = await apiFetch('/profiles/me', {
         method: 'PATCH',
         headers: {
           ...headers,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
@@ -269,29 +361,29 @@ export default function SettingsPage() {
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-primary uppercase tracking-widest px-1">Departamento</label>
                 <select
-                  name="department"
-                  value={formData.department}
+                  name="departmentId"
+                  value={formData.departmentId}
                   onChange={handleChange}
                   className="w-full p-3.5 rounded-2xl border border-theme bg-base text-primary font-bold text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer appearance-none"
                 >
                   <option value="">Selecciona departamento</option>
                   {departments.map(dept => (
-                    <option key={dept.id} value={dept.name}>{dept.name}</option>
+                    <option key={dept.id} value={dept.id}>{dept.name}</option>
                   ))}
                 </select>
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-primary uppercase tracking-widest px-1">Municipio</label>
                 <select
-                  name="municipality"
-                  value={formData.municipality}
+                  name="municipalityId"
+                  value={formData.municipalityId}
                   onChange={handleChange}
-                  disabled={!formData.department}
+                  disabled={!formData.departmentId}
                   className="w-full p-3.5 rounded-2xl border border-theme bg-base text-primary font-bold text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer appearance-none disabled:opacity-50"
                 >
                   <option value="">Selecciona municipio</option>
                   {municipalities.map(muni => (
-                    <option key={muni.id} value={muni.name}>{muni.name}</option>
+                    <option key={muni.id} value={muni.id}>{muni.name}</option>
                   ))}
                 </select>
               </div>
@@ -345,4 +437,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-

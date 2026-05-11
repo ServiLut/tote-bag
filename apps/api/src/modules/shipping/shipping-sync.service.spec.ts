@@ -1,8 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import {
-  OrderStatus,
-  ShipmentStatus,
-} from '../../generated/client/client';
+import { OrderStatus, ShipmentStatus } from '../../generated/client/client';
 import { ShippingSyncService } from './shipping-sync.service';
 
 describe('ShippingSyncService', () => {

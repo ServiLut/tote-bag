@@ -95,6 +95,7 @@ describe('DashboardService', () => {
     });
     expect(prisma.b2BQuote.count).toHaveBeenCalledWith({
       where: {
+        deletedAt: null,
         status: {
           notIn: [
             'DISE\u00d1O_APROBADO',

@@ -35,6 +35,7 @@ type MenuLinkItem = {
   name: string;
   href: string;
   icon: typeof LayoutDashboard;
+  keywords?: string[];
 };
 
 type MenuSubmenuItem = {
@@ -57,11 +58,13 @@ const comprasYEntradasItems: MenuLinkItem[] = [
     name: 'Pagos y Facturacion',
     href: '/dashboard/compras/facturacion',
     icon: Receipt,
+    keywords: ['compras', 'pagos', 'facturacion', 'facturas', 'proveedores'],
   },
   {
     name: 'Recepcion de Lotes',
     href: '/dashboard/compras/recepcion',
     icon: Database,
+    keywords: ['compras', 'recepcion', 'lotes', 'entradas', 'inventario'],
   },
 ];
 
@@ -70,11 +73,13 @@ const inventarioItems: MenuLinkItem[] = [
     name: 'Inventario FIFO',
     href: '/dashboard/logistica/inventario',
     icon: Package,
+    keywords: ['inventario', 'fifo', 'stock', 'logistica'],
   },
   {
     name: 'Salidas no comerciales',
     href: '/dashboard/logistica/inventario/salidas-no-comerciales',
     icon: Package,
+    keywords: ['inventario', 'salidas', 'muestras', 'regalos', 'logistica'],
   },
 ];
 
@@ -87,30 +92,30 @@ const menuGroups = [
     title: 'GENERAL',
     items: [
       { name: 'Resumen', href: '/dashboard', icon: LayoutDashboard },
-      { name: 'Pedidos', href: '/dashboard/orders', icon: ShoppingBag },
-      { name: 'Productos', href: '/dashboard/products', icon: Package },
-      { name: 'Clientes', href: '/dashboard/customers', icon: Users },
-      { name: 'Corporativo (B2B)', href: '/dashboard/b2b', icon: Briefcase },
-      { name: 'Personalizaciones', href: '/dashboard/personalizaciones', icon: Sparkles },
-      { name: 'PQRS', href: '/dashboard/pqrs', icon: Inbox },
-      { name: 'Centro Informativo', href: '/dashboard/conocimiento', icon: BookOpen },
+      { name: 'Pedidos', href: '/dashboard/orders', icon: ShoppingBag, keywords: ['ordenes', 'ventas'] },
+      { name: 'Productos', href: '/dashboard/products', icon: Package, keywords: ['catalogo', 'sku'] },
+      { name: 'Clientes', href: '/dashboard/customers', icon: Users, keywords: ['usuarios', 'customer'] },
+      { name: 'Corporativo (B2B)', href: '/dashboard/b2b', icon: Briefcase, keywords: ['empresas', 'cotizaciones'] },
+      { name: 'Personalizaciones', href: '/dashboard/personalizaciones', icon: Sparkles, keywords: ['custom', 'diseños'] },
+      { name: 'PQRS', href: '/dashboard/pqrs', icon: Inbox, keywords: ['tickets', 'soporte'] },
+      { name: 'Centro Informativo', href: '/dashboard/conocimiento', icon: BookOpen, keywords: ['blog', 'knowledge'] },
     ],
   },
   {
     title: 'FINANZAS',
     items: [
-      { name: 'Dashboard Financiero', href: '/dashboard/finanzas', icon: BarChart3 },
-      { name: 'Flujo de Caja', href: '/dashboard/finanzas/cash-flow', icon: DollarSign },
-      { name: 'Gastos Operativos', href: '/dashboard/finanzas/opex', icon: Receipt },
-      { name: 'Nomina', href: '/dashboard/finanzas/nomina', icon: Wallet },
+      { name: 'Dashboard Financiero', href: '/dashboard/finanzas', icon: BarChart3, keywords: ['finanzas', 'kpis'] },
+      { name: 'Flujo de Caja', href: '/dashboard/finanzas/cash-flow', icon: DollarSign, keywords: ['cash flow', 'caja'] },
+      { name: 'Gastos Operativos', href: '/dashboard/finanzas/opex', icon: Receipt, keywords: ['opex', 'gastos'] },
+      { name: 'Nomina', href: '/dashboard/finanzas/nomina', icon: Wallet, keywords: ['payroll', 'colaboradores'] },
     ],
   },
   {
     title: 'COMPRAS Y LOGISTICA',
     items: [
-      { name: 'Proveedores de Envio', href: '/dashboard/logistica/proveedores', icon: Truck },
-      { name: 'Gestion de Envios', href: '/dashboard/logistica/envios', icon: Package },
-      { name: 'Proveedores Insumos', href: '/dashboard/logistica/insumos', icon: Truck },
+      { name: 'Proveedores de Envio', href: '/dashboard/logistica/proveedores', icon: Truck, keywords: ['transportadoras', 'carriers'] },
+      { name: 'Gestion de Envios', href: '/dashboard/logistica/envios', icon: Package, keywords: ['despachos', 'shipping'] },
+      { name: 'Proveedores Insumos', href: '/dashboard/logistica/insumos', icon: Truck, keywords: ['suministros', 'suppliers'] },
       {
         type: 'submenu',
         key: 'compras-y-entradas',
@@ -130,18 +135,45 @@ const menuGroups = [
   {
     title: 'ESTRATEGIA',
     items: [
-      { name: 'Precios y Margenes', href: '/dashboard/strategy/pricing', icon: Calculator },
+      { name: 'Precios y Margenes', href: '/dashboard/strategy/pricing', icon: Calculator, keywords: ['pricing', 'margenes', 'estrategia'] },
     ],
   },
   {
     title: 'SISTEMA',
     items: [
-      { name: 'Reportes Contables', href: '/dashboard/reportes', icon: FileText },
-      { name: 'Auditoria', href: '/dashboard/audit', icon: ShieldCheck },
-      { name: 'Configuracion', href: '/dashboard/settings', icon: Settings },
+      { name: 'Reportes Contables', href: '/dashboard/reportes', icon: FileText, keywords: ['reportes', 'contabilidad'] },
+      { name: 'Auditoria', href: '/dashboard/audit', icon: ShieldCheck, keywords: ['audit', 'logs'] },
+      { name: 'Configuracion', href: '/dashboard/settings', icon: Settings, keywords: ['settings', 'perfil'] },
     ],
   },
 ] satisfies MenuGroup[];
+
+export type DashboardNavigationSearchItem = {
+  href: string;
+  label: string;
+  keywords: string[];
+};
+
+export const DASHBOARD_NAVIGATION_SEARCH_ITEMS: DashboardNavigationSearchItem[] =
+  menuGroups.flatMap((group) =>
+    group.items.flatMap((item) => {
+      if (!isSubmenuItem(item)) {
+        return [
+          {
+            href: item.href,
+            label: item.name,
+            keywords: [group.title, ...(item.keywords ?? [])],
+          },
+        ];
+      }
+
+      return item.items.map((child) => ({
+        href: child.href,
+        label: child.name,
+        keywords: [group.title, item.name, ...(child.keywords ?? [])],
+      }));
+    }),
+  );
 
 interface SidebarProps {
   user: { email?: string | null } | null;
@@ -346,7 +378,8 @@ export default function Sidebar({
                   }
 
                   const isActive = isSubmenuActive(item);
-                  const isOpen = openSubmenus[item.key] ?? isActive;
+                  const isOpen =
+                    openSubmenus[item.key] ?? (isCollapsed ? false : isActive);
                   const Icon = item.icon;
 
                   return (

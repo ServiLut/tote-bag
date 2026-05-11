@@ -1,16 +1,31 @@
 'use client';
 
 import Link from 'next/link';
-import { Menu, Sun, Moon, Bell, PanelLeftClose, PanelLeftOpen, Search, UserCircle } from 'lucide-react';
+import {
+  AlertTriangle,
+  Bell,
+  Menu,
+  Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Search,
+  Sun,
+  UserCircle,
+} from 'lucide-react';
 import { useState, useEffect, useRef, useSyncExternalStore } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { ThemeProvider, useTheme } from '@/components/theme-provider';
-import Sidebar from '@/components/dashboard/Sidebar';
+import Sidebar, {
+  DASHBOARD_NAVIGATION_SEARCH_ITEMS,
+} from '@/components/dashboard/Sidebar';
 import { DashboardAuthProvider, type DashboardRole } from '@/components/dashboard/DashboardAuthContext';
 import { DashboardRoleSwitcher } from '@/components/dashboard/DashboardRoleSwitcher';
 import { DASHBOARD_DEBUG_ROLE_COOKIE_NAME } from '@/lib/dashboard-auth';
-import { resolveDashboardLayoutRedirect } from '@/lib/frontend-routing';
+import {
+  canAccessDashboardPath,
+  resolveDashboardLayoutRedirect,
+} from '@/lib/frontend-routing';
 import { useDashboardNotifications } from '@/components/dashboard/useDashboardNotifications';
 
 interface DashboardLayoutClientProps {
@@ -174,15 +189,21 @@ const DASHBOARD_NOTIFICATION_META: Array<{
 function NotificationMenuButton({
   items,
   total,
+  status,
+  errorMessage,
   desktop = false,
 }: {
   items: DashboardNotificationItem[];
   total: number;
+  status: 'idle' | 'ready' | 'error';
+  errorMessage: string | null;
   desktop?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const hasNotifications = total > 0;
+  const hasLoadError = status === 'error';
+  const hasAttentionState = hasNotifications || hasLoadError;
 
   useEffect(() => {
     if (!isOpen) {
@@ -225,31 +246,53 @@ function NotificationMenuButton({
         className={
           desktop
             ? `relative flex h-14 w-14 items-center justify-center rounded-2xl border bg-base shadow-sm transition-all active:scale-95 ${
-                hasNotifications
+                hasLoadError
+                  ? 'border-amber-200 text-amber-600 hover:border-amber-300 dark:border-amber-900/60 dark:text-amber-300'
+                  : hasNotifications
                   ? 'border-rose-200 text-rose-600 hover:border-rose-300 dark:border-rose-900/60 dark:text-rose-300'
                   : 'border-theme text-muted hover:border-primary/30 hover:text-primary'
               }`
             : `relative rounded-lg p-2 ${
-                hasNotifications
+                hasLoadError
+                  ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-300'
+                  : hasNotifications
                   ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-300'
                   : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300'
               }`
         }
-        title={hasNotifications ? `Notificaciones pendientes: ${total}` : 'Notificaciones'}
+        title={
+          hasLoadError
+            ? 'No se pudieron actualizar las notificaciones'
+            : hasNotifications
+              ? `Notificaciones pendientes: ${total}`
+              : 'Notificaciones'
+        }
         aria-label="Notificaciones"
         aria-expanded={isOpen}
         aria-haspopup="menu"
       >
-        <Bell className={desktop ? 'h-5 w-5' : 'w-5 h-5'} />
-        {hasNotifications ? (
+        {hasLoadError ? (
+          <AlertTriangle className={desktop ? 'h-5 w-5' : 'w-5 h-5'} />
+        ) : (
+          <Bell className={desktop ? 'h-5 w-5' : 'w-5 h-5'} />
+        )}
+        {hasAttentionState ? (
           <span
             className={
               desktop
-                ? 'absolute right-2 top-2 rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] font-black text-rose-700 dark:bg-rose-950/60 dark:text-rose-200'
-                : 'absolute -right-1 -top-1 rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] font-black text-rose-700 dark:bg-rose-950/80 dark:text-rose-200'
+                ? `absolute right-2 top-2 rounded-full px-1.5 py-0.5 text-[10px] font-black ${
+                    hasLoadError
+                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-200'
+                      : 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-200'
+                  }`
+                : `absolute -right-1 -top-1 rounded-full px-1.5 py-0.5 text-[10px] font-black ${
+                    hasLoadError
+                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-200'
+                      : 'bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-200'
+                  }`
             }
           >
-            {total}
+            {hasLoadError ? '!' : total}
           </span>
         ) : null}
       </button>
@@ -269,18 +312,33 @@ function NotificationMenuButton({
               </p>
               {desktop ? (
                 <p className="mt-1 text-sm font-bold text-primary">
-                  {hasNotifications ? `${total} pendientes por revisar` : 'Sin pendientes'}
+                  {hasLoadError
+                    ? 'No pudimos sincronizar este panel'
+                    : hasNotifications
+                      ? `${total} pendientes por revisar`
+                      : 'Sin pendientes'}
                 </p>
               ) : null}
             </div>
-            {desktop && hasNotifications ? (
-              <span className="rounded-full bg-rose-100 px-2 py-1 text-[10px] font-black text-rose-700 dark:bg-rose-950/60 dark:text-rose-200">
-                {total}
+            {desktop && hasAttentionState ? (
+              <span
+                className={`rounded-full px-2 py-1 text-[10px] font-black ${
+                  hasLoadError
+                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-200'
+                    : 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-200'
+                }`}
+              >
+                {hasLoadError ? 'Error' : total}
               </span>
             ) : null}
           </div>
 
           <div className="mt-3 space-y-2">
+            {hasLoadError ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
+                {errorMessage ?? 'No se pudieron cargar las notificaciones del dashboard.'}
+              </div>
+            ) : null}
             {items.length > 0 ? (
               items.map((item) => (
                 <Link
@@ -303,7 +361,9 @@ function NotificationMenuButton({
                     : 'rounded-2xl border border-dashed border-theme px-4 py-4 text-center text-sm font-medium text-muted'
                 }
               >
-                No hay notificaciones pendientes.
+                {hasLoadError
+                  ? 'No hay datos confiables para mostrar en este momento.'
+                  : 'No hay notificaciones pendientes.'}
               </div>
             )}
           </div>
@@ -328,13 +388,84 @@ function DashboardLayoutFrame({
   handleLogout,
 }: DashboardLayoutFrameProps) {
   const { theme, setTheme } = useTheme();
+  const router = useRouter();
   const notificationCounts = useDashboardNotifications();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchFeedback, setSearchFeedback] = useState<string | null>(null);
+  const searchContainerRef = useRef<HTMLFormElement | null>(null);
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const searchableModules = DASHBOARD_NAVIGATION_SEARCH_ITEMS.filter((item) =>
+    canAccessDashboardPath(role, item.href),
+  );
+  const searchResults = normalizedSearchQuery
+    ? searchableModules.filter((item) => {
+        const haystack = [
+          item.label,
+          item.href,
+          ...item.keywords,
+        ]
+          .join(' ')
+          .toLowerCase();
+
+        return haystack.includes(normalizedSearchQuery);
+      })
+    : [];
   const notificationItems = DASHBOARD_NOTIFICATION_META
     .map<DashboardNotificationItem>((item) => ({
       ...item,
       count: notificationCounts.byHref[item.href] ?? 0,
     }))
     .filter((item) => item.count > 0);
+
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!searchContainerRef.current) {
+        return;
+      }
+
+      const target = event.target;
+      if (target instanceof Node && !searchContainerRef.current.contains(target)) {
+        setIsSearchOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+    };
+  }, []);
+
+  const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!normalizedSearchQuery) {
+      setSearchFeedback('Escribe el nombre del modulo que quieres abrir.');
+      setIsSearchOpen(true);
+      return;
+    }
+
+    const nextMatch = searchResults[0] ?? null;
+
+    if (!nextMatch) {
+      setSearchFeedback('No hay modulos del dashboard que coincidan con esa busqueda.');
+      setIsSearchOpen(true);
+      return;
+    }
+
+    setSearchFeedback(null);
+    setSearchQuery('');
+    setIsSearchOpen(false);
+    router.push(nextMatch.href);
+  };
+
+  const handleSearchSelection = (href: string) => {
+    setSearchFeedback(null);
+    setSearchQuery('');
+    setIsSearchOpen(false);
+    router.push(href);
+  };
 
   return (
       <div className="flex h-screen bg-base text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300 dashboard-bg-custom">
@@ -360,22 +491,80 @@ function DashboardLayoutFrame({
                 >
                   {isSidebarCollapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
                 </button>
-                <div className="relative max-w-xl flex-1">
+                <form
+                  ref={searchContainerRef}
+                  onSubmit={handleSearchSubmit}
+                  className="relative max-w-xl flex-1"
+                >
                   <Search className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
                   <input
                     type="text"
-                    placeholder="Buscar pedidos, clientes, productos o modulos..."
+                    value={searchQuery}
+                    onChange={(event) => {
+                      setSearchQuery(event.target.value);
+                      setSearchFeedback(null);
+                      setIsSearchOpen(true);
+                    }}
+                    onFocus={() => setIsSearchOpen(true)}
+                    placeholder="Buscar modulos del dashboard..."
                     className="h-14 w-full rounded-2xl border border-theme bg-base pl-14 pr-5 text-sm font-medium text-zinc-700 outline-none transition-all placeholder:text-zinc-400 focus:border-primary/30 focus:ring-2 focus:ring-primary/15 dark:text-zinc-100"
                   />
-                </div>
+                  {isSearchOpen && (normalizedSearchQuery || searchFeedback) ? (
+                    <div className="absolute left-0 right-0 top-[calc(100%+0.75rem)] z-30 overflow-hidden rounded-[24px] border border-theme bg-surface p-3 shadow-2xl shadow-black/10">
+                      <div className="mb-2 px-2">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">
+                          Busqueda de modulos
+                        </p>
+                        <p className="mt-1 text-sm font-medium text-muted">
+                          Presiona Enter para abrir el mejor resultado.
+                        </p>
+                      </div>
+
+                      {searchFeedback ? (
+                        <div className="mb-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
+                          {searchFeedback}
+                        </div>
+                      ) : null}
+
+                      <div className="space-y-2">
+                        {searchResults.length > 0 ? (
+                          searchResults.slice(0, 6).map((item) => (
+                            <button
+                              key={item.href}
+                              type="button"
+                              onClick={() => handleSearchSelection(item.href)}
+                              className="flex w-full items-center justify-between gap-3 rounded-2xl border border-theme bg-base px-4 py-3 text-left text-sm font-bold text-primary transition-all hover:border-primary/20 hover:bg-primary/5"
+                            >
+                              <span className="min-w-0 truncate">{item.label}</span>
+                              <span className="text-[10px] font-black uppercase tracking-[0.14em] text-muted">
+                                {item.href.replace('/dashboard/', '') || 'dashboard'}
+                              </span>
+                            </button>
+                          ))
+                        ) : normalizedSearchQuery ? (
+                          <div className="rounded-2xl border border-dashed border-theme px-4 py-5 text-center text-sm font-medium text-muted">
+                            No se encontraron modulos para &quot;{searchQuery.trim()}&quot;.
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : null}
+                </form>
               </div>
 
               <div className="flex items-center gap-3">
                 <NotificationMenuButton
                   items={notificationItems}
                   total={notificationCounts.total}
+                  status={notificationCounts.status}
+                  errorMessage={notificationCounts.errorMessage}
                   desktop
                 />
+                {notificationCounts.status === 'error' ? (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
+                    Notificaciones no disponibles
+                  </div>
+                ) : null}
                 {mounted ? (
                   <button
                     onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -419,6 +608,8 @@ function DashboardLayoutFrame({
                 <NotificationMenuButton
                   items={notificationItems}
                   total={notificationCounts.total}
+                  status={notificationCounts.status}
+                  errorMessage={notificationCounts.errorMessage}
                 />
                 {mounted && (
                   <button

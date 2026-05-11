@@ -88,6 +88,7 @@ function unwrapApiData<T>(body: ApiResponse<T> | T): T {
 export default function ProfitCalculator() {
   const { accessToken } = useDashboardAuth();
   const [products, setProducts] = useState<Product[]>([]);
+  const [productsSource, setProductsSource] = useState<'admin' | 'catalog' | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<string>('');
   const [targetMarginPercent, setTargetMarginPercent] = useState('60');
   const [suggestedPrice, setSuggestedPrice] = useState(() =>
@@ -130,11 +131,22 @@ export default function ProfitCalculator() {
           throw new Error('Tu sesion expiro. Inicia sesion nuevamente.');
         }
 
-        const res = await apiFetch('/catalog/admin/products', {
+        let res = await apiFetch('/catalog/admin/products', {
           headers: {
             Authorization: `Bearer ${accessToken}`,
           },
         });
+
+        let source: 'admin' | 'catalog' = 'admin';
+
+        if (res.status === 401 || res.status === 403) {
+          res = await apiFetch('/catalog/products', {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          });
+          source = 'catalog';
+        }
 
         if (!res.ok) {
           throw new Error('No se pudo cargar el catalogo de productos.');
@@ -142,11 +154,13 @@ export default function ProfitCalculator() {
 
         const body: ApiResponse<Product[]> = await res.json();
         setProducts(body.data || []);
+        setProductsSource(source);
       } catch (err) {
         console.error('Error fetching products:', err);
         setProductsError(
           'No se pudieron cargar los productos para analizar margenes.',
         );
+        setProductsSource(null);
       } finally {
         setProductsLoading(false);
       }
@@ -295,6 +309,13 @@ export default function ProfitCalculator() {
               </select>
             )}
           </div>
+
+          {productsSource === 'catalog' ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-medium text-amber-800">
+              Estas viendo el catalogo publico porque tu rol no tiene acceso al endpoint administrativo.
+              El simulador sigue funcionando, pero debes confirmar manualmente costo e IVA de referencia.
+            </div>
+          ) : null}
 
           <div>
             <label className="mb-2 block text-sm font-bold uppercase tracking-wider text-muted">

@@ -364,7 +364,7 @@ describe('PurchasesService', () => {
     const result = await service.registerPurchaseInvoicePayment('invoice-1', {
       amount: '60',
       paymentDate: '2026-04-09T00:00:00.000Z',
-      proofUrl: 'https://files.test/proof.pdf',
+      proofUrl: 'private://support-documents/receipts/purchase-payment/proof.pdf',
     });
 
     expect(createPayment).toHaveBeenCalledTimes(1);
@@ -372,7 +372,9 @@ describe('PurchasesService', () => {
       PurchasePaymentCreateArgs,
     ];
     expect(paymentArgs.data.amount.equals(new Prisma.Decimal('60'))).toBe(true);
-    expect(paymentArgs.data.proofUrl).toBe('https://files.test/proof.pdf');
+    expect(paymentArgs.data.proofUrl).toBe(
+      'private://support-documents/receipts/purchase-payment/proof.pdf',
+    );
 
     expect(updateInvoice).toHaveBeenCalledTimes(1);
     const [updateArgs] = updateInvoice.mock.calls[0] as [
@@ -549,7 +551,7 @@ describe('PurchasesService', () => {
       'payment-1',
       {
         amount: '40',
-        proofUrl: 'https://files.test/new-proof.pdf',
+        proofUrl: 'private://support-documents/receipts/purchase-payment/new-proof.pdf',
       },
     );
 

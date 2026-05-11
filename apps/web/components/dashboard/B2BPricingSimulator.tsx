@@ -135,6 +135,14 @@ function getErrorMessage(payload: unknown, fallback: string) {
   return fallback;
 }
 
+async function getResponseErrorMessage(
+  response: Response,
+  fallback: string,
+) {
+  const payload = await response.json().catch(() => null);
+  return getErrorMessage(payload, fallback);
+}
+
 function unwrapApiData<T>(payload: ApiResponse<T> | T): T {
   if (payload && typeof payload === 'object' && 'data' in payload) {
     return ((payload as ApiResponse<T>).data ?? null) as T;
@@ -177,6 +185,7 @@ export default function B2BPricingSimulator() {
   const [options, setOptions] = useState<GroupedWizardOptions>({});
   const [loadingInputs, setLoadingInputs] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadWarning, setLoadWarning] = useState<string | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
@@ -252,9 +261,73 @@ export default function B2BPricingSimulator() {
     let active = true;
 
     const fetchInputs = async () => {
+      const fetchProducts = async (token: string) => {
+        const authHeaders = {
+          Authorization: `Bearer ${token}`,
+        };
+        const adminResponse = await apiFetch('/catalog/admin/products', {
+          headers: authHeaders,
+        });
+
+        if (adminResponse.ok) {
+          const body = await adminResponse.json();
+          return {
+            products: unwrapApiData<ProductOption[]>(body) ?? [],
+            usedPublicFallback: false,
+          };
+        }
+
+        if (adminResponse.status === 401 || adminResponse.status === 403) {
+          const publicResponse = await apiFetch('/catalog/products');
+
+          if (!publicResponse.ok) {
+            throw new Error(
+              await getResponseErrorMessage(
+                publicResponse,
+                `No se pudo cargar el catalogo publico (${publicResponse.status}).`,
+              ),
+            );
+          }
+
+          const body = await publicResponse.json();
+          return {
+            products: unwrapApiData<ProductOption[]>(body) ?? [],
+            usedPublicFallback: true,
+          };
+        }
+
+        throw new Error(
+          await getResponseErrorMessage(
+            adminResponse,
+            `No se pudo cargar el catalogo interno (${adminResponse.status}).`,
+          ),
+        );
+      };
+
+      const fetchGroupedOptions = async (token: string) => {
+        const optionsResponse = await apiFetch('/wizard-options/grouped', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!optionsResponse.ok) {
+          throw new Error(
+            await getResponseErrorMessage(
+              optionsResponse,
+              `No se pudieron cargar las opciones del simulador (${optionsResponse.status}).`,
+            ),
+          );
+        }
+
+        const body = await optionsResponse.json();
+        return unwrapApiData<GroupedWizardOptions>(body) ?? {};
+      };
+
       try {
         setLoadingInputs(true);
         setLoadError(null);
+        setLoadWarning(null);
 
         const {
           data: { session },
@@ -266,30 +339,47 @@ export default function B2BPricingSimulator() {
           );
         }
 
-        const [productsRes, optionsRes] = await Promise.all([
-          apiFetch('/catalog/admin/products', {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }),
-          apiFetch('/wizard-options/grouped'),
-        ]);
-
-        if (!productsRes.ok || !optionsRes.ok) {
-          throw new Error('No se pudo cargar el simulador interno de B2B.');
-        }
-
-        const [productsBody, optionsBody] = await Promise.all([
-          productsRes.json(),
-          optionsRes.json(),
+        const [productsResult, optionsResult] = await Promise.allSettled([
+          fetchProducts(token),
+          fetchGroupedOptions(token),
         ]);
 
         if (!active) {
           return;
         }
 
-        setProducts(unwrapApiData<ProductOption[]>(productsBody) ?? []);
-        setOptions(unwrapApiData<GroupedWizardOptions>(optionsBody) ?? {});
+        const warnings: string[] = [];
+        const errors: string[] = [];
+
+        if (productsResult.status === 'fulfilled') {
+          setProducts(productsResult.value.products);
+          if (productsResult.value.usedPublicFallback) {
+            warnings.push(
+              'Se cargo el catalogo publico porque tu sesion no tiene acceso al catalogo interno.',
+            );
+          }
+        } else {
+          setProducts([]);
+          errors.push(
+            productsResult.reason instanceof Error
+              ? productsResult.reason.message
+              : 'No se pudo cargar el catalogo del simulador B2B.',
+          );
+        }
+
+        if (optionsResult.status === 'fulfilled') {
+          setOptions(optionsResult.value);
+        } else {
+          setOptions({});
+          warnings.push(
+            optionsResult.reason instanceof Error
+              ? optionsResult.reason.message
+              : 'No se pudieron cargar algunas opciones del simulador.',
+          );
+        }
+
+        setLoadError(errors.length > 0 ? errors.join(' ') : null);
+        setLoadWarning(warnings.length > 0 ? warnings.join(' ') : null);
       } catch (error) {
         console.error('Error loading B2B pricing simulator inputs:', error);
         if (active) {
@@ -520,6 +610,12 @@ export default function B2BPricingSimulator() {
                 {loadError ? (
                   <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
                     {loadError}
+                  </div>
+                ) : null}
+
+                {loadWarning ? (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+                    {loadWarning}
                   </div>
                 ) : null}
 

@@ -33,6 +33,7 @@ describe('public env', () => {
   });
 
   it('normaliza la URL publica a un origen absoluto sin ruta', () => {
+<<<<<<< HEAD
     const publicAppBaseUrl = getPublicAppBaseUrl(
       ' "https://shop.example.com/catalog?preview=true#hero" ',
       undefined,
@@ -40,6 +41,15 @@ describe('public env', () => {
     );
 
     expect(publicAppBaseUrl?.toString()).toBe('https://shop.example.com/');
+=======
+    expect(
+      getPublicAppBaseUrl(
+        ' "https://shop.example.com/catalog?preview=true#hero" ',
+        undefined,
+        'production',
+      )!.toString(),
+    ).toBe('https://shop.example.com/');
+>>>>>>> 20d450f (fix: checkpoin 11-02-2026)
   });
 
   it('usa el host de despliegue cuando falta la URL publica explicita', () => {

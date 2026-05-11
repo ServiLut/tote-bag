@@ -158,6 +158,11 @@ export type AuditLog = Prisma.AuditLogModel
  */
 export type Address = Prisma.AddressModel
 /**
+ * Model AppSetting
+ * 
+ */
+export type AppSetting = Prisma.AppSettingModel
+/**
  * Model ProductAttribute
  * 
  */

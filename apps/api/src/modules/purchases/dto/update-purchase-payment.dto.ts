@@ -3,7 +3,6 @@ import {
   IsISO8601,
   IsOptional,
   IsString,
-  IsUrl,
   Matches,
   ValidationArguments,
   ValidationOptions,
@@ -76,9 +75,8 @@ export class UpdatePurchasePaymentDto {
   @IsOptional()
   @Transform(({ value }) => normalizeOptionalText(value))
   @IsString()
-  @IsUrl(
-    { require_protocol: true },
-    { message: 'proofUrl debe ser una URL valida' },
-  )
+  @Matches(/^(https?:\/\/|private:\/\/).+/, {
+    message: 'proofUrl debe ser una URL valida o referencia privada',
+  })
   proofUrl?: string;
 }

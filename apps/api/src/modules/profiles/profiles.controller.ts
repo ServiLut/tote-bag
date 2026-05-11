@@ -13,8 +13,8 @@ import {
 } from '@nestjs/common';
 import { ProfilesService } from './profiles.service';
 import { Request } from 'express';
-import { Prisma } from '../../generated/client/client';
 import { RolesService } from '../roles/roles.service';
+import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
 
 interface RequestWithUser extends Request {
   user?: {
@@ -40,7 +40,7 @@ export class ProfilesController {
   @Patch('me')
   async updateMe(
     @Req() req: RequestWithUser,
-    @Body() data: Prisma.ProfileUpdateInput,
+    @Body() data: UpdateMyProfileDto,
   ) {
     const user = req.user;
     if (!user) throw new UnauthorizedException();

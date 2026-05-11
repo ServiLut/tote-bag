@@ -44,7 +44,9 @@ type CreateQuoteOptions = {
 
 @Injectable()
 export class B2bService {
+  private static readonly APPROVED_DESIGN_STATUS = 'DISE\u00d1O_APROBADO';
   private static readonly APPROVED_DESIGN_STATUSES = new Set([
+    B2bService.APPROVED_DESIGN_STATUS,
     'DISEÑO_APROBADO',
     'DISEÃ‘O_APROBADO',
     'DISEÃƒâ€˜O_APROBADO',
@@ -63,6 +65,12 @@ export class B2bService {
   calculatePackage(quantity: number): B2BPackage {
     if (quantity < 100) return B2BPackage.EMPRESA;
     return B2BPackage.EVENTO;
+  }
+
+  private normalizeQuoteStatus(status: string) {
+    return B2bService.APPROVED_DESIGN_STATUSES.has(status)
+      ? B2bService.APPROVED_DESIGN_STATUS
+      : status;
   }
 
   private getReservationHours(createQuoteDto: CreateQuoteDto) {
@@ -353,7 +361,7 @@ export class B2bService {
     };
   }
 
-  async findAll() {
+  async findAllDashboard() {
     const quotes = await this.prisma.b2BQuote.findMany({
       where: { deletedAt: null },
       include: { items: true },
@@ -362,10 +370,33 @@ export class B2bService {
 
     return quotes.map((quote) => ({
       ...quote,
+      status: this.normalizeQuoteStatus(quote.status),
+    }));
+  }
+
+  async approveDesignDashboard(id: string) {
+    return this.prisma.b2BQuote.update({
+      where: { id },
+      data: { status: B2bService.APPROVED_DESIGN_STATUS },
+    });
+  }
+
+  async findAll() {
+    const quotes = await this.prisma.b2BQuote.findMany({
+      where: { deletedAt: null },
+      include: { items: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return quotes.map((quote) => {
+      const status = this.normalizeQuoteStatus(quote.status);
+      return {
+      ...quote,
       status: B2bService.APPROVED_DESIGN_STATUSES.has(quote.status)
         ? 'DISEÑO_APROBADO'
         : quote.status,
-    }));
+      };
+    });
   }
 
   async approveDesign(id: string) {

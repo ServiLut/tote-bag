@@ -1,5 +1,6 @@
 import { ProfilesService } from './profiles.service';
 import { Role } from '../../generated/client/enums';
+import { BadRequestException } from '@nestjs/common';
 
 describe('ProfilesService', () => {
   const configService = {
@@ -119,5 +120,117 @@ describe('ProfilesService', () => {
       },
       include: { user: true },
     });
+  });
+
+  it('updates my profile usando nombres canonicos resueltos desde IDs', async () => {
+    const update = jest.fn().mockResolvedValue({ id: 'profile-1' });
+    const departmentFindUnique = jest.fn().mockResolvedValue({
+      id: 'dept-1',
+      name: 'Antioquia',
+    });
+    const municipalityFindUnique = jest.fn().mockResolvedValue({
+      id: 'mun-1',
+      name: 'Medellin',
+      departmentId: 'dept-1',
+      department: {
+        id: 'dept-1',
+        name: 'Antioquia',
+      },
+    });
+
+    const service = new ProfilesService(
+      {
+        profile: {
+          update,
+        },
+        department: {
+          findUnique: departmentFindUnique,
+        },
+        municipality: {
+          findUnique: municipalityFindUnique,
+        },
+      } as never,
+      {} as never,
+      configService as never,
+    );
+
+    await service.update('user-1', {
+      firstName: 'Ana',
+      department: 'Otro nombre',
+      municipality: 'Otro municipio',
+      departmentId: 'dept-1',
+      municipalityId: 'mun-1',
+    });
+
+    expect(update).toHaveBeenCalledWith({
+      where: { userId: 'user-1' },
+      data: {
+        firstName: 'Ana',
+        departmentId: 'dept-1',
+        department: 'Antioquia',
+        municipalityId: 'mun-1',
+        municipality: 'Medellin',
+      },
+    });
+  });
+
+  it('rejects location names without canonical IDs in my profile updates', async () => {
+    const service = new ProfilesService(
+      {
+        profile: {
+          update: jest.fn(),
+        },
+        department: {
+          findUnique: jest.fn(),
+        },
+        municipality: {
+          findUnique: jest.fn(),
+        },
+      } as never,
+      {} as never,
+      configService as never,
+    );
+
+    await expect(
+      service.update('user-1', {
+        department: 'Antioquia',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects municipalities that do not belong to the selected department', async () => {
+    const service = new ProfilesService(
+      {
+        profile: {
+          update: jest.fn(),
+        },
+        department: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'dept-1',
+            name: 'Antioquia',
+          }),
+        },
+        municipality: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'mun-1',
+            name: 'Bogota',
+            departmentId: 'dept-2',
+            department: {
+              id: 'dept-2',
+              name: 'Cundinamarca',
+            },
+          }),
+        },
+      } as never,
+      {} as never,
+      configService as never,
+    );
+
+    await expect(
+      service.update('user-1', {
+        departmentId: 'dept-1',
+        municipalityId: 'mun-1',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 });

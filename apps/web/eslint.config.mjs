@@ -10,7 +10,10 @@ const eslintConfig = defineConfig([
     // Default ignores of eslint-config-next:
     ".next/**",
     ".next-investigate/**",
+<<<<<<< HEAD
     ".next-routecheck/**",
+=======
+>>>>>>> 20d450f (fix: checkpoin 11-02-2026)
     "out/**",
     "build/**",
     "next-env.d.ts",

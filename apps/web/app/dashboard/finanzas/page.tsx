@@ -28,6 +28,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { createClient } from '@/utils/supabase/client';
 import { apiFetch } from '@/utils/api';
+import { FINANCE_DATA_CHANGED_EVENT } from '@/lib/finance-events';
 
 interface FinancialSummary {
   kpis: {
@@ -491,7 +492,7 @@ export default function FinanceDashboardPage() {
           apiFetch(`/finance/report-preview?${queryParams.toString()}`, {
             headers: authHeaders,
           }),
-          apiFetch('/orders/accounts-receivable', {
+          apiFetch(`/orders/accounts-receivable?${queryParams.toString()}`, {
             headers: authHeaders,
           }),
           apiFetch(`/finance/tax-report?${queryParams.toString()}`, {
@@ -624,10 +625,19 @@ export default function FinanceDashboardPage() {
       }
     };
 
-    fetchFinance();
+    const handleFinanceDataChanged = () => {
+      void fetchFinance();
+    };
+
+    void fetchFinance();
+    window.addEventListener(FINANCE_DATA_CHANGED_EVENT, handleFinanceDataChanged);
 
     return () => {
       active = false;
+      window.removeEventListener(
+        FINANCE_DATA_CHANGED_EVENT,
+        handleFinanceDataChanged,
+      );
     };
   }, [customEndDate, customStartDate, granularity, queryParams]);
 

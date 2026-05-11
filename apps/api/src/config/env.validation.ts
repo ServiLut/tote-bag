@@ -144,6 +144,10 @@ class EnvironmentVariables {
   @IsOptional()
   SHIPPING_NOTIFICATIONS_WEBHOOK_URL: string;
 
+  @IsString()
+  @IsOptional()
+  SHIPPING_NOTIFICATIONS_WEBHOOK_TOKEN: string;
+
   @IsEnum(MetricsAccessPolicy, {
     message:
       'METRICS_ACCESS_POLICY must be one of public, private, token or disabled.',
@@ -223,6 +227,24 @@ export function envValidationSchema(config: Record<string, unknown>) {
   }
 
   if (
+    isProductionLike &&
+    !validatedConfig.SHIPPING_NOTIFICATIONS_WEBHOOK_TOKEN?.trim()
+  ) {
+    customErrors.push(
+      'SHIPPING_NOTIFICATIONS_WEBHOOK_TOKEN is required when NODE_ENV is production or provision.',
+    );
+  }
+
+  if (
+    validatedConfig.SHIPPING_NOTIFICATIONS_WEBHOOK_URL?.trim() &&
+    !validatedConfig.SHIPPING_NOTIFICATIONS_WEBHOOK_TOKEN?.trim()
+  ) {
+    customErrors.push(
+      'SHIPPING_NOTIFICATIONS_WEBHOOK_TOKEN is required when SHIPPING_NOTIFICATIONS_WEBHOOK_URL is configured.',
+    );
+  }
+
+  if (
     validatedConfig.METRICS_ACCESS_POLICY === MetricsAccessPolicy.Token &&
     !validatedConfig.METRICS_BEARER_TOKEN?.trim()
   ) {
@@ -250,9 +272,10 @@ export function envValidationSchema(config: Record<string, unknown>) {
 
   if (errors.length > 0 || customErrors.length > 0) {
     throw new Error(
-      [...errors.flatMap((error) => Object.values(error.constraints ?? {})), ...customErrors].join(
-        ', ',
-      ),
+      [
+        ...errors.flatMap((error) => Object.values(error.constraints ?? {})),
+        ...customErrors,
+      ].join(', '),
     );
   }
   return validatedConfig;

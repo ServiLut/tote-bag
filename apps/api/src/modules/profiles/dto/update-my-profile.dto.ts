@@ -1,11 +1,5 @@
 import { Transform } from 'class-transformer';
-import {
-  IsBoolean,
-  IsOptional,
-  IsString,
-  Matches,
-  MaxLength,
-} from 'class-validator';
+import { IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 
 function normalizeOptionalText(value: unknown) {
   if (value === null || value === undefined) {
@@ -74,9 +68,4 @@ export class UpdateMyProfileDto {
   @Transform(({ value }) => normalizeOptionalText(value))
   @IsString()
   municipalityId?: string | null;
-
-  @IsOptional()
-  @Transform(({ value }) => value === true || value === 'true')
-  @IsBoolean()
-  dataPolicyAccepted?: boolean;
 }

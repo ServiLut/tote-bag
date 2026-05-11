@@ -131,6 +131,7 @@ export class DashboardService {
       this.safeStat('pendingQuotes', () =>
         this.prisma.b2BQuote.count({
           where: {
+            deletedAt: null,
             status: {
               notIn: [
                 'DISE\u00d1O_APROBADO',

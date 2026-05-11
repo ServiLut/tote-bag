@@ -433,7 +433,10 @@ export class ShippingSyncService {
         })) as OrdersWithoutShipmentQueryResult[];
         break;
       } catch (error) {
-        if (this.isMissingShippingMethodColumn(error) && includeShippingMethod) {
+        if (
+          this.isMissingShippingMethodColumn(error) &&
+          includeShippingMethod
+        ) {
           includeShippingMethod = false;
           continue;
         }

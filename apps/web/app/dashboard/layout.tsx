@@ -70,7 +70,7 @@ export default async function DashboardLayout({
   }
 
   if (!session) {
-    redirect('/login');
+    redirect(sessionRedirect ?? `/login?redirect=${encodeURIComponent(pathname)}`);
   }
 
   const forwardedRoleContext = readForwardedDashboardRoleContext(requestHeaders);
@@ -90,7 +90,44 @@ export default async function DashboardLayout({
   }
 
   if (!role) {
-    redirect('/login?redirect=/dashboard');
+    return (
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <main className="flex min-h-screen items-center justify-center bg-base px-6 py-10 text-primary">
+          <div className="w-full max-w-lg rounded-3xl border border-theme bg-surface p-8 shadow-xl shadow-black/5">
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-muted">
+              Dashboard
+            </p>
+            <h1 className="mt-3 text-2xl font-black tracking-tight">
+              No fue posible validar tus permisos
+            </h1>
+            <p className="mt-3 text-sm font-medium text-muted">
+              Tu sesion sigue activa, pero la validacion del rol interno no estuvo
+              disponible. Reintenta la carga del modulo antes de volver a iniciar
+              sesion.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <a
+                href={pathname}
+                className="rounded-2xl bg-primary px-5 py-3 text-sm font-black text-base-color transition-opacity hover:opacity-90"
+              >
+                Reintentar modulo
+              </a>
+              <a
+                href="/profile"
+                className="rounded-2xl border border-theme px-5 py-3 text-sm font-black text-primary transition-colors hover:border-primary/30 hover:text-primary"
+              >
+                Ir a perfil
+              </a>
+            </div>
+          </div>
+        </main>
+      </ThemeProvider>
+    );
   }
 
   return (

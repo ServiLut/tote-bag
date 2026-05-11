@@ -147,13 +147,16 @@ export class PaymentsController {
       return;
     }
 
-    if (entityType === 'purchase-invoice') {
+    if (
+      entityType === 'purchase-invoice' ||
+      entityType === 'purchase-payment'
+    ) {
       const { effectiveRole } =
         await this.rolesService.getEffectiveRole(userId);
 
       if (effectiveRole !== Role.ADMIN) {
         throw new ForbiddenException(
-          'Solo los usuarios ADMIN pueden subir comprobantes de facturas de compra.',
+          'Solo los usuarios ADMIN pueden subir comprobantes de compras.',
         );
       }
 

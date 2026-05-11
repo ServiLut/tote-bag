@@ -40,10 +40,15 @@ function cn(...inputs: (string | undefined | null | false)[]) {
 
 export type OrderStatus =
   | 'PENDIENTE_PAGO'
+  | 'PENDING_DEPOSIT'
   | 'PAGADA'
+  | 'IN_PRODUCTION'
   | 'EN_PRODUCCION'
+  | 'PENDING_FINAL_PAYMENT'
+  | 'READY_FOR_DISPATCH'
   | 'ENVIADA'
   | 'ENTREGADA'
+  | 'RETURNED_TO_STOCK'
   | 'CANCELADA';
 
 export type OrderSource = 'ECOMMERCE' | 'MANUAL';
@@ -54,12 +59,35 @@ export type OrderInventoryStatus =
 
 const STATUS_OPTIONS: OrderStatus[] = [
   'PENDIENTE_PAGO',
+  'PENDING_DEPOSIT',
   'PAGADA',
+  'IN_PRODUCTION',
   'EN_PRODUCCION',
+  'PENDING_FINAL_PAYMENT',
+  'READY_FOR_DISPATCH',
   'ENVIADA',
   'ENTREGADA',
+  'RETURNED_TO_STOCK',
   'CANCELADA',
 ];
+
+const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
+  PENDIENTE_PAGO: 'Pendiente pago',
+  PENDING_DEPOSIT: 'Pendiente anticipo',
+  PAGADA: 'Pagada',
+  IN_PRODUCTION: 'En produccion',
+  EN_PRODUCCION: 'En produccion',
+  PENDING_FINAL_PAYMENT: 'Pendiente pago final',
+  READY_FOR_DISPATCH: 'Lista para despacho',
+  ENVIADA: 'Enviada',
+  ENTREGADA: 'Entregada',
+  RETURNED_TO_STOCK: 'Devuelta a stock',
+  CANCELADA: 'Cancelada',
+};
+
+function formatOrderStatusLabel(status: OrderStatus) {
+  return ORDER_STATUS_LABELS[status] ?? status.replaceAll('_', ' ');
+}
 
 const SOURCE_OPTIONS: OrderSource[] = ['ECOMMERCE', 'MANUAL'];
 
@@ -323,8 +351,10 @@ export default function OrdersManager() {
       return 'No puedes eliminar un pedido que ya tiene envio asociado.';
     }
 
-    if (!['PENDIENTE_PAGO', 'CANCELADA'].includes(order.status)) {
-      return 'Solo puedes eliminar pedidos pendientes de pago o cancelados.';
+    if (
+      !['PENDIENTE_PAGO', 'PENDING_DEPOSIT', 'CANCELADA'].includes(order.status)
+    ) {
+      return 'Solo puedes eliminar pedidos pendientes de pago, pendientes de anticipo o cancelados.';
     }
 
     return null;
@@ -480,7 +510,15 @@ export default function OrdersManager() {
 
     filteredOrders.forEach((order) => {
       // Solo contar órdenes pagadas o en producción para lotes
-      if (['PENDIENTE_PAGO', 'CANCELADA'].includes(order.status)) return;
+      if (
+        [
+          'PENDIENTE_PAGO',
+          'PENDING_DEPOSIT',
+          'PENDING_FINAL_PAYMENT',
+          'RETURNED_TO_STOCK',
+          'CANCELADA',
+        ].includes(order.status)
+      ) return;
 
       order.items.forEach((item) => {
         const existing = map.get(item.sku);
@@ -502,14 +540,22 @@ export default function OrdersManager() {
 
   const getStatusColor = (status: OrderStatus) => {
     switch (status) {
+      case 'PENDING_DEPOSIT':
+      case 'PENDING_FINAL_PAYMENT':
+        return 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-400 border-orange-200 dark:border-orange-800';
       case 'PAGADA':
         return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 border-green-200 dark:border-green-800';
+      case 'IN_PRODUCTION':
       case 'EN_PRODUCCION':
         return 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 border-amber-200 dark:border-amber-800';
+      case 'READY_FOR_DISPATCH':
+        return 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-800 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800';
       case 'ENVIADA':
         return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 border-blue-200 dark:border-blue-800';
       case 'ENTREGADA':
         return 'bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700';
+      case 'RETURNED_TO_STOCK':
+        return 'bg-violet-100 dark:bg-violet-900/30 text-violet-800 dark:text-violet-400 border-violet-200 dark:border-violet-800';
       case 'CANCELADA':
         return 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-400 border-red-100 dark:border-red-900/30';
       default:
@@ -746,7 +792,7 @@ export default function OrdersManager() {
                   {selectedStatuses.length === 0
                     ? 'Todos'
                     : selectedStatuses.length === 1
-                      ? selectedStatuses[0]?.replace('_', ' ')
+                      ? formatOrderStatusLabel(selectedStatuses[0] as OrderStatus)
                       : `${selectedStatuses.length} seleccionados`}
                 </div>
                 <ChevronDown
@@ -780,7 +826,7 @@ export default function OrdersManager() {
                                 : 'text-muted group-hover:text-primary',
                             )}
                           >
-                            {status.replace('_', ' ')}
+                            {formatOrderStatusLabel(status)}
                           </span>
                           <div
                             className={cn(
@@ -971,7 +1017,7 @@ export default function OrdersManager() {
                               value={status}
                               className="bg-surface text-primary"
                             >
-                              {status.replace('_', ' ')}
+                              {formatOrderStatusLabel(status)}
                             </option>
                           ))}
                         </select>
@@ -1140,7 +1186,7 @@ export default function OrdersManager() {
                         getStatusColor(selectedOrder.status),
                       )}
                     >
-                      {selectedOrder.status.replace('_', ' ')}
+                      {formatOrderStatusLabel(selectedOrder.status)}
                     </span>
                   </div>
                   <button
@@ -1334,6 +1380,20 @@ export default function OrdersManager() {
                         disabled={isReadOnly}
                         className="w-full p-3 rounded-xl border border-theme bg-surface text-primary font-bold text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none cursor-pointer disabled:opacity-50"
                       >
+                        {STATUS_OPTIONS.filter((status) =>
+                          ![
+                            'PENDIENTE_PAGO',
+                            'PAGADA',
+                            'EN_PRODUCCION',
+                            'ENVIADA',
+                            'ENTREGADA',
+                            'CANCELADA',
+                          ].includes(status),
+                        ).map((status) => (
+                          <option key={`${status}-modal`} value={status}>
+                            {formatOrderStatusLabel(status)}
+                          </option>
+                        ))}
                         <option value="PENDIENTE_PAGO">Pendiente Pago</option>
                         <option value="PAGADA">Pagada</option>
                         <option value="EN_PRODUCCION">En Producción</option>

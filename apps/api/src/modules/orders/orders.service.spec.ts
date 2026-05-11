@@ -431,6 +431,37 @@ describe('OrdersService', () => {
     expect(tx.order.update).not.toHaveBeenCalled();
   });
 
+  it('filtra cuentas por cobrar por rango de fechas del dashboard', async () => {
+    prisma.order.findMany.mockResolvedValue([]);
+
+    await service.getAccountsReceivable({
+      startDate: new Date('2026-04-01T00:00:00.000Z'),
+      endDate: new Date('2026-04-30T23:59:59.999Z'),
+    });
+
+    expect(prisma.order.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          createdAt: {
+            gte: new Date('2026-04-01T00:00:00.000Z'),
+            lte: new Date('2026-04-30T23:59:59.999Z'),
+          },
+        }),
+      }),
+    );
+  });
+
+  it('rechaza rangos invertidos en cuentas por cobrar', async () => {
+    await expect(
+      service.getAccountsReceivable({
+        startDate: new Date('2026-05-01T00:00:00.000Z'),
+        endDate: new Date('2026-04-30T23:59:59.999Z'),
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(prisma.order.findMany).not.toHaveBeenCalled();
+  });
+
   it('registra saldo final y cambia de produccion a pagada sin descontar stock de nuevo', async () => {
     tx.order.findFirst.mockResolvedValue({
       id: 'order-1',

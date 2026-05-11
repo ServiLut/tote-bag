@@ -75,6 +75,7 @@ export const ModelName = {
   B2BQuote: 'B2BQuote',
   AuditLog: 'AuditLog',
   Address: 'Address',
+  AppSetting: 'AppSetting',
   ProductAttribute: 'ProductAttribute',
   PersonalizationOption: 'PersonalizationOption',
   PersonalizationRule: 'PersonalizationRule',
@@ -531,6 +532,16 @@ export const AddressScalarFieldEnum = {
 } as const
 
 export type AddressScalarFieldEnum = (typeof AddressScalarFieldEnum)[keyof typeof AddressScalarFieldEnum]
+
+
+export const AppSettingScalarFieldEnum = {
+  key: 'key',
+  value: 'value',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AppSettingScalarFieldEnum = (typeof AppSettingScalarFieldEnum)[keyof typeof AppSettingScalarFieldEnum]
 
 
 export const ProductAttributeScalarFieldEnum = {

@@ -1238,16 +1238,19 @@ export class OrdersService {
         // Prepare shipping address as JSON-compatible object
         const resolvedCarrier = this.isPickupShippingMethod(shippingMethodToSet)
           ? null
-          : provider?.name ?? carrier ?? null;
+          : (provider?.name ?? carrier ?? null);
         const normalizedShippingAddress =
           shippingAddress &&
           typeof shippingAddress === 'object' &&
           !Array.isArray(shippingAddress)
             ? (shippingAddress as unknown as Record<string, unknown>)
             : null;
-        const resolvedOrderCity = this.isPickupShippingMethod(shippingMethodToSet)
+        const rawCity = normalizedShippingAddress?.city ?? city;
+        const resolvedOrderCity = this.isPickupShippingMethod(
+          shippingMethodToSet,
+        )
           ? PICKUP_LOCATION.city
-          : (normalizedShippingAddress?.city ?? city)?.toString().trim() || '';
+          : (typeof rawCity === 'string' ? rawCity : '').trim();
 
         if (
           !this.isPickupShippingMethod(shippingMethodToSet) &&
@@ -1259,9 +1262,7 @@ export class OrdersService {
         }
 
         if (!resolvedOrderCity) {
-          throw new BadRequestException(
-            'La ciudad del pedido es obligatoria',
-          );
+          throw new BadRequestException('La ciudad del pedido es obligatoria');
         }
 
         const manualDiscountSnapshot = normalizedDiscountValue.greaterThan(0)
@@ -1344,12 +1345,12 @@ export class OrdersService {
             },
             ...(!this.isPickupShippingMethod(shippingMethodToSet) &&
               (provider || resolvedCarrier) && {
-              shipment: {
-                create: {
-                  ...(provider ? { providerId: provider.id } : {}),
+                shipment: {
+                  create: {
+                    ...(provider ? { providerId: provider.id } : {}),
+                  },
                 },
-              },
-            }),
+              }),
           },
           include: { items: true, statusHistory: true, shipment: true },
         });
@@ -2186,7 +2187,20 @@ export class OrdersService {
     });
   }
 
-  async getAccountsReceivable() {
+  async getAccountsReceivable(filters?: {
+    startDate?: Date;
+    endDate?: Date;
+  }) {
+    if (
+      filters?.startDate &&
+      filters?.endDate &&
+      filters.startDate.getTime() > filters.endDate.getTime()
+    ) {
+      throw new BadRequestException(
+        'La fecha inicial no puede ser mayor que la fecha final',
+      );
+    }
+
     const orders = await this.prisma.order.findMany({
       where: {
         balanceDue: { gt: 0 },
@@ -2194,6 +2208,14 @@ export class OrdersService {
         status: {
           notIn: [OrderStatus.CANCELADA, OrderStatus.RETURNED_TO_STOCK],
         },
+        ...(filters?.startDate || filters?.endDate
+          ? {
+              createdAt: {
+                ...(filters.startDate ? { gte: filters.startDate } : {}),
+                ...(filters.endDate ? { lte: filters.endDate } : {}),
+              },
+            }
+          : {}),
       },
       select: {
         id: true,

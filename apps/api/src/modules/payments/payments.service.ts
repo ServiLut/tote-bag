@@ -21,9 +21,11 @@ import {
 import { StorageService } from '../../common/storage/storage.service';
 import {
   Order,
+  OrderPayment,
   B2BQuote,
   PurchaseBatch,
   PurchaseInvoice,
+  PurchasePayment,
   Prisma,
 } from '../../generated/client/client';
 import { ShippingSyncService } from '../shipping/shipping-sync.service';
@@ -36,7 +38,8 @@ export type PaymentSupportEntityType =
   | 'order-payment'
   | 'b2b'
   | 'batch'
-  | 'purchase-invoice';
+  | 'purchase-invoice'
+  | 'purchase-payment';
 
 type WompiSettlementConfig = {
   commissionPercent: number;
@@ -765,9 +768,11 @@ export class PaymentsService {
 
     let updatedEntity:
       | Order
+      | OrderPayment
       | B2BQuote
       | PurchaseBatch
       | PurchaseInvoice
+      | PurchasePayment
       | undefined;
 
     if (entityType === 'order') {
@@ -776,14 +781,10 @@ export class PaymentsService {
         data: { paymentReceiptUrl: uploaded.storageRef },
       });
     } else if (entityType === 'order-payment') {
-      const order = await this.prisma.order.findFirst({
-        where: { id: entityId, deletedAt: null },
-        select: { id: true },
+      updatedEntity = await this.prisma.orderPayment.update({
+        where: { id: entityId },
+        data: { proofUrl: uploaded.storageRef },
       });
-
-      if (!order) {
-        throw new BadRequestException('Orden no encontrada');
-      }
     } else if (entityType === 'b2b') {
       updatedEntity = await this.prisma.b2BQuote.update({
         where: { id: entityId },
@@ -801,6 +802,11 @@ export class PaymentsService {
       updatedEntity = await this.prisma.purchaseInvoice.update({
         where: { id: entityId },
         data: { supportUrl: uploaded.storageRef },
+      });
+    } else if (entityType === 'purchase-payment') {
+      updatedEntity = await this.prisma.purchasePayment.update({
+        where: { id: entityId },
+        data: { proofUrl: uploaded.storageRef },
       });
     }
 
@@ -890,6 +896,14 @@ export class PaymentsService {
         select: { supportUrl: true, paymentReceiptUrl: true },
       });
       return batch?.supportUrl ?? batch?.paymentReceiptUrl ?? null;
+    }
+
+    if (entityType === 'purchase-payment') {
+      const payment = await this.prisma.purchasePayment.findFirst({
+        where: { id: entityId, deletedAt: null },
+        select: { proofUrl: true },
+      });
+      return payment?.proofUrl ?? null;
     }
 
     const invoice = await this.prisma.purchaseInvoice.findFirst({

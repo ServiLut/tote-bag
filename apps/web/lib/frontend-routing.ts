@@ -71,6 +71,13 @@ export function getPostLoginRedirectPath(role: DashboardRole | null | undefined)
   return isDashboardPrivilegedRole(role) ? '/dashboard' : '/profile';
 }
 
+function buildDashboardLoginRedirect(pathname?: string | null) {
+  const redirectTarget =
+    pathname && pathname.startsWith('/dashboard') ? pathname : '/dashboard';
+
+  return `/login?redirect=${encodeURIComponent(redirectTarget)}`;
+}
+
 function isSafeInternalRedirect(redirectPath: string | null | undefined) {
   if (!redirectPath) {
     return false;
@@ -92,6 +99,32 @@ function isSafeInternalRedirect(redirectPath: string | null | undefined) {
   return true;
 }
 
+function parseInternalRedirectPath(redirectPath: string) {
+  try {
+    const parsed = new URL(redirectPath, 'https://tote-bag.local');
+    return {
+      pathname: parsed.pathname,
+      search: parsed.search,
+      hash: parsed.hash,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function canonicalizeDashboardRedirectPath(redirectPath: string) {
+  const parsed = parseInternalRedirectPath(redirectPath);
+
+  if (!parsed) {
+    return redirectPath;
+  }
+
+  const canonicalPathname =
+    resolveCanonicalDashboardPath(parsed.pathname) ?? parsed.pathname;
+
+  return `${canonicalPathname}${parsed.search}${parsed.hash}`;
+}
+
 export function resolvePostLoginRedirectPath(options: {
   role: DashboardRole | null | undefined;
   requestedRedirect?: string | null;
@@ -102,13 +135,20 @@ export function resolvePostLoginRedirectPath(options: {
     return getPostLoginRedirectPath(role);
   }
 
-  const safeRequestedRedirect = requestedRedirect as string;
+  const safeRequestedRedirect = canonicalizeDashboardRedirectPath(
+    requestedRedirect as string,
+  );
+  const parsedRedirect = parseInternalRedirectPath(safeRequestedRedirect);
+  const redirectPathname = parsedRedirect?.pathname ?? safeRequestedRedirect;
 
-  if (
-    safeRequestedRedirect.startsWith('/dashboard') &&
-    !isDashboardPrivilegedRole(role)
-  ) {
-    return getPostLoginRedirectPath(role);
+  if (redirectPathname.startsWith('/dashboard')) {
+    if (!isDashboardPrivilegedRole(role)) {
+      return getPostLoginRedirectPath(role);
+    }
+
+    if (!canAccessDashboardPath(role, redirectPathname)) {
+      return getDefaultDashboardPathForRole(role);
+    }
   }
 
   return safeRequestedRedirect;
@@ -170,8 +210,7 @@ export function canAccessDashboardPath(
       DASHBOARD_ROUTE_MATCHERS.personalizations(pathname) ||
       DASHBOARD_ROUTE_MATCHERS.pqrs(pathname) ||
       DASHBOARD_ROUTE_MATCHERS.knowledge(pathname) ||
-      DASHBOARD_ROUTE_MATCHERS.logistics(pathname) ||
-      DASHBOARD_ROUTE_MATCHERS.strategy(pathname)
+      DASHBOARD_ROUTE_MATCHERS.logistics(pathname)
     );
   }
 
@@ -211,7 +250,7 @@ export function resolveDashboardLayoutRedirect(options: {
   const { hasSession, role, pathname } = options;
 
   if (!hasSession) {
-    return '/login';
+    return buildDashboardLoginRedirect(pathname);
   }
 
   if (role === 'CUSTOMER') {
@@ -249,7 +288,7 @@ export function resolveProxyAccess(options: {
   const isDashboardPage = pathname.startsWith('/dashboard');
 
   if (isDashboardPage && !hasUser) {
-    return '/login';
+    return buildDashboardLoginRedirect(pathname);
   }
 
   if (isAuthPage && hasUser && role != null) {

@@ -12,8 +12,25 @@ describe('PaymentsService', () => {
   const prisma = {
     order: {
       findUnique: jest.fn(),
+      update: jest.fn(),
     },
     orderPayment: {
+      findFirst: jest.fn(),
+      update: jest.fn(),
+    },
+    purchasePayment: {
+      findFirst: jest.fn(),
+      update: jest.fn(),
+    },
+    purchaseInvoice: {
+      findFirst: jest.fn(),
+      update: jest.fn(),
+    },
+    purchaseBatch: {
+      findFirst: jest.fn(),
+      update: jest.fn(),
+    },
+    b2BQuote: {
       findFirst: jest.fn(),
       update: jest.fn(),
     },
@@ -27,6 +44,9 @@ describe('PaymentsService', () => {
 
   const storageService = {
     uploadFile: jest.fn(),
+    uploadPrivateFile: jest.fn(),
+    createSignedReadUrl: jest.fn(),
+    resolveStorageLocation: jest.fn(),
   };
 
   const shippingSyncService = {
@@ -396,6 +416,66 @@ describe('PaymentsService', () => {
         reteIvaAmount: 150,
         reteIcaAmount: 175,
       }) as Record<string, unknown>,
+    });
+  });
+
+  it('persiste comprobantes de purchase-payment con referencia privada estable', async () => {
+    storageService.uploadPrivateFile.mockResolvedValue({
+      bucket: 'support-documents',
+      path: 'receipts/purchase-payment/payment-1-proof.pdf',
+      storageRef:
+        'private://support-documents/receipts/purchase-payment/payment-1-proof.pdf',
+    });
+    storageService.createSignedReadUrl.mockResolvedValue(
+      'https://signed.example.com/payment-1-proof.pdf',
+    );
+    prisma.purchasePayment.update.mockResolvedValue({
+      id: 'payment-1',
+      proofUrl:
+        'private://support-documents/receipts/purchase-payment/payment-1-proof.pdf',
+    });
+
+    const result = await service.uploadPaymentReceipt(
+      'payment-1',
+      'purchase-payment',
+      {
+        originalname: 'payment proof.pdf',
+      } as Express.Multer.File,
+    );
+
+    expect(prisma.purchasePayment.update).toHaveBeenCalledWith({
+      where: { id: 'payment-1' },
+      data: {
+        proofUrl:
+          'private://support-documents/receipts/purchase-payment/payment-1-proof.pdf',
+      },
+    });
+    expect(result.storageRef).toBe(
+      'private://support-documents/receipts/purchase-payment/payment-1-proof.pdf',
+    );
+    expect(result.url).toBe('https://signed.example.com/payment-1-proof.pdf');
+  });
+
+  it('firma comprobantes privados de purchase-payment al reabrirlos', async () => {
+    prisma.purchasePayment.findFirst.mockResolvedValue({
+      proofUrl:
+        'private://support-documents/receipts/purchase-payment/payment-1-proof.pdf',
+    });
+    storageService.resolveStorageLocation.mockReturnValue({
+      bucket: 'support-documents',
+      path: 'receipts/purchase-payment/payment-1-proof.pdf',
+    });
+    storageService.createSignedReadUrl.mockResolvedValue(
+      'https://signed.example.com/payment-1-proof.pdf',
+    );
+
+    await expect(
+      service.getSupportSignedUrl('payment-1', 'purchase-payment'),
+    ).resolves.toEqual({
+      storageRef:
+        'private://support-documents/receipts/purchase-payment/payment-1-proof.pdf',
+      signedUrl: 'https://signed.example.com/payment-1-proof.pdf',
+      expiresInSeconds: 300,
     });
   });
 });

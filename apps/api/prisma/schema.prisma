@@ -143,6 +143,9 @@ model Order {
   profile           Profile?             @relation(fields: [profileId], references: [id])
   shipment          Shipment?
 
+  @@index([deletedAt])
+  @@index([saleLegalRequirement])
+  @@index([saleLegalStatus])
   @@map("orders")
   @@schema("tote-bag")
 }
@@ -238,6 +241,7 @@ model OrderPayment {
   @@index([orderId, paymentDate])
   @@index([provider])
   @@index([externalTransactionId])
+  @@index([deletedAt])
   @@map("order_payments")
   @@schema("tote-bag")
 }
@@ -466,6 +470,9 @@ model B2BQuote {
   size              String?        @map("size")
   items             B2BQuoteItem[]
 
+  @@index([deletedAt])
+  @@index([expiresAt])
+  @@index([reservationStatus])
   @@map("b2b_quotes")
   @@schema("tote-bag")
 }
@@ -508,6 +515,16 @@ model Address {
   profile        Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@map("addresses")
+  @@schema("tote-bag")
+}
+
+model AppSetting {
+  key       String   @id @map("key")
+  value     Json     @map("value")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("app_settings")
   @@schema("tote-bag")
 }
 
@@ -614,6 +631,7 @@ model PricingRule {
   product        Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId, scope])
+  @@index([deletedAt])
   @@map("pricing_rules")
   @@schema("tote-bag")
 }
@@ -665,6 +683,7 @@ model WizardOption {
   allowedMaterialValues String[]       @default([]) @map("allowed_material_values")
   imageUrl              String?        @map("image_url")
 
+  @@index([deletedAt])
   @@map("wizard_options")
   @@schema("tote-bag")
 }
@@ -711,6 +730,7 @@ model SupplyItem {
   @@index([category, isActive])
   @@index([supplyType, isActive])
   @@index([name])
+  @@index([deletedAt])
   @@map("supply_items")
   @@schema("tote-bag")
 }
@@ -740,6 +760,9 @@ model PurchaseBatch {
   supplier          Supplier               @relation(fields: [supplierId], references: [id])
   variant           Variant?               @relation(fields: [variantId], references: [id])
 
+  @@index([deletedAt])
+  @@index([documentType])
+  @@index([supportUrl])
   @@map("purchase_batches")
   @@schema("tote-bag")
 }
@@ -917,6 +940,7 @@ model PurchaseInvoice {
 
   @@index([supplierId, status, issueDate])
   @@index([purchaseBatchId])
+  @@index([deletedAt])
   @@map("purchase_invoices")
   @@schema("tote-bag")
 }
@@ -933,6 +957,7 @@ model PurchasePayment {
   invoice     PurchaseInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@index([invoiceId, paymentDate])
+  @@index([deletedAt])
   @@map("purchase_payments")
   @@schema("tote-bag")
 }

@@ -53,6 +53,18 @@ describe('envValidationSchema', () => {
     );
   });
 
+  it('requires shipping notification webhook token when the webhook URL is configured', () => {
+    expect(() =>
+      envValidationSchema({
+        ...baseConfig,
+        SHIPPING_NOTIFICATIONS_WEBHOOK_URL:
+          'https://hooks.example.com/shipping',
+      }),
+    ).toThrow(
+      'SHIPPING_NOTIFICATIONS_WEBHOOK_TOKEN is required when SHIPPING_NOTIFICATIONS_WEBHOOK_URL is configured.',
+    );
+  });
+
   it('accepts FRONTEND_URL in production and allows it to be omitted in development', () => {
     expect(
       envValidationSchema({
@@ -70,10 +82,12 @@ describe('envValidationSchema', () => {
         FRONTEND_URL: 'https://shop.example.com',
         SHIPPING_NOTIFICATIONS_WEBHOOK_URL:
           'https://hooks.example.com/shipping',
+        SHIPPING_NOTIFICATIONS_WEBHOOK_TOKEN: 'shipping-secret',
       }),
     ).toMatchObject({
       FRONTEND_URL: 'https://shop.example.com',
       SHIPPING_NOTIFICATIONS_WEBHOOK_URL: 'https://hooks.example.com/shipping',
+      SHIPPING_NOTIFICATIONS_WEBHOOK_TOKEN: 'shipping-secret',
       NODE_ENV: 'production',
     });
   });

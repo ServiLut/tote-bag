@@ -44,12 +44,12 @@ export class B2bController {
   @Get('quotes')
   @RequirePermissions({ resource: 'b2b', action: 'manage' })
   findAll() {
-    return this.b2bService.findAll();
+    return this.b2bService.findAllDashboard();
   }
 
   @Patch('quotes/:id/approve')
   @RequirePermissions({ resource: 'b2b', action: 'manage' })
   approveDesign(@Param('id') id: string) {
-    return this.b2bService.approveDesign(id);
+    return this.b2bService.approveDesignDashboard(id);
   }
 }
