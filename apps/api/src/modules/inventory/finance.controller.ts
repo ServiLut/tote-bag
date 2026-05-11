@@ -45,6 +45,20 @@ export class FinanceController {
     }
   }
 
+  private async ensureAdminOrManager(userId?: string) {
+    if (!userId) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    const { effectiveRole } = await this.rolesService.getEffectiveRole(userId);
+
+    if (effectiveRole !== Role.ADMIN && effectiveRole !== Role.MANAGER) {
+      throw new ForbiddenException(
+        'Solo los usuarios ADMIN o GERENTE pueden usar el simulador del gateway',
+      );
+    }
+  }
+
   @Get('report-preview')
   async getReportPreview(
     @Query('startDate') startDate?: string,
@@ -132,7 +146,7 @@ export class FinanceController {
     @Body() body: GatewayMarginGridDto,
     @Req() req?: RequestWithUser,
   ) {
-    await this.ensureAdmin(req?.user?.id);
+    await this.ensureAdminOrManager(req?.user?.id);
     return this.financeService.getGatewayMarginGrid(body);
   }
 

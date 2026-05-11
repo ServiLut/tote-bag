@@ -27,6 +27,9 @@ describe('frontend routing guards', () => {
     expect(getCheckoutInitialAuthStep(true)).toBe('AUTHENTICATED');
     expect(getCheckoutInitialAuthStep(false)).toBe('CHOICE');
     expect(getCheckoutLoginHref()).toBe('/login?redirect=/checkout');
+    expect(getCheckoutLoginHref({ isB2B: true })).toBe(
+      '/login?redirect=%2Fcheckout%3FisB2B%3Dtrue',
+    );
   });
 
   it('protege dashboard layout cuando no hay sesion o rol invalido', () => {

@@ -109,6 +109,8 @@ model Order {
   customerEmail     String               @map("customer_email")
   customerPhone     String               @map("customer_phone")
   shippingAddress   Json                 @map("shipping_address")
+  shippingMethod    ShippingMethod       @default(SHIPPING) @map("shipping_method")
+  shippingCost      Decimal              @default(0) @map("shipping_cost") @db.Decimal(12, 2)
   city              String               @map("city")
   totalAmount       Decimal              @map("total_amount") @db.Decimal(10, 2)
   netAmount         Decimal              @map("net_amount") @db.Decimal(10, 2)
@@ -1158,6 +1160,13 @@ enum OrderStatus {
 enum OrderSource {
   ECOMMERCE
   MANUAL
+
+  @@schema("tote-bag")
+}
+
+enum ShippingMethod {
+  SHIPPING
+  PICKUP
 
   @@schema("tote-bag")
 }

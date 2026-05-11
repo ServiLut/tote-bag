@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   OrderStatus,
-  ShippingMethod,
   ShipmentStatus,
 } from '../../generated/client/client';
 import { ShippingSyncService } from './shipping-sync.service';
@@ -10,6 +9,9 @@ describe('ShippingSyncService', () => {
   const prisma = {
     order: {
       findUnique: jest.fn(),
+      findMany: jest.fn(),
+    },
+    shippingProvider: {
       findMany: jest.fn(),
     },
     shipment: {
@@ -29,7 +31,7 @@ describe('ShippingSyncService', () => {
     prisma.order.findUnique.mockResolvedValue({
       id: 'order-pickup',
       status: OrderStatus.PAGADA,
-      shippingMethod: ShippingMethod.PICKUP,
+      shippingMethod: 'PICKUP',
       trackingNumber: null,
       carrier: null,
       shippingAddress: {
@@ -50,7 +52,7 @@ describe('ShippingSyncService', () => {
     prisma.order.findUnique.mockResolvedValue({
       id: 'order-shipping',
       status: OrderStatus.PAGADA,
-      shippingMethod: ShippingMethod.SHIPPING,
+      shippingMethod: 'SHIPPING',
       trackingNumber: 'TRK-1',
       carrier: 'Servientrega',
       shippingAddress: {
@@ -78,51 +80,78 @@ describe('ShippingSyncService', () => {
     });
   });
 
-  it('consulta solo ordenes SHIPPING sin shipment para la cola operativa', async () => {
-    prisma.order.findMany.mockResolvedValue([]);
+  it('filtra ordenes PICKUP al construir la cola operativa', async () => {
+    prisma.order.findMany.mockResolvedValue([
+      {
+        id: 'pickup-1',
+        orderNumber: 3000,
+        customerEmail: 'pickup@example.com',
+        totalAmount: 30000,
+        balanceDue: 0,
+        createdAt: new Date('2026-05-04T10:00:00.000Z'),
+        city: 'Medellin',
+        status: OrderStatus.PAGADA,
+        saleLegalRequirement: 'INTERNAL_DOCUMENT_ALLOWED',
+        saleLegalStatus: 'COMPLETED',
+        trackingNumber: null,
+        carrier: null,
+        shippingAddress: { type: 'PICKUP', city: 'Medellin' },
+        profile: null,
+      },
+      {
+        id: 'shipping-1',
+        orderNumber: 3001,
+        customerEmail: 'shipping@example.com',
+        totalAmount: 45000,
+        balanceDue: 0,
+        createdAt: new Date('2026-05-04T12:00:00.000Z'),
+        city: 'Bogota',
+        status: OrderStatus.PAGADA,
+        saleLegalRequirement: 'INTERNAL_DOCUMENT_ALLOWED',
+        saleLegalStatus: 'COMPLETED',
+        trackingNumber: null,
+        carrier: null,
+        shippingAddress: { shippingMethod: 'SHIPPING', city: 'Bogota' },
+        profile: null,
+      },
+    ]);
 
-    await service.getOrdersWithoutShipmentRecords();
+    const result = await service.getOrdersWithoutShipmentRecords();
 
     expect(prisma.order.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           shipment: null,
-          shippingMethod: ShippingMethod.SHIPPING,
         }),
       }),
     );
+    expect(result).toHaveLength(1);
+    expect(result[0].orderId).toBe('shipping-1');
   });
 
-  it('reintenta en modo legacy si falta shipping_method en orders', async () => {
-    prisma.order.findMany
-      .mockRejectedValueOnce(
-        new Error('column "shipping_method" does not exist'),
-      )
-      .mockRejectedValueOnce(
-        new Error('column "shipping_method" does not exist'),
-      )
-      .mockResolvedValueOnce([
-        {
-          id: 'order-legacy',
-          orderNumber: 3001,
-          customerEmail: 'legacy@example.com',
-          totalAmount: 45000,
-          balanceDue: 0,
-          createdAt: new Date('2026-05-04T12:00:00.000Z'),
-          city: 'Bogota',
-          status: OrderStatus.PAGADA,
-          saleLegalRequirement: 'INTERNAL_DOCUMENT_ALLOWED',
-          saleLegalStatus: 'COMPLETED',
-          trackingNumber: null,
-          carrier: null,
-          shippingAddress: { city: 'Bogota' },
-          profile: null,
-        },
-      ]);
+  it('asume SHIPPING para ordenes legacy sin shippingMethod explicito', async () => {
+    prisma.order.findMany.mockResolvedValue([
+      {
+        id: 'order-legacy',
+        orderNumber: 3001,
+        customerEmail: 'legacy@example.com',
+        totalAmount: 45000,
+        balanceDue: 0,
+        createdAt: new Date('2026-05-04T12:00:00.000Z'),
+        city: 'Bogota',
+        status: OrderStatus.PAGADA,
+        saleLegalRequirement: 'INTERNAL_DOCUMENT_ALLOWED',
+        saleLegalStatus: 'COMPLETED',
+        trackingNumber: null,
+        carrier: null,
+        shippingAddress: { city: 'Bogota' },
+        profile: null,
+      },
+    ]);
 
     const result = await service.getOrdersWithoutShipmentRecords();
 
-    expect(prisma.order.findMany).toHaveBeenCalledTimes(3);
+    expect(prisma.order.findMany).toHaveBeenCalledTimes(1);
     expect(result).toHaveLength(1);
     expect(result[0].order.saleLegalRequirement).toBe(
       'INTERNAL_DOCUMENT_ALLOWED',

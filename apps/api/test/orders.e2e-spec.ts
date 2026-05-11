@@ -98,6 +98,39 @@ describe('OrdersController (e2e)', () => {
     );
   });
 
+  it('POST /api/v1/orders permite pickup sin direccion de envio', async () => {
+    ordersService.create.mockResolvedValue({ id: 'order-2', orderNumber: 102 });
+
+    await request(getTestServer(app))
+      .post('/api/v1/orders')
+      .send({
+        firstName: 'Deybis',
+        lastName: 'Asprilla',
+        customerEmail: 'demo@tote.com',
+        customerPhone: '3001234567',
+        shippingMethod: 'PICKUP',
+        items: [
+          {
+            productId: 'prod-1',
+            variantId: 'variant-1',
+            sku: 'SKU-1',
+            quantity: 1,
+          },
+        ],
+      })
+      .expect(201);
+
+    expect(ordersService.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        shippingMethod: 'PICKUP',
+      }),
+      undefined,
+      {
+        idempotencyKey: undefined,
+      },
+    );
+  });
+
   it('POST /api/v1/orders exige autenticacion para pedidos manuales', async () => {
     await request(getTestServer(app))
       .post('/api/v1/orders')

@@ -30,6 +30,7 @@ import { InventoryModule } from './modules/inventory/inventory.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { UsersModule } from './modules/users/users.module';
 import { ShippingModule } from './modules/shipping/shipping.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PqrsModule } from './modules/pqrs/pqrs.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
 import { PurchasesModule } from './modules/purchases/purchases.module';
@@ -323,6 +324,7 @@ export function createMetricsAccessMiddleware(
     InventoryModule,
     UsersModule,
     ShippingModule,
+    NotificationsModule,
     PqrsModule,
     PayrollModule,
     PurchasesModule,

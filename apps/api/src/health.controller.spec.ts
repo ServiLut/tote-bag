@@ -15,18 +15,6 @@ describe('HealthController', () => {
     del: jest.fn(),
   };
 
-  const authService = {
-    getRuntimeStatus: jest.fn(),
-  };
-
-  const storageService = {
-    getRuntimeStatus: jest.fn(),
-  };
-
-  const shippingNotifier = {
-    getRuntimeStatus: jest.fn(),
-  };
-
   let controller: HealthController;
 
   beforeEach(() => {
@@ -36,25 +24,7 @@ describe('HealthController', () => {
     cacheManager.set.mockResolvedValue('ok');
     cacheManager.get.mockResolvedValue('probe-value');
     cacheManager.del.mockResolvedValue(true);
-    authService.getRuntimeStatus.mockResolvedValue({
-      status: 'up',
-      configured: true,
-    });
-    storageService.getRuntimeStatus.mockResolvedValue({
-      status: 'up',
-      configured: true,
-    });
-    shippingNotifier.getRuntimeStatus.mockReturnValue({
-      status: 'up',
-      configured: true,
-    });
-    controller = new HealthController(
-      prisma as never,
-      authService as never,
-      storageService as never,
-      shippingNotifier as never,
-      cacheManager as never,
-    );
+    controller = new HealthController(prisma as never, cacheManager as never);
   });
 
   afterEach(() => {

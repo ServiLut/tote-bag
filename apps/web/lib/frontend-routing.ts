@@ -118,7 +118,19 @@ export function getCheckoutInitialAuthStep(hasSession: boolean): CheckoutAuthSte
   return hasSession ? 'AUTHENTICATED' : 'CHOICE';
 }
 
-export function getCheckoutLoginHref() {
+export function getCheckoutLoginHref(options?: { isB2B?: boolean | null }) {
+  const isB2B =
+    options?.isB2B ??
+    (typeof window !== 'undefined'
+      ? ['true', '1'].includes(
+          new URLSearchParams(window.location.search).get('isB2B') ?? '',
+        )
+      : false);
+
+  if (isB2B) {
+    return `/login?redirect=${encodeURIComponent('/checkout?isB2B=true')}`;
+  }
+
   return '/login?redirect=/checkout';
 }
 

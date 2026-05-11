@@ -10,6 +10,7 @@ import {
   Min,
   IsIn,
   Matches,
+  ValidateIf,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ProductConfigInputDto } from '../../../common/dto/product-config.dto';
@@ -91,18 +92,36 @@ export class CreateOrderDto {
   @IsNotEmpty()
   customerPhone: string;
 
+  @ValidateIf((object: CreateOrderDto) => object.shippingMethod !== 'PICKUP')
   @IsString()
   @IsNotEmpty()
-  department: string;
+  department?: string;
 
+  @ValidateIf((object: CreateOrderDto) => object.shippingMethod !== 'PICKUP')
   @IsString()
   @IsNotEmpty()
-  city: string;
+  city?: string;
 
+  @ValidateIf((object: CreateOrderDto) => object.shippingMethod !== 'PICKUP')
   @ValidateNested()
   @Type(() => AddressDto)
   @IsNotEmpty()
-  shippingAddress: AddressDto;
+  shippingAddress?: AddressDto;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['SHIPPING', 'PICKUP'])
+  shippingMethod?: 'SHIPPING' | 'PICKUP';
+
+  @IsOptional()
+  @Transform(({ value }) =>
+    value === '' || value === null || value === undefined
+      ? undefined
+      : parseLocalizedNumber(value),
+  )
+  @IsNumber()
+  @Min(0)
+  shippingCost?: number;
 
   @IsString()
   @IsOptional()

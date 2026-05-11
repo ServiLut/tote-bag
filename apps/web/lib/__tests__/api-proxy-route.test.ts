@@ -1,8 +1,13 @@
 import { NextRequest } from 'next/server';
 
+const getServerApiCandidatesMock = jest.fn(() => ['http://api.internal/api/v1']);
+const isRetryableApiResponseStatusMock = jest.fn(
+  (status: number) => status === 502 || status === 503 || status === 504,
+);
+
 jest.mock('@/lib/api-config', () => ({
-  getServerApiCandidates: jest.fn(() => ['http://api.internal/api/v1']),
-  isRetryableApiResponseStatus: jest.fn(() => false),
+  getServerApiCandidates: getServerApiCandidatesMock,
+  isRetryableApiResponseStatus: isRetryableApiResponseStatusMock,
 }));
 
 jest.mock('@/lib/dashboard-auth', () => ({
@@ -17,6 +22,7 @@ describe('api proxy route', () => {
   afterEach(() => {
     global.fetch = originalFetch;
     jest.clearAllMocks();
+    getServerApiCandidatesMock.mockReturnValue(['http://api.internal/api/v1']);
   });
 
   it('reenvia headers operativos y forwarding al upstream', async () => {
@@ -89,6 +95,76 @@ describe('api proxy route', () => {
     const forwardedHeaders = init?.headers as Headers;
     expect(forwardedHeaders.get('x-forwarded-proto')).toBe('https');
     expect(forwardedHeaders.get('x-forwarded-host')).toBe('store.example.com');
+    expect(response.status).toBe(200);
+  });
+
+  it('no reintenta mutaciones sin idempotency key ante un upstream transitorio', async () => {
+    getServerApiCandidatesMock.mockReturnValue([
+      'http://api.internal/api/v1',
+      'http://api.backup/api/v1',
+    ]);
+
+    const fetchMock = jest.fn().mockResolvedValue(
+      new Response('bad gateway', {
+        status: 502,
+      }),
+    );
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const { POST } = await import('../../app/api/proxy/[...path]/route');
+
+    const response = await POST(
+      new NextRequest('http://localhost/api/proxy/orders', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ hello: 'world' }),
+      }),
+      {
+        params: Promise.resolve({ path: ['orders'] }),
+      },
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(response.status).toBe(502);
+  });
+
+  it('reintenta GET en el siguiente upstream cuando recibe una respuesta transitoria', async () => {
+    getServerApiCandidatesMock.mockReturnValue([
+      'http://api.internal/api/v1',
+      'http://api.backup/api/v1',
+    ]);
+
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce(
+        new Response('bad gateway', {
+          status: 502,
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: {
+            'content-type': 'application/json',
+          },
+        }),
+      );
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const { GET } = await import('../../app/api/proxy/[...path]/route');
+
+    const response = await GET(
+      new NextRequest('http://localhost/api/proxy/catalog', {
+        method: 'GET',
+      }),
+      {
+        params: Promise.resolve({ path: ['catalog'] }),
+      },
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(response.status).toBe(200);
   });
 });

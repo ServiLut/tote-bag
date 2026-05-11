@@ -8,19 +8,21 @@ import {
   DASHBOARD_ROLE_CONTEXT_RESOLVED_HEADER_NAME,
   DASHBOARD_ROLE_HEADER_NAME,
   extractDashboardRoleContextFromProfilePayload,
-  getApiCandidates,
   parseDashboardDebugRoleCookie,
   type DashboardRoleContext,
   type DashboardRole,
 } from '@/lib/dashboard-auth';
+import { getServerApiCandidates } from '@/lib/api-config';
 import { tryGetSupabaseEnv } from '@/lib/env';
 import { resolveProxyAccess } from '@/lib/frontend-routing';
+
+const DASHBOARD_PATHNAME_HEADER_NAME = 'x-tote-bag-pathname';
 
 async function getRoleContextFromApi(
   accessToken: string,
   debugRole: DashboardRole | null,
 ): Promise<DashboardRoleContext | null> {
-  for (const apiUrl of getApiCandidates()) {
+  for (const apiUrl of getServerApiCandidates()) {
     try {
       const res = await fetch(`${apiUrl}/profiles/me`, {
         headers: buildDashboardAuthHeaders(accessToken, debugRole),
@@ -42,6 +44,7 @@ async function getRoleContextFromApi(
 export async function proxy(request: NextRequest) {
   const env = tryGetSupabaseEnv();
   const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(DASHBOARD_PATHNAME_HEADER_NAME, request.nextUrl.pathname);
   const pendingCookies: Array<{
     name: string;
     value: string;

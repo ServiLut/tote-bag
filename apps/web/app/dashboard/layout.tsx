@@ -7,22 +7,24 @@ import {
   buildDashboardAuthHeaders,
   extractDashboardRoleContextFromProfilePayload,
   getDashboardRoleForOperatorEmail,
-  getApiCandidates,
   DASHBOARD_DEBUG_ROLE_COOKIE_NAME,
   readForwardedDashboardRoleContext,
   parseDashboardDebugRoleCookie,
   type DashboardRoleContext,
   type DashboardRole,
 } from '@/lib/dashboard-auth';
+import { getServerApiCandidates } from '@/lib/api-config';
 import {
   resolveDashboardLayoutRedirect,
 } from '@/lib/frontend-routing';
+
+const DASHBOARD_PATHNAME_HEADER_NAME = 'x-tote-bag-pathname';
 
 async function getCurrentRoleContext(
   accessToken: string,
   debugRole: DashboardRole | null,
 ): Promise<DashboardRoleContext> {
-  for (const apiUrl of getApiCandidates()) {
+  for (const apiUrl of getServerApiCandidates()) {
     try {
       const res = await fetch(`${apiUrl}/profiles/me`, {
         cache: 'no-store',
@@ -46,9 +48,10 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = '/dashboard';
   const cookieStore = await cookies();
   const requestHeaders = await headers();
+  const pathname =
+    requestHeaders.get(DASHBOARD_PATHNAME_HEADER_NAME) ?? '/dashboard';
   const supabase = await createClient();
   const {
     data: { session },

@@ -33,6 +33,21 @@ describe('api config', () => {
     ]);
   });
 
+  it('prioriza INTERNAL_API_URL para candidatos server-side', async () => {
+    (process.env as Record<string, string | undefined>).NODE_ENV =
+      'development';
+    process.env.INTERNAL_API_URL = 'http://api.internal:4000/api/v1';
+    process.env.NEXT_PUBLIC_API_URL = 'https://public.example.com/api/v1';
+
+    const { getServerApiCandidates } = await import('../api-config');
+
+    expect(getServerApiCandidates().slice(0, 3)).toEqual([
+      'http://api.internal:4000/api/v1',
+      'https://public.example.com/api/v1',
+      'http://localhost:4005/api/v1',
+    ]);
+  });
+
   it('extrae hosts desde el error de conexion de la API', async () => {
     const { extractApiConnectionErrorTargets } = await import('../api-config');
 
