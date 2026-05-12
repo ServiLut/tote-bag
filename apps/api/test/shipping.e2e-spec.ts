@@ -94,6 +94,26 @@ describe('ShippingController (e2e)', () => {
     expect(shippingService.getShipments).not.toHaveBeenCalled();
   });
 
+  it('GET /api/v1/shipping/permissions expone permisos de lectura y actualizacion', async () => {
+    rolesService.hasPermission.mockImplementation(
+      async (_userId: string, resource: string, action: string) =>
+        resource === 'shipping' && action === 'read',
+    );
+
+    await request(getTestServer(app))
+      .get('/api/v1/shipping/permissions')
+      .set('x-test-user-id', 'user-1')
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual({
+          shipments: {
+            read: true,
+            update: false,
+          },
+        });
+      });
+  });
+
   it('GET /api/v1/shipping/shipments/pending conserva headers de deprecacion', async () => {
     rolesService.hasPermission.mockResolvedValue(true);
     shippingService.getPendingShipments.mockResolvedValue([]);

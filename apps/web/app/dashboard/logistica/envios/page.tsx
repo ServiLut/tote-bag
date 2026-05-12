@@ -125,6 +125,14 @@ function normalizeMoneyValue(value: unknown) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function extractShipmentUpdateAccess(value: unknown) {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  return (value as ShippingPermissionsResponse).shipments?.update === true;
+}
+
 type ShipmentSupplyUsageAllocation = {
   id: string;
   purchaseBatchLineId: string;
@@ -156,6 +164,13 @@ type ShipmentSupplyUsageResponse = {
   shipmentId: string;
   orderId: string;
   usages: ShipmentSupplyUsageRecord[];
+};
+
+type ShippingPermissionsResponse = {
+  shipments?: {
+    read?: boolean;
+    update?: boolean;
+  };
 };
 
 const RETURNABLE_STATUSES = new Set<ShipmentStatus>(["RETURNED", "CANCELLED"]);
@@ -497,26 +512,6 @@ export default function ShippingManagementPage() {
     [],
   );
 
-  const probeShipmentUpdateAccess = useCallback(
-    async (headers: Record<string, string>) => {
-      try {
-        const response = await apiFetch("/shipping/shipments/__permission_probe__", {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            ...headers,
-          },
-          body: JSON.stringify({ status: "PENDING" }),
-        });
-
-        return response.status !== 403;
-      } catch {
-        return false;
-      }
-    },
-    [],
-  );
-
   const downloadFile = useCallback(
     async (path: string, name: string) => {
       const res = await apiFetch(path, { headers: await getHeaders() });
@@ -536,15 +531,30 @@ export default function ShippingManagementPage() {
     setMessage(null);
     try {
       const headers = await getHeaders();
-      const [shipRes, provRes, bagRes] = await Promise.all([
+      const [shipRes, provRes, bagRes, permissionsRes] = await Promise.all([
         apiFetch("/shipping/shipments", { headers }),
         apiFetch("/shipping/providers", { headers }),
         apiFetch("/shipping/shipping-bags/availability", { headers }),
+        apiFetch("/shipping/permissions", { headers }),
       ]);
+      if (permissionsRes.ok) {
+        setHasShipmentUpdateAccess(
+          extractShipmentUpdateAccess(await permissionsRes.json()),
+        );
+      } else {
+        setHasShipmentUpdateAccess(false);
+        const body = await permissionsRes.json().catch(() => null);
+        setMessage(
+          (current) =>
+            current ||
+            body?.message ||
+            body?.error ||
+            `No fue posible verificar los permisos operativos de envios (${permissionsRes.status}).`,
+        );
+      }
       if (shipRes.ok) {
         setHasShipmentAccess(true);
         setShipments(getApiList<ShipmentRecord>(await shipRes.json()));
-        setHasShipmentUpdateAccess(await probeShipmentUpdateAccess(headers));
       } else {
         setShipments([]);
         setShippingBags([]);
@@ -603,7 +613,7 @@ export default function ShippingManagementPage() {
     } finally {
       setLoading(false);
     }
-  }, [getHeaders, probeShipmentUpdateAccess]);
+  }, [getHeaders]);
 
   useEffect(() => {
     void fetchData();
