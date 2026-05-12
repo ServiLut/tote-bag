@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
+import Decimal from 'decimal.js';
 import { OrderStatus, ShipmentStatus } from '../../generated/client/client';
 import { ReturnProductCondition, ReturnReason } from './dto/process-return.dto';
 import { ShippingService } from './shipping.service';
@@ -236,6 +237,42 @@ describe('ShippingService', () => {
       'order-1',
       'TRK-1',
     );
+  });
+
+  it('normaliza totalAmount y balanceDue como numeros al listar envios', async () => {
+    prisma.shipment.findMany.mockResolvedValue([
+      {
+        id: 'shipment-1',
+        orderId: 'order-1',
+        trackingNumber: 'TRK-1',
+        status: ShipmentStatus.PENDING,
+        weight: null,
+        dimensions: null,
+        provider: {
+          id: 'provider-1',
+          name: 'Servientrega',
+        },
+        order: {
+          orderNumber: 1001,
+          customerEmail: 'cliente@example.com',
+          totalAmount: new Decimal('125000.50'),
+          createdAt: new Date('2026-05-10T10:00:00.000Z'),
+          shippingAddress: { address: 'Calle 1', city: 'Bogota' },
+          balanceDue: new Decimal('5000.25'),
+          saleLegalRequirement: 'INTERNAL_DOCUMENT_ALLOWED',
+          saleLegalStatus: 'COMPLETED',
+          profile: null,
+        },
+      },
+    ]);
+    prisma.auditLog.findMany.mockResolvedValue([]);
+    shippingSyncService.getOrdersWithoutShipmentRecords.mockResolvedValue([]);
+
+    const result = await service.getShipments();
+
+    expect(result).toHaveLength(1);
+    expect(result[0]?.order.totalAmount).toBe(125000.5);
+    expect(result[0]?.order.balanceDue).toBe(5000.25);
   });
 
   it('rechaza providerId inexistente al actualizar un envio', async () => {

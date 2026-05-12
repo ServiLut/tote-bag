@@ -10,6 +10,20 @@ import {
 } from '@/lib/dashboard-auth';
 
 const PROXY_SAFE_RETRY_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+const DEFAULT_PROXY_TIMEOUT_MS = 30_000;
+
+function getProxyRequestTimeoutMs() {
+  const rawValue = process.env.API_PROXY_TIMEOUT_MS?.trim();
+
+  if (!rawValue) {
+    return DEFAULT_PROXY_TIMEOUT_MS;
+  }
+
+  const parsedValue = Number(rawValue);
+  return Number.isFinite(parsedValue) && parsedValue > 0
+    ? parsedValue
+    : DEFAULT_PROXY_TIMEOUT_MS;
+}
 
 function getRequestMethod(request: NextRequest) {
   return request.method.toUpperCase();
@@ -94,6 +108,7 @@ async function forwardRequest(
   const pathname = path.join('/');
   const query = request.nextUrl.search;
   const headers = buildForwardHeaders(request);
+  const requestTimeoutMs = getProxyRequestTimeoutMs();
   const body =
     request.method === 'GET' || request.method === 'HEAD'
       ? undefined
@@ -118,7 +133,7 @@ async function forwardRequest(
         headers,
         body,
         cache: 'no-store',
-        signal: AbortSignal.timeout(10_000),
+        signal: AbortSignal.timeout(requestTimeoutMs),
       });
 
       if (

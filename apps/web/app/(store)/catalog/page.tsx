@@ -7,7 +7,12 @@ import FilterSidebar, { type FilterState } from '@/components/store/FilterSideba
 import { Product } from '@/types/product';
 import { ApiResponse } from '@/types/api';
 import { apiFetch } from '@/utils/api';
-import { DEFAULT_CATALOG_MAX_PRICE } from '@/lib/catalog-filters';
+import {
+  areCatalogFiltersEqual,
+  createDefaultCatalogFilterState,
+  DEFAULT_CATALOG_MAX_PRICE,
+  readCatalogFiltersFromSearchParams,
+} from '@/lib/catalog-filters';
 import { Loader2, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -54,22 +59,31 @@ function CatalogPageContent() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const ITEMS_PER_PAGE = 12;
 
-  const [filters, setFilters] = useState<FilterState>({
-    minPrice: 0,
-    maxPrice: DEFAULT_CATALOG_MAX_PRICE,
-    collections: [],
-    lines: [],
-    sizes: [],
-    qualities: [],
-    materials: [],
-    status: [],
-  });
+  const [filters, setFilters] = useState<FilterState>(() =>
+    readCatalogFiltersFromSearchParams(
+      searchParams,
+      createDefaultCatalogFilterState(),
+    ),
+  );
 
   const searchTerm = searchParams.get('search')?.trim() || '';
   const pageParam = Number(searchParams.get('page') || '1');
   const currentPage = Number.isFinite(pageParam) && pageParam > 0
     ? Math.trunc(pageParam)
     : 1;
+
+  useEffect(() => {
+    setFilters((currentFilters) => {
+      const nextFilters = readCatalogFiltersFromSearchParams(
+        searchParams,
+        currentFilters,
+      );
+
+      return areCatalogFiltersEqual(currentFilters, nextFilters)
+        ? currentFilters
+        : nextFilters;
+    });
+  }, [searchParams]);
 
   useEffect(() => {
     const fetchCollections = async () => {

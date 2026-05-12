@@ -1555,6 +1555,7 @@ export default function BatchReceptionPage() {
                   Soporte del proveedor
                 </span>
                 <input
+                  id="supplier-support-file"
                   type="file"
                   accept="application/pdf,image/jpeg,.pdf,.jpg,.jpeg"
                   disabled={submitting}
@@ -1562,17 +1563,34 @@ export default function BatchReceptionPage() {
                     const file = event.target.files?.[0] ?? null;
                     setSupportFile(file);
                   }}
-                  className="mt-2 block w-full text-sm font-bold text-primary file:mr-4 file:rounded-lg file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-black file:text-base-color disabled:opacity-60"
+                  className="hidden"
                 />
+                <div className="mt-3 flex flex-col gap-3 rounded-xl border border-theme bg-base p-3 md:flex-row md:items-center md:justify-between">
+                  <label
+                    htmlFor="supplier-support-file"
+                    className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg px-4 py-2 text-xs font-black uppercase tracking-widest transition-colors ${
+                      submitting
+                        ? 'cursor-not-allowed bg-theme/10 text-muted'
+                        : supportFile
+                          ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                          : 'bg-primary text-base-color hover:bg-primary/90'
+                    }`}
+                  >
+                    <Paperclip className="h-3.5 w-3.5" />
+                    {supportFile ? 'Cambiar archivo' : 'Seleccionar archivo'}
+                  </label>
+                  <div className="min-w-0 flex-1 text-sm font-bold text-primary">
+                    {supportFile ? (
+                      <span className="block truncate">{supportFile.name}</span>
+                    ) : (
+                      <span className="text-muted">Sin archivo seleccionado</span>
+                    )}
+                  </div>
+                </div>
                 <p className="mt-2 text-xs font-medium text-muted">
                   Obligatorio para ingresar stock o abastecimiento. Se almacena
                   como soporte privado ligado al lote.
                 </p>
-                {supportFile ? (
-                  <p className="mt-1 text-xs font-black text-primary">
-                    {supportFile.name}
-                  </p>
-                ) : null}
               </label>
 
               <div className="space-y-3">

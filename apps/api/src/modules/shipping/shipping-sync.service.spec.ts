@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+import Decimal from 'decimal.js';
 import { OrderStatus, ShipmentStatus } from '../../generated/client/client';
 import { ShippingSyncService } from './shipping-sync.service';
 
@@ -154,5 +155,32 @@ describe('ShippingSyncService', () => {
       'INTERNAL_DOCUMENT_ALLOWED',
     );
     expect(result[0].order.saleLegalStatus).toBe('COMPLETED');
+  });
+
+  it('normaliza totalAmount y balanceDue como numeros en ordenes sin shipment', async () => {
+    prisma.order.findMany.mockResolvedValue([
+      {
+        id: 'order-typed',
+        orderNumber: 3002,
+        customerEmail: 'typed@example.com',
+        totalAmount: new Decimal('45000.75'),
+        balanceDue: new Decimal('1200.50'),
+        createdAt: new Date('2026-05-04T12:00:00.000Z'),
+        city: 'Bogota',
+        status: OrderStatus.PAGADA,
+        saleLegalRequirement: 'INTERNAL_DOCUMENT_ALLOWED',
+        saleLegalStatus: 'COMPLETED',
+        trackingNumber: null,
+        carrier: null,
+        shippingAddress: { shippingMethod: 'SHIPPING', city: 'Bogota' },
+        profile: null,
+      },
+    ]);
+
+    const result = await service.getOrdersWithoutShipmentRecords();
+
+    expect(result).toHaveLength(1);
+    expect(result[0]?.order.totalAmount).toBe(45000.75);
+    expect(result[0]?.order.balanceDue).toBe(1200.5);
   });
 });

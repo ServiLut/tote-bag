@@ -19,6 +19,19 @@ export interface CatalogFilterStateSnapshot {
   status: string[];
 }
 
+export function createDefaultCatalogFilterState(): CatalogFilterStateSnapshot {
+  return {
+    minPrice: 0,
+    maxPrice: DEFAULT_CATALOG_MAX_PRICE,
+    collections: [],
+    lines: [],
+    sizes: [],
+    qualities: [],
+    materials: [],
+    status: [],
+  };
+}
+
 type SearchParamSource =
   | URLSearchParams
   | { toString(): string }
@@ -79,6 +92,22 @@ export function buildCatalogSearchParams(
   return params;
 }
 
+export function areCatalogFiltersEqual(
+  left: CatalogFilterStateSnapshot,
+  right: CatalogFilterStateSnapshot,
+) {
+  return (
+    left.minPrice === right.minPrice &&
+    left.maxPrice === right.maxPrice &&
+    left.collections.join(',') === right.collections.join(',') &&
+    left.lines.join(',') === right.lines.join(',') &&
+    left.sizes.join(',') === right.sizes.join(',') &&
+    left.qualities.join(',') === right.qualities.join(',') &&
+    left.materials.join(',') === right.materials.join(',') &&
+    left.status.join(',') === right.status.join(',')
+  );
+}
+
 export function parseCatalogPriceFilterValue(
   field: 'minPrice' | 'maxPrice',
   value: string,
@@ -105,15 +134,9 @@ export function readCatalogFiltersFromSearchParams(
 ) {
   const params = cloneSearchParams(searchParams);
   const nextFilters: CatalogFilterStateSnapshot = {
-    ...currentFilters,
-    collections: [],
-    lines: [],
-    sizes: [],
+    ...createDefaultCatalogFilterState(),
     qualities: currentFilters.qualities,
-    materials: [],
     status: currentFilters.status,
-    minPrice: 0,
-    maxPrice: DEFAULT_CATALOG_MAX_PRICE,
   };
 
   const collection = params.get('collection');

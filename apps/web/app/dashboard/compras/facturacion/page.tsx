@@ -1290,28 +1290,23 @@ export default function PurchaseInvoicingPage() {
               <label className="text-[10px] font-black uppercase tracking-widest text-muted">
                 Total de la factura
               </label>
-              <InputGroup
-                prefix={<span className="text-xs text-muted">$</span>}
-                className="flex items-center gap-1"
-              >
-                <Input
-                  required
-                  type="text"
-                  inputMode="decimal"
-                  value={invoiceForm.totalAmountInput}
-                  onChange={(event) =>
-                    handleCurrencyInputChangeWithState(event, (nextValue) =>
-                      setInvoiceForm((current) => ({
-                        ...current,
-                        totalAmountInput: nextValue.formattedValue,
-                        totalAmount: nextValue.numericValue,
-                      })),
-                    )
-                  }
-                  placeholder="0"
-                  className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </InputGroup>
+              <Input
+                required
+                type="text"
+                inputMode="decimal"
+                value={invoiceForm.totalAmountInput}
+                onChange={(event) =>
+                  handleCurrencyInputChangeWithState(event, (nextValue) =>
+                    setInvoiceForm((current) => ({
+                      ...current,
+                      totalAmountInput: nextValue.formattedValue,
+                      totalAmount: nextValue.numericValue,
+                    })),
+                  )
+                }
+                placeholder="$ 0"
+                className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20"
+              />
             </div>
 
             <div className="space-y-2">

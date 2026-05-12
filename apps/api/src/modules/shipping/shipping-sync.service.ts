@@ -7,6 +7,7 @@ import {
   ShipmentStatus,
 } from '../../generated/client/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { decimalToNumber } from '../../common/utils/sales-tax.util';
 
 type NormalizedShippingAddress = Record<string, unknown> & {
   city: string;
@@ -46,10 +47,10 @@ type PendingShipmentRecord = {
   order: {
     orderNumber: number;
     customerEmail: string;
-    totalAmount: Prisma.Decimal;
+    totalAmount: number;
     createdAt: Date;
     shippingAddress: NormalizedShippingAddress;
-    balanceDue: Prisma.Decimal;
+    balanceDue: number;
     saleLegalRequirement: SaleLegalRequirement;
     saleLegalStatus: SaleLegalStatus;
     profile: {
@@ -525,8 +526,8 @@ export class ShippingSyncService {
         order: {
           orderNumber: order.orderNumber,
           customerEmail: order.customerEmail,
-          totalAmount: order.totalAmount,
-          balanceDue: order.balanceDue,
+          totalAmount: decimalToNumber(order.totalAmount),
+          balanceDue: decimalToNumber(order.balanceDue),
           createdAt: order.createdAt,
           shippingAddress,
           saleLegalRequirement: order.saleLegalRequirement,

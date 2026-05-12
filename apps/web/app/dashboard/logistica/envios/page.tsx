@@ -112,6 +112,19 @@ type ShipmentRecord = {
   } | null;
 };
 
+function normalizeMoneyValue(value: unknown) {
+  const parsed =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+        ? Number(value)
+        : value && typeof value === "object" && "toString" in value
+          ? Number(String(value))
+          : NaN;
+
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 type ShipmentSupplyUsageAllocation = {
   id: string;
   purchaseBatchLineId: string;
@@ -262,7 +275,7 @@ function formatCurrency(amount: number) {
     style: "currency",
     currency: "COP",
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(normalizeMoneyValue(amount));
 }
 
 function formatDateTime(value: string) {
@@ -612,21 +625,6 @@ export default function ShippingManagementPage() {
     ? supplyUsageData.usages
     : [];
 
-  const summary = useMemo(
-    () => ({
-      pending: operational.filter((s) => s.status === "PENDING").length,
-      ready: operational.filter((s) => s.status === "READY_TO_SHIP").length,
-      inRoute: operational.filter(
-        (s) => s.status === "SHIPPED" || s.status === "IN_TRANSIT",
-      ).length,
-      delivered: operational.filter((s) => s.status === "DELIVERED").length,
-      exceptions: exceptions.length,
-      returns: returns.length,
-      value: shipments.reduce((sum, s) => sum + (s.order.totalAmount || 0), 0),
-    }),
-    [exceptions.length, operational, returns.length, shipments],
-  );
-
   const providerOptions = useMemo(
     () => providers.slice().sort((a, b) => a.name.localeCompare(b.name)),
     [providers],
@@ -650,7 +648,7 @@ export default function ShippingManagementPage() {
     (shipment: ShipmentRecord) => {
       const blockers: string[] = [];
 
-      if ((shipment.order.balanceDue || 0) > 0) {
+      if (normalizeMoneyValue(shipment.order.balanceDue) > 0) {
         blockers.push(
           `Saldo pendiente: ${formatCurrency(shipment.order.balanceDue)}`,
         );
@@ -759,6 +757,16 @@ export default function ShippingManagementPage() {
           new Date(a.order.createdAt).getTime(),
       );
   }, [providerFilter, returns, search]);
+
+  const visibleTotalValue = useMemo(() => {
+    const source =
+      tab === "envios" ? filteredOperational : filteredReturns;
+
+    return source.reduce(
+      (sum, shipment) => sum + normalizeMoneyValue(shipment.order.totalAmount),
+      0,
+    );
+  }, [filteredOperational, filteredReturns, tab]);
 
   const resetFilters = () => {
     setSearch("");
@@ -1187,7 +1195,9 @@ export default function ShippingManagementPage() {
           <MiniMetric
             label="Valor total"
             value={
-              hasShipmentAccess ? formatCurrency(summary.value) : "Restringido"
+              hasShipmentAccess
+                ? formatCurrency(visibleTotalValue)
+                : "Restringido"
             }
           />
           <MiniMetric

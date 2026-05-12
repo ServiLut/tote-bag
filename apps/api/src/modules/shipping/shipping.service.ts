@@ -48,10 +48,10 @@ type ShipmentListItem = {
   order: {
     orderNumber: number;
     customerEmail: string;
-    totalAmount: Decimal;
+    totalAmount: number;
     createdAt: Date;
     shippingAddress?: unknown;
-    balanceDue: Decimal;
+    balanceDue: number;
     saleLegalRequirement: SaleLegalRequirement;
     saleLegalStatus: SaleLegalStatus;
     profile?: {
@@ -914,10 +914,10 @@ export class ShippingService {
           order: {
             orderNumber: shipment.order.orderNumber,
             customerEmail: shipment.order.customerEmail,
-            totalAmount: shipment.order.totalAmount,
+            totalAmount: decimalToNumber(shipment.order.totalAmount),
             createdAt: shipment.order.createdAt,
             shippingAddress: shipment.order.shippingAddress,
-            balanceDue: shipment.order.balanceDue,
+            balanceDue: decimalToNumber(shipment.order.balanceDue),
             saleLegalRequirement: shipment.order.saleLegalRequirement,
             saleLegalStatus: shipment.order.saleLegalStatus,
             profile: shipment.order.profile
