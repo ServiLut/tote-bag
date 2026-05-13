@@ -140,6 +140,10 @@ export class PaymentsService {
     return (status ?? '').trim().toUpperCase().includes('APPROVED');
   }
 
+  private isTestWompiEnvironment(environment: string | null | undefined) {
+    return (environment ?? '').trim().toLowerCase() === 'test';
+  }
+
   private getWompiSettlementConfig(): WompiSettlementConfig {
     return {
       commissionPercent: this.normalizeRateValue(
@@ -1175,32 +1179,34 @@ export class PaymentsService {
             }),
           });
 
-          const description = `Venta orden #${order.orderNumber} (${order.id})`;
-          const existingIncome = await tx.financialTransaction.findFirst({
-            where: {
-              type: TransactionType.INCOME,
-              category: TransactionCategory.SALE,
-              description,
-            },
-            select: { id: true },
-          });
-
-          if (!existingIncome) {
-            const adminUser = await tx.user.findFirst({
-              where: { role: 'ADMIN' },
+          if (!this.isTestWompiEnvironment(event.environment)) {
+            const description = `Venta orden #${order.orderNumber} (${order.id})`;
+            const existingIncome = await tx.financialTransaction.findFirst({
+              where: {
+                type: TransactionType.INCOME,
+                category: TransactionCategory.SALE,
+                description,
+              },
               select: { id: true },
             });
 
-            if (adminUser?.id) {
-              await tx.financialTransaction.create({
-                data: {
-                  type: TransactionType.INCOME,
-                  category: TransactionCategory.SALE,
-                  amount: order.totalAmount,
-                  description,
-                  userId: adminUser.id,
-                },
+            if (!existingIncome) {
+              const adminUser = await tx.user.findFirst({
+                where: { role: 'ADMIN' },
+                select: { id: true },
               });
+
+              if (adminUser?.id) {
+                await tx.financialTransaction.create({
+                  data: {
+                    type: TransactionType.INCOME,
+                    category: TransactionCategory.SALE,
+                    amount: order.totalAmount,
+                    description,
+                    userId: adminUser.id,
+                  },
+                });
+              }
             }
           }
         }

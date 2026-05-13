@@ -11,9 +11,13 @@ const eslintConfig = defineConfig([
     ".next/**",
     ".next-investigate/**",
 <<<<<<< HEAD
+<<<<<<< HEAD
     ".next-routecheck/**",
 =======
 >>>>>>> 20d450f (fix: checkpoin 11-02-2026)
+=======
+    ".next-routecheck/**",
+>>>>>>> 2b2a468 (refactor: finance dashboard, api environment handling and bug fixes)
     "out/**",
     "build/**",
     "next-env.d.ts",

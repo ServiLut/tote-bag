@@ -54,9 +54,14 @@ export class WizardService {
       return allowedMaterialValues;
     }
 
-    const materialsById = new Map(materials.map((material) => [material.id, material]));
+    const materialsById = new Map(
+      materials.map((material) => [material.id, material]),
+    );
     const materialsByName = new Map(
-      materials.map((material) => [this.normalizeLabel(material.name), material]),
+      materials.map((material) => [
+        this.normalizeLabel(material.name),
+        material,
+      ]),
     );
 
     const resolvedValues = allowedMaterialValues
@@ -81,9 +86,14 @@ export class WizardService {
       return [];
     }
 
-    const materialsById = new Map(materials.map((material) => [material.id, material]));
+    const materialsById = new Map(
+      materials.map((material) => [material.id, material]),
+    );
     const materialsByName = new Map(
-      materials.map((material) => [this.normalizeLabel(material.name), material]),
+      materials.map((material) => [
+        this.normalizeLabel(material.name),
+        material,
+      ]),
     );
 
     return this.dedupeStrings(
@@ -96,7 +106,9 @@ export class WizardService {
             return materialById.name;
           }
 
-          const materialByName = materialsByName.get(this.normalizeLabel(value));
+          const materialByName = materialsByName.get(
+            this.normalizeLabel(value),
+          );
           return materialByName?.name ?? value;
         }),
     );
@@ -110,9 +122,14 @@ export class WizardService {
       return [];
     }
 
-    const materialsById = new Map(materials.map((material) => [material.id, material]));
+    const materialsById = new Map(
+      materials.map((material) => [material.id, material]),
+    );
     const materialsByName = new Map(
-      materials.map((material) => [this.normalizeLabel(material.name), material]),
+      materials.map((material) => [
+        this.normalizeLabel(material.name),
+        material,
+      ]),
     );
 
     return this.dedupeStrings(
@@ -139,7 +156,10 @@ export class WizardService {
     }
 
     const materials = await this.getActiveMaterials();
-    return this.resolveStoredAllowedMaterialValues(allowedMaterialValues, materials);
+    return this.resolveStoredAllowedMaterialValues(
+      allowedMaterialValues,
+      materials,
+    );
   }
 
   private async decorateOptionWithResolvedMaterials<
@@ -182,7 +202,10 @@ export class WizardService {
       ...option,
       allowedMaterialIds:
         option.category === WizardCategory.TECHNIQUE
-          ? this.resolveAllowedMaterialIds(option.allowedMaterialValues, materials)
+          ? this.resolveAllowedMaterialIds(
+              option.allowedMaterialValues,
+              materials,
+            )
           : [],
       allowedMaterialValues:
         option.category === WizardCategory.TECHNIQUE
@@ -190,7 +213,7 @@ export class WizardService {
               option.allowedMaterialValues,
               materials,
             )
-          : option.allowedMaterialValues ?? [],
+          : (option.allowedMaterialValues ?? []),
     }));
   }
 
@@ -209,7 +232,8 @@ export class WizardService {
       orderBy: { sortOrder: 'asc' },
     });
 
-    const decoratedOptions = await this.decorateOptionsWithResolvedMaterials(options);
+    const decoratedOptions =
+      await this.decorateOptionsWithResolvedMaterials(options);
 
     return decoratedOptions.reduce(
       (acc, curr) => {

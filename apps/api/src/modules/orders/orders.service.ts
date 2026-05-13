@@ -2187,10 +2187,7 @@ export class OrdersService {
     });
   }
 
-  async getAccountsReceivable(filters?: {
-    startDate?: Date;
-    endDate?: Date;
-  }) {
+  async getAccountsReceivable(filters?: { startDate?: Date; endDate?: Date }) {
     if (
       filters?.startDate &&
       filters?.endDate &&

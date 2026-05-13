@@ -364,7 +364,8 @@ describe('PurchasesService', () => {
     const result = await service.registerPurchaseInvoicePayment('invoice-1', {
       amount: '60',
       paymentDate: '2026-04-09T00:00:00.000Z',
-      proofUrl: 'private://support-documents/receipts/purchase-payment/proof.pdf',
+      proofUrl:
+        'private://support-documents/receipts/purchase-payment/proof.pdf',
     });
 
     expect(createPayment).toHaveBeenCalledTimes(1);
@@ -551,7 +552,8 @@ describe('PurchasesService', () => {
       'payment-1',
       {
         amount: '40',
-        proofUrl: 'private://support-documents/receipts/purchase-payment/new-proof.pdf',
+        proofUrl:
+          'private://support-documents/receipts/purchase-payment/new-proof.pdf',
       },
     );
 

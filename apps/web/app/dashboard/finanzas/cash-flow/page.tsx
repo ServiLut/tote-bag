@@ -22,7 +22,6 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
-import { format } from 'date-fns';
 import { FINANCE_DATA_CHANGED_EVENT } from '@/lib/finance-events';
 import { buildCashFlowDateRange } from '@/lib/cash-flow-range';
 import { useDashboardAuth } from '@/components/dashboard/DashboardAuthContext';

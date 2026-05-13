@@ -391,10 +391,10 @@ export class B2bService {
     return quotes.map((quote) => {
       const status = this.normalizeQuoteStatus(quote.status);
       return {
-      ...quote,
-      status: B2bService.APPROVED_DESIGN_STATUSES.has(quote.status)
-        ? 'DISEÑO_APROBADO'
-        : quote.status,
+        ...quote,
+        status: B2bService.APPROVED_DESIGN_STATUSES.has(quote.status)
+          ? 'DISEÑO_APROBADO'
+          : quote.status,
       };
     });
   }

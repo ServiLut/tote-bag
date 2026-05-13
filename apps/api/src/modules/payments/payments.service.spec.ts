@@ -158,7 +158,7 @@ describe('PaymentsService', () => {
     );
   });
 
-  it('procesa webhook aprobado una sola vez y evita duplicados', async () => {
+  it('procesa webhook aprobado de prueba sin crear ingreso financiero y evita duplicados', async () => {
     (configService.get as jest.Mock).mockImplementation((key: string) => {
       if (key === 'WOMPI_EVENTS_SECRET') return 'events-secret';
       return undefined;
@@ -264,6 +264,8 @@ describe('PaymentsService', () => {
         settlementSource: 'WEBHOOK_ESTIMATE',
       }) as Record<string, unknown>,
     });
+    expect(tx.financialTransaction.findFirst).not.toHaveBeenCalled();
+    expect(tx.financialTransaction.create).not.toHaveBeenCalled();
 
     prisma.webhookEvent.findUnique.mockResolvedValueOnce({
       id: 'webhook-1',
@@ -273,6 +275,114 @@ describe('PaymentsService', () => {
     await expect(service.handleWompiEvent(event)).resolves.toEqual({
       success: true,
       duplicate: true,
+    });
+  });
+
+  it('crea ingreso financiero para webhook aprobado en produccion', async () => {
+    (configService.get as jest.Mock).mockImplementation((key: string) => {
+      if (key === 'WOMPI_EVENTS_SECRET') return 'events-secret';
+      return undefined;
+    });
+
+    const event: WompiEvent = {
+      event: 'transaction.updated',
+      data: {
+        transaction: {
+          id: 'txn-prod-1',
+          created_at: '2026-03-24T00:00:00.000Z',
+          amount_in_cents: 3500000,
+          reference: 'order-prod-1',
+          status: 'APPROVED',
+          currency: 'COP',
+          payment_method_type: 'CARD',
+          status_message: null,
+          redirect_url: null,
+          payment_source_id: null,
+          payment_link_id: null,
+          bill_id: null,
+        },
+      },
+      signature: {
+        properties: ['transaction.id', 'transaction.status'],
+        checksum: '',
+      },
+      timestamp: 1710000000,
+      environment: 'prod',
+      sent_at: '2026-03-24T00:00:00.000Z',
+    };
+
+    event.signature.checksum = buildChecksum(event, 'events-secret');
+
+    prisma.webhookEvent.findUnique.mockResolvedValueOnce(null);
+    prisma.webhookEvent.create.mockResolvedValueOnce({ id: 'webhook-prod-1' });
+
+    const tx = {
+      order: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'order-prod-1',
+          orderNumber: 102,
+          totalAmount: 35000,
+          status: 'PENDIENTE_PAGO',
+          items: [],
+        }),
+      },
+      orderPayment: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'payment-prod-1',
+          amount: 35000,
+          grossAmount: null,
+          netReceivedAmount: null,
+          commissionAmount: null,
+          commissionVatAmount: null,
+          reteFuenteAmount: null,
+          reteIvaAmount: null,
+          reteIcaAmount: null,
+          paymentMethodType: null,
+        }),
+        update: jest.fn().mockResolvedValue({ id: 'payment-prod-1' }),
+      },
+      financialTransaction: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockResolvedValue({ id: 'income-prod-1' }),
+      },
+      user: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'admin-1' }),
+      },
+      webhookEvent: {
+        update: jest.fn().mockResolvedValue({}),
+      },
+    };
+
+    prisma.$transaction.mockImplementation(
+      (callback: (client: typeof tx) => Promise<unknown>) => callback(tx),
+    );
+    ordersService.confirmPendingOrderPayment.mockResolvedValue({
+      id: 'order-prod-1',
+      orderNumber: 102,
+      totalAmount: 35000,
+      status: 'PAGADA',
+    });
+
+    await expect(service.handleWompiEvent(event)).resolves.toEqual({
+      success: true,
+    });
+
+    expect(tx.financialTransaction.findFirst).toHaveBeenCalledWith({
+      where: {
+        type: 'INCOME',
+        category: 'SALE',
+        description: 'Venta orden #102 (order-prod-1)',
+      },
+      select: { id: true },
+    });
+    expect(tx.financialTransaction.create).toHaveBeenCalledWith({
+      data: {
+        type: 'INCOME',
+        category: 'SALE',
+        amount: 35000,
+        description: 'Venta orden #102 (order-prod-1)',
+        userId: 'admin-1',
+      },
     });
   });
 

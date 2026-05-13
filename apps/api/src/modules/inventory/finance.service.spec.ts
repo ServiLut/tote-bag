@@ -352,6 +352,102 @@ describe('FinanceService PDF rendering', () => {
     ]);
   });
 
+  it('treats purchase reversal income as a reduction of expenses in cash flow', async () => {
+    const service = new FinanceService({
+      financialTransaction: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            type: TransactionType.EXPENSE,
+            category: TransactionCategory.PURCHASE,
+            amount: 100000,
+            createdAt: new Date('2026-03-05T15:00:00.000Z'),
+          },
+          {
+            type: TransactionType.INCOME,
+            category: TransactionCategory.PURCHASE,
+            amount: 30000,
+            createdAt: new Date('2026-03-05T18:00:00.000Z'),
+          },
+        ]),
+      },
+    } as never);
+
+    const result = await service.getCashFlowData('daily');
+
+    expect(result).toEqual([
+      {
+        label: '2026-03-05',
+        income: 0,
+        expense: 70000,
+        net: -70000,
+        balance: -70000,
+      },
+    ]);
+  });
+
+  it('keeps purchase reversals out of summary income buckets', async () => {
+    const aggregate = jest
+      .fn()
+      .mockResolvedValueOnce({ _sum: { amount: 120000 } })
+      .mockResolvedValueOnce({ _sum: { amount: 15000 } })
+      .mockResolvedValueOnce({ _sum: { amount: 100000 } })
+      .mockResolvedValueOnce({ _sum: { amount: 30000 } });
+    const findMany = jest
+      .fn()
+      .mockResolvedValueOnce([
+        {
+          type: TransactionType.INCOME,
+          category: TransactionCategory.SALE,
+          amount: 120000,
+          createdAt: new Date('2026-03-05T10:00:00.000Z'),
+        },
+        {
+          type: TransactionType.EXPENSE,
+          category: TransactionCategory.PURCHASE,
+          amount: 100000,
+          createdAt: new Date('2026-03-05T12:00:00.000Z'),
+        },
+        {
+          type: TransactionType.INCOME,
+          category: TransactionCategory.PURCHASE,
+          amount: 30000,
+          createdAt: new Date('2026-03-05T14:00:00.000Z'),
+        },
+        {
+          type: TransactionType.EXPENSE,
+          category: TransactionCategory.OPEX,
+          amount: 15000,
+          createdAt: new Date('2026-03-10T10:00:00.000Z'),
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    const service = new FinanceService({
+      financialTransaction: {
+        aggregate,
+        findMany,
+      },
+      auditLog: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+    } as never);
+
+    const result = await service.getFinancialSummaryLocalized(
+      new Date('2026-03-01T00:00:00.000Z'),
+      new Date('2026-03-31T23:59:59.999Z'),
+    );
+
+    expect(result.kpis).toEqual({
+      totalIncome: 120000,
+      totalOpex: 15000,
+      totalPurchases: 70000,
+      totalCOGS: null,
+    });
+    expect(result.cashFlowChart).toEqual([
+      { month: '2026-03', income: 120000, expense: 85000 },
+    ]);
+  });
+
   it('creates payroll opex entries when category name is Nomina with accents or mojibake variants', async () => {
     const create = jest.fn().mockResolvedValue({ id: 'tx-1' });
     const basePrisma = {
@@ -653,7 +749,7 @@ describe('FinanceService PDF rendering', () => {
     ]);
   });
 
-  it('creates a safe default monthly fixed-expense config when none exists', async () => {
+  it('returns a safe default monthly fixed-expense config when none exists', async () => {
     const queryRaw = jest.fn().mockResolvedValue([]);
     const executeRaw = jest.fn().mockResolvedValue(1);
     const service = new FinanceService({
@@ -664,19 +760,37 @@ describe('FinanceService PDF rendering', () => {
     const result = await service.getFixedExpensesConfig();
 
     expect(queryRaw).toHaveBeenCalled();
-    expect(executeRaw).toHaveBeenCalled();
+    expect(executeRaw).not.toHaveBeenCalled();
     expect(result).toMatchObject({
       key: 'finance.monthly_fixed_expenses',
       currency: 'COP',
       period: 'monthly',
       monthlyTotal: 0,
       isConfigured: false,
+      updatedAt: null,
     });
     expect(result.items).toEqual([
       { id: 'payroll', label: 'Nomina', amount: 0 },
       { id: 'rent', label: 'Arriendo', amount: 0 },
       { id: 'services', label: 'Servicios', amount: 0 },
     ]);
+  });
+
+  it('falls back to a safe default fixed-expense config when app settings storage is missing', async () => {
+    const service = new FinanceService({
+      $queryRaw: jest
+        .fn()
+        .mockRejectedValue(
+          new Error('relation "tote-bag.app_settings" does not exist'),
+        ),
+    } as never);
+
+    await expect(service.getFixedExpensesConfig()).resolves.toMatchObject({
+      key: 'finance.monthly_fixed_expenses',
+      monthlyTotal: 0,
+      isConfigured: false,
+      updatedAt: null,
+    });
   });
 
   it('persists monthly fixed-expense config totals for the administrator', async () => {
