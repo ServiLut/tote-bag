@@ -194,6 +194,9 @@ export class PricingService {
     };
 
     let unitPrice = baseUnitPriceDecimal;
+    let unitPriceBeforeManualDiscount: Decimal | null = null;
+    let requestedManualDiscountPct: number | null = null;
+    let requestedManualDiscountAmount = new Decimal(0);
 
     const wizardOptions = await this.prisma.wizardOption.findMany({
       where: {
@@ -369,6 +372,8 @@ export class PricingService {
       .sort((left, right) => right.minQty - left.minQty)[0];
 
     if (applicableRule) {
+      const unitPriceBeforeVolumeRule = unitPrice;
+
       if (
         applicableRule.fixedUnitPrice !== null &&
         applicableRule.fixedUnitPrice !== undefined
@@ -386,11 +391,28 @@ export class PricingService {
       snapshot.volumeDiscount = {
         minQuantity: applicableRule.minQty,
         percentage: applicableRule.discountPct || 0,
-        amount: 0,
+        amount: decimalToNumber(
+          roundMoney(unitPriceBeforeVolumeRule.minus(unitPrice)),
+        ),
       };
     }
 
-    if (unitPrice.lessThan(baseMinPriceDecimal)) {
+    if (
+      input.manualDiscountPct !== null &&
+      input.manualDiscountPct !== undefined &&
+      input.manualDiscountPct > 0
+    ) {
+      unitPriceBeforeManualDiscount = unitPrice;
+      requestedManualDiscountPct = input.manualDiscountPct;
+      unitPrice = unitPrice.mul(
+        new Decimal(1).minus(toDecimal(input.manualDiscountPct).div(100)),
+      );
+      requestedManualDiscountAmount = roundMoney(
+        unitPriceBeforeManualDiscount.minus(unitPrice),
+      );
+    }
+
+    if (!input.ignoreMinPriceGuard && unitPrice.lessThan(baseMinPriceDecimal)) {
       unitPrice = baseMinPriceDecimal;
       snapshot.minPriceGuardApplied = true;
     }
@@ -402,6 +424,29 @@ export class PricingService {
       quantity: input.quantity,
       taxRate,
     });
+
+    if (unitPriceBeforeManualDiscount && requestedManualDiscountPct !== null) {
+      const appliedManualDiscountAmount = Decimal.max(
+        0,
+        roundMoney(unitPriceBeforeManualDiscount.minus(finalUnitPrice)),
+      );
+      const appliedManualDiscountPercentage =
+        unitPriceBeforeManualDiscount.isZero()
+          ? new Decimal(0)
+          : roundMoney(
+              appliedManualDiscountAmount
+                .div(unitPriceBeforeManualDiscount)
+                .mul(100),
+            );
+
+      snapshot.manualDiscount = {
+        requestedPercentage: requestedManualDiscountPct,
+        requestedAmount: decimalToNumber(requestedManualDiscountAmount),
+        appliedPercentage: decimalToNumber(appliedManualDiscountPercentage),
+        appliedAmount: decimalToNumber(appliedManualDiscountAmount),
+      };
+    }
+
     snapshot.finalUnitPrice = decimalToNumber(finalUnitPrice);
     snapshot.totalPrice = decimalToNumber(total);
 
@@ -409,6 +454,7 @@ export class PricingService {
       unitPrice: decimalToNumber(finalUnitPrice),
       quantity: input.quantity,
       total: decimalToNumber(total),
+      netTotal: decimalToNumber(taxBreakdown.netLineTotal),
       taxRate: toDecimal(taxBreakdown.taxRate).toNumber(),
       netUnitPrice: decimalToNumber(taxBreakdown.netUnitPrice),
       taxAmount: decimalToNumber(taxBreakdown.taxAmount),

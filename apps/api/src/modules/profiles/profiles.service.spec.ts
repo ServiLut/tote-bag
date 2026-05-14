@@ -36,6 +36,19 @@ describe('ProfilesService', () => {
     });
 
     expect(transaction).toHaveBeenCalledTimes(1);
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          _count: {
+            select: {
+              orders: {
+                where: { deletedAt: null },
+              },
+            },
+          },
+        }),
+      }),
+    );
     expect(result).toEqual({
       items: [{ id: 'profile-1', debugRoleAllowed: false }],
       pagination: {
@@ -72,6 +85,35 @@ describe('ProfilesService', () => {
       { id: 'profile-2', debugRoleAllowed: false },
     ]);
     expect(findMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('excludes deleted orders when loading a profile detail', async () => {
+    const findUnique = jest.fn().mockResolvedValue({ id: 'profile-1' });
+
+    const service = new ProfilesService(
+      {
+        profile: {
+          findUnique,
+        },
+      } as never,
+      {} as never,
+      configService as never,
+    );
+
+    await expect(service.findOne('profile-1')).resolves.toEqual({
+      id: 'profile-1',
+    });
+
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { id: 'profile-1' },
+      include: {
+        user: true,
+        orders: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
   });
 
   it('creates a missing profile from the authenticated user before resolving the role', async () => {

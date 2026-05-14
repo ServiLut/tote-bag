@@ -174,7 +174,9 @@ export class UsersService {
         },
         _count: {
           select: {
-            orders: true,
+            orders: {
+              where: { deletedAt: null },
+            },
             personalizationRequests: true,
           },
         },
@@ -198,7 +200,11 @@ export class UsersService {
           select: { role: true, isActive: true },
         },
         _count: {
-          select: { orders: true },
+          select: {
+            orders: {
+              where: { deletedAt: null },
+            },
+          },
         },
       },
     });
@@ -368,7 +374,11 @@ export class UsersService {
                 select: { role: true, isActive: true },
               },
               _count: {
-                select: { orders: true },
+                select: {
+                  orders: {
+                    where: { deletedAt: null },
+                  },
+                },
               },
             },
           }) as unknown as CreatedCustomerProfile;
@@ -484,7 +494,11 @@ export class UsersService {
             select: { role: true, isActive: true },
           },
           _count: {
-            select: { orders: true },
+            select: {
+              orders: {
+                where: { deletedAt: null },
+              },
+            },
           },
         },
       }) as unknown as CreatedCustomerProfile;

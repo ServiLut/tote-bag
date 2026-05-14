@@ -29,6 +29,7 @@ describe('ShippingService', () => {
     },
     order: {
       findUnique: jest.fn(),
+      findMany: jest.fn(),
       update: jest.fn(),
     },
     user: {
@@ -270,9 +271,33 @@ describe('ShippingService', () => {
 
     const result = await service.getShipments();
 
+    expect(prisma.shipment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          order: {
+            deletedAt: null,
+          },
+        },
+      }),
+    );
     expect(result).toHaveLength(1);
     expect(result[0]?.order.totalAmount).toBe(125000.5);
     expect(result[0]?.order.balanceDue).toBe(5000.25);
+  });
+
+  it('filtra ordenes eliminadas al consultar envios pendientes', async () => {
+    prisma.order.findMany.mockResolvedValue([]);
+
+    await service.getPendingShipments();
+
+    expect(prisma.order.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          deletedAt: null,
+          status: OrderStatus.PAGADA,
+        }),
+      }),
+    );
   });
 
   it('rechaza providerId inexistente al actualizar un envio', async () => {

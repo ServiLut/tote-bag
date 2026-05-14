@@ -241,7 +241,11 @@ export class ProfilesService {
           select: { role: true, isActive: true },
         },
         _count: {
-          select: { orders: true },
+          select: {
+            orders: {
+              where: { deletedAt: null },
+            },
+          },
         },
       },
     };
@@ -285,6 +289,7 @@ export class ProfilesService {
       include: {
         user: true,
         orders: {
+          where: { deletedAt: null },
           orderBy: { createdAt: 'desc' },
         },
       },

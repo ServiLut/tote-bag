@@ -510,6 +510,7 @@ export class ShippingService {
     // Órdenes pagadas que no tienen envío o envío está PENDING o READY_TO_SHIP
     return this.prisma.order.findMany({
       where: {
+        deletedAt: null,
         status: OrderStatus.PAGADA,
         OR: [
           { shipment: null },
@@ -852,6 +853,11 @@ export class ShippingService {
 
   async getShipments(): Promise<ShipmentListItem[]> {
     const shipments = await this.prisma.shipment.findMany({
+      where: {
+        order: {
+          deletedAt: null,
+        },
+      },
       include: {
         order: {
           include: {

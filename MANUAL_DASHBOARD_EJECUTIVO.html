@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manual Ejecutivo del Dashboard Tote Bag</title>
+    <style>
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        color: #1f2937;
+        line-height: 1.55;
+        margin: 48px;
+      }
+
+      h1, h2, h3 {
+        color: #111827;
+      }
+
+      h1 {
+        font-size: 28px;
+        margin-bottom: 8px;
+      }
+
+      h2 {
+        font-size: 20px;
+        margin-top: 28px;
+        margin-bottom: 8px;
+        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 6px;
+      }
+
+      h3 {
+        font-size: 15px;
+        margin-top: 20px;
+        margin-bottom: 6px;
+      }
+
+      p, li {
+        font-size: 11pt;
+      }
+
+      .subtitle {
+        color: #4b5563;
+        margin-top: 0;
+      }
+
+      .box {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin: 16px 0;
+      }
+
+      .module {
+        margin-bottom: 14px;
+        padding: 14px 16px;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+      }
+
+      .route {
+        color: #6b7280;
+        font-size: 10pt;
+        margin-top: 0;
+      }
+
+      ul {
+        margin-top: 6px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 12px;
+      }
+
+      th, td {
+        border: 1px solid #d1d5db;
+        padding: 10px;
+        text-align: left;
+        vertical-align: top;
+        font-size: 10.5pt;
+      }
+
+      th {
+        background: #f3f4f6;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Manual Ejecutivo del Dashboard Tote Bag</h1>
+    <p class="subtitle">
+      Documento de referencia para entender para qué sirve cada módulo del dashboard
+      administrativo y cómo se relaciona con la operación del negocio.
+    </p>
+
+    <div class="box">
+      <strong>Objetivo del dashboard</strong>
+      <p>
+        El dashboard centraliza la operación administrativa de Tote Bag. Desde aquí
+        se controlan ventas, catálogo, clientes, personalizaciones, abastecimiento,
+        logística, inventario, finanzas, auditoría y configuración interna.
+      </p>
+      <p>
+        Su propósito es convertir el panel en una herramienta de control operativo,
+        financiero y administrativo para que el equipo pueda tomar decisiones y ejecutar
+        procesos sin depender de múltiples sistemas dispersos.
+      </p>
+    </div>
+
+    <h2>Acceso por rol</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Rol</th>
+          <th>Alcance general</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>ADMIN</strong></td>
+          <td>Acceso total a todos los módulos del dashboard.</td>
+        </tr>
+        <tr>
+          <td><strong>MANAGER</strong></td>
+          <td>
+            Acceso a resumen, pedidos, productos, B2B, personalizaciones, PQRS,
+            centro informativo y varios módulos logísticos.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Operativos privilegiados</strong></td>
+          <td>Acceso más limitado, principalmente a pedidos y productos.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Módulos del dashboard</h2>
+
+    <div class="module">
+      <h3>1. Resumen</h3>
+      <p class="route">Ruta: /dashboard</p>
+      <p>Es la vista principal del panel y da una lectura rápida del estado del negocio.</p>
+      <ul>
+        <li>Pedidos del día.</li>
+        <li>Acciones urgentes.</li>
+        <li>Carga comercial.</li>
+        <li>Stock crítico.</li>
+        <li>Indicadores rápidos de envíos, PQRS, personalizaciones y finanzas.</li>
+      </ul>
+    </div>
+
+    <div class="module">
+      <h3>2. Pedidos</h3>
+      <p class="route">Ruta: /dashboard/orders</p>
+      <p>Centro de control comercial y operativo de las órdenes.</p>
+      <ul>
+        <li>Crear pedidos manualmente.</li>
+        <li>Hacer seguimiento al estado del pedido.</li>
+        <li>Controlar pagos pendientes y pedidos en producción.</li>
+        <li>Coordinar el paso del pedido hacia logística.</li>
+      </ul>
+    </div>
+
+    <div class="module">
+      <h3>3. Productos</h3>
+      <p class="route">Ruta: /dashboard/products</p>
+      <p>Administra el catálogo y la configuración técnica del producto.</p>
+      <ul>
+        <li>Crear y editar productos.</li>
+        <li>Actualizar precios y estados.</li>
+        <li>Organizar colecciones.</li>
+        <li>Configurar reglas técnicas del configurador.</li>
+        <li>Revisar compatibilidades de materiales.</li>
+      </ul>
+    </div>
+
+    <div class="module">
+      <h3>4. Clientes</h3>
+      <p class="route">Ruta: /dashboard/customers</p>
+      <p>Centraliza la información de clientes registrados.</p>
+      <ul>
+        <li>Buscar clientes por nombre, correo o ubicación.</li>
+        <li>Crear clientes manualmente.</li>
+        <li>Editar datos de contacto y dirección.</li>
+        <li>Activar o desactivar cuentas.</li>
+      </ul>
+    </div>
+
+    <div class="module">
+      <h3>5. Corporativo (B2B)</h3>
+      <p class="route">Ruta: /dashboard/b2b</p>
+      <p>Gestiona el canal de ventas corporativas y cotizaciones masivas.</p>
+      <ul>
+        <li>Revisar solicitudes empresariales.</li>
+        <li>Cotizar pedidos al por mayor.</li>
+        <li>Validar logos y diseños corporativos.</li>
+        <li>Apoyar decisiones comerciales antes de producción.</li>
+      </ul>
+    </div>
+
+    <div class="module">
+      <h3>6. Personalizaciones</h3>
+      <p class="route">Ruta: /dashboard/personalizaciones</p>
+      <p>Administra solicitudes de diseño y personalización.</p>
+      <ul>
+        <li>Revisar configuraciones solicitadas por el cliente.</li>
+        <li>Validar artes y diseños.</li>
+        <li>Actualizar estados de aprobación.</li>
+        <li>Liberar o frenar personalizaciones antes de la compra final.</li>
+      </ul>
+    </div>
+
+    <div class="module">
+      <h3>7. PQRS</h3>
+      <p class="route">Ruta: /dashboard/pqrs</p>
+      <p>Es la bandeja interna de peticiones, quejas, reclamos y sugerencias.</p>
+      <ul>
+        <li>Ver casos nuevos, en revisión y cerrados.</li>
+        <li>Buscar por cliente, asunto o pedido.</li>
+        <li>Registrar respuesta interna y seguimiento.</li>
+      </ul>
+    </div>
+
+    <div class="module">
+      <h3>8. Centro Informativo</h3>
+      <p class="route">Ruta: /dashboard/conocimiento</p>
+      <p>Funciona como base de conocimiento interna.</p>
+      <ul>
+        <li>Publicar reglas comerciales.</li>
+        <li>Documentar lineamientos operativos.</li>
+        <li>Compartir novedades internas y referencias del negocio.</li>
+      </ul>
+    </div>
+
+    <div class="module">
+      <h3>9. Dashboard Financiero</h3>
+      <p class="route">Ruta: /dashboard/finanzas</p>
+      <p>Es la vista financiera más completa del sistema.</p>
+      <ul>
+        <li>Consultar KPIs financieros.</li>
+        <li>Revisar ingresos, compras, OpEx y costo de ventas.</li>
+        <li>Analizar rentabilidad, cuentas por cobrar e impuestos.</li>
+        <li>Configurar gastos fijos y punto de equilibrio.</li>
+      </ul>
+    </div>
+
+    <div class="module">
+      <h3>10. Flujo de Caja</h3>
+      <p class="route">Ruta: /dashboard/finanzas/cash-flow</p>
+      <p>Monitorea liquidez y balance operativo.</p>
+      <ul>
+        <li>Comparar entradas y salidas.</li>
+        <li>Revisar saldo acumulado.</li>
+        <li>Detectar periodos positivos o deficitarios.</li>
+      </ul>
+    </div>
+
+    <div class="module">
+      <h3>11. Gastos Operativos</h3>
+      <p class="route">Ruta: /dashboard/finanzas/opex</p>
+      <p>Controla egresos no relacionados directamente con producción.</p>
+      <ul>
+        <li>Registrar gastos.</li>
+        <li>Clasificarlos por categoría.</li>
+        <li>Medir gasto mensual y ticket promedio.</li>
+      </ul>
+    </div>
+
+    <div class="module">
+      <h3>12. Nómina</h3>
+      <p class="route">Ruta: /dashboard/finanzas/nomina</p>
+      <p>Gestiona colaboradores, turnos y cuentas de cobro.</p>
+      <ul>
+        <li>Registrar trabajadores.</li>
+        <li>Registrar turnos con evidencia fotográfica.</li>
+        <li>Consolidar turnos y marcar cuentas como enviadas o pagadas.</li>
+      </ul>
+    </div>
+
+    <div class="module">
+      <h3>13. Proveedores de Envío</h3>
+      <p class="route">Ruta: /dashboard/logistica/proveedores</p>
+      <p>Administra transportadoras o empresas de mensajería.</p>
+      <ul>
+        <li>Crear y editar proveedores logísticos.</li>
+        <li>Activar o desactivar transportadoras.</li>
+        <li>Mantener datos de contacto operativos.</li>
+      </ul>
+    </div>
+
+    <div class="module">
+      <h3>14. Gestión de Envíos</h3>
+      <p class="route">Ruta: /dashboard/logistica/envios</p>
+      <p>Es el módulo operativo de despacho y devoluciones.</p>
+      <ul>
+        <li>Asignar transportadora y guía.</li>
+        <li>Generar etiquetas.</li>
+        <li>Registrar consumo de bolsas de envío.</li>
+        <li>Monitorear devoluciones y excepciones.</li>
+      </ul>
+    </div>
+
+    <div class="module">
+      <h3>15. Proveedores de Insumos</h3>
+      <p class="route">Ruta: /dashboard/logistica/insumos</p>
+      <p>Administra proveedores de abastecimiento.</p>
+      <ul>
+        <li>Crear y editar proveedores.</li>
+        <li>Consultar saldos y lotes registrados.</li>
+        <li>Registrar pagos a proveedores.</li>
+      </ul>
+    </div>
+
+    <div class="module">
+      <h3>16. Pagos y Facturación</h3>
+      <p class="route">Ruta: /dashboard/compras/facturacion</p>
+      <p>Gestiona obligaciones con proveedores.</p>
+      <ul>
+        <li>Crear facturas de compra.</li>
+        <li>Registrar abonos.</li>
+        <li>Adjuntar comprobantes.</li>
+        <li>Controlar saldo pendiente por factura.</li>
+      </ul>
+    </div>
+
+    <div class="module">
+      <h3>17. Recepción de Lotes</h3>
+      <p class="route">Ruta: /dashboard/compras/recepcion</p>
+      <p>Registra el ingreso físico de mercancía, insumos o herramientas.</p>
+      <ul>
+        <li>Asociar proveedor y soporte documental.</li>
+        <li>Registrar costos unitarios y flete.</li>
+        <li>Crear insumos nuevos en el mismo flujo.</li>
+        <li>Alimentar inventario FIFO.</li>
+      </ul>
+    </div>
+
+    <div class="module">
+      <h3>18. Inventario FIFO</h3>
+      <p class="route">Ruta: /dashboard/logistica/inventario</p>
+      <p>Controla stock, costos y lotes valorizados por FIFO.</p>
+      <ul>
+        <li>Ver stock físico, comprometido y disponible.</li>
+        <li>Consultar costo promedio y valor del inventario.</li>
+        <li>Detectar alertas de reorden y lotes estancados.</li>
+      </ul>
+    </div>
+
+    <div class="module">
+      <h3>19. Salidas no comerciales</h3>
+      <p class="route">Ruta: /dashboard/logistica/inventario/salidas-no-comerciales</p>
+      <p>Registra descuentos de stock sin generar ventas.</p>
+      <ul>
+        <li>Regalos.</li>
+        <li>Muestras.</li>
+        <li>Pruebas internas.</li>
+        <li>Uso operativo.</li>
+      </ul>
+    </div>
+
+    <div class="module">
+      <h3>20. Precios y Márgenes</h3>
+      <p class="route">Ruta: /dashboard/strategy/pricing</p>
+      <p>Simulador estratégico de rentabilidad.</p>
+      <ul>
+        <li>Calcular precio de venta.</li>
+        <li>Estimar margen real.</li>
+        <li>Evaluar impacto de pasarela, IVA, CIF y retenciones.</li>
+      </ul>
+      <p><strong>Nota:</strong> es un simulador, no publica reglas automáticamente.</p>
+    </div>
+
+    <div class="module">
+      <h3>21. Reportes Contables</h3>
+      <p class="route">Ruta: /dashboard/reportes</p>
+      <p>Se usa para cierre administrativo y contable.</p>
+      <ul>
+        <li>Generar estado de resultados.</li>
+        <li>Revisar impuestos y utilidad neta.</li>
+        <li>Valorar inventario como activo.</li>
+        <li>Exportar Excel y PDF.</li>
+      </ul>
+      <p><strong>Acceso:</strong> solo ADMIN.</p>
+    </div>
+
+    <div class="module">
+      <h3>22. Auditoría</h3>
+      <p class="route">Ruta: /dashboard/audit</p>
+      <p>Registro histórico de acciones del sistema.</p>
+      <ul>
+        <li>Ver quién creó, editó o eliminó información.</li>
+        <li>Filtrar por entidad y acción.</li>
+        <li>Comparar valor anterior vs valor nuevo.</li>
+      </ul>
+    </div>
+
+    <div class="module">
+      <h3>23. Configuración</h3>
+      <p class="route">Rutas: /dashboard/settings y /dashboard/settings/users</p>
+      <p>Administra el perfil del usuario y, en caso de admin, la gestión de roles.</p>
+      <ul>
+        <li>Actualizar nombre, teléfono y dirección.</li>
+        <li>Administrar usuarios y roles del sistema.</li>
+      </ul>
+      <p><strong>Usuarios y roles:</strong> solo ADMIN.</p>
+    </div>
+
+    <h2>Flujo operativo recomendado</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Momento</th>
+          <th>Uso sugerido</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Inicio de jornada</strong></td>
+          <td>Revisar Resumen, Pedidos, PQRS y Gestión de Envíos.</td>
+        </tr>
+        <tr>
+          <td><strong>Operación diaria</strong></td>
+          <td>
+            Registrar compras en Recepción de Lotes, actualizar Pagos y Facturación,
+            validar Inventario FIFO y cargar OpEx o Nómina si corresponde.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Cierre y control</strong></td>
+          <td>
+            Revisar Dashboard Financiero, Flujo de Caja, Reportes Contables y Auditoría.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Relación entre módulos</h2>
+    <ul>
+      <li>Pedidos se conecta con logística, inventario y finanzas.</li>
+      <li>Recepción de Lotes alimenta Inventario FIFO.</li>
+      <li>Pagos y Facturación impacta cuentas por pagar y reportes financieros.</li>
+      <li>Salidas no comerciales afectan inventario sin pasar por ventas.</li>
+      <li>Nómina, OpEx y compras impactan el Dashboard Financiero.</li>
+      <li>Auditoría actúa como capa de control transversal.</li>
+    </ul>
+
+    <div class="box">
+      <strong>Observación final</strong>
+      <p>
+        Este manual fue construido con base en la navegación y las pantallas reales
+        del proyecto actual, por lo que refleja el comportamiento del dashboard
+        implementado en el repositorio.
+      </p>
+    </div>
+  </body>
+</html>
