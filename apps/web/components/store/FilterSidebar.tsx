@@ -12,6 +12,7 @@ import {
   parseCatalogPriceFilterValue,
 } from '@/lib/catalog-filters';
 import { useTranslation } from 'react-i18next';
+import { translateStoreValue } from '@/lib/storefront-translations';
 
 export interface FilterState {
   minPrice: number;
@@ -185,7 +186,9 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
                     {filters.collections.includes(coll.id) && <div className="w-1.5 h-1.5 bg-base-color" />}
                   </div>
                   <input type="checkbox" className="hidden" checked={filters.collections.includes(coll.id)} onChange={() => handleCheckboxChange('collections', coll.id)} />
-                  <span className="text-[11px] font-bold text-muted uppercase tracking-wider group-hover:text-primary transition-colors">{coll.name}</span>
+                  <span className="text-[11px] font-bold text-muted uppercase tracking-wider group-hover:text-primary transition-colors">
+                    {translateStoreValue('collection', coll.name, t)}
+                  </span>
                 </label>
               ))}
             </div>
@@ -219,7 +222,9 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
                     {(wizardOptions.MATERIAL || []).length > 0 ? (wizardOptions.MATERIAL || []).map(m => (
                     <label key={m.id} className="flex items-center gap-2 cursor-pointer group">
                       <input type="checkbox" className="w-3.5 h-3.5 accent-primary border-theme" checked={filters.materials.includes(m.name)} onChange={() => handleCheckboxChange('materials', m.name)} />
-                      <span className="text-[11px] font-bold text-muted uppercase tracking-wider group-hover:text-primary transition-colors">{m.name}</span>
+                      <span className="text-[11px] font-bold text-muted uppercase tracking-wider group-hover:text-primary transition-colors">
+                        {translateStoreValue('material', m.name, t)}
+                      </span>
                     </label>
                     )) : <p className="text-[10px] text-muted italic">{t('filters_no_options')}</p>}
                   </div>

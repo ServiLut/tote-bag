@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import AddressForm from '@/components/store/AddressForm';
 import { apiFetch } from '@/utils/api';
 import { COMPANY_INFO } from '@/utils/company-info';
+import { translateStoreValue } from '@/lib/storefront-translations';
 
 interface OrderItem {
   id: string;
@@ -354,7 +355,7 @@ function ProfilePageContent() {
                           ${order.totalAmount.toLocaleString('es-CO')}
                         </span>
                         <span className="block text-[10px] font-bold uppercase tracking-wide text-muted">
-                          IVA incluido
+                          {t('tax_included')}
                         </span>
                       </div>
                     </div>
@@ -390,12 +391,12 @@ function ProfilePageContent() {
                           <div className="flex-1">
                             <h4 className="font-medium text-primary">{item.product.name}</h4>
                             <p className="text-sm text-muted">
-                              {item.variant?.color} • {t('profile_quantity', { quantity: item.quantity })}
+                              {translateStoreValue('color', item.variant?.color, t)} • {t('profile_quantity', { quantity: item.quantity })}
                             </p>
                           </div>
                           <div className="text-right">
                             <p className="font-medium text-primary">${item.totalPrice.toLocaleString('es-CO')}</p>
-                            <p className="text-[10px] font-bold uppercase tracking-wide text-muted">IVA incluido</p>
+                            <p className="text-[10px] font-bold uppercase tracking-wide text-muted">{t('tax_included')}</p>
                           </div>
                         </div>
                       ))}

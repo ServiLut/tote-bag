@@ -19,6 +19,10 @@ import { createClient } from '@/utils/supabase/client';
 import { useDashboardAuth } from '@/components/dashboard/DashboardAuthContext';
 import { getAuthHeaders as getSharedAuthHeaders } from '@/utils/supabase/auth';
 import { apiFetch } from '@/utils/api';
+import {
+  formatApiConnectionErrorMessage,
+  getApiResponseErrorMessage,
+} from '@/lib/api-error';
 
 interface ClosingReport {
   period: { startDate: string; endDate: string };
@@ -127,17 +131,39 @@ export default function ReportsPage() {
         return;
       }
 
-      if (!closingRes.ok || !accountingRes.ok) {
-        throw new Error('No fue posible cargar los reportes contables.');
-      }
+      const nextErrors: string[] = [];
 
       if (closingRes.ok) {
         const result = await closingRes.json();
         setReport(result.data || null);
+      } else {
+        setReport(null);
+        nextErrors.push(
+          await getApiResponseErrorMessage(
+            closingRes,
+            'No fue posible cargar el cierre contable.',
+            'reportes contables',
+          ),
+        );
       }
+
       if (accountingRes.ok) {
         const result = await accountingRes.json();
         setAccounting(result.data || null);
+      } else {
+        setAccounting(null);
+        nextErrors.push(
+          await getApiResponseErrorMessage(
+            accountingRes,
+            'No fue posible cargar el reporte contable.',
+            'reportes contables',
+          ),
+        );
+      }
+
+      if (nextErrors.length > 0) {
+        const uniqueErrors = Array.from(new Set(nextErrors));
+        setError(uniqueErrors.join(' '));
       }
     } catch (err) {
       if (
@@ -150,12 +176,11 @@ export default function ReportsPage() {
         return;
       }
 
-      console.error('Error fetching report:', err);
       setReport(null);
       setAccounting(null);
       setError(
         err instanceof Error
-          ? err.message
+          ? formatApiConnectionErrorMessage(err.message, 'reportes contables')
           : 'Ocurrio un error cargando los reportes contables.',
       );
     } finally {
@@ -495,4 +520,3 @@ export default function ReportsPage() {
     </div>
   );
 }
-

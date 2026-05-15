@@ -8,6 +8,7 @@ import { Minus, Plus, ShoppingBag, Truck, ShieldCheck, Loader2, AlertCircle } fr
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { formatWholeCurrency } from '@/lib/numeric-input';
+import { translateStoreValue } from '@/lib/storefront-translations';
 
 interface ProductDetailClientProps {
   product: Product;
@@ -220,7 +221,8 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     .filter(Boolean) as Array<{ url: string, id: string }>;
   const allImages = [...mainImages, ...variantImages];
   const currentImageUrl = allImages[currentImageIndex]?.url || '/placeholder.svg';
-  const productDescription = product.description?.trim() || 'Este producto no tiene una descripcion disponible por ahora.';
+  const productDescription =
+    product.description?.trim() || t('product_no_description');
   const uniqueSizes = Array.from(new Set(activeVariants.map((variant) => variant.size).filter(Boolean))) as string[];
   const variantsForSelectedSize = selections.size
     ? activeVariants.filter((variant) => variant.size === selections.size)
@@ -266,7 +268,8 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
         <div className="flex flex-col h-full">
           <div className="mb-2">
             <span className="text-xs font-bold uppercase tracking-widest text-secondary mb-2 block">
-              {product.collection?.name || t('product_collection_fallback')}
+              {translateStoreValue('collection', product.collection?.name, t)
+                || t('product_collection_fallback')}
             </span>
             <h1 className="text-3xl md:text-4xl font-serif text-primary leading-tight">{product.name}</h1>
           </div>
@@ -277,7 +280,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                 {formatWholeCurrency(calculatedPrice)}
               </span>
               <span className="text-[10px] font-bold uppercase tracking-wide text-muted">
-                IVA incluido
+                {t('tax_included')}
               </span>
               {typeof selectedVariant.comparePrice === 'number' && selectedVariant.comparePrice > calculatedPrice && (
                 <span className="text-sm text-muted line-through">
@@ -332,7 +335,11 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary block mb-4">
                   {t('product_material')}:
                   <span className="ml-2 text-slate-900 font-bold uppercase">
-                    {(selections[type.toLowerCase() as keyof typeof selections] as string) || '...'}
+                    {translateStoreValue(
+                      'material',
+                      (selections[type.toLowerCase() as keyof typeof selections] as string) || '',
+                      t,
+                    ) || '...'}
                   </span>
                 </span>
                 <div className="flex flex-wrap gap-2">
@@ -346,7 +353,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                           : 'bg-white border-theme text-muted hover:border-primary hover:text-primary'
                       }`}
                     >
-                      {attr.value}
+                      {translateStoreValue('material', attr.value, t)}
                     </button>
                   ))}
                 </div>
@@ -403,7 +410,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                         selectedVariant.sku === variant.sku ? 'ring-primary' : 'ring-transparent'
                       }`}
                       style={{ backgroundColor: getVariantColorHex(variant.color) }}
-                      title={variant.color}
+                      title={translateStoreValue('color', variant.color, t)}
                     />
                   ))}
                 </div>
@@ -455,14 +462,14 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
             onClick={() => setActiveTab('description')}
             className={`text-2xl md:text-4xl transition-colors ${activeTab === 'description' ? 'text-secondary' : 'text-primary hover:text-secondary'}`}
           >
-            Descripcion
+            {t('product_description_tab')}
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('shipping')}
             className={`text-2xl md:text-4xl transition-colors ${activeTab === 'shipping' ? 'text-secondary' : 'text-primary hover:text-secondary'}`}
           >
-            Detalles Del Envio
+            {t('product_shipping_details_tab')}
           </button>
         </div>
 

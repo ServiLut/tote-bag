@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
 const createBrowserClientMock = jest.fn();
 const createServerClientMock = jest.fn();
 const cookiesMock = jest.fn();

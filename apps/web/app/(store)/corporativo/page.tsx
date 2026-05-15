@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 export default function CorporativoPage() {
   const { t } = useTranslation();
   const WHATSAPP_URL =
-    'https://wa.me/573014472558?text=Hola,%20me%20interesa%20informaci%C3%B3n%20sobre%20pedidos%20corporativos.';
+    'https://wa.me/573143964910?text=Hola,%20me%20interesa%20informaci%C3%B3n%20sobre%20pedidos%20corporativos.';
 
   return (
     <div className="bg-base min-h-screen transition-colors duration-300">

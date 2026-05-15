@@ -21,21 +21,54 @@ export default function Home() {
   };
 
   useEffect(() => {
+    let isCancelled = false;
+
     const fetchProducts = async () => {
       try {
         const res = await apiFetch('/catalog/products?limit=4');
-        if (!res.ok) throw new Error(t('home_load_error'));
+
+        if (!res.ok) {
+          const errorBody = await res.json().catch(() => null) as
+            | { message?: string }
+            | null;
+
+          if (!isCancelled) {
+            setError(
+              typeof errorBody?.message === 'string' && errorBody.message.trim().length > 0
+                ? errorBody.message
+                : t('home_products_unavailable'),
+            );
+          }
+
+          return;
+        }
+
         const responseBody: ApiResponse<Product[]> = await res.json();
-        setProducts(responseBody.data);
+
+        if (!isCancelled) {
+          setProducts(Array.isArray(responseBody.data) ? responseBody.data : []);
+          setError(null);
+        }
       } catch (err) {
-        console.error(err);
-        setError(t('home_products_unavailable'));
+        if (!isCancelled) {
+          setError(
+            err instanceof Error && err.message
+              ? err.message
+              : t('home_products_unavailable'),
+          );
+        }
       } finally {
-        setLoading(false);
+        if (!isCancelled) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchProducts();
+    void fetchProducts();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [t]);
 
   return (

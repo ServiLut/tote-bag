@@ -10,7 +10,6 @@ import { apiFetch } from '@/utils/api';
 import {
   areCatalogFiltersEqual,
   createDefaultCatalogFilterState,
-  DEFAULT_CATALOG_MAX_PRICE,
   readCatalogFiltersFromSearchParams,
 } from '@/lib/catalog-filters';
 import { Loader2, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';

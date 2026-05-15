@@ -909,123 +909,175 @@ export default function B2BQuotesManager() {
               <div className="max-h-[calc(100vh-10rem)] overflow-y-auto px-6 py-6 md:px-8">
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-                    <input
-                      name="businessName"
-                      value={manualQuoteForm.businessName}
-                      onChange={handleManualQuoteChange}
-                      required
-                      placeholder="Empresa"
-                      className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
-                    />
-                    <input
-                      name="contactPhone"
-                      value={manualQuoteForm.contactPhone}
-                      onChange={handleManualQuoteChange}
-                      required
-                      placeholder="Telefono"
-                      className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
-                    />
-                    <input
-                      name="quantity"
-                      type="number"
-                      min={50}
-                      value={manualQuoteForm.quantity}
-                      onChange={handleManualQuoteChange}
-                      required
-                      placeholder="Cantidad"
-                      className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
-                    />
-                    <select
-                      name="productId"
-                      value={manualQuoteForm.productId}
-                      onChange={handleManualQuoteChange}
-                      required
-                      className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
-                    >
-                      <option value="">Producto base</option>
-                      {products.map((product) => (
-                        <option key={product.id} value={product.id}>
-                          {product.name}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      name="department"
-                      value={manualQuoteForm.department}
-                      onChange={handleManualQuoteChange}
-                      required
-                      placeholder="Departamento"
-                      className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
-                    />
-                    <input
-                      name="municipality"
-                      value={manualQuoteForm.municipality}
-                      onChange={handleManualQuoteChange}
-                      required
-                      placeholder="Municipio"
-                      className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
-                    />
-                    <input
-                      name="neighborhood"
-                      value={manualQuoteForm.neighborhood}
-                      onChange={handleManualQuoteChange}
-                      required
-                      placeholder="Barrio"
-                      className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
-                    />
-                    <input
-                      name="address"
-                      value={manualQuoteForm.address}
-                      onChange={handleManualQuoteChange}
-                      required
-                      placeholder="Direccion"
-                      className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
-                    />
-                    <input
-                      name="manualSize"
-                      value={manualQuoteForm.manualSize}
-                      onChange={handleManualQuoteChange}
-                      required
-                      placeholder="Medida especial"
-                      className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
-                    />
-                    <input
-                      name="externalUnitCost"
-                      type="number"
-                      min={0}
-                      value={manualQuoteForm.externalUnitCost}
-                      onChange={handleManualQuoteChange}
-                      required
-                      placeholder="Costo externo unitario"
-                      className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
-                    />
-                    <input
-                      name="agreedUnitPrice"
-                      type="number"
-                      min={0}
-                      value={manualQuoteForm.agreedUnitPrice}
-                      onChange={handleManualQuoteChange}
-                      required
-                      placeholder="Precio acordado unitario"
-                      className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
-                    />
-                    <input
-                      name="qrData"
-                      value={manualQuoteForm.qrData}
-                      onChange={handleManualQuoteChange}
-                      placeholder="WhatsApp o QR"
-                      className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
-                    />
+                    <label className="space-y-2">
+                      <span className="block text-[10px] font-black uppercase tracking-widest text-muted">Empresa</span>
+                      <input
+                        id="manual-quote-business-name"
+                        name="businessName"
+                        value={manualQuoteForm.businessName}
+                        onChange={handleManualQuoteChange}
+                        required
+                        placeholder="Empresa"
+                        className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                    </label>
+                    <label className="space-y-2">
+                      <span className="block text-[10px] font-black uppercase tracking-widest text-muted">Telefono</span>
+                      <input
+                        id="manual-quote-contact-phone"
+                        name="contactPhone"
+                        value={manualQuoteForm.contactPhone}
+                        onChange={handleManualQuoteChange}
+                        required
+                        placeholder="Telefono"
+                        className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                    </label>
+                    <label className="space-y-2">
+                      <span className="block text-[10px] font-black uppercase tracking-widest text-muted">Cantidad</span>
+                      <input
+                        id="manual-quote-quantity"
+                        name="quantity"
+                        type="number"
+                        min={50}
+                        value={manualQuoteForm.quantity}
+                        onChange={handleManualQuoteChange}
+                        required
+                        placeholder="Cantidad"
+                        className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                    </label>
+                    <label className="space-y-2">
+                      <span className="block text-[10px] font-black uppercase tracking-widest text-muted">Producto base</span>
+                      <select
+                        id="manual-quote-product-id"
+                        name="productId"
+                        value={manualQuoteForm.productId}
+                        onChange={handleManualQuoteChange}
+                        required
+                        className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                      >
+                        <option value="">Producto base</option>
+                        {products.map((product) => (
+                          <option key={product.id} value={product.id}>
+                            {product.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="space-y-2">
+                      <span className="block text-[10px] font-black uppercase tracking-widest text-muted">Departamento</span>
+                      <input
+                        id="manual-quote-department"
+                        name="department"
+                        value={manualQuoteForm.department}
+                        onChange={handleManualQuoteChange}
+                        required
+                        placeholder="Departamento"
+                        className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                    </label>
+                    <label className="space-y-2">
+                      <span className="block text-[10px] font-black uppercase tracking-widest text-muted">Municipio</span>
+                      <input
+                        id="manual-quote-municipality"
+                        name="municipality"
+                        value={manualQuoteForm.municipality}
+                        onChange={handleManualQuoteChange}
+                        required
+                        placeholder="Municipio"
+                        className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                    </label>
+                    <label className="space-y-2">
+                      <span className="block text-[10px] font-black uppercase tracking-widest text-muted">Barrio</span>
+                      <input
+                        id="manual-quote-neighborhood"
+                        name="neighborhood"
+                        value={manualQuoteForm.neighborhood}
+                        onChange={handleManualQuoteChange}
+                        required
+                        placeholder="Barrio"
+                        className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                    </label>
+                    <label className="space-y-2">
+                      <span className="block text-[10px] font-black uppercase tracking-widest text-muted">Direccion</span>
+                      <input
+                        id="manual-quote-address"
+                        name="address"
+                        value={manualQuoteForm.address}
+                        onChange={handleManualQuoteChange}
+                        required
+                        placeholder="Direccion"
+                        className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                    </label>
+                    <label className="space-y-2">
+                      <span className="block text-[10px] font-black uppercase tracking-widest text-muted">Medida especial</span>
+                      <input
+                        id="manual-quote-manual-size"
+                        name="manualSize"
+                        value={manualQuoteForm.manualSize}
+                        onChange={handleManualQuoteChange}
+                        required
+                        placeholder="Medida especial"
+                        className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                    </label>
+                    <label className="space-y-2">
+                      <span className="block text-[10px] font-black uppercase tracking-widest text-muted">Costo externo unitario</span>
+                      <input
+                        id="manual-quote-external-unit-cost"
+                        name="externalUnitCost"
+                        type="number"
+                        min={0}
+                        value={manualQuoteForm.externalUnitCost}
+                        onChange={handleManualQuoteChange}
+                        required
+                        placeholder="Costo externo unitario"
+                        className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                    </label>
+                    <label className="space-y-2">
+                      <span className="block text-[10px] font-black uppercase tracking-widest text-muted">Precio acordado unitario</span>
+                      <input
+                        id="manual-quote-agreed-unit-price"
+                        name="agreedUnitPrice"
+                        type="number"
+                        min={0}
+                        value={manualQuoteForm.agreedUnitPrice}
+                        onChange={handleManualQuoteChange}
+                        required
+                        placeholder="Precio acordado unitario"
+                        className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                    </label>
+                    <label className="space-y-2">
+                      <span className="block text-[10px] font-black uppercase tracking-widest text-muted">WhatsApp o QR</span>
+                      <input
+                        id="manual-quote-qr-data"
+                        name="qrData"
+                        value={manualQuoteForm.qrData}
+                        onChange={handleManualQuoteChange}
+                        placeholder="WhatsApp o QR"
+                        className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                    </label>
                   </div>
 
-                  <textarea
-                    name="manualSpecs"
-                    value={manualQuoteForm.manualSpecs}
-                    onChange={handleManualQuoteChange}
-                    placeholder="Especificaciones de produccion externa"
-                    rows={4}
-                    className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
-                  />
+                  <label className="block space-y-2">
+                    <span className="block text-[10px] font-black uppercase tracking-widest text-muted">Especificaciones de produccion externa</span>
+                    <textarea
+                      id="manual-quote-manual-specs"
+                      name="manualSpecs"
+                      value={manualQuoteForm.manualSpecs}
+                      onChange={handleManualQuoteChange}
+                      placeholder="Especificaciones de produccion externa"
+                      rows={4}
+                      className="w-full rounded-xl border border-theme bg-surface px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </label>
 
                   {selectedManualProduct ? (
                     <p className="text-[10px] font-bold uppercase tracking-widest text-muted">

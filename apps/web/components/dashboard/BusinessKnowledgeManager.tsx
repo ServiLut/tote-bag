@@ -728,7 +728,7 @@ export default function BusinessKnowledgeManager() {
                     setSelectedPost(post);
                   }
                 }}
-                className="group rounded-3xl border border-theme bg-surface p-6 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5"
+                className="group min-w-0 rounded-3xl border border-theme bg-surface p-6 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5"
               >
                 {post.imageUrls[0] ? (
                   <div className="relative mb-5 aspect-[16/9] overflow-hidden rounded-2xl border border-theme bg-base">
@@ -787,7 +787,7 @@ export default function BusinessKnowledgeManager() {
                   ) : null}
                 </div>
 
-                <h3 className="mt-5 text-xl font-black tracking-tight text-primary">
+                <h3 className="mt-5 max-w-full text-xl font-black tracking-tight text-primary [overflow-wrap:anywhere]">
                   {post.title}
                 </h3>
                 <p className="mt-2 text-xs font-mono text-muted">/{post.slug}</p>
