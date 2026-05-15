@@ -13,6 +13,10 @@ const LOCAL_API_CANDIDATES = [
 
 const RETRYABLE_API_RESPONSE_STATUSES = new Set([502, 503, 504]);
 
+function getTrimmedEnvValue(name: 'INTERNAL_API_URL' | 'NEXT_PUBLIC_API_URL') {
+  return process.env[name]?.trim();
+}
+
 function isPrivateIpv4(hostname: string) {
   const parts = hostname.split('.').map((part) => Number(part));
   if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part))) {
@@ -50,7 +54,7 @@ function getLoopbackCandidatesForConfiguredUrl(configuredApiUrl: string) {
 }
 
 export function getApiCandidates() {
-  const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+  const configuredApiUrl = getTrimmedEnvValue('NEXT_PUBLIC_API_URL');
 
   if (configuredApiUrl) {
     if (process.env.NODE_ENV === 'production') {
@@ -73,6 +77,38 @@ export function getApiCandidates() {
   }
 
   return [...LOCAL_API_CANDIDATES];
+}
+
+export function getServerApiCandidates() {
+  const internalApiUrl = getTrimmedEnvValue('INTERNAL_API_URL');
+  const publicApiUrl = getTrimmedEnvValue('NEXT_PUBLIC_API_URL');
+
+  if (process.env.NODE_ENV === 'production') {
+    const configuredCandidates = [internalApiUrl, publicApiUrl].filter(
+      (candidate): candidate is string => Boolean(candidate),
+    );
+
+    if (configuredCandidates.length > 0) {
+      return Array.from(new Set(configuredCandidates));
+    }
+
+    throw new Error(
+      '[api-config] INTERNAL_API_URL or NEXT_PUBLIC_API_URL is required in production for server-side API access.',
+    );
+  }
+
+  return Array.from(
+    new Set([
+      ...(internalApiUrl ? [internalApiUrl] : []),
+      ...(publicApiUrl
+        ? [
+            ...getLoopbackCandidatesForConfiguredUrl(publicApiUrl),
+            publicApiUrl,
+          ]
+        : []),
+      ...LOCAL_API_CANDIDATES,
+    ]),
+  );
 }
 
 export function getApiBaseUrl() {

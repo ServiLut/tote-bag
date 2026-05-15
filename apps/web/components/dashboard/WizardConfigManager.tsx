@@ -31,6 +31,7 @@ interface WizardOption {
   isActive: boolean;
   sortOrder: number;
   allowedMaterialValues: string[];
+  allowedMaterialIds?: string[];
   imageUrl?: string;
 }
 
@@ -149,7 +150,10 @@ export default function WizardConfigManager() {
       description: option.description || '',
       basePriceModifier: option.basePriceModifier,
       sortOrder: option.sortOrder,
-      allowedMaterialValues: option.allowedMaterialValues || [],
+      allowedMaterialValues:
+        option.allowedMaterialIds && option.allowedMaterialIds.length > 0
+          ? option.allowedMaterialIds
+          : option.allowedMaterialValues || [],
       imageUrl: option.imageUrl || '',
     });
     setShowFormModal(true);
@@ -270,7 +274,7 @@ export default function WizardConfigManager() {
       </div>
 
       <div className="space-y-4">
-        {CATEGORIES.filter((cat) => cat.id !== 'QUALITY').map((cat) => {
+        {CATEGORIES.map((cat) => {
           const catOptions = options.filter(o => o.category === cat.id);
           const isExpanded = expandedCategory === cat.id;
 
@@ -460,15 +464,15 @@ export default function WizardConfigManager() {
                         {options
                           .filter(o => o.category === 'MATERIAL')
                           .map((mat) => {
-                            const isSelected = formData.allowedMaterialValues.includes(mat.name);
+                            const isSelected = formData.allowedMaterialValues.includes(mat.id);
                             return (
                               <button
                                 key={mat.id}
                                 type="button"
                                 onClick={() => {
                                   const updated = isSelected
-                                    ? formData.allowedMaterialValues.filter(v => v !== mat.name)
-                                    : [...formData.allowedMaterialValues, mat.name];
+                                    ? formData.allowedMaterialValues.filter(v => v !== mat.id)
+                                    : [...formData.allowedMaterialValues, mat.id];
                                   setFormData({ ...formData, allowedMaterialValues: updated });
                                 }}
                                 className={cn(

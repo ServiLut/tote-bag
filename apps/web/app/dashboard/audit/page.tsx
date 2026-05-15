@@ -4,6 +4,11 @@ import { ChangeEvent, useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { apiFetch } from '@/utils/api';
 import {
+  normalizeAuditResponse,
+  type AuditLogRecord,
+  type AuditMeta,
+} from '@/lib/audit-response';
+import {
   Activity,
   ChevronLeft,
   ChevronRight,
@@ -19,31 +24,8 @@ import {
   X,
 } from 'lucide-react';
 
-interface AuditLog {
-  id: string;
-  action: string;
-  entity: string;
-  entityId: string | null;
-  payload: Record<string, unknown> | null;
-  previousData: Record<string, unknown> | null;
-  userId: string | null;
-  user?: {
-    email: string;
-    profile?: {
-      firstName: string | null;
-      lastName: string | null;
-    } | null;
-  } | null;
-  ip: string | null;
-  userAgent: string | null;
-  createdAt: string;
-}
-
-interface Meta {
-  total: number;
-  skip: number;
-  take: number;
-}
+type AuditLog = AuditLogRecord;
+type Meta = AuditMeta;
 
 const ENTITY_OPTIONS = [
   { value: '', label: 'Todas las Entidades' },
@@ -147,15 +129,9 @@ export default function AuditPage() {
       }
 
       const response = await res.json();
-      const payload = response.data;
-
-      if (payload && typeof payload === 'object') {
-        setLogs(Array.isArray(payload.data) ? payload.data : []);
-        setMeta(payload.meta || null);
-      } else {
-        setLogs([]);
-        setMeta(null);
-      }
+      const normalized = normalizeAuditResponse(response);
+      setLogs(normalized.logs);
+      setMeta(normalized.meta);
     } catch (fetchError) {
       console.error('Error fetching audit logs:', fetchError);
       setLogs([]);
@@ -671,4 +647,3 @@ export default function AuditPage() {
     </div>
   );
 }
-

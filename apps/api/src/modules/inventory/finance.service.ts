@@ -763,6 +763,27 @@ export class FinanceService {
     return decimalToNumber(value);
   }
 
+  private classifyCashFlowAmount(tx: {
+    type: TransactionType;
+    category?: TransactionCategory;
+    amount: DecimalInput;
+  }) {
+    const amount = this.toMoneyNumber(tx.amount);
+
+    if (
+      tx.type === TransactionType.INCOME &&
+      tx.category === TransactionCategory.PURCHASE
+    ) {
+      return { income: 0, expense: -amount };
+    }
+
+    if (tx.type === TransactionType.INCOME) {
+      return { income: amount, expense: 0 };
+    }
+
+    return { income: 0, expense: amount };
+  }
+
   private serializeTransactionMoney<T extends Record<string, unknown> | null>(
     transaction: T,
   ): T {
@@ -877,6 +898,20 @@ export class FinanceService {
 
     if (error instanceof Error) {
       return /financial_transactions|FinancialTransaction|does not exist|column .* does not exist/i.test(
+        error.message,
+      );
+    }
+
+    return false;
+  }
+
+  private isMissingAppSettingsStorageError(error: unknown) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      return error.code === 'P2021' || error.code === 'P2022';
+    }
+
+    if (error instanceof Error) {
+      return /app_settings|relation .* does not exist|schema .* does not exist|column .* does not exist/i.test(
         error.message,
       );
     }
@@ -1043,36 +1078,56 @@ export class FinanceService {
   }
 
   private async readFixedExpensesSettingRow() {
-    const rows = await this.prisma.$queryRaw<AppSettingRow[]>(Prisma.sql`
-      SELECT "value", "updated_at"
-      FROM "tote-bag"."app_settings"
-      WHERE "key" = ${this.monthlyFixedExpensesSettingKey}
-      LIMIT 1
-    `);
+    try {
+      const rows = await this.prisma.$queryRaw<AppSettingRow[]>(Prisma.sql`
+        SELECT "value", "updated_at"
+        FROM "tote-bag"."app_settings"
+        WHERE "key" = ${this.monthlyFixedExpensesSettingKey}
+        LIMIT 1
+      `);
 
-    return rows[0] ?? null;
+      return rows[0] ?? null;
+    } catch (error) {
+      if (this.isMissingAppSettingsStorageError(error)) {
+        return null;
+      }
+
+      throw error;
+    }
   }
 
   private async upsertFixedExpensesConfigRecord(
     record: FixedExpenseConfigRecord,
   ) {
     const payload = JSON.stringify(record);
-    await this.prisma.$executeRaw(Prisma.sql`
-      INSERT INTO "tote-bag"."app_settings" ("key", "value", "created_at", "updated_at")
-      VALUES (
-        ${this.monthlyFixedExpensesSettingKey},
-        CAST(${payload} AS jsonb),
-        CURRENT_TIMESTAMP,
-        CURRENT_TIMESTAMP
-      )
-      ON CONFLICT ("key") DO UPDATE
-      SET
-        "value" = EXCLUDED."value",
-        "updated_at" = CURRENT_TIMESTAMP
-    `);
+    try {
+      await this.prisma.$executeRaw(Prisma.sql`
+        INSERT INTO "tote-bag"."app_settings" ("key", "value", "created_at", "updated_at")
+        VALUES (
+          ${this.monthlyFixedExpensesSettingKey},
+          CAST(${payload} AS jsonb),
+          CURRENT_TIMESTAMP,
+          CURRENT_TIMESTAMP
+        )
+        ON CONFLICT ("key") DO UPDATE
+        SET
+          "value" = EXCLUDED."value",
+          "updated_at" = CURRENT_TIMESTAMP
+      `);
+    } catch (error) {
+      if (this.isMissingAppSettingsStorageError(error)) {
+        throw new BadRequestException(
+          'La configuracion de gastos fijos no esta disponible en este entorno. Ejecuta las migraciones pendientes.',
+        );
+      }
+
+      throw error;
+    }
   }
 
-  private async ensureFixedExpensesConfig() {
+  private async ensureFixedExpensesConfig(options?: {
+    persistDefault?: boolean;
+  }) {
     const existingRow = await this.readFixedExpensesSettingRow();
 
     if (existingRow) {
@@ -1083,9 +1138,13 @@ export class FinanceService {
     }
 
     const defaultRecord = this.buildDefaultFixedExpensesConfigRecord();
-    await this.upsertFixedExpensesConfigRecord(defaultRecord);
 
-    return this.buildFixedExpensesConfigResponse(defaultRecord, new Date());
+    if (options?.persistDefault) {
+      await this.upsertFixedExpensesConfigRecord(defaultRecord);
+      return this.buildFixedExpensesConfigResponse(defaultRecord, new Date());
+    }
+
+    return this.buildFixedExpensesConfigResponse(defaultRecord, null);
   }
 
   private getInclusiveDayCount(startDate: Date, endDate: Date) {
@@ -2698,13 +2757,9 @@ export class FinanceService {
         flowMap[dateKey] = { income: 0, expense: 0, date: tx.createdAt };
       }
 
-      const amount = this.toMoneyNumber(tx.amount);
-
-      if (tx.type === TransactionType.INCOME) {
-        flowMap[dateKey].income += amount;
-      } else {
-        flowMap[dateKey].expense += amount;
-      }
+      const classifiedAmount = this.classifyCashFlowAmount(tx);
+      flowMap[dateKey].income += classifiedAmount.income;
+      flowMap[dateKey].expense += classifiedAmount.expense;
     });
 
     const chartData = Object.entries(flowMap).map(([key, data]) => {
@@ -2842,13 +2897,9 @@ export class FinanceService {
       const month = tx.createdAt.toISOString().substring(0, 7); // YYYY-MM
       if (!monthlyData[month]) monthlyData[month] = { income: 0, expense: 0 };
 
-      const amount = this.toMoneyNumber(tx.amount);
-
-      if (tx.type === TransactionType.INCOME) {
-        monthlyData[month].income += amount;
-      } else {
-        monthlyData[month].expense += amount;
-      }
+      const classifiedAmount = this.classifyCashFlowAmount(tx);
+      monthlyData[month].income += classifiedAmount.income;
+      monthlyData[month].expense += classifiedAmount.expense;
     });
 
     const cashFlowChart = Object.entries(monthlyData).map(([month, data]) => ({
@@ -3065,13 +3116,9 @@ export class FinanceService {
         monthlyData[month] = { income: 0, expense: 0 };
       }
 
-      const amount = this.toMoneyNumber(tx.amount);
-
-      if (tx.type === TransactionType.INCOME) {
-        monthlyData[month].income += amount;
-      } else {
-        monthlyData[month].expense += amount;
-      }
+      const classifiedAmount = this.classifyCashFlowAmount(tx);
+      monthlyData[month].income += classifiedAmount.income;
+      monthlyData[month].expense += classifiedAmount.expense;
     });
 
     const cashFlowChart = Object.entries(monthlyData).map(([month, data]) => ({

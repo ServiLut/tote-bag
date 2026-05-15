@@ -173,6 +173,97 @@ function parseApiErrorBody(rawText: string, fallbackMessage: string) {
   return fallbackMessage;
 }
 
+function isDirectSupportUrl(value: string | null | undefined) {
+  return typeof value === 'string' && /^https?:\/\//i.test(value);
+}
+
+function extractSupportUrl(payload: unknown) {
+  if (!payload || typeof payload !== 'object') {
+    return null;
+  }
+
+  const candidate = payload as {
+    signedUrl?: unknown;
+    url?: unknown;
+    data?: {
+      signedUrl?: unknown;
+      url?: unknown;
+    };
+  };
+
+  if (typeof candidate.signedUrl === 'string') {
+    return candidate.signedUrl;
+  }
+
+  if (typeof candidate.url === 'string') {
+    return candidate.url;
+  }
+
+  if (!candidate.data || typeof candidate.data !== 'object') {
+    return null;
+  }
+
+  if (typeof candidate.data.signedUrl === 'string') {
+    return candidate.data.signedUrl;
+  }
+
+  if (typeof candidate.data.url === 'string') {
+    return candidate.data.url;
+  }
+
+  return null;
+}
+
+function extractStorageRef(payload: unknown) {
+  if (!payload || typeof payload !== 'object') {
+    return null;
+  }
+
+  const candidate = payload as {
+    storageRef?: unknown;
+    data?: {
+      storageRef?: unknown;
+    };
+  };
+
+  if (typeof candidate.storageRef === 'string') {
+    return candidate.storageRef;
+  }
+
+  if (
+    candidate.data &&
+    typeof candidate.data === 'object' &&
+    typeof candidate.data.storageRef === 'string'
+  ) {
+    return candidate.data.storageRef;
+  }
+
+  return null;
+}
+
+function extractPurchasePaymentId(payload: unknown) {
+  if (!payload || typeof payload !== 'object') {
+    return null;
+  }
+
+  const candidate = payload as {
+    payment?: { id?: unknown };
+    data?: {
+      payment?: { id?: unknown };
+    };
+  };
+
+  if (typeof candidate.payment?.id === 'string') {
+    return candidate.payment.id;
+  }
+
+  if (typeof candidate.data?.payment?.id === 'string') {
+    return candidate.data.payment.id;
+  }
+
+  return null;
+}
+
 function createInvoiceFormState(invoice?: PurchaseInvoice | null): InvoiceFormState {
   const totalAmount = getNumericAmount(invoice?.totalAmount);
   const amountState =
@@ -233,6 +324,12 @@ export default function PurchaseInvoicingPage() {
   const [paymentForm, setPaymentForm] = useState<PaymentFormState>(
     createPaymentFormState(),
   );
+  const [pendingPaymentProofFile, setPendingPaymentProofFile] = useState<File | null>(
+    null,
+  );
+  const [openingProofPaymentId, setOpeningProofPaymentId] = useState<string | null>(
+    null,
+  );
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
   const [editingPayment, setEditingPayment] = useState<PaymentEditorState | null>(null);
@@ -292,6 +389,83 @@ export default function PurchaseInvoicingPage() {
       return parseApiErrorBody(rawText, fallbackMessage);
     },
     [router],
+  );
+
+  const uploadPurchasePaymentProof = useCallback(
+    async (paymentId: string, file: File, headers: Record<string, string>) => {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await apiFetch(
+        `/payments/upload-receipt/purchase-payment/${paymentId}`,
+        {
+          method: 'POST',
+          headers,
+          body: formData,
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          await resolveApiErrorMessage(
+            response,
+            'No fue posible guardar el comprobante del abono.',
+          ),
+        );
+      }
+
+      return response.json().catch(() => null);
+    },
+    [resolveApiErrorMessage],
+  );
+
+  const openPaymentProof = useCallback(
+    async (paymentId: string, proofUrl: string) => {
+      if (isDirectSupportUrl(proofUrl)) {
+        window.open(proofUrl, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
+      setOpeningProofPaymentId(paymentId);
+
+      try {
+        const headers = await getAuthHeaders();
+        const response = await apiFetch(
+          `/payments/supports/purchase-payment/${paymentId}/signed-url`,
+          {
+            headers,
+            cache: 'no-store',
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            await resolveApiErrorMessage(
+              response,
+              'No fue posible abrir el comprobante del abono.',
+            ),
+          );
+        }
+
+        const payload = await response.json().catch(() => null);
+        const signedUrl = extractSupportUrl(payload);
+
+        if (!signedUrl) {
+          throw new Error('El comprobante del abono no tiene una URL valida.');
+        }
+
+        window.open(signedUrl, '_blank', 'noopener,noreferrer');
+      } catch (openError) {
+        setError(
+          openError instanceof Error
+            ? openError.message
+            : 'No fue posible abrir el comprobante del abono.',
+        );
+      } finally {
+        setOpeningProofPaymentId(null);
+      }
+    },
+    [getAuthHeaders, resolveApiErrorMessage],
   );
 
   const fetchData = useCallback(async () => {
@@ -477,6 +651,7 @@ export default function PurchaseInvoicingPage() {
         : null,
     );
     setPaymentForm(createPaymentFormState(invoice, payment));
+    setPendingPaymentProofFile(null);
     setSuccessMessage(null);
     setError(null);
     setIsPaymentModalOpen(true);
@@ -491,6 +666,7 @@ export default function PurchaseInvoicingPage() {
     setSelectedInvoiceId(null);
     setEditingPayment(null);
     setPaymentForm(createPaymentFormState());
+    setPendingPaymentProofFile(null);
   };
 
   const openProofsModal = (invoice: PurchaseInvoice) => {
@@ -668,6 +844,7 @@ export default function PurchaseInvoicingPage() {
     }
 
     const trimmedProofUrl = paymentForm.proofUrl.trim();
+    const proofFile = pendingPaymentProofFile;
 
     setSubmittingPayment(true);
     setError(null);
@@ -689,7 +866,7 @@ export default function PurchaseInvoicingPage() {
           body: JSON.stringify({
             amount: serializeDecimalForApi(paymentForm.amount),
             paymentDate: serializeDateForApi(paymentForm.paymentDate),
-            ...(trimmedProofUrl ? { proofUrl: trimmedProofUrl } : {}),
+            ...(!proofFile && trimmedProofUrl ? { proofUrl: trimmedProofUrl } : {}),
           }),
         },
       );
@@ -704,23 +881,61 @@ export default function PurchaseInvoicingPage() {
         return;
       }
 
+      const responseBody = await response.json().catch(() => null);
+      const paymentId =
+        extractPurchasePaymentId(responseBody) ?? editingPayment?.paymentId ?? null;
+      let uploadWarning: string | null = null;
+
+      if (proofFile) {
+        if (!paymentId) {
+          uploadWarning =
+            'El abono se guardo, pero no se pudo asociar el comprobante porque la API no devolvio el identificador del pago.';
+        } else {
+          try {
+            const uploadPayload = await uploadPurchasePaymentProof(
+              paymentId,
+              proofFile,
+              headers,
+            );
+            const storageRef = extractStorageRef(uploadPayload);
+            if (storageRef && !isDirectSupportUrl(storageRef)) {
+              setPaymentForm((current) => ({
+                ...current,
+                proofUrl: storageRef,
+              }));
+            }
+          } catch (uploadError) {
+            uploadWarning =
+              uploadError instanceof Error
+                ? uploadError.message
+                : 'El abono se guardo, pero no fue posible subir el comprobante.';
+          }
+        }
+      }
+
       setIsPaymentModalOpen(false);
       setPaymentForm(createPaymentFormState());
+      setPendingPaymentProofFile(null);
       setSelectedInvoiceId(null);
       setEditingPayment(null);
-      setSuccessMessage(
-        isEditingPayment
-          ? 'Abono actualizado correctamente.'
-          : 'Abono registrado correctamente.',
-      );
-      toast.success(
-        isEditingPayment
-          ? 'Abono actualizado en la factura.'
-          : 'Abono aplicado a la factura.',
-      );
-
       notifyFinanceDataChanged();
       await fetchData();
+
+      if (uploadWarning) {
+        setError(uploadWarning);
+        toast.error(uploadWarning);
+      } else {
+        setSuccessMessage(
+          isEditingPayment
+            ? 'Abono actualizado correctamente.'
+            : 'Abono registrado correctamente.',
+        );
+        toast.success(
+          isEditingPayment
+            ? 'Abono actualizado en la factura.'
+            : 'Abono aplicado a la factura.',
+        );
+      }
     } catch (submitError) {
       console.error('Error creating purchase payment:', submitError);
       setError(
@@ -1075,28 +1290,23 @@ export default function PurchaseInvoicingPage() {
               <label className="text-[10px] font-black uppercase tracking-widest text-muted">
                 Total de la factura
               </label>
-              <InputGroup
-                prefix={<span className="text-xs text-muted">$</span>}
-                className="flex items-center gap-1"
-              >
-                <Input
-                  required
-                  type="text"
-                  inputMode="decimal"
-                  value={invoiceForm.totalAmountInput}
-                  onChange={(event) =>
-                    handleCurrencyInputChangeWithState(event, (nextValue) =>
-                      setInvoiceForm((current) => ({
-                        ...current,
-                        totalAmountInput: nextValue.formattedValue,
-                        totalAmount: nextValue.numericValue,
-                      })),
-                    )
-                  }
-                  placeholder="0"
-                  className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </InputGroup>
+              <Input
+                required
+                type="text"
+                inputMode="decimal"
+                value={invoiceForm.totalAmountInput}
+                onChange={(event) =>
+                  handleCurrencyInputChangeWithState(event, (nextValue) =>
+                    setInvoiceForm((current) => ({
+                      ...current,
+                      totalAmountInput: nextValue.formattedValue,
+                      totalAmount: nextValue.numericValue,
+                    })),
+                  )
+                }
+                placeholder="$ 0"
+                className="w-full rounded-xl border border-theme bg-base px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20"
+              />
             </div>
 
             <div className="space-y-2">
@@ -1245,36 +1455,44 @@ export default function PurchaseInvoicingPage() {
                 <label className="text-[10px] font-black uppercase tracking-widest text-muted">
                   Comprobante del abono
                 </label>
-                {paymentForm.proofUrl ? (
-                  <a
-                    href={paymentForm.proofUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-[11px] font-black text-primary hover:underline"
+                {editingPayment && paymentForm.proofUrl ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void openPaymentProof(editingPayment.paymentId, paymentForm.proofUrl)
+                    }
+                    disabled={openingProofPaymentId === editingPayment.paymentId}
+                    className="inline-flex items-center gap-1 text-[11px] font-black text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-60"
                   >
+                    {openingProofPaymentId === editingPayment.paymentId ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <ExternalLink className="h-3 w-3" />
+                    )}
                     Ver archivo cargado
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
+                  </button>
                 ) : null}
               </div>
 
               <div className="rounded-2xl border border-theme bg-base/30 p-4">
                 <ReceiptUpload
-                  entityId={selectedInvoice.id}
-                  entityType="purchase-invoice"
+                  entityId={editingPayment?.paymentId ?? selectedInvoice.id}
+                  entityType="purchase-payment"
                   initialUrl={paymentForm.proofUrl || null}
-                  onUploadSuccess={(url) =>
+                  deferUpload={!editingPayment}
+                  onFileSelected={(file) => setPendingPaymentProofFile(file)}
+                  selectedFileName={pendingPaymentProofFile?.name ?? null}
+                  onUploadSuccess={(url, storageRef) =>
                     setPaymentForm((current) => ({
                       ...current,
-                      proofUrl: url,
+                      proofUrl: storageRef ?? url,
                     }))
                   }
                 />
                 <p className="mt-3 text-[11px] font-medium text-muted">
-                  El archivo se sube internamente al storage y la URL resultante se
                   {editingPayment
-                    ? ' guarda cuando confirmes la edicion del abono.'
-                    : ' asocia al abono cuando confirmes el pago.'}
+                    ? 'El archivo se guarda directamente en el abono y queda disponible al reabrir la factura.'
+                    : 'Selecciona el archivo ahora y se asociara al nuevo abono cuando confirmes el pago.'}
                 </p>
               </div>
             </div>
@@ -1375,15 +1593,19 @@ export default function PurchaseInvoicingPage() {
                             Editar abono
                           </Button>
                           {payment.proofUrl ? (
-                            <a
-                              href={payment.proofUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary/10 px-4 py-2 text-xs font-black uppercase tracking-widest text-primary transition-colors hover:bg-primary hover:text-base-color"
+                            <button
+                              type="button"
+                              onClick={() => void openPaymentProof(payment.id, payment.proofUrl!)}
+                              disabled={openingProofPaymentId === payment.id}
+                              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary/10 px-4 py-2 text-xs font-black uppercase tracking-widest text-primary transition-colors hover:bg-primary hover:text-base-color disabled:cursor-not-allowed disabled:opacity-60"
                             >
+                              {openingProofPaymentId === payment.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              )}
                               Ver comprobante
-                              <ExternalLink className="h-3.5 w-3.5" />
-                            </a>
+                            </button>
                           ) : null}
                         </div>
                       </div>

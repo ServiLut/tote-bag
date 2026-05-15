@@ -20,7 +20,27 @@ interface WizardOption {
   name: string;
   code: string;
   allowedMaterialValues: string[];
+  allowedMaterialIds?: string[];
   isActive: boolean;
+}
+
+function resolveTechniqueMaterialIds(
+  technique: WizardOption,
+  materials: WizardOption[],
+) {
+  if (technique.allowedMaterialIds && technique.allowedMaterialIds.length > 0) {
+    return technique.allowedMaterialIds;
+  }
+
+  const compatibleMaterialIds = materials
+    .filter(
+      (material) =>
+        technique.allowedMaterialValues.includes(material.id) ||
+        technique.allowedMaterialValues.includes(material.name),
+    )
+    .map((material) => material.id);
+
+  return Array.from(new Set(compatibleMaterialIds));
 }
 
 export default function FabricCompatibilityMatrix() {
@@ -70,13 +90,14 @@ export default function FabricCompatibilityMatrix() {
     fetchData();
   }, [fetchData]);
 
-  const toggleCompatibility = async (technique: WizardOption, materialName: string) => {
-    const isCompatible = technique.allowedMaterialValues.includes(materialName);
-    const newAllowedMaterials = isCompatible
-      ? technique.allowedMaterialValues.filter(m => m !== materialName)
-      : [...technique.allowedMaterialValues, materialName];
+  const toggleCompatibility = async (technique: WizardOption, material: WizardOption) => {
+    const resolvedMaterialIds = resolveTechniqueMaterialIds(technique, materials);
+    const isCompatible = resolvedMaterialIds.includes(material.id);
+    const newAllowedMaterialIds = isCompatible
+      ? resolvedMaterialIds.filter((value) => value !== material.id)
+      : [...resolvedMaterialIds, material.id];
 
-    setUpdatingId(`${technique.id}-${materialName}`);
+    setUpdatingId(`${technique.id}-${material.id}`);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
@@ -91,7 +112,7 @@ export default function FabricCompatibilityMatrix() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ allowedMaterialValues: newAllowedMaterials }),
+        body: JSON.stringify({ allowedMaterialValues: newAllowedMaterialIds }),
       });
 
       if (res.status === 401 || res.status === 403) {
@@ -104,11 +125,17 @@ export default function FabricCompatibilityMatrix() {
       // Update local state
       setTechniques(prev => prev.map(t =>
         t.id === technique.id
-          ? { ...t, allowedMaterialValues: newAllowedMaterials }
+          ? {
+              ...t,
+              allowedMaterialIds: newAllowedMaterialIds,
+              allowedMaterialValues: materials
+                .filter((entry) => newAllowedMaterialIds.includes(entry.id))
+                .map((entry) => entry.name),
+            }
           : t
       ));
 
-      toast.success(`Regla actualizada: ${technique.name} ${isCompatible ? 'deshabilitado' : 'habilitado'} para ${materialName}`);
+      toast.success(`Regla actualizada: ${technique.name} ${isCompatible ? 'deshabilitado' : 'habilitado'} para ${material.name}`);
     } catch {
       toast.error('Error al guardar el cambio');
     } finally {
@@ -178,13 +205,13 @@ export default function FabricCompatibilityMatrix() {
                     <span className="text-sm font-bold text-primary">{mat.name}</span>
                   </td>
                   {techniques.map(tech => {
-                    const isCompatible = tech.allowedMaterialValues.includes(mat.name);
-                    const isUpdating = updatingId === `${tech.id}-${mat.name}`;
+                    const isCompatible = resolveTechniqueMaterialIds(tech, materials).includes(mat.id);
+                    const isUpdating = updatingId === `${tech.id}-${mat.id}`;
 
                     return (
                       <td key={tech.id} className="p-6 text-center">
                         <button
-                          onClick={() => toggleCompatibility(tech, mat.name)}
+                          onClick={() => toggleCompatibility(tech, mat)}
                           disabled={isUpdating}
                           className={cn(
                             "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 disabled:opacity-50",

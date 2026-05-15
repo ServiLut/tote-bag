@@ -12,6 +12,7 @@
     "start": "turbo start",
     "install:all": "pnpm install",
     "api": "bruno open api-docs",
+    "ngrok:api": "node ./scripts/ngrok-api.mjs",
     "smoke:staging": "node ./scripts/smoke-staging.mjs"
   },
   "devDependencies": {

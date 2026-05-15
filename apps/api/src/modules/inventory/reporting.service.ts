@@ -438,7 +438,7 @@ export class ReportingService {
     });
   }
 
-  async getClosingReport(startDate: Date, endDate: Date, userId: string) {
+  async getClosingReport(startDate: Date, endDate: Date, _userId: string) {
     this.validateDateRange(startDate, endDate);
 
     const whereClause: Prisma.FinancialTransactionWhereInput = {
@@ -519,16 +519,6 @@ export class ReportingService {
 
     // 5. Inventory Valuation (Snapshot of current value)
     const valuation = await this.getInventoryValuation();
-
-    // 6. Audit report generation
-    await this.prisma.auditLog.create({
-      data: {
-        action: 'GENERATE_CLOSING_REPORT',
-        entity: 'System',
-        userId,
-        payload: { startDate, endDate },
-      },
-    });
 
     return {
       period: { startDate, endDate },

@@ -48,6 +48,12 @@ export interface PricingSnapshot {
     percentage: number;
     amount: number;
   };
+  manualDiscount?: {
+    requestedPercentage: number;
+    requestedAmount: number;
+    appliedPercentage: number;
+    appliedAmount: number;
+  };
   minPriceGuardApplied: boolean;
   finalUnitPrice: number;
   quantity: number;

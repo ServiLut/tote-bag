@@ -137,6 +137,25 @@ export class ShippingController {
     return this.shippingService.getShipments();
   }
 
+  @Get('permissions')
+  @ApiOperation({ summary: 'Consultar permisos operativos de envios' })
+  async getShipmentPermissions(@Req() req: RequestWithUser) {
+    const user = req.user;
+    if (!user?.id) throw new UnauthorizedException();
+
+    const [canReadShipments, canUpdateShipments] = await Promise.all([
+      this.rolesService.hasPermission(user.id, 'shipping', 'read'),
+      this.rolesService.hasPermission(user.id, 'shipping', 'update'),
+    ]);
+
+    return {
+      shipments: {
+        read: canReadShipments,
+        update: canUpdateShipments,
+      },
+    };
+  }
+
   @Get('shipping-bags/availability')
   @ApiOperation({ summary: 'Consultar disponibilidad de bolsas de envio' })
   async getShippingBagAvailability(

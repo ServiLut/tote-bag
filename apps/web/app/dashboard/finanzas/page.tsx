@@ -26,8 +26,15 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import {
+  buildDefaultFixedExpensesConfig,
+  buildFinanceDashboardQueryParams,
+  deriveBreakEvenThermometer,
+  loadFinanceDashboardData,
+} from '@/lib/finance-dashboard';
 import { createClient } from '@/utils/supabase/client';
 import { apiFetch } from '@/utils/api';
+import { FINANCE_DATA_CHANGED_EVENT } from '@/lib/finance-events';
 
 interface FinancialSummary {
   kpis: {
@@ -305,21 +312,6 @@ function parseRequestErrorMessage(rawText: string, fallback: string) {
   return fallback;
 }
 
-function buildTaxReportFromPreview(preview: ReportPreview): SalesTaxReport {
-  return {
-    orderCount: preview.orderCount,
-    taxableBase: preview.subtotal,
-    taxTotal: preview.estimatedTaxes,
-    grossTotal: preview.grossSales,
-    vatLiabilityToReserve: preview.estimatedTaxes,
-    reteIvaCredit: 0,
-    vatNetAfterReteIva: preview.estimatedTaxes,
-    withholdingAssetTotal: 0,
-    reconciliationDifference: 0,
-    orders: [],
-  };
-}
-
 function unwrapApiData<T>(result: T | ApiEnvelope<T> | null | undefined) {
   if (!result) {
     return null;
@@ -330,19 +322,6 @@ function unwrapApiData<T>(result: T | ApiEnvelope<T> | null | undefined) {
   }
 
   return result as T;
-}
-
-function normalizeAccountsReceivableReport(
-  report: AccountsReceivableReport | null,
-): AccountsReceivableReport {
-  return {
-    summary: {
-      orderCount: report?.summary?.orderCount ?? 0,
-      totalBalanceDue: report?.summary?.totalBalanceDue ?? 0,
-      totalAmountPaid: report?.summary?.totalAmountPaid ?? 0,
-    },
-    orders: Array.isArray(report?.orders) ? report.orders : [],
-  };
 }
 
 function buildDefaultFixedExpenseInputs() {
@@ -371,6 +350,7 @@ export default function FinanceDashboardPage() {
     useState<BreakEvenThermometerReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadWarnings, setLoadWarnings] = useState<string[]>([]);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [fixedExpenseInputs, setFixedExpenseInputs] = useState(
@@ -399,33 +379,41 @@ export default function FinanceDashboardPage() {
     toDateInputValue(currentDate),
   );
 
-  const queryParams = useMemo(() => {
-    const params = new URLSearchParams();
-
+  const financeQuery = useMemo(() => {
     if (granularity === 'day') {
-      params.set('startDate', selectedDate);
-      params.set('endDate', selectedDate);
-    } else if (granularity === 'month') {
+      return {
+        startDate: selectedDate,
+        endDate: selectedDate,
+      };
+    }
+
+    if (granularity === 'month') {
       const [year, month] = selectedMonth.split('-');
-      params.set('month', month);
-      params.set('year', year);
-      params.set('startDate', `${selectedMonth}-01`);
       const endOfMonth = new Date(
         Number.parseInt(year, 10),
         Number.parseInt(month, 10),
         0,
       );
-      params.set('endDate', toDateInputValue(endOfMonth));
-    } else if (granularity === 'year') {
-      params.set('year', selectedYear);
-      params.set('startDate', `${selectedYear}-01-01`);
-      params.set('endDate', `${selectedYear}-12-31`);
-    } else {
-      params.set('startDate', customStartDate);
-      params.set('endDate', customEndDate);
+      return {
+        month,
+        year,
+        startDate: `${selectedMonth}-01`,
+        endDate: toDateInputValue(endOfMonth),
+      };
     }
 
-    return params;
+    if (granularity === 'year') {
+      return {
+        year: selectedYear,
+        startDate: `${selectedYear}-01-01`,
+        endDate: `${selectedYear}-12-31`,
+      };
+    }
+
+    return {
+      startDate: customStartDate,
+      endDate: customEndDate,
+    };
   }, [
     customEndDate,
     customStartDate,
@@ -434,6 +422,11 @@ export default function FinanceDashboardPage() {
     selectedMonth,
     selectedYear,
   ]);
+
+  const queryParams = useMemo(
+    () => buildFinanceDashboardQueryParams(financeQuery),
+    [financeQuery],
+  );
 
   const getAuthHeaders = async (): Promise<Record<string, string>> => {
     const {
@@ -455,6 +448,7 @@ export default function FinanceDashboardPage() {
     const fetchFinance = async () => {
       setLoading(true);
       setLoadError(null);
+      setLoadWarnings([]);
       setSummary(null);
       setPreview(null);
       setReceivables(null);
@@ -475,135 +469,24 @@ export default function FinanceDashboardPage() {
 
       try {
         const authHeaders = await getAuthHeaders();
-        const [
-          summaryRes,
-          previewRes,
-          receivablesRes,
-          taxReportRes,
-          profitabilityRes,
-          retentionsRes,
-          fixedExpensesRes,
-          breakEvenThermometerRes,
-        ] = await Promise.all([
-          apiFetch(`/inventory/finance/summary?${queryParams.toString()}`, {
-            headers: authHeaders,
-          }),
-          apiFetch(`/finance/report-preview?${queryParams.toString()}`, {
-            headers: authHeaders,
-          }),
-          apiFetch('/orders/accounts-receivable', {
-            headers: authHeaders,
-          }),
-          apiFetch(`/finance/tax-report?${queryParams.toString()}`, {
-            headers: authHeaders,
-          }),
-          apiFetch(`/finance/order-profitability?${queryParams.toString()}`, {
-            headers: authHeaders,
-          }),
-          apiFetch(`/finance/retentions-report?${queryParams.toString()}`, {
-            headers: authHeaders,
-          }),
-          apiFetch('/finance/fixed-expenses-config', {
-            headers: authHeaders,
-          }),
-          apiFetch(
-            `/finance/break-even-thermometer?${queryParams.toString()}`,
-            {
-              headers: authHeaders,
-            },
-          ),
-        ]);
+        const result = await loadFinanceDashboardData({
+          authHeaders,
+          query: financeQuery,
+        });
 
         if (!active) return;
-
-        if (
-          !summaryRes.ok ||
-          !previewRes.ok ||
-          !receivablesRes.ok ||
-          !taxReportRes.ok ||
-          !profitabilityRes.ok ||
-          !retentionsRes.ok ||
-          !fixedExpensesRes.ok ||
-          !breakEvenThermometerRes.ok
-        ) {
-          const firstError = [
-            { label: 'Resumen financiero', response: summaryRes },
-            { label: 'Reporte financiero', response: previewRes },
-            { label: 'Cuentas por cobrar', response: receivablesRes },
-            { label: 'Reporte IVA', response: taxReportRes },
-            { label: 'Rentabilidad por pedido', response: profitabilityRes },
-            { label: 'Reporte de retenciones', response: retentionsRes },
-            {
-              label: 'Configuracion de gastos fijos',
-              response: fixedExpensesRes,
-            },
-            {
-              label: 'Termometro de punto de equilibrio',
-              response: breakEvenThermometerRes,
-            },
-          ].find(({ response }) => !response.ok)!;
-          const firstErrorResponse = firstError.response;
-          const errorText = await firstErrorResponse.text();
-          const requestMessage = parseRequestErrorMessage(
-            errorText,
-            'No fue posible cargar el dashboard financiero.',
-          );
-
-          throw new Error(
-            `${firstError.label}: ${requestMessage} (${firstErrorResponse.status})`,
-          );
-        }
-
-        const [
-          summaryResult,
-          previewResult,
-          receivablesResult,
-          taxReportResult,
-          profitabilityResult,
-          retentionsResult,
-          fixedExpensesResult,
-          breakEvenThermometerResult,
-        ] =
-          await Promise.all([
-            summaryRes.json(),
-            previewRes.json(),
-            receivablesRes.json(),
-            taxReportRes.json(),
-            profitabilityRes.json(),
-            retentionsRes.json(),
-            fixedExpensesRes.json(),
-            breakEvenThermometerRes.json(),
-          ]);
-        const resolvedSummary = unwrapApiData<FinancialSummary>(summaryResult);
-        const resolvedPreview = unwrapApiData<ReportPreview>(previewResult);
-        const resolvedReceivables = normalizeAccountsReceivableReport(
-          unwrapApiData<AccountsReceivableReport>(receivablesResult),
-        );
-        const resolvedTaxReport =
-          unwrapApiData<SalesTaxReport>(taxReportResult);
-        const resolvedProfitability =
-          unwrapApiData<OrderProfitabilityReport>(profitabilityResult);
-        const resolvedRetentions =
-          unwrapApiData<RetentionsReport>(retentionsResult);
-        const resolvedFixedExpenses =
-          unwrapApiData<FixedExpensesConfig>(fixedExpensesResult);
-        const resolvedBreakEvenThermometer =
-          unwrapApiData<BreakEvenThermometerReport>(breakEvenThermometerResult);
-
-        setSummary(resolvedSummary);
-        setPreview(resolvedPreview);
-        setReceivables(resolvedReceivables);
-        setTaxReport(
-          resolvedTaxReport ??
-            (resolvedPreview ? buildTaxReportFromPreview(resolvedPreview) : null),
-        );
-        setProfitability(resolvedProfitability);
-        setRetentionsReport(resolvedRetentions);
-        setFixedExpensesConfig(resolvedFixedExpenses);
-        setBreakEvenThermometer(resolvedBreakEvenThermometer);
+        setSummary(result.summary);
+        setPreview(result.preview);
+        setReceivables(result.receivables);
+        setTaxReport(result.taxReport);
+        setProfitability(result.profitability);
+        setRetentionsReport(result.retentionsReport);
+        setFixedExpensesConfig(result.fixedExpensesConfig);
+        setBreakEvenThermometer(result.breakEvenThermometer);
+        setLoadWarnings(result.warnings);
         setFixedExpenseInputs(
-          resolvedFixedExpenses?.items?.length
-            ? resolvedFixedExpenses.items.map((item) => ({
+          result.fixedExpensesConfig.items.length
+            ? result.fixedExpensesConfig.items.map((item) => ({
                 id: item.id,
                 label: item.label,
                 amount: item.amount > 0 ? String(item.amount) : '',
@@ -624,12 +507,21 @@ export default function FinanceDashboardPage() {
       }
     };
 
-    fetchFinance();
+    const handleFinanceDataChanged = () => {
+      void fetchFinance();
+    };
+
+    void fetchFinance();
+    window.addEventListener(FINANCE_DATA_CHANGED_EVENT, handleFinanceDataChanged);
 
     return () => {
       active = false;
+      window.removeEventListener(
+        FINANCE_DATA_CHANGED_EVENT,
+        handleFinanceDataChanged,
+      );
     };
-  }, [customEndDate, customStartDate, granularity, queryParams]);
+  }, [customEndDate, customStartDate, financeQuery, granularity]);
 
   const years = useMemo(() => {
     return Array.from({ length: 6 }, (_, index) => String(currentYear - index));
@@ -663,6 +555,13 @@ export default function FinanceDashboardPage() {
       : breakEvenThermometer?.status === 'UNCONFIGURED'
       ? 'slate'
       : 'amber';
+  const hasFinanceContent = Boolean(
+    summary ||
+      preview ||
+      profitability ||
+      breakEvenThermometer ||
+      fixedExpensesConfig,
+  );
 
   const handleExport = async () => {
     setExporting(true);
@@ -798,37 +697,20 @@ export default function FinanceDashboardPage() {
         );
       }
 
-      const thermometerRes = await apiFetch(
-        `/finance/break-even-thermometer?${queryParams.toString()}`,
-        {
-          headers: authHeaders,
-        },
-      );
-
-      if (!thermometerRes.ok) {
-        const errorText = await thermometerRes.text();
-        throw new Error(
-          parseRequestErrorMessage(
-            errorText,
-            'No fue posible recalcular el termometro de equilibrio.',
-          ),
-        );
-      }
-
-      const [configResult, thermometerResult] = await Promise.all([
-        configRes.json(),
-        thermometerRes.json(),
-      ]);
+      const configResult = await configRes.json();
       const resolvedConfig = unwrapApiData<FixedExpensesConfig>(configResult);
-      const resolvedThermometer = unwrapApiData<BreakEvenThermometerReport>(
-        thermometerResult,
+      const safeConfig = resolvedConfig ?? buildDefaultFixedExpensesConfig();
+      const resolvedThermometer = deriveBreakEvenThermometer(
+        financeQuery,
+        safeConfig,
+        profitability,
       );
 
-      setFixedExpensesConfig(resolvedConfig);
+      setFixedExpensesConfig(safeConfig);
       setBreakEvenThermometer(resolvedThermometer);
       setFixedExpenseInputs(
-        resolvedConfig?.items?.length
-          ? resolvedConfig.items.map((item) => ({
+        safeConfig.items.length
+          ? safeConfig.items.map((item) => ({
               id: item.id,
               label: item.label,
               amount: item.amount > 0 ? String(item.amount) : '',
@@ -861,7 +743,7 @@ export default function FinanceDashboardPage() {
     );
   }
 
-  if (loadError) {
+  if (loadError && !hasFinanceContent) {
     return (
       <div className="mx-auto max-w-7xl p-8 md:p-12">
         <div className="rounded-3xl border border-rose-200 bg-rose-50 p-8 shadow-sm">
@@ -876,6 +758,28 @@ export default function FinanceDashboardPage() {
 
   return (
     <div className="mx-auto max-w-7xl animate-in space-y-8 p-8 duration-500 fade-in slide-in-from-bottom-4 md:p-12">
+      {loadError ? (
+        <div className="rounded-3xl border border-rose-200 bg-rose-50 p-6 shadow-sm">
+          <p className="text-xs font-black uppercase tracking-widest text-rose-700">
+            Carga parcial
+          </p>
+          <p className="mt-3 text-sm font-bold text-rose-800">{loadError}</p>
+        </div>
+      ) : null}
+
+      {loadWarnings.length > 0 ? (
+        <div className="rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+          <p className="text-xs font-black uppercase tracking-widest text-amber-700">
+            Secciones no disponibles
+          </p>
+          <div className="mt-3 space-y-2 text-sm font-bold text-amber-900">
+            {loadWarnings.map((warning) => (
+              <p key={warning}>{warning}</p>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-start">
         <div className="space-y-1">
           <h1 className="flex items-center gap-3 text-3xl font-black tracking-tight text-primary">

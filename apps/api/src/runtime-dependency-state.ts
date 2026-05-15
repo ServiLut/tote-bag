@@ -1,10 +1,10 @@
 export type RuntimeDependencyStatus = 'up' | 'degraded' | 'down';
 
 export type CacheRuntimeStatus = {
-  status: Extract<RuntimeDependencyStatus, 'up' | 'degraded'>;
+  status: RuntimeDependencyStatus;
   mode: 'redis' | 'memory';
   configured: boolean;
-  reason?: 'missing_url' | 'connection_failed';
+  reason?: 'missing_url' | 'connection_failed' | 'runtime_unavailable';
 };
 
 const defaultCacheRuntimeStatus: CacheRuntimeStatus = {

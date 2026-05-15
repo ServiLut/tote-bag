@@ -75,6 +75,22 @@ interface ProductOption {
   variants?: ProductVariant[] | null;
 }
 
+const APPROVED_QUOTE_STATUS = 'DISEÃ‘O_APROBADO';
+const APPROVED_QUOTE_STATUS_VARIANTS = new Set([
+  APPROVED_QUOTE_STATUS,
+  'DISE\u00d1O_APROBADO',
+  'DISEÃ‘O_APROBADO',
+  'DISEÃƒâ€˜O_APROBADO',
+  'DISEÃƒÆ’Ã¢â‚¬ËœO_APROBADO',
+  'DISEÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“O_APROBADO',
+]);
+
+function normalizeQuoteStatus(status: string) {
+  return APPROVED_QUOTE_STATUS_VARIANTS.has(status)
+    ? APPROVED_QUOTE_STATUS
+    : status;
+}
+
 const INITIAL_MANUAL_QUOTE_FORM = {
   businessName: '',
   contactPhone: '',
@@ -161,7 +177,12 @@ export default function B2BQuotesManager() {
 
       const responseBody: ApiResponse<B2BQuote[]> = await res.json();
       setLoadError(null);
-      setQuotes(responseBody.data);
+      setQuotes(
+        (responseBody.data || []).map((quote) => ({
+          ...quote,
+          status: normalizeQuoteStatus(quote.status),
+        })),
+      );
     } catch (err) {
       console.error('Error fetching quotes:', err);
       setLoadError('No fue posible conectar con la API de B2B.');
@@ -332,7 +353,16 @@ export default function B2BQuotesManager() {
           ? quote.status === 'DISEÑO_APROBADO'
           : quote.status !== 'DISEÑO_APROBADO';
 
-      return matchesSearch && matchesStatus;
+      const normalizedStatus = normalizeQuoteStatus(quote.status);
+      const matchesNormalizedStatus =
+        statusFilter === 'ALL'
+          ? true
+          : statusFilter === 'APPROVED'
+            ? normalizedStatus === APPROVED_QUOTE_STATUS
+            : normalizedStatus !== APPROVED_QUOTE_STATUS;
+      void matchesStatus;
+
+      return matchesSearch && matchesNormalizedStatus;
     });
   }, [quotes, searchTerm, statusFilter]);
 
@@ -381,10 +411,27 @@ export default function B2BQuotesManager() {
     const quantity = Number(manualQuoteForm.quantity);
     const externalUnitCost = Number(manualQuoteForm.externalUnitCost);
     const agreedUnitPrice = Number(manualQuoteForm.agreedUnitPrice);
+    const requiredFields: Array<[keyof typeof INITIAL_MANUAL_QUOTE_FORM, string]> = [
+      ['businessName', 'la empresa'],
+      ['contactPhone', 'el telefono de contacto'],
+      ['department', 'el departamento'],
+      ['municipality', 'el municipio'],
+      ['neighborhood', 'el barrio'],
+      ['address', 'la direccion'],
+      ['qrData', 'el dato QR o WhatsApp'],
+      ['manualSize', 'la medida especial'],
+    ];
 
     if (!manualQuoteForm.productId) {
       setManualQuoteError('Selecciona un producto base.');
       return;
+    }
+
+    for (const [field, label] of requiredFields) {
+      if (!manualQuoteForm[field].trim()) {
+        setManualQuoteError(`Completa ${label} antes de crear la cotizacion.`);
+        return;
+      }
     }
 
     if (!Number.isFinite(quantity) || quantity < 50) {
@@ -431,7 +478,7 @@ export default function B2BQuotesManager() {
           neighborhood: manualQuoteForm.neighborhood,
           address: manualQuoteForm.address,
           qrType: 'WHATSAPP',
-          qrData: manualQuoteForm.qrData || manualQuoteForm.contactPhone,
+          qrData: manualQuoteForm.qrData.trim(),
           package: quantity >= 100 ? 'Evento' : 'Empresa',
           size: manualQuoteForm.manualSize,
           items: [

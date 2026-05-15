@@ -74,6 +74,7 @@ export const ModelName = {
   B2BQuote: 'B2BQuote',
   AuditLog: 'AuditLog',
   Address: 'Address',
+  AppSetting: 'AppSetting',
   ProductAttribute: 'ProductAttribute',
   PersonalizationOption: 'PersonalizationOption',
   PersonalizationRule: 'PersonalizationRule',
@@ -97,7 +98,8 @@ export const ModelName = {
   PayrollShift: 'PayrollShift',
   PayrollBillingStatement: 'PayrollBillingStatement',
   OpexCategory: 'OpexCategory',
-  ManagerApproval: 'ManagerApproval'
+  ManagerApproval: 'ManagerApproval',
+  KnowledgePost: 'KnowledgePost'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -194,6 +196,8 @@ export const OrderScalarFieldEnum = {
   customerEmail: 'customerEmail',
   customerPhone: 'customerPhone',
   shippingAddress: 'shippingAddress',
+  shippingMethod: 'shippingMethod',
+  shippingCost: 'shippingCost',
   city: 'city',
   totalAmount: 'totalAmount',
   netAmount: 'netAmount',
@@ -527,6 +531,16 @@ export const AddressScalarFieldEnum = {
 } as const
 
 export type AddressScalarFieldEnum = (typeof AddressScalarFieldEnum)[keyof typeof AddressScalarFieldEnum]
+
+
+export const AppSettingScalarFieldEnum = {
+  key: 'key',
+  value: 'value',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AppSettingScalarFieldEnum = (typeof AppSettingScalarFieldEnum)[keyof typeof AppSettingScalarFieldEnum]
 
 
 export const ProductAttributeScalarFieldEnum = {
@@ -970,6 +984,27 @@ export const ManagerApprovalScalarFieldEnum = {
 } as const
 
 export type ManagerApprovalScalarFieldEnum = (typeof ManagerApprovalScalarFieldEnum)[keyof typeof ManagerApprovalScalarFieldEnum]
+
+
+export const KnowledgePostScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  slug: 'slug',
+  summary: 'summary',
+  content: 'content',
+  imageUrls: 'imageUrls',
+  attachments: 'attachments',
+  category: 'category',
+  status: 'status',
+  priority: 'priority',
+  tags: 'tags',
+  authorId: 'authorId',
+  publishedAt: 'publishedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type KnowledgePostScalarFieldEnum = (typeof KnowledgePostScalarFieldEnum)[keyof typeof KnowledgePostScalarFieldEnum]
 
 
 export const SortOrder = {

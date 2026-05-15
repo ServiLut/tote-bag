@@ -30,9 +30,11 @@ import { InventoryModule } from './modules/inventory/inventory.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { UsersModule } from './modules/users/users.module';
 import { ShippingModule } from './modules/shipping/shipping.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PqrsModule } from './modules/pqrs/pqrs.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
 import { PurchasesModule } from './modules/purchases/purchases.module';
+import { KnowledgeModule } from './modules/knowledge/knowledge.module';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { AuditModule } from './modules/audit/audit.module';
 import { ManagerApprovalsModule } from './modules/manager-approvals/manager-approvals.module';
@@ -322,9 +324,11 @@ export function createMetricsAccessMiddleware(
     InventoryModule,
     UsersModule,
     ShippingModule,
+    NotificationsModule,
     PqrsModule,
     PayrollModule,
     PurchasesModule,
+    KnowledgeModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

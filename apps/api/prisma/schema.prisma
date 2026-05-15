@@ -109,6 +109,8 @@ model Order {
   customerEmail     String               @map("customer_email")
   customerPhone     String               @map("customer_phone")
   shippingAddress   Json                 @map("shipping_address")
+  shippingMethod    ShippingMethod       @default(SHIPPING) @map("shipping_method")
+  shippingCost      Decimal              @default(0) @map("shipping_cost") @db.Decimal(12, 2)
   city              String               @map("city")
   totalAmount       Decimal              @map("total_amount") @db.Decimal(10, 2)
   netAmount         Decimal              @map("net_amount") @db.Decimal(10, 2)
@@ -141,6 +143,9 @@ model Order {
   profile           Profile?             @relation(fields: [profileId], references: [id])
   shipment          Shipment?
 
+  @@index([deletedAt])
+  @@index([saleLegalRequirement])
+  @@index([saleLegalStatus])
   @@map("orders")
   @@schema("tote-bag")
 }
@@ -236,6 +241,7 @@ model OrderPayment {
   @@index([orderId, paymentDate])
   @@index([provider])
   @@index([externalTransactionId])
+  @@index([deletedAt])
   @@map("order_payments")
   @@schema("tote-bag")
 }
@@ -278,6 +284,7 @@ model User {
   profile                         Profile?
   personalizationRequests         PersonalizationRequest[] @relation("PersonalizationRequestUser")
   reviewedPersonalizationRequests PersonalizationRequest[] @relation("PersonalizationRequestReviewedBy")
+  knowledgePosts                  KnowledgePost[]
   roles                           UserRole[]
   managerApprovalsRequested       ManagerApproval[]       @relation("ManagerApprovalRequestedBy")
   managerApprovalsApproved        ManagerApproval[]       @relation("ManagerApprovalApprovedBy")
@@ -463,6 +470,9 @@ model B2BQuote {
   size              String?        @map("size")
   items             B2BQuoteItem[]
 
+  @@index([deletedAt])
+  @@index([expiresAt])
+  @@index([reservationStatus])
   @@map("b2b_quotes")
   @@schema("tote-bag")
 }
@@ -505,6 +515,16 @@ model Address {
   profile        Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@map("addresses")
+  @@schema("tote-bag")
+}
+
+model AppSetting {
+  key       String   @id @map("key")
+  value     Json     @map("value")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("app_settings")
   @@schema("tote-bag")
 }
 
@@ -611,6 +631,7 @@ model PricingRule {
   product        Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId, scope])
+  @@index([deletedAt])
   @@map("pricing_rules")
   @@schema("tote-bag")
 }
@@ -662,6 +683,7 @@ model WizardOption {
   allowedMaterialValues String[]       @default([]) @map("allowed_material_values")
   imageUrl              String?        @map("image_url")
 
+  @@index([deletedAt])
   @@map("wizard_options")
   @@schema("tote-bag")
 }
@@ -708,6 +730,7 @@ model SupplyItem {
   @@index([category, isActive])
   @@index([supplyType, isActive])
   @@index([name])
+  @@index([deletedAt])
   @@map("supply_items")
   @@schema("tote-bag")
 }
@@ -737,6 +760,9 @@ model PurchaseBatch {
   supplier          Supplier               @relation(fields: [supplierId], references: [id])
   variant           Variant?               @relation(fields: [variantId], references: [id])
 
+  @@index([deletedAt])
+  @@index([documentType])
+  @@index([supportUrl])
   @@map("purchase_batches")
   @@schema("tote-bag")
 }
@@ -914,6 +940,7 @@ model PurchaseInvoice {
 
   @@index([supplierId, status, issueDate])
   @@index([purchaseBatchId])
+  @@index([deletedAt])
   @@map("purchase_invoices")
   @@schema("tote-bag")
 }
@@ -930,6 +957,7 @@ model PurchasePayment {
   invoice     PurchaseInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@index([invoiceId, paymentDate])
+  @@index([deletedAt])
   @@map("purchase_payments")
   @@schema("tote-bag")
 }
@@ -1074,6 +1102,31 @@ model ManagerApproval {
   @@schema("tote-bag")
 }
 
+model KnowledgePost {
+  id          String             @id @default(uuid()) @map("id")
+  title       String             @map("title")
+  slug        String             @unique @map("slug")
+  summary     String?            @map("summary")
+  content     String             @map("content")
+  imageUrls   String[]           @default([]) @map("image_urls")
+  attachments Json?              @map("attachments")
+  category    KnowledgeCategory  @default(GENERAL) @map("category")
+  status      KnowledgeStatus    @default(BORRADOR) @map("status")
+  priority    KnowledgePriority  @default(MEDIA) @map("priority")
+  tags        String[]           @default([]) @map("tags")
+  authorId    String?            @map("author_id")
+  publishedAt DateTime?          @map("published_at")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+  author      User?              @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([category, status])
+  @@index([priority, updatedAt])
+  @@index([authorId])
+  @@map("knowledge_posts")
+  @@schema("tote-bag")
+}
+
 enum ShipmentStatus {
   PENDING
   READY_TO_SHIP
@@ -1132,6 +1185,13 @@ enum OrderStatus {
 enum OrderSource {
   ECOMMERCE
   MANUAL
+
+  @@schema("tote-bag")
+}
+
+enum ShippingMethod {
+  SHIPPING
+  PICKUP
 
   @@schema("tote-bag")
 }
@@ -1382,6 +1442,34 @@ enum ManagerApprovalStatus {
   USED
   EXPIRED
   REVOKED
+
+  @@schema("tote-bag")
+}
+
+enum KnowledgeCategory {
+  GENERAL
+  VENTAS
+  NOTICIAS
+  OPERACION
+  FINANZAS
+  ESTRATEGIA
+
+  @@schema("tote-bag")
+}
+
+enum KnowledgeStatus {
+  BORRADOR
+  PUBLICADO
+  ARCHIVADO
+
+  @@schema("tote-bag")
+}
+
+enum KnowledgePriority {
+  BAJA
+  MEDIA
+  ALTA
+  CRITICA
 
   @@schema("tote-bag")
 }

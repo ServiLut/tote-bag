@@ -3,6 +3,8 @@ import {
   IsNotEmpty,
   IsOptional,
   IsNumber,
+  IsBoolean,
+  Max,
   Min,
   IsArray,
   ValidateNested,
@@ -61,6 +63,17 @@ export class ProductConfigInputDto {
   @Min(0)
   @IsOptional()
   simulatedPvp?: number;
+
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @IsOptional()
+  manualDiscountPct?: number;
+
+  @IsBoolean()
+  @Type(() => Boolean)
+  @IsOptional()
+  ignoreMinPriceGuard?: boolean;
 
   @IsArray()
   @ValidateNested({ each: true })

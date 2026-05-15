@@ -4,7 +4,6 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import {
   BadgeDollarSign,
   Calculator,
-  Layers3,
   Loader2,
   Package2,
   ShoppingBag,
@@ -14,7 +13,6 @@ import {
 import { ApiResponse } from '@/types/api';
 import { apiFetch } from '@/utils/api';
 import { createClient } from '@/utils/supabase/client';
-import { useDashboardAuth } from '@/components/dashboard/DashboardAuthContext';
 
 interface ProductVariant {
   id: string;
@@ -74,6 +72,7 @@ interface QuoteResponse {
   unitPrice: number;
   quantity: number;
   total: number;
+  netTotal: number;
   netUnitPrice: number;
   taxAmount: number;
   taxRate: number;
@@ -85,6 +84,12 @@ interface QuoteResponse {
       percentage: number;
       amount: number;
     };
+    manualDiscount?: {
+      requestedPercentage: number;
+      requestedAmount: number;
+      appliedPercentage: number;
+      appliedAmount: number;
+    };
   };
 }
 
@@ -92,6 +97,7 @@ interface SimulatorFormState {
   productId: string;
   variantId: string;
   quantity: string;
+  manualDiscountPct: string;
   line: string;
   material: string;
   quality: string;
@@ -101,12 +107,19 @@ const INITIAL_FORM: SimulatorFormState = {
   productId: '',
   variantId: '',
   quantity: '50',
+  manualDiscountPct: '0',
   line: '',
   material: '',
   quality: '',
 };
 
-function formatCurrency(amount: number | null | undefined) {
+function formatCurrency(
+  amount: number | null | undefined,
+  options?: {
+    minimumFractionDigits?: number;
+    maximumFractionDigits?: number;
+  },
+) {
   if (amount === null || amount === undefined) {
     return '--';
   }
@@ -114,8 +127,27 @@ function formatCurrency(amount: number | null | undefined) {
   return new Intl.NumberFormat('es-CO', {
     style: 'currency',
     currency: 'COP',
-    maximumFractionDigits: 0,
+    minimumFractionDigits: options?.minimumFractionDigits ?? 0,
+    maximumFractionDigits: options?.maximumFractionDigits ?? 0,
   }).format(amount);
+}
+
+function formatPreciseCurrency(amount: number | null | undefined) {
+  return formatCurrency(amount, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function formatPercentage(value: number | null | undefined) {
+  if (value === null || value === undefined) {
+    return '--';
+  }
+
+  const normalized = Number(value.toFixed(2));
+  return Number.isInteger(normalized)
+    ? `${normalized.toFixed(0)}%`
+    : `${normalized.toFixed(2)}%`;
 }
 
 function getErrorMessage(payload: unknown, fallback: string) {
@@ -133,6 +165,14 @@ function getErrorMessage(payload: unknown, fallback: string) {
   }
 
   return fallback;
+}
+
+async function getResponseErrorMessage(
+  response: Response,
+  fallback: string,
+) {
+  const payload = await response.json().catch(() => null);
+  return getErrorMessage(payload, fallback);
 }
 
 function unwrapApiData<T>(payload: ApiResponse<T> | T): T {
@@ -177,14 +217,15 @@ export default function B2BPricingSimulator() {
   const [options, setOptions] = useState<GroupedWizardOptions>({});
   const [loadingInputs, setLoadingInputs] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadWarning, setLoadWarning] = useState<string | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
   const [form, setForm] = useState<SimulatorFormState>(INITIAL_FORM);
   const [priceDraft, setPriceDraft] = useState('');
   const [priceInputError, setPriceInputError] = useState<string | null>(null);
+  const [discountInputError, setDiscountInputError] = useState<string | null>(null);
   const supabase = createClient();
-  const { accessToken } = useDashboardAuth();
 
   const selectedProduct = useMemo(
     () => products.find((product) => product.id === form.productId) ?? null,
@@ -237,14 +278,6 @@ export default function B2BPricingSimulator() {
       : uniqueValues(toWizardValues(options.QUALITY));
   }, [options.QUALITY, selectedProduct]);
 
-  const b2bRules = useMemo(
-    () =>
-      (selectedProduct?.pricingRules ?? [])
-        .filter((rule) => rule.scope === 'B2B' && rule.isActive !== false)
-        .sort((left, right) => left.minQty - right.minQty),
-    [selectedProduct],
-  );
-
   const selectedVariantCurrentPrice =
     selectedVariant?.salePrice ?? selectedProduct?.basePrice ?? null;
 
@@ -252,44 +285,125 @@ export default function B2BPricingSimulator() {
     let active = true;
 
     const fetchInputs = async () => {
+      const fetchProducts = async (token: string) => {
+        const authHeaders = {
+          Authorization: `Bearer ${token}`,
+        };
+        const adminResponse = await apiFetch('/catalog/admin/products', {
+          headers: authHeaders,
+        });
+
+        if (adminResponse.ok) {
+          const body = await adminResponse.json();
+          return {
+            products: unwrapApiData<ProductOption[]>(body) ?? [],
+            usedPublicFallback: false,
+          };
+        }
+
+        if (adminResponse.status === 401 || adminResponse.status === 403) {
+          const publicResponse = await apiFetch('/catalog/products');
+
+          if (!publicResponse.ok) {
+            throw new Error(
+              await getResponseErrorMessage(
+                publicResponse,
+                `No se pudo cargar el catalogo publico (${publicResponse.status}).`,
+              ),
+            );
+          }
+
+          const body = await publicResponse.json();
+          return {
+            products: unwrapApiData<ProductOption[]>(body) ?? [],
+            usedPublicFallback: true,
+          };
+        }
+
+        throw new Error(
+          await getResponseErrorMessage(
+            adminResponse,
+            `No se pudo cargar el catalogo interno (${adminResponse.status}).`,
+          ),
+        );
+      };
+
+      const fetchGroupedOptions = async (token: string) => {
+        const optionsResponse = await apiFetch('/wizard-options/grouped', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!optionsResponse.ok) {
+          throw new Error(
+            await getResponseErrorMessage(
+              optionsResponse,
+              `No se pudieron cargar las opciones del simulador (${optionsResponse.status}).`,
+            ),
+          );
+        }
+
+        const body = await optionsResponse.json();
+        return unwrapApiData<GroupedWizardOptions>(body) ?? {};
+      };
+
       try {
         setLoadingInputs(true);
         setLoadError(null);
+        setLoadWarning(null);
 
         const {
           data: { session },
         } = await supabase.auth.getSession();
-        const token = session?.access_token ?? accessToken;
+        const token = session?.access_token;
         if (!token) {
           throw new Error(
             'Tu sesion expiro. Inicia sesion de nuevo para usar el simulador B2B.',
           );
         }
 
-        const [productsRes, optionsRes] = await Promise.all([
-          apiFetch('/catalog/admin/products', {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }),
-          apiFetch('/wizard-options/grouped'),
-        ]);
-
-        if (!productsRes.ok || !optionsRes.ok) {
-          throw new Error('No se pudo cargar el simulador interno de B2B.');
-        }
-
-        const [productsBody, optionsBody] = await Promise.all([
-          productsRes.json(),
-          optionsRes.json(),
+        const [productsResult, optionsResult] = await Promise.allSettled([
+          fetchProducts(token),
+          fetchGroupedOptions(token),
         ]);
 
         if (!active) {
           return;
         }
 
-        setProducts(unwrapApiData<ProductOption[]>(productsBody) ?? []);
-        setOptions(unwrapApiData<GroupedWizardOptions>(optionsBody) ?? {});
+        const warnings: string[] = [];
+        const errors: string[] = [];
+
+        if (productsResult.status === 'fulfilled') {
+          setProducts(productsResult.value.products);
+          if (productsResult.value.usedPublicFallback) {
+            warnings.push(
+              'Se cargo el catalogo publico porque tu sesion no tiene acceso al catalogo interno.',
+            );
+          }
+        } else {
+          setProducts([]);
+          errors.push(
+            productsResult.reason instanceof Error
+              ? productsResult.reason.message
+              : 'No se pudo cargar el catalogo del simulador B2B.',
+          );
+        }
+
+        if (optionsResult.status === 'fulfilled') {
+          setOptions(optionsResult.value);
+        } else {
+          setOptions({});
+          warnings.push(
+            optionsResult.reason instanceof Error
+              ? optionsResult.reason.message
+              : 'No se pudieron cargar algunas opciones del simulador.',
+          );
+        }
+
+        setLoadError(errors.length > 0 ? errors.join(' ') : null);
+        setLoadWarning(warnings.length > 0 ? warnings.join(' ') : null);
       } catch (error) {
         console.error('Error loading B2B pricing simulator inputs:', error);
         if (active) {
@@ -311,7 +425,7 @@ export default function B2BPricingSimulator() {
     return () => {
       active = false;
     };
-  }, [accessToken, supabase.auth]);
+  }, [supabase.auth]);
 
   useEffect(() => {
     if (!open) {
@@ -386,6 +500,7 @@ export default function B2BPricingSimulator() {
 
     const quantity = Number(form.quantity);
     const nextPrice = Number(priceDraft);
+    const nextDiscount = Number(form.manualDiscountPct);
 
     if (!form.productId || !form.variantId || !form.line || !form.material) {
       setQuoteError('Completa producto, variante, linea y material antes de calcular.');
@@ -402,9 +517,15 @@ export default function B2BPricingSimulator() {
       return;
     }
 
+    if (!Number.isFinite(nextDiscount) || nextDiscount < 0 || nextDiscount > 100) {
+      setDiscountInputError('Ingresa un descuento valido entre 0 y 100.');
+      return;
+    }
+
     setQuoteLoading(true);
     setQuoteError(null);
     setPriceInputError(null);
+    setDiscountInputError(null);
 
     try {
       const response = await apiFetch('/pricing/quote?scope=B2B', {
@@ -421,6 +542,8 @@ export default function B2BPricingSimulator() {
           quality: form.quality || undefined,
           size: selectedVariant?.size || undefined,
           simulatedPvp: nextPrice,
+          manualDiscountPct: nextDiscount,
+          ignoreMinPriceGuard: true,
         }),
       });
 
@@ -513,13 +636,19 @@ export default function B2BPricingSimulator() {
                 <div className="rounded-2xl border border-theme bg-base/40 p-4">
                   <p className="text-xs font-bold leading-relaxed text-muted">
                     El calculo usa el endpoint de pricing con alcance <span className="font-black text-primary">B2B</span>.
-                    El PVP que ingreses aqui solo se usa para esta simulacion y no modifica el catalogo.
+                    El PVP que ingreses aqui solo se usa para esta simulacion y no modifica el catalogo ni aplica piso minimo comercial.
                   </p>
                 </div>
 
                 {loadError ? (
                   <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
                     {loadError}
+                  </div>
+                ) : null}
+
+                {loadWarning ? (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+                    {loadWarning}
                   </div>
                 ) : null}
 
@@ -644,7 +773,7 @@ export default function B2BPricingSimulator() {
 
                   <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <p className="text-xs font-medium text-muted">
-                      Usa una variante real para respetar precio base, reglas por volumen y piso minimo.
+                      Usa una variante real para respetar precio base y reglas por volumen.
                     </p>
                     <button
                       type="submit"
@@ -697,6 +826,8 @@ export default function B2BPricingSimulator() {
                               onChange={(event) => {
                                 setPriceDraft(event.target.value);
                                 setPriceInputError(null);
+                                setQuote(null);
+                                setQuoteError(null);
                               }}
                               disabled={!selectedVariant}
                               className="w-full rounded-xl border border-theme bg-base px-3 py-2 text-sm font-bold text-primary outline-none transition-all focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
@@ -705,6 +836,29 @@ export default function B2BPricingSimulator() {
                               {selectedVariantCurrentPrice !== null
                                 ? `Referencia actual: ${formatCurrency(selectedVariantCurrentPrice)}`
                                 : 'Selecciona una variante activa'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="rounded-xl border border-theme bg-surface px-4 py-3">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-muted">
+                            Descuento %
+                          </p>
+                          <div className="mt-2 space-y-2">
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              step="0.01"
+                              value={form.manualDiscountPct}
+                              onChange={(event) => {
+                                updateForm('manualDiscountPct', event.target.value);
+                                setDiscountInputError(null);
+                              }}
+                              disabled={!selectedVariant}
+                              className="w-full rounded-xl border border-theme bg-base px-3 py-2 text-sm font-bold text-primary outline-none transition-all focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
+                            />
+                            <p className="text-[10px] font-semibold text-muted">
+                              Se aplica al valor calculado de la cotizacion sin forzar piso minimo.
                             </p>
                           </div>
                         </div>
@@ -723,46 +877,16 @@ export default function B2BPricingSimulator() {
                           {priceInputError}
                         </div>
                       ) : null}
+
+                      {discountInputError ? (
+                        <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
+                          {discountInputError}
+                        </div>
+                      ) : null}
                     </div>
                   ) : (
                     <p className="text-sm font-medium text-muted">
                       Elige un producto para ver su referencia comercial y calcular el valor sugerido.
-                    </p>
-                  )}
-                </div>
-
-                <div className="rounded-2xl border border-theme bg-base/40 p-5">
-                  <div className="mb-4 flex items-center gap-2">
-                    <Layers3 className="h-4 w-4 text-primary" />
-                    <h3 className="text-sm font-black uppercase tracking-widest text-primary">
-                      Reglas B2B activas
-                    </h3>
-                  </div>
-
-                  {b2bRules.length > 0 ? (
-                    <div className="space-y-3">
-                      {b2bRules.map((rule) => (
-                        <div
-                          key={`${rule.scope}-${rule.minQty}-${rule.maxQty ?? 'max'}`}
-                          className="rounded-xl border border-theme bg-surface px-4 py-3"
-                        >
-                          <p className="text-xs font-black uppercase tracking-widest text-primary">
-                            Desde {rule.minQty} und
-                            {rule.maxQty ? ` hasta ${rule.maxQty}` : ' en adelante'}
-                          </p>
-                          <p className="mt-1 text-sm font-medium text-muted">
-                            {rule.fixedUnitPrice != null
-                              ? `Precio fijo: ${formatCurrency(rule.fixedUnitPrice)} por unidad`
-                              : rule.discountPct != null
-                                ? `Descuento: ${rule.discountPct}% sobre la base comercial`
-                                : 'Regla activa sin modificador visible'}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm font-medium text-muted">
-                      Este producto no tiene reglas B2B activas visibles. El simulador usara la base comercial de la variante.
                     </p>
                   )}
                 </div>
@@ -783,7 +907,7 @@ export default function B2BPricingSimulator() {
                             Precio unitario
                           </p>
                           <p className="mt-2 text-2xl font-black">
-                            {formatCurrency(quote.unitPrice)}
+                            {formatPreciseCurrency(quote.unitPrice)}
                           </p>
                         </div>
                         <div className="rounded-xl border border-theme bg-base px-4 py-4">
@@ -791,33 +915,41 @@ export default function B2BPricingSimulator() {
                             Total a cobrar
                           </p>
                           <p className="mt-2 text-2xl font-black text-primary">
-                            {formatCurrency(quote.total)}
+                            {formatPreciseCurrency(quote.total)}
                           </p>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                        <div className="rounded-xl border border-theme bg-base px-4 py-3">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div className="min-w-0 rounded-xl border border-theme bg-base px-4 py-3">
                           <p className="text-[10px] font-black uppercase tracking-widest text-muted">
                             Neto unitario
                           </p>
-                          <p className="mt-1 text-sm font-black text-primary">
-                            {formatCurrency(quote.netUnitPrice)}
+                          <p className="mt-1 text-[15px] font-black leading-tight text-primary sm:text-base">
+                            {formatPreciseCurrency(quote.netUnitPrice)}
                           </p>
                         </div>
-                        <div className="rounded-xl border border-theme bg-base px-4 py-3">
+                        <div className="min-w-0 rounded-xl border border-theme bg-base px-4 py-3">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-muted">
+                            Total sin IVA
+                          </p>
+                          <p className="mt-1 text-[15px] font-black leading-tight text-primary sm:text-base">
+                            {formatPreciseCurrency(quote.netTotal)}
+                          </p>
+                        </div>
+                        <div className="min-w-0 rounded-xl border border-theme bg-base px-4 py-3">
                           <p className="text-[10px] font-black uppercase tracking-widest text-muted">
                             IVA total
                           </p>
-                          <p className="mt-1 text-sm font-black text-primary">
-                            {formatCurrency(quote.taxAmount)}
+                          <p className="mt-1 text-[15px] font-black leading-tight text-primary sm:text-base">
+                            {formatPreciseCurrency(quote.taxAmount)}
                           </p>
                         </div>
-                        <div className="rounded-xl border border-theme bg-base px-4 py-3">
+                        <div className="min-w-0 rounded-xl border border-theme bg-base px-4 py-3">
                           <p className="text-[10px] font-black uppercase tracking-widest text-muted">
                             Tasa IVA
                           </p>
-                          <p className="mt-1 text-sm font-black text-primary">
+                          <p className="mt-1 text-[15px] font-black leading-tight text-primary sm:text-base">
                             {(quote.taxRate * 100).toFixed(0)}%
                           </p>
                         </div>
@@ -833,11 +965,11 @@ export default function B2BPricingSimulator() {
                           </div>
                         ) : null}
 
-                        {quote.snapshot?.minPriceGuardApplied ? (
-                          <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+                        {quote.snapshot?.manualDiscount ? (
+                          <div className="flex items-start gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-800">
                             <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
                             <span>
-                              El sistema ajusto el valor para respetar el precio minimo comercial permitido.
+                              Se aplico un descuento manual de {formatPercentage(quote.snapshot.manualDiscount.appliedPercentage)} por unidad.
                             </span>
                           </div>
                         ) : null}

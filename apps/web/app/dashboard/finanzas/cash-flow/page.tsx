@@ -22,8 +22,8 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
-import { endOfDay, endOfMonth, format, startOfDay, startOfMonth, subDays, subMonths } from 'date-fns';
 import { FINANCE_DATA_CHANGED_EVENT } from '@/lib/finance-events';
+import { buildCashFlowDateRange } from '@/lib/cash-flow-range';
 import { useDashboardAuth } from '@/components/dashboard/DashboardAuthContext';
 import { apiFetch } from '@/utils/api';
 
@@ -49,10 +49,6 @@ type FinancialSummary = {
 
 const supabase = createClient();
 
-function toDateInputValue(date: Date) {
-  return format(date, 'yyyy-MM-dd');
-}
-
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat('es-CO', {
     style: 'currency',
@@ -75,26 +71,7 @@ export default function CashFlowPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const range = useMemo(() => {
-    const now = new Date();
-
-    if (timeRange === '30_DAYS') {
-      return {
-        startDate: toDateInputValue(startOfDay(subDays(now, 29))),
-        endDate: toDateInputValue(endOfDay(now)),
-      };
-    }
-
-    if (timeRange === '6_MONTHS') {
-      return {
-        startDate: toDateInputValue(startOfMonth(subMonths(now, 5))),
-        endDate: toDateInputValue(endOfMonth(now)),
-      };
-    }
-
-    return {
-      startDate: toDateInputValue(startOfMonth(subMonths(now, 11))),
-      endDate: toDateInputValue(endOfMonth(now)),
-    };
+    return buildCashFlowDateRange(timeRange);
   }, [timeRange]);
 
   const getAuthHeaders = useCallback(async (): Promise<Record<string, string>> => {

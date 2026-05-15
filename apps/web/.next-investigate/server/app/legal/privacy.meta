@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/(store)/layout,_N_T_/(store)/legal/layout,_N_T_/(store)/legal/privacy/layout,_N_T_/(store)/legal/privacy/page,_N_T_/legal/privacy"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/!KHN0b3JlKQ/legal/privacy/__PAGE__",
+    "/!KHN0b3JlKQ/legal/privacy",
+    "/!KHN0b3JlKQ/legal",
+    "/!KHN0b3JlKQ",
+    "/_index",
+    "/_head"
+  ]
+}

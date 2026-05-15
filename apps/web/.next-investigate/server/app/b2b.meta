@@ -1,0 +1,16 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/(store)/layout,_N_T_/(store)/b2b/layout,_N_T_/(store)/b2b/page,_N_T_/b2b"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/!KHN0b3JlKQ/b2b/__PAGE__",
+    "/!KHN0b3JlKQ/b2b",
+    "/!KHN0b3JlKQ",
+    "/_index",
+    "/_head"
+  ]
+}

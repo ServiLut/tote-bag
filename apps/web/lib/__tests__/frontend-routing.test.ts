@@ -27,6 +27,9 @@ describe('frontend routing guards', () => {
     expect(getCheckoutInitialAuthStep(true)).toBe('AUTHENTICATED');
     expect(getCheckoutInitialAuthStep(false)).toBe('CHOICE');
     expect(getCheckoutLoginHref()).toBe('/login?redirect=/checkout');
+    expect(getCheckoutLoginHref({ isB2B: true })).toBe(
+      '/login?redirect=%2Fcheckout%3FisB2B%3Dtrue',
+    );
   });
 
   it('protege dashboard layout cuando no hay sesion o rol invalido', () => {
@@ -36,7 +39,7 @@ describe('frontend routing guards', () => {
         role: null,
         pathname: '/dashboard',
       }),
-    ).toBe('/login');
+    ).toBe('/login?redirect=%2Fdashboard');
     expect(
       resolveDashboardLayoutRedirect({
         hasSession: true,
@@ -74,8 +77,19 @@ describe('frontend routing guards', () => {
     expect(resolveCanonicalDashboardPath('/dashboard/finance/opex')).toBe(
       '/dashboard/finanzas/opex',
     );
+    expect(resolveCanonicalDashboardPath('/dashboard/finance/nomina')).toBe(
+      '/dashboard/finanzas/nomina',
+    );
+    expect(
+      resolveCanonicalDashboardPath(
+        '/dashboard/logistics/inventory/non-commercial-outputs',
+      ),
+    ).toBe('/dashboard/logistica/inventario/salidas-no-comerciales');
     expect(resolveCanonicalDashboardPath('/dashboard/logistics/suppliers')).toBe(
       '/dashboard/logistica/insumos',
+    );
+    expect(resolveCanonicalDashboardPath('/dashboard/reports')).toBe(
+      '/dashboard/reportes',
     );
     expect(resolveCanonicalDashboardPath('/dashboard/finanzas')).toBeNull();
   });
@@ -92,7 +106,7 @@ describe('frontend routing guards', () => {
         role: 'CUSTOMER',
         requestedRedirect: null,
       }),
-    ).toBe('/login');
+    ).toBe('/login?redirect=%2Fdashboard');
 
     expect(
       resolveProxyAccess({
@@ -156,6 +170,27 @@ describe('frontend routing guards', () => {
     ).toBe('/profile');
 
     expect(
+      resolvePostLoginRedirectPath({
+        role: 'MANAGER',
+        requestedRedirect: '/dashboard/settings',
+      }),
+    ).toBe('/dashboard');
+
+    expect(
+      resolvePostLoginRedirectPath({
+        role: 'MANAGER',
+        requestedRedirect: '/dashboard/finance/nomina?tab=resumen',
+      }),
+    ).toBe('/dashboard');
+
+    expect(
+      resolvePostLoginRedirectPath({
+        role: 'ADMIN',
+        requestedRedirect: '/dashboard/finance/nomina?tab=resumen',
+      }),
+    ).toBe('/dashboard/finanzas/nomina?tab=resumen');
+
+    expect(
       resolveProxyAccess({
         pathname: '/login',
         hasUser: true,
@@ -191,6 +226,12 @@ describe('frontend routing guards', () => {
     expect(
       canAccessDashboardPath('MANAGER', '/dashboard/personalizaciones'),
     ).toBe(true);
+    expect(canAccessDashboardPath('MANAGER', '/dashboard/conocimiento')).toBe(
+      true,
+    );
+    expect(
+      canAccessDashboardPath('MANAGER', '/dashboard/strategy/pricing'),
+    ).toBe(false);
     expect(canAccessDashboardPath('CUSTOMER', '/dashboard/orders')).toBe(false);
     expect(canAccessDashboardPath('CUSTOMER', '/dashboard/products')).toBe(
       false,
@@ -199,6 +240,9 @@ describe('frontend routing guards', () => {
       false,
     );
     expect(canAccessDashboardPath('CUSTOMER', '/dashboard/pqrs')).toBe(false);
+    expect(canAccessDashboardPath('CUSTOMER', '/dashboard/conocimiento')).toBe(
+      false,
+    );
   });
 
   it('ya no expone roles de solo lectura dedicados', () => {

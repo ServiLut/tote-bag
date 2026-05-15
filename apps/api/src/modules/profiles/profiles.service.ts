@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '../../generated/client/client';
@@ -6,6 +6,7 @@ import { DebugRoleContextService } from '../../common/context/debug-role-context
 import { isProtectedAdminEmail } from '../../common/utils/protected-admin.util';
 import { canUseDebugRole } from '../../common/utils/debug-role.util';
 import { Role } from '../../generated/client/enums';
+import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
 
 @Injectable()
 export class ProfilesService {
@@ -72,6 +73,130 @@ export class ProfilesService {
     });
   }
 
+  private hasOwnProfileField<T extends object>(
+    value: T,
+    key: keyof T,
+  ): boolean {
+    return Boolean(Object.prototype.hasOwnProperty.call(value, key));
+  }
+
+  private async resolveProfileLocation(
+    departmentId?: string | null,
+    municipalityId?: string | null,
+  ) {
+    const [department, municipality] = await Promise.all([
+      departmentId
+        ? this.prisma.department.findUnique({
+            where: { id: departmentId },
+            select: { id: true, name: true },
+          })
+        : Promise.resolve(null),
+      municipalityId
+        ? this.prisma.municipality.findUnique({
+            where: { id: municipalityId },
+            select: {
+              id: true,
+              name: true,
+              departmentId: true,
+              department: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          })
+        : Promise.resolve(null),
+    ]);
+
+    if (departmentId && !department) {
+      throw new BadRequestException('El departamento seleccionado no existe.');
+    }
+
+    if (municipalityId && !municipality) {
+      throw new BadRequestException('El municipio seleccionado no existe.');
+    }
+
+    if (
+      department &&
+      municipality &&
+      municipality.departmentId !== department.id
+    ) {
+      throw new BadRequestException(
+        'El municipio no corresponde al departamento seleccionado.',
+      );
+    }
+
+    return {
+      department,
+      municipality,
+      resolvedDepartment: department ?? municipality?.department ?? null,
+    };
+  }
+
+  private async buildSafeProfileUpdateData(data: UpdateMyProfileDto) {
+    const updateData: Prisma.ProfileUncheckedUpdateInput = {};
+    const assignableTextFields = [
+      'firstName',
+      'lastName',
+      'phone',
+      'neighborhood',
+      'address',
+    ] as const;
+
+    assignableTextFields.forEach((field) => {
+      if (this.hasOwnProfileField(data, field)) {
+        updateData[field] = data[field] ?? null;
+      }
+    });
+
+    const hasDepartmentName = this.hasOwnProfileField(data, 'department');
+    const hasMunicipalityName = this.hasOwnProfileField(data, 'municipality');
+    const hasDepartmentId = this.hasOwnProfileField(data, 'departmentId');
+    const hasMunicipalityId = this.hasOwnProfileField(data, 'municipalityId');
+    const touchedLocation =
+      hasDepartmentName ||
+      hasMunicipalityName ||
+      hasDepartmentId ||
+      hasMunicipalityId;
+
+    if (!touchedLocation) {
+      return updateData;
+    }
+
+    if (
+      !hasDepartmentId &&
+      !hasMunicipalityId &&
+      ((data.department ?? null) !== null ||
+        (data.municipality ?? null) !== null)
+    ) {
+      throw new BadRequestException(
+        'La ubicacion debe enviarse usando IDs validos de departamento y municipio.',
+      );
+    }
+
+    if (hasDepartmentId && data.departmentId === null) {
+      updateData.departmentId = null;
+      updateData.department = null;
+      updateData.municipalityId = null;
+      updateData.municipality = null;
+      return updateData;
+    }
+
+    const { municipality, resolvedDepartment } =
+      await this.resolveProfileLocation(
+        hasDepartmentId ? (data.departmentId ?? null) : undefined,
+        hasMunicipalityId ? (data.municipalityId ?? null) : undefined,
+      );
+
+    updateData.departmentId = resolvedDepartment?.id ?? null;
+    updateData.department = resolvedDepartment?.name ?? null;
+    updateData.municipalityId = municipality?.id ?? null;
+    updateData.municipality = municipality?.name ?? null;
+
+    return updateData;
+  }
+
   async findAll(
     filters: {
       role?: 'ADMIN' | 'CUSTOMER';
@@ -116,7 +241,11 @@ export class ProfilesService {
           select: { role: true, isActive: true },
         },
         _count: {
-          select: { orders: true },
+          select: {
+            orders: {
+              where: { deletedAt: null },
+            },
+          },
         },
       },
     };
@@ -160,6 +289,7 @@ export class ProfilesService {
       include: {
         user: true,
         orders: {
+          where: { deletedAt: null },
           orderBy: { createdAt: 'desc' },
         },
       },
@@ -196,10 +326,12 @@ export class ProfilesService {
     return this.applyCurrentUserProfileRole(createdProfile);
   }
 
-  async update(userId: string, data: Prisma.ProfileUpdateInput) {
+  async update(userId: string, data: UpdateMyProfileDto) {
+    const updateData = await this.buildSafeProfileUpdateData(data);
+
     return this.prisma.profile.update({
       where: { userId },
-      data,
+      data: updateData,
     });
   }
 }

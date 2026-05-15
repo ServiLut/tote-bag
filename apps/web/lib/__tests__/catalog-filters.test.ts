@@ -1,5 +1,7 @@
 import {
+  areCatalogFiltersEqual,
   buildCatalogSearchParams,
+  createDefaultCatalogFilterState,
   DEFAULT_CATALOG_MAX_PRICE,
   parseCatalogPriceFilterValue,
   readCatalogFiltersFromSearchParams,
@@ -61,5 +63,19 @@ describe('catalog filters', () => {
       materials: [],
       status: ['legacy'],
     });
+  });
+
+  it('detecta cuando el estado derivado de la URL no cambio', () => {
+    const current = readCatalogFiltersFromSearchParams(
+      'collection=collection-a&lines=premium',
+      createDefaultCatalogFilterState(),
+    );
+
+    const next = readCatalogFiltersFromSearchParams(
+      'collection=collection-a&lines=premium',
+      createDefaultCatalogFilterState(),
+    );
+
+    expect(areCatalogFiltersEqual(current, next)).toBe(true);
   });
 });

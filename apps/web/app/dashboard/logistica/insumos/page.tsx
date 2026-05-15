@@ -612,39 +612,69 @@ export default function SuppliersPage() {
               </button>
             </div>
 
-            <input
-              value={createForm.name}
-              onChange={(event) => setCreateForm((current) => ({ ...current, name: event.target.value }))}
-              placeholder="Nombre de la empresa"
-              className="w-full rounded-xl border border-theme bg-base px-4 py-3 font-bold outline-none focus:ring-2 focus:ring-primary/20"
-              required
-            />
-            <input
-              value={createForm.nit}
-              onChange={(event) => setCreateForm((current) => ({ ...current, nit: event.target.value }))}
-              placeholder="NIT"
-              className="w-full rounded-xl border border-theme bg-base px-4 py-3 font-bold outline-none focus:ring-2 focus:ring-primary/20"
-              required
-            />
-            <input
-              value={createForm.contact}
-              onChange={(event) => setCreateForm((current) => ({ ...current, contact: event.target.value }))}
-              placeholder="Nombre de contacto"
-              className="w-full rounded-xl border border-theme bg-base px-4 py-3 font-bold outline-none focus:ring-2 focus:ring-primary/20"
-            />
-            <input
-              value={createForm.phone}
-              onChange={(event) => setCreateForm((current) => ({ ...current, phone: event.target.value }))}
-              placeholder="Telefono"
-              className="w-full rounded-xl border border-theme bg-base px-4 py-3 font-bold outline-none focus:ring-2 focus:ring-primary/20"
-            />
-            <input
-              type="email"
-              value={createForm.email}
-              onChange={(event) => setCreateForm((current) => ({ ...current, email: event.target.value }))}
-              placeholder="Correo"
-              className="w-full rounded-xl border border-theme bg-base px-4 py-3 font-bold outline-none focus:ring-2 focus:ring-primary/20"
-            />
+            <label className="block space-y-2">
+              <span className="text-[11px] font-black uppercase tracking-[0.18em] text-muted">
+                Nombre de la empresa
+              </span>
+              <input
+                id="supplier-name"
+                value={createForm.name}
+                onChange={(event) => setCreateForm((current) => ({ ...current, name: event.target.value }))}
+                placeholder="Nombre de la empresa"
+                className="w-full rounded-xl border border-theme bg-base px-4 py-3 font-bold outline-none focus:ring-2 focus:ring-primary/20"
+                required
+              />
+            </label>
+            <label className="block space-y-2">
+              <span className="text-[11px] font-black uppercase tracking-[0.18em] text-muted">
+                NIT
+              </span>
+              <input
+                id="supplier-nit"
+                value={createForm.nit}
+                onChange={(event) => setCreateForm((current) => ({ ...current, nit: event.target.value }))}
+                placeholder="NIT"
+                className="w-full rounded-xl border border-theme bg-base px-4 py-3 font-bold outline-none focus:ring-2 focus:ring-primary/20"
+                required
+              />
+            </label>
+            <label className="block space-y-2">
+              <span className="text-[11px] font-black uppercase tracking-[0.18em] text-muted">
+                Nombre de contacto
+              </span>
+              <input
+                id="supplier-contact"
+                value={createForm.contact}
+                onChange={(event) => setCreateForm((current) => ({ ...current, contact: event.target.value }))}
+                placeholder="Nombre de contacto"
+                className="w-full rounded-xl border border-theme bg-base px-4 py-3 font-bold outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </label>
+            <label className="block space-y-2">
+              <span className="text-[11px] font-black uppercase tracking-[0.18em] text-muted">
+                Telefono
+              </span>
+              <input
+                id="supplier-phone"
+                value={createForm.phone}
+                onChange={(event) => setCreateForm((current) => ({ ...current, phone: event.target.value }))}
+                placeholder="Telefono"
+                className="w-full rounded-xl border border-theme bg-base px-4 py-3 font-bold outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </label>
+            <label className="block space-y-2">
+              <span className="text-[11px] font-black uppercase tracking-[0.18em] text-muted">
+                Correo
+              </span>
+              <input
+                id="supplier-email"
+                type="email"
+                value={createForm.email}
+                onChange={(event) => setCreateForm((current) => ({ ...current, email: event.target.value }))}
+                placeholder="Correo"
+                className="w-full rounded-xl border border-theme bg-base px-4 py-3 font-bold outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </label>
 
             <div className="flex gap-3 pt-2">
               <button

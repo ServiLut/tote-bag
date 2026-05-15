@@ -78,4 +78,29 @@ describe('ReportingService', () => {
 
     expect(buffer.subarray(0, 2).toString('utf8')).toBe('PK');
   });
+
+  it('no registra auditoria al consultar el cierre contable', async () => {
+    const prisma = {
+      financialTransaction: {
+        aggregate: jest.fn().mockResolvedValue({ _sum: { amount: 1000 } }),
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+      auditLog: {
+        findMany: jest.fn().mockResolvedValue([]),
+        create: jest.fn(),
+      },
+      purchaseBatch: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+    };
+    const service = new ReportingService(prisma as never);
+
+    await service.getClosingReport(
+      new Date('2026-03-01T00:00:00.000Z'),
+      new Date('2026-03-31T23:59:59.999Z'),
+      'admin-1',
+    );
+
+    expect(prisma.auditLog.create).not.toHaveBeenCalled();
+  });
 });

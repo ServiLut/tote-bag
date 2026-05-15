@@ -285,4 +285,38 @@ describe('B2bService', () => {
       },
     });
   });
+
+  it('normalizes approved design statuses for dashboard listings', async () => {
+    prisma.b2BQuote.findMany.mockResolvedValue([
+      { id: 'quote-1', status: 'DISEÃ‘O_APROBADO', items: [] },
+      { id: 'quote-2', status: 'PENDIENTE', items: [] },
+    ]);
+
+    const result = await service.findAllDashboard();
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        id: 'quote-1',
+        status: 'DISE\u00d1O_APROBADO',
+      }),
+      expect.objectContaining({
+        id: 'quote-2',
+        status: 'PENDIENTE',
+      }),
+    ]);
+  });
+
+  it('stores the canonical approved design status when approving from dashboard', async () => {
+    prisma.b2BQuote.update.mockResolvedValue({
+      id: 'quote-1',
+      status: 'DISE\u00d1O_APROBADO',
+    });
+
+    await service.approveDesignDashboard('quote-1');
+
+    expect(prisma.b2BQuote.update).toHaveBeenCalledWith({
+      where: { id: 'quote-1' },
+      data: { status: 'DISE\u00d1O_APROBADO' },
+    });
+  });
 });

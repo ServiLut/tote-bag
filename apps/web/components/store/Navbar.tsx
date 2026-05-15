@@ -28,7 +28,10 @@ import { useTranslation } from 'react-i18next';
 import { getProfileNavigationPath } from '@/lib/frontend-routing';
 import { apiFetch } from '@/utils/api';
 import { DashboardRoleSwitcher } from '@/components/dashboard/DashboardRoleSwitcher';
-import { normalizeDashboardRole } from '@/lib/dashboard-auth';
+import {
+  DASHBOARD_DEBUG_ROLE_COOKIE_NAME,
+  normalizeDashboardRole,
+} from '@/lib/dashboard-auth';
 
 interface SearchSuggestion {
   id: string;
@@ -150,6 +153,7 @@ export default function Navbar() {
           setProfileName(sessionEmail);
         }
       } else {
+        setUserRole(null);
         setProfileEmail('');
         setProfileName('');
         setDebugRoleAllowed(false);
@@ -246,10 +250,47 @@ export default function Navbar() {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    localStorage.removeItem('user_role');
-    setIsProfileMenuOpen(false);
-    router.push('/login');
+    let clientError: unknown = null;
+    let serverError: unknown = null;
+
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        clientError = error;
+      }
+
+      const response = await fetch('/auth/signout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        serverError = new Error(`Logout route responded with ${response.status}`);
+      }
+    } catch (error) {
+      if (!clientError) {
+        clientError = error;
+      }
+    } finally {
+      localStorage.removeItem('user_role');
+      setUserRole(null);
+      setIsLoggedIn(false);
+      setProfileEmail('');
+      setProfileName('');
+      setDebugRoleAllowed(false);
+      setIsProfileMenuOpen(false);
+      window.document.cookie = `${DASHBOARD_DEBUG_ROLE_COOKIE_NAME}=; path=/; Max-Age=0; SameSite=Lax`;
+
+      if (clientError) {
+        console.error('Error signing out from store client:', clientError);
+      }
+
+      if (serverError) {
+        console.error('Error signing out from store server:', serverError);
+      }
+
+      window.location.replace('/login');
+    }
   };
 
   const handleSearchInputBlur = () => {

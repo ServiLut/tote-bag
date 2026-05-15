@@ -1,4 +1,4 @@
-import { Role } from '../../generated/client/enums';
+﻿import { Role } from '../../generated/client/enums';
 import { ManagerApprovalsService } from './manager-approvals.service';
 
 type ManagerApprovalCreateArgs = {
@@ -20,14 +20,16 @@ type ManagerApprovalRecord = {
 };
 
 describe('ManagerApprovalsService', () => {
-  const createManagerApproval =
-    jest.fn<
-      (args: ManagerApprovalCreateArgs) => Promise<ManagerApprovalRecord>
-    >();
-  const findManyManagerApprovals = jest.fn<() => Promise<unknown[]>>();
-  const createAuditLog = jest.fn<() => Promise<Record<string, never>>>();
-  const getEffectiveRole =
-    jest.fn<(userId: string) => Promise<{ effectiveRole: Role }>>();
+  const createManagerApproval = jest.fn<
+    Promise<ManagerApprovalRecord>,
+    [ManagerApprovalCreateArgs]
+  >();
+  const findManyManagerApprovals = jest.fn<Promise<unknown[]>, []>();
+  const createAuditLog = jest.fn<Promise<Record<string, never>>, []>();
+  const getEffectiveRole = jest.fn<
+    Promise<{ effectiveRole: Role }>,
+    [string]
+  >();
 
   const prisma = {
     managerApproval: {

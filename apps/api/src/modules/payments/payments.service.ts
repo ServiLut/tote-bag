@@ -21,9 +21,11 @@ import {
 import { StorageService } from '../../common/storage/storage.service';
 import {
   Order,
+  OrderPayment,
   B2BQuote,
   PurchaseBatch,
   PurchaseInvoice,
+  PurchasePayment,
   Prisma,
 } from '../../generated/client/client';
 import { ShippingSyncService } from '../shipping/shipping-sync.service';
@@ -36,7 +38,8 @@ export type PaymentSupportEntityType =
   | 'order-payment'
   | 'b2b'
   | 'batch'
-  | 'purchase-invoice';
+  | 'purchase-invoice'
+  | 'purchase-payment';
 
 type WompiSettlementConfig = {
   commissionPercent: number;
@@ -135,6 +138,10 @@ export class PaymentsService {
 
   private isApprovedWompiStatus(status: string | null | undefined) {
     return (status ?? '').trim().toUpperCase().includes('APPROVED');
+  }
+
+  private isTestWompiEnvironment(environment: string | null | undefined) {
+    return (environment ?? '').trim().toLowerCase() === 'test';
   }
 
   private getWompiSettlementConfig(): WompiSettlementConfig {
@@ -765,9 +772,11 @@ export class PaymentsService {
 
     let updatedEntity:
       | Order
+      | OrderPayment
       | B2BQuote
       | PurchaseBatch
       | PurchaseInvoice
+      | PurchasePayment
       | undefined;
 
     if (entityType === 'order') {
@@ -776,14 +785,10 @@ export class PaymentsService {
         data: { paymentReceiptUrl: uploaded.storageRef },
       });
     } else if (entityType === 'order-payment') {
-      const order = await this.prisma.order.findFirst({
-        where: { id: entityId, deletedAt: null },
-        select: { id: true },
+      updatedEntity = await this.prisma.orderPayment.update({
+        where: { id: entityId },
+        data: { proofUrl: uploaded.storageRef },
       });
-
-      if (!order) {
-        throw new BadRequestException('Orden no encontrada');
-      }
     } else if (entityType === 'b2b') {
       updatedEntity = await this.prisma.b2BQuote.update({
         where: { id: entityId },
@@ -801,6 +806,11 @@ export class PaymentsService {
       updatedEntity = await this.prisma.purchaseInvoice.update({
         where: { id: entityId },
         data: { supportUrl: uploaded.storageRef },
+      });
+    } else if (entityType === 'purchase-payment') {
+      updatedEntity = await this.prisma.purchasePayment.update({
+        where: { id: entityId },
+        data: { proofUrl: uploaded.storageRef },
       });
     }
 
@@ -890,6 +900,14 @@ export class PaymentsService {
         select: { supportUrl: true, paymentReceiptUrl: true },
       });
       return batch?.supportUrl ?? batch?.paymentReceiptUrl ?? null;
+    }
+
+    if (entityType === 'purchase-payment') {
+      const payment = await this.prisma.purchasePayment.findFirst({
+        where: { id: entityId, deletedAt: null },
+        select: { proofUrl: true },
+      });
+      return payment?.proofUrl ?? null;
     }
 
     const invoice = await this.prisma.purchaseInvoice.findFirst({
@@ -1161,32 +1179,34 @@ export class PaymentsService {
             }),
           });
 
-          const description = `Venta orden #${order.orderNumber} (${order.id})`;
-          const existingIncome = await tx.financialTransaction.findFirst({
-            where: {
-              type: TransactionType.INCOME,
-              category: TransactionCategory.SALE,
-              description,
-            },
-            select: { id: true },
-          });
-
-          if (!existingIncome) {
-            const adminUser = await tx.user.findFirst({
-              where: { role: 'ADMIN' },
+          if (!this.isTestWompiEnvironment(event.environment)) {
+            const description = `Venta orden #${order.orderNumber} (${order.id})`;
+            const existingIncome = await tx.financialTransaction.findFirst({
+              where: {
+                type: TransactionType.INCOME,
+                category: TransactionCategory.SALE,
+                description,
+              },
               select: { id: true },
             });
 
-            if (adminUser?.id) {
-              await tx.financialTransaction.create({
-                data: {
-                  type: TransactionType.INCOME,
-                  category: TransactionCategory.SALE,
-                  amount: order.totalAmount,
-                  description,
-                  userId: adminUser.id,
-                },
+            if (!existingIncome) {
+              const adminUser = await tx.user.findFirst({
+                where: { role: 'ADMIN' },
+                select: { id: true },
               });
+
+              if (adminUser?.id) {
+                await tx.financialTransaction.create({
+                  data: {
+                    type: TransactionType.INCOME,
+                    category: TransactionCategory.SALE,
+                    amount: order.totalAmount,
+                    description,
+                    userId: adminUser.id,
+                  },
+                });
+              }
             }
           }
         }

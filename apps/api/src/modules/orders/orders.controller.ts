@@ -31,6 +31,24 @@ interface RequestWithUser extends Request {
   };
 }
 
+function parseOrderDateQuery(value?: string, endOfDay = false) {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = new Date(`${value}T00:00:00`);
+
+  if (Number.isNaN(parsed.getTime())) {
+    throw new BadRequestException('Rango de fechas invalido');
+  }
+
+  if (endOfDay) {
+    parsed.setHours(23, 59, 59, 999);
+  }
+
+  return parsed;
+}
+
 @Controller('orders')
 export class OrdersController {
   constructor(
@@ -169,8 +187,14 @@ export class OrdersController {
 
   @Get('accounts-receivable')
   @RequirePermissions({ resource: 'orders', action: 'read' })
-  getAccountsReceivable() {
-    return this.ordersService.getAccountsReceivable();
+  getAccountsReceivable(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.ordersService.getAccountsReceivable({
+      startDate: parseOrderDateQuery(startDate),
+      endDate: parseOrderDateQuery(endDate, true),
+    });
   }
 
   @Get('user/:userId')

@@ -112,6 +112,27 @@ type ShipmentRecord = {
   } | null;
 };
 
+function normalizeMoneyValue(value: unknown) {
+  const parsed =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+        ? Number(value)
+        : value && typeof value === "object" && "toString" in value
+          ? Number(String(value))
+          : NaN;
+
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function extractShipmentUpdateAccess(value: unknown) {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  return (value as ShippingPermissionsResponse).shipments?.update === true;
+}
+
 type ShipmentSupplyUsageAllocation = {
   id: string;
   purchaseBatchLineId: string;
@@ -143,6 +164,13 @@ type ShipmentSupplyUsageResponse = {
   shipmentId: string;
   orderId: string;
   usages: ShipmentSupplyUsageRecord[];
+};
+
+type ShippingPermissionsResponse = {
+  shipments?: {
+    read?: boolean;
+    update?: boolean;
+  };
 };
 
 const RETURNABLE_STATUSES = new Set<ShipmentStatus>(["RETURNED", "CANCELLED"]);
@@ -262,7 +290,7 @@ function formatCurrency(amount: number) {
     style: "currency",
     currency: "COP",
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(normalizeMoneyValue(amount));
 }
 
 function formatDateTime(value: string) {
@@ -412,7 +440,7 @@ function ReturnMetric({
 
 export default function ShippingManagementPage() {
   const supabase = createClient();
-  const { role, accessToken } = useDashboardAuth();
+  const { accessToken } = useDashboardAuth();
   const [shipments, setShipments] = useState<ShipmentRecord[]>([]);
   const [providers, setProviders] = useState<
     Array<{ id: string; name: string }>
@@ -431,6 +459,7 @@ export default function ShippingManagementPage() {
   const [labelOpen, setLabelOpen] = useState(false);
   const [returnOpen, setReturnOpen] = useState(false);
   const [hasShipmentAccess, setHasShipmentAccess] = useState(true);
+  const [hasShipmentUpdateAccess, setHasShipmentUpdateAccess] = useState(false);
   const [hasProviderAccess, setHasProviderAccess] = useState(true);
   const [supplyUsageOpen, setSupplyUsageOpen] = useState(false);
   const [supplyUsageLoading, setSupplyUsageLoading] = useState(false);
@@ -456,7 +485,7 @@ export default function ShippingManagementPage() {
     reason: "WRONG_ADDRESS",
     returnTrackingNumber: "",
   });
-  const canManageShipments = role === "ADMIN" || role === "MANAGER";
+  const canUpdateShipments = hasShipmentUpdateAccess;
 
   const getHeaders = useCallback(async (): Promise<Record<string, string>> => {
     const headers: Record<string, string> = {};
@@ -502,17 +531,34 @@ export default function ShippingManagementPage() {
     setMessage(null);
     try {
       const headers = await getHeaders();
-      const [shipRes, provRes, bagRes] = await Promise.all([
+      const [shipRes, provRes, bagRes, permissionsRes] = await Promise.all([
         apiFetch("/shipping/shipments", { headers }),
         apiFetch("/shipping/providers", { headers }),
         apiFetch("/shipping/shipping-bags/availability", { headers }),
+        apiFetch("/shipping/permissions", { headers }),
       ]);
+      if (permissionsRes.ok) {
+        setHasShipmentUpdateAccess(
+          extractShipmentUpdateAccess(await permissionsRes.json()),
+        );
+      } else {
+        setHasShipmentUpdateAccess(false);
+        const body = await permissionsRes.json().catch(() => null);
+        setMessage(
+          (current) =>
+            current ||
+            body?.message ||
+            body?.error ||
+            `No fue posible verificar los permisos operativos de envios (${permissionsRes.status}).`,
+        );
+      }
       if (shipRes.ok) {
         setHasShipmentAccess(true);
         setShipments(getApiList<ShipmentRecord>(await shipRes.json()));
       } else {
         setShipments([]);
         setShippingBags([]);
+        setHasShipmentUpdateAccess(false);
         setHasShipmentAccess(shipRes.status !== 403);
         if (shipRes.status === 403) {
           setMessage(
@@ -589,21 +635,6 @@ export default function ShippingManagementPage() {
     ? supplyUsageData.usages
     : [];
 
-  const summary = useMemo(
-    () => ({
-      pending: operational.filter((s) => s.status === "PENDING").length,
-      ready: operational.filter((s) => s.status === "READY_TO_SHIP").length,
-      inRoute: operational.filter(
-        (s) => s.status === "SHIPPED" || s.status === "IN_TRANSIT",
-      ).length,
-      delivered: operational.filter((s) => s.status === "DELIVERED").length,
-      exceptions: exceptions.length,
-      returns: returns.length,
-      value: shipments.reduce((sum, s) => sum + (s.order.totalAmount || 0), 0),
-    }),
-    [exceptions.length, operational, returns.length, shipments],
-  );
-
   const providerOptions = useMemo(
     () => providers.slice().sort((a, b) => a.name.localeCompare(b.name)),
     [providers],
@@ -627,7 +658,7 @@ export default function ShippingManagementPage() {
     (shipment: ShipmentRecord) => {
       const blockers: string[] = [];
 
-      if ((shipment.order.balanceDue || 0) > 0) {
+      if (normalizeMoneyValue(shipment.order.balanceDue) > 0) {
         blockers.push(
           `Saldo pendiente: ${formatCurrency(shipment.order.balanceDue)}`,
         );
@@ -737,6 +768,16 @@ export default function ShippingManagementPage() {
       );
   }, [providerFilter, returns, search]);
 
+  const visibleTotalValue = useMemo(() => {
+    const source =
+      tab === "envios" ? filteredOperational : filteredReturns;
+
+    return source.reduce(
+      (sum, shipment) => sum + normalizeMoneyValue(shipment.order.totalAmount),
+      0,
+    );
+  }, [filteredOperational, filteredReturns, tab]);
+
   const resetFilters = () => {
     setSearch("");
     setProviderFilter("all");
@@ -744,7 +785,7 @@ export default function ShippingManagementPage() {
   };
 
   const openDispatch = (shipment: ShipmentRecord) => {
-    if (!canManageShipments) return;
+    if (!canUpdateShipments) return;
     if (isPastDispatchStatus(shipment.status)) {
       setMessage(
         "Este envio ya fue despachado. Consulta la trazabilidad o confirma entrega.",
@@ -772,7 +813,7 @@ export default function ShippingManagementPage() {
   };
 
   const openSupplyUsage = async (shipment: ShipmentRecord) => {
-    if (!canManageShipments) return;
+    if (!hasShipmentAccess) return;
     setSelected(shipment);
     setSupplyUsageData(null);
     setSupplyUsageOpen(true);
@@ -821,7 +862,7 @@ export default function ShippingManagementPage() {
   };
 
   const openLabel = (shipment: ShipmentRecord) => {
-    if (!canManageShipments) return;
+    if (!canUpdateShipments) return;
     setSelected(shipment);
     setLabelData({
       weight: shipment.weight || 0.5,
@@ -832,7 +873,7 @@ export default function ShippingManagementPage() {
   };
 
   const openReturn = (shipment: ShipmentRecord) => {
-    if (!canManageShipments) return;
+    if (!canUpdateShipments) return;
     setSelected(shipment);
     setReturnData({
       productCondition:
@@ -852,17 +893,17 @@ export default function ShippingManagementPage() {
   };
 
   useEffect(() => {
-    if (hasShipmentAccess) return;
+    if (hasShipmentAccess && canUpdateShipments) return;
     setActiveActionMenu(null);
     setSelected(null);
     setDispatchOpen(false);
-    setSupplyUsageOpen(false);
     setLabelOpen(false);
     setReturnOpen(false);
-  }, [hasShipmentAccess]);
+  }, [canUpdateShipments, hasShipmentAccess]);
 
   const submitDispatch = async (event: FormEvent) => {
     event.preventDefault();
+    if (!canUpdateShipments) return;
     if (!selected) return;
     if (selectedDispatchBlockers.length > 0)
       return setMessage(selectedDispatchBlockers[0]);
@@ -923,6 +964,7 @@ export default function ShippingManagementPage() {
     status: ShipmentStatus,
     successMessage: string,
   ) => {
+    if (!canUpdateShipments) return;
     setSubmitting(true);
     setMessage(null);
     try {
@@ -976,6 +1018,7 @@ export default function ShippingManagementPage() {
   };
 
   const deleteShipment = async (shipment: ShipmentRecord) => {
+    if (!canUpdateShipments) return;
     const blocker = getDeleteShipmentBlocker(shipment);
     if (blocker) {
       setMessage(blocker);
@@ -1019,6 +1062,7 @@ export default function ShippingManagementPage() {
 
   const submitLabel = async (event: FormEvent) => {
     event.preventDefault();
+    if (!canUpdateShipments) return;
     if (!selected) return;
     setSubmitting(true);
     try {
@@ -1060,6 +1104,7 @@ export default function ShippingManagementPage() {
 
   const submitReturn = async (event: FormEvent) => {
     event.preventDefault();
+    if (!canUpdateShipments) return;
     if (!selected) return;
     setSubmitting(true);
     try {
@@ -1160,7 +1205,9 @@ export default function ShippingManagementPage() {
           <MiniMetric
             label="Valor total"
             value={
-              hasShipmentAccess ? formatCurrency(summary.value) : "Restringido"
+              hasShipmentAccess
+                ? formatCurrency(visibleTotalValue)
+                : "Restringido"
             }
           />
           <MiniMetric
@@ -1423,7 +1470,7 @@ export default function ShippingManagementPage() {
                             </td>
                             <td className="px-6 py-5 align-top">
                               <div className="flex justify-end">
-                                {canManageShipments ? (
+                                {hasShipmentAccess ? (
                                   <Popover
                                     open={activeActionMenu === shipment.id}
                                     onOpenChange={(open) =>
@@ -1446,17 +1493,19 @@ export default function ShippingManagementPage() {
                                       align="end"
                                       className="w-60 overflow-hidden rounded-2xl border border-theme bg-surface shadow-xl"
                                     >
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setActiveActionMenu(null);
-                                          openLabel(shipment);
-                                        }}
-                                        className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-primary transition-colors hover:bg-primary/5"
-                                      >
-                                        <Printer className="h-4 w-4" />
-                                        Generar etiqueta
-                                      </button>
+                                      {canUpdateShipments ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setActiveActionMenu(null);
+                                            openLabel(shipment);
+                                          }}
+                                          className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-primary transition-colors hover:bg-primary/5"
+                                        >
+                                          <Printer className="h-4 w-4" />
+                                          Generar etiqueta
+                                        </button>
+                                      ) : null}
                                       {canDispatch ? (
                                         <button
                                           type="button"
@@ -1487,7 +1536,7 @@ export default function ShippingManagementPage() {
                                           Ver trazabilidad
                                         </button>
                                       ) : null}
-                                      {canConfirmDelivery ? (
+                                      {canConfirmDelivery && canUpdateShipments ? (
                                         <button
                                           type="button"
                                           disabled={submitting}
@@ -1500,7 +1549,7 @@ export default function ShippingManagementPage() {
                                           Confirmar entrega
                                         </button>
                                       ) : null}
-                                      {canMoveToReturns ? (
+                                      {canMoveToReturns && canUpdateShipments ? (
                                         <button
                                           type="button"
                                           disabled={submitting}
@@ -1513,8 +1562,8 @@ export default function ShippingManagementPage() {
                                           Enviar a devoluciones
                                         </button>
                                       ) : null}
-                                      {getDeleteShipmentBlocker(shipment) ===
-                                      null ? (
+                                      {canUpdateShipments &&
+                                      getDeleteShipmentBlocker(shipment) === null ? (
                                         <button
                                           type="button"
                                           disabled={submitting}
@@ -1531,6 +1580,11 @@ export default function ShippingManagementPage() {
                                       canDispatch ? (
                                         <div className="border-t border-theme bg-base/40 px-4 py-3 text-xs font-medium text-rose-700">
                                           {dispatchBlockers[0]}
+                                        </div>
+                                      ) : null}
+                                      {!canUpdateShipments ? (
+                                        <div className="border-t border-theme bg-base/40 px-4 py-3 text-xs font-medium text-muted">
+                                          Esta sesion puede consultar envios y trazabilidad, pero las acciones operativas requieren <code>shipping:update</code>.
                                         </div>
                                       ) : null}
                                     </PopoverContent>
@@ -1676,7 +1730,7 @@ export default function ShippingManagementPage() {
                           </td>
                           <td className="px-6 py-5 align-top">
                             <div className="flex justify-end gap-2">
-                              {canManageShipments ? (
+                              {canUpdateShipments ? (
                                 <button
                                   type="button"
                                   onClick={() => openReturn(shipment)}

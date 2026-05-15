@@ -76,6 +76,14 @@ export const OrderSource = {
 export type OrderSource = (typeof OrderSource)[keyof typeof OrderSource]
 
 
+export const ShippingMethod = {
+  SHIPPING: 'SHIPPING',
+  PICKUP: 'PICKUP'
+} as const
+
+export type ShippingMethod = (typeof ShippingMethod)[keyof typeof ShippingMethod]
+
+
 export const Role = {
   ADMIN: 'ADMIN',
   MANAGER: 'MANAGER',
@@ -354,3 +362,34 @@ export const ManagerApprovalStatus = {
 } as const
 
 export type ManagerApprovalStatus = (typeof ManagerApprovalStatus)[keyof typeof ManagerApprovalStatus]
+
+
+export const KnowledgeCategory = {
+  GENERAL: 'GENERAL',
+  VENTAS: 'VENTAS',
+  NOTICIAS: 'NOTICIAS',
+  OPERACION: 'OPERACION',
+  FINANZAS: 'FINANZAS',
+  ESTRATEGIA: 'ESTRATEGIA'
+} as const
+
+export type KnowledgeCategory = (typeof KnowledgeCategory)[keyof typeof KnowledgeCategory]
+
+
+export const KnowledgeStatus = {
+  BORRADOR: 'BORRADOR',
+  PUBLICADO: 'PUBLICADO',
+  ARCHIVADO: 'ARCHIVADO'
+} as const
+
+export type KnowledgeStatus = (typeof KnowledgeStatus)[keyof typeof KnowledgeStatus]
+
+
+export const KnowledgePriority = {
+  BAJA: 'BAJA',
+  MEDIA: 'MEDIA',
+  ALTA: 'ALTA',
+  CRITICA: 'CRITICA'
+} as const
+
+export type KnowledgePriority = (typeof KnowledgePriority)[keyof typeof KnowledgePriority]

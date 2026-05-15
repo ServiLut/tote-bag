@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
-import { CATALOG_ATTRIBUTES } from '@/utils/catalog-constants';
 import { cn } from '@/utils/cn';
 import { apiFetch } from '@/utils/api';
 import { formatCurrencyInput, parseLocalizedNumber, sanitizeDecimalInput } from '@/lib/numeric-input';
@@ -11,7 +10,6 @@ import {
   buildCatalogSearchParams,
   DEFAULT_CATALOG_MAX_PRICE,
   parseCatalogPriceFilterValue,
-  readCatalogFiltersFromSearchParams,
 } from '@/lib/catalog-filters';
 import { useTranslation } from 'react-i18next';
 
@@ -39,13 +37,12 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const initialWizardOptions = {
-    LINE: (CATALOG_ATTRIBUTES?.LINE || []).map(name => ({ id: name, name, code: name })),
-    DIMENSION: (CATALOG_ATTRIBUTES?.SIZE || []).map(name => ({ id: name, name, code: name })),
-    MATERIAL: (CATALOG_ATTRIBUTES?.MATERIAL || []).map(name => ({ id: name, name, code: name })),
-  };
-
-  const [wizardOptions, setWizardOptions] = useState<Record<string, Array<{ id: string, name: string, code: string }>>>(initialWizardOptions);
+  const [wizardOptions, setWizardOptions] = useState<Record<string, Array<{ id: string, name: string, code: string }>>>({
+    LINE: [],
+    DIMENSION: [],
+    MATERIAL: [],
+  });
+  const [wizardOptionsLoaded, setWizardOptionsLoaded] = useState(false);
 
   const [openSections, setOpenSections] = useState({
     price: true,
@@ -56,32 +53,9 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
 
   const updateURL = useCallback((newFilters: FilterState) => {
     const params = buildCatalogSearchParams(newFilters, searchParams);
-    params.delete('page');
     const query = params.toString();
-    const nextUrl = `${window.location.pathname}${query ? '?' + query : ''}`;
-    const currentUrl = `${window.location.pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
-
-    if (nextUrl === currentUrl) {
-      return;
-    }
-
-    router.replace(nextUrl, { scroll: false });
+    router.push(`${window.location.pathname}${query ? '?' + query : ''}`, { scroll: false });
   }, [router, searchParams]);
-
-  useEffect(() => {
-    const newFilters = readCatalogFiltersFromSearchParams(searchParams, filters);
-    const hasChanges =
-      newFilters.minPrice !== filters.minPrice ||
-      newFilters.maxPrice !== filters.maxPrice ||
-      newFilters.collections.join(',') !== filters.collections.join(',') ||
-      newFilters.lines.join(',') !== filters.lines.join(',') ||
-      newFilters.sizes.join(',') !== filters.sizes.join(',') ||
-      newFilters.materials.join(',') !== filters.materials.join(',');
-
-    if (hasChanges) {
-      onFilterChange(newFilters);
-    }
-  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const fetchWizardOptions = async () => {
@@ -90,10 +64,16 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
         if (res.ok) {
           const response = await res.json();
           const data = response.data || response;
-          setWizardOptions(data);
+          setWizardOptions({
+            LINE: data.LINE || [],
+            DIMENSION: data.DIMENSION || [],
+            MATERIAL: data.MATERIAL || [],
+          });
         }
       } catch (err) {
         console.error('Error fetching wizard options:', err);
+      } finally {
+        setWizardOptionsLoaded(true);
       }
     };
     fetchWizardOptions();
@@ -102,7 +82,7 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
   useEffect(() => {
     const timer = setTimeout(() => {
       updateURL(filters);
-    }, 250);
+    }, 500);
     return () => clearTimeout(timer);
   }, [filters, updateURL]);
 
@@ -118,6 +98,7 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
 
     const nextFilters = { ...filters, [field]: newValues };
     onFilterChange(nextFilters);
+    updateURL(nextFilters);
   };
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -154,6 +135,14 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
           ))}
         </div>
       )}
+    </div>
+  );
+
+  const renderWizardOptionsPlaceholder = () => (
+    <div className="space-y-2">
+      <div className="h-4 rounded bg-theme/10 animate-pulse" />
+      <div className="h-4 rounded bg-theme/10 animate-pulse" />
+      <div className="h-4 rounded bg-theme/10 animate-pulse" />
     </div>
   );
 
@@ -212,25 +201,29 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
             <div className="space-y-6">
               <div>
                 <p className="text-[9px] font-black uppercase text-muted mb-3 tracking-widest opacity-60">{t('filters_size')}</p>
-                <div className="space-y-2">
-                  {(wizardOptions.DIMENSION || []).length > 0 ? (wizardOptions.DIMENSION || []).map(dim => (
+                {!wizardOptionsLoaded ? renderWizardOptionsPlaceholder() : (
+                  <div className="space-y-2">
+                    {(wizardOptions.DIMENSION || []).length > 0 ? (wizardOptions.DIMENSION || []).map(dim => (
                     <label key={dim.id} className="flex items-center gap-2 cursor-pointer group">
                       <input type="checkbox" className="w-3.5 h-3.5 accent-primary border-theme" checked={filters.sizes.includes(dim.name)} onChange={() => handleCheckboxChange('sizes', dim.name)} />
                       <span className="text-[11px] font-bold text-muted uppercase tracking-wider group-hover:text-primary transition-colors">{dim.name}</span>
                     </label>
-                  )) : <p className="text-[10px] text-muted italic">{t('filters_no_options')}</p>}
-                </div>
+                    )) : <p className="text-[10px] text-muted italic">{t('filters_no_options')}</p>}
+                  </div>
+                )}
               </div>
               <div>
                 <p className="text-[9px] font-black uppercase text-muted mb-3 tracking-widest opacity-60">{t('filters_material')}</p>
-                <div className="space-y-2">
-                  {(wizardOptions.MATERIAL || []).length > 0 ? (wizardOptions.MATERIAL || []).map(m => (
+                {!wizardOptionsLoaded ? renderWizardOptionsPlaceholder() : (
+                  <div className="space-y-2">
+                    {(wizardOptions.MATERIAL || []).length > 0 ? (wizardOptions.MATERIAL || []).map(m => (
                     <label key={m.id} className="flex items-center gap-2 cursor-pointer group">
                       <input type="checkbox" className="w-3.5 h-3.5 accent-primary border-theme" checked={filters.materials.includes(m.name)} onChange={() => handleCheckboxChange('materials', m.name)} />
                       <span className="text-[11px] font-bold text-muted uppercase tracking-wider group-hover:text-primary transition-colors">{m.name}</span>
                     </label>
-                  )) : <p className="text-[10px] text-muted italic">{t('filters_no_options')}</p>}
-                </div>
+                    )) : <p className="text-[10px] text-muted italic">{t('filters_no_options')}</p>}
+                  </div>
+                )}
               </div>
             </div>
           )}

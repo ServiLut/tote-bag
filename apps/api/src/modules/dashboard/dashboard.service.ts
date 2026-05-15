@@ -109,6 +109,7 @@ export class DashboardService {
       this.safeStat('dailyProduction', () =>
         this.prisma.order.count({
           where: {
+            deletedAt: null,
             createdAt: {
               gte: startOfDay,
               lte: endOfDay,
@@ -131,13 +132,14 @@ export class DashboardService {
       this.safeStat('pendingQuotes', () =>
         this.prisma.b2BQuote.count({
           where: {
+            deletedAt: null,
             status: {
               notIn: [
                 'DISE\u00d1O_APROBADO',
                 'DISENO_APROBADO',
-                'DISEÃ‘O_APROBADO',
-                'DISEÃƒâ€˜O_APROBADO',
                 'DISEÃƒÆ’Ã¢â‚¬ËœO_APROBADO',
+                'DISEÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“O_APROBADO',
+                'DISEÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¹Ã…â€œO_APROBADO',
               ],
             },
           },
@@ -153,6 +155,7 @@ export class DashboardService {
       this.safeStat('pendingPaymentOrders', () =>
         this.prisma.order.count({
           where: {
+            deletedAt: null,
             status: OrderStatus.PENDIENTE_PAGO,
           },
         }),
@@ -160,6 +163,7 @@ export class DashboardService {
       this.safeStat('inProductionOrders', () =>
         this.prisma.order.count({
           where: {
+            deletedAt: null,
             status: OrderStatus.EN_PRODUCCION,
           },
         }),
@@ -167,6 +171,7 @@ export class DashboardService {
       this.safeStat('pendingShipments', () =>
         this.prisma.order.count({
           where: {
+            deletedAt: null,
             status: OrderStatus.PAGADA,
             OR: [
               { shipment: { is: null } },
@@ -262,6 +267,7 @@ export class DashboardService {
             by: ['productId'],
             where: {
               order: {
+                deletedAt: null,
                 status: {
                   in: saleStatuses,
                 },
@@ -291,6 +297,7 @@ export class DashboardService {
             by: ['productId'],
             where: {
               order: {
+                deletedAt: null,
                 status: {
                   in: saleStatuses,
                 },

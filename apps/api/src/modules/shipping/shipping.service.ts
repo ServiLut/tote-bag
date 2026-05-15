@@ -48,10 +48,10 @@ type ShipmentListItem = {
   order: {
     orderNumber: number;
     customerEmail: string;
-    totalAmount: Decimal;
+    totalAmount: number;
     createdAt: Date;
     shippingAddress?: unknown;
-    balanceDue: Decimal;
+    balanceDue: number;
     saleLegalRequirement: SaleLegalRequirement;
     saleLegalStatus: SaleLegalStatus;
     profile?: {
@@ -510,6 +510,7 @@ export class ShippingService {
     // Órdenes pagadas que no tienen envío o envío está PENDING o READY_TO_SHIP
     return this.prisma.order.findMany({
       where: {
+        deletedAt: null,
         status: OrderStatus.PAGADA,
         OR: [
           { shipment: null },
@@ -852,6 +853,11 @@ export class ShippingService {
 
   async getShipments(): Promise<ShipmentListItem[]> {
     const shipments = await this.prisma.shipment.findMany({
+      where: {
+        order: {
+          deletedAt: null,
+        },
+      },
       include: {
         order: {
           include: {
@@ -914,10 +920,10 @@ export class ShippingService {
           order: {
             orderNumber: shipment.order.orderNumber,
             customerEmail: shipment.order.customerEmail,
-            totalAmount: shipment.order.totalAmount,
+            totalAmount: decimalToNumber(shipment.order.totalAmount),
             createdAt: shipment.order.createdAt,
             shippingAddress: shipment.order.shippingAddress,
-            balanceDue: shipment.order.balanceDue,
+            balanceDue: decimalToNumber(shipment.order.balanceDue),
             saleLegalRequirement: shipment.order.saleLegalRequirement,
             saleLegalStatus: shipment.order.saleLegalStatus,
             profile: shipment.order.profile

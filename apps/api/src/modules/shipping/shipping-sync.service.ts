@@ -7,10 +7,13 @@ import {
   ShipmentStatus,
 } from '../../generated/client/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { decimalToNumber } from '../../common/utils/sales-tax.util';
 
 type NormalizedShippingAddress = Record<string, unknown> & {
   city: string;
 };
+
+type ShippingMethodValue = 'SHIPPING' | 'PICKUP';
 
 type OrdersWithoutShipmentQueryResult = {
   id: string;
@@ -25,6 +28,7 @@ type OrdersWithoutShipmentQueryResult = {
   saleLegalStatus: SaleLegalStatus;
   trackingNumber: string | null;
   carrier: string | null;
+  shippingMethod?: ShippingMethodValue | null;
   shippingAddress: Prisma.JsonValue;
   profile: {
     firstName: string | null;
@@ -43,10 +47,10 @@ type PendingShipmentRecord = {
   order: {
     orderNumber: number;
     customerEmail: string;
-    totalAmount: Prisma.Decimal;
+    totalAmount: number;
     createdAt: Date;
     shippingAddress: NormalizedShippingAddress;
-    balanceDue: Prisma.Decimal;
+    balanceDue: number;
     saleLegalRequirement: SaleLegalRequirement;
     saleLegalStatus: SaleLegalStatus;
     profile: {
@@ -66,11 +70,19 @@ export class ShippingSyncService {
   }
 
   private isReturnedToStockEnumMismatch(error: unknown) {
+    const message = error instanceof Error ? error.message : '';
+
     return (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === 'P2007' &&
-      error.message.includes('RETURNED_TO_STOCK')
+      (error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2007' &&
+        error.message.includes('RETURNED_TO_STOCK')) ||
+      message.includes('RETURNED_TO_STOCK')
     );
+  }
+
+  private isMissingShippingMethodColumn(error: unknown) {
+    const message = error instanceof Error ? error.message : '';
+    return message.includes('shipping_method');
   }
 
   private requiresShipment(status: OrderStatus) {
@@ -142,6 +154,47 @@ export class ShippingSyncService {
     return normalized.length > 0 ? normalized : null;
   }
 
+  private normalizeShippingMethodValue(
+    value: unknown,
+  ): ShippingMethodValue | null {
+    return value === 'PICKUP' || value === 'SHIPPING' ? value : null;
+  }
+
+  private resolveShippingMethod(
+    order: {
+      shippingAddress: Prisma.JsonValue;
+    } & Record<string, unknown>,
+  ): ShippingMethodValue {
+    const directShippingMethod = this.normalizeShippingMethodValue(
+      order.shippingMethod,
+    );
+
+    if (directShippingMethod) {
+      return directShippingMethod;
+    }
+
+    if (
+      order.shippingAddress &&
+      typeof order.shippingAddress === 'object' &&
+      !Array.isArray(order.shippingAddress)
+    ) {
+      const shippingAddress = order.shippingAddress as Record<string, unknown>;
+      const addressShippingMethod = this.normalizeShippingMethodValue(
+        shippingAddress.shippingMethod,
+      );
+
+      if (addressShippingMethod) {
+        return addressShippingMethod;
+      }
+
+      if (shippingAddress.type === 'PICKUP') {
+        return 'PICKUP';
+      }
+    }
+
+    return 'SHIPPING';
+  }
+
   private extractShippingProviderSnapshot(
     shippingAddress: Prisma.JsonValue,
     fallbackCarrier: string | null,
@@ -211,6 +264,7 @@ export class ShippingSyncService {
         status: true,
         trackingNumber: true,
         carrier: true,
+        shippingMethod: true,
         shippingAddress: true,
         shipment: {
           select: {
@@ -230,6 +284,16 @@ export class ShippingSyncService {
     });
 
     if (!order || !this.requiresShipment(order.status)) {
+      return null;
+    }
+
+    if (
+      this.resolveShippingMethod(
+        order as Record<string, unknown> & {
+          shippingAddress: Prisma.JsonValue;
+        },
+      ) === 'PICKUP'
+    ) {
       return null;
     }
 
@@ -319,13 +383,19 @@ export class ShippingSyncService {
       OrderStatus.RETURNED_TO_STOCK,
     ];
 
-    const buildOrdersWithoutShipmentQuery = (statuses: OrderStatus[]) =>
+    const buildOrdersWithoutShipmentQuery = (options: {
+      statuses: OrderStatus[];
+      includeShippingMethod: boolean;
+    }) =>
       client.order.findMany({
         where: {
           shipment: null,
           status: {
-            in: statuses,
+            in: options.statuses,
           },
+          ...(options.includeShippingMethod
+            ? { shippingMethod: 'SHIPPING' }
+            : {}),
         },
         select: {
           id: true,
@@ -340,6 +410,7 @@ export class ShippingSyncService {
           saleLegalStatus: true,
           trackingNumber: true,
           carrier: true,
+          ...(options.includeShippingMethod ? { shippingMethod: true } : {}),
           shippingAddress: true,
           profile: {
             select: {
@@ -352,30 +423,60 @@ export class ShippingSyncService {
       });
 
     let orders: OrdersWithoutShipmentQueryResult[];
+    let includeShippingMethod = true;
+    let statuses = shipmentEligibleStatuses;
 
-    try {
-      orders = (await buildOrdersWithoutShipmentQuery(
-        shipmentEligibleStatuses,
-      )) as OrdersWithoutShipmentQueryResult[];
-    } catch (error) {
-      if (!this.isReturnedToStockEnumMismatch(error)) {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        orders = (await buildOrdersWithoutShipmentQuery({
+          statuses,
+          includeShippingMethod,
+        })) as OrdersWithoutShipmentQueryResult[];
+        break;
+      } catch (error) {
+        if (
+          this.isMissingShippingMethodColumn(error) &&
+          includeShippingMethod
+        ) {
+          includeShippingMethod = false;
+          continue;
+        }
+
+        if (this.isReturnedToStockEnumMismatch(error)) {
+          statuses = statuses.filter(
+            (status) => status !== OrderStatus.RETURNED_TO_STOCK,
+          );
+          continue;
+        }
+
         throw error;
       }
+    }
 
-      orders = (await buildOrdersWithoutShipmentQuery(
-        shipmentEligibleStatuses.filter(
-          (status) => status !== OrderStatus.RETURNED_TO_STOCK,
-        ),
-      )) as OrdersWithoutShipmentQueryResult[];
+    if (!orders!) {
+      return [];
     }
 
     if (orders.length === 0) {
       return [];
     }
 
+    const shippingOrders = orders.filter(
+      (order) =>
+        this.resolveShippingMethod(
+          order as Record<string, unknown> & {
+            shippingAddress: Prisma.JsonValue;
+          },
+        ) !== 'PICKUP',
+    );
+
+    if (shippingOrders.length === 0) {
+      return [];
+    }
+
     const providerIds: string[] = Array.from(
       new Set(
-        orders
+        shippingOrders
           .map(
             (order) =>
               this.extractShippingProviderSnapshot(
@@ -401,7 +502,7 @@ export class ShippingSyncService {
       }
     }
 
-    return orders.map<PendingShipmentRecord>((order) => {
+    return shippingOrders.map<PendingShipmentRecord>((order) => {
       const { providerId, providerName, shippingAddress } =
         this.extractShippingProviderSnapshot(
           order.shippingAddress,
@@ -425,8 +526,8 @@ export class ShippingSyncService {
         order: {
           orderNumber: order.orderNumber,
           customerEmail: order.customerEmail,
-          totalAmount: order.totalAmount,
-          balanceDue: order.balanceDue,
+          totalAmount: decimalToNumber(order.totalAmount),
+          balanceDue: decimalToNumber(order.balanceDue),
           createdAt: order.createdAt,
           shippingAddress,
           saleLegalRequirement: order.saleLegalRequirement,

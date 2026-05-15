@@ -19,11 +19,15 @@ interface DashboardNotificationStats {
 export interface DashboardNotificationCounts {
   total: number;
   byHref: Record<string, number>;
+  status: 'idle' | 'ready' | 'error';
+  errorMessage: string | null;
 }
 
 const EMPTY_NOTIFICATION_COUNTS: DashboardNotificationCounts = {
   total: 0,
   byHref: {},
+  status: 'idle',
+  errorMessage: null,
 };
 
 function toFiniteNumber(value: unknown) {
@@ -98,6 +102,8 @@ function buildNotificationCounts(
   return {
     total,
     byHref,
+    status: 'ready',
+    errorMessage: null,
   };
 }
 
@@ -107,6 +113,14 @@ export function useDashboardNotifications() {
     EMPTY_NOTIFICATION_COUNTS,
   );
   const supabase = createClient();
+
+  const markNotificationError = useCallback((message: string) => {
+    setCounts((current) => ({
+      ...current,
+      status: 'error',
+      errorMessage: message,
+    }));
+  }, []);
 
   const loadNotifications = useCallback(async () => {
     if (!canAccessDashboardPath(role, '/dashboard')) {
@@ -118,7 +132,7 @@ export function useDashboardNotifications() {
       const headers = await getAuthHeaders();
 
       if (!headers.Authorization) {
-        setCounts(EMPTY_NOTIFICATION_COUNTS);
+        markNotificationError('No se pudo validar la sesion para cargar notificaciones.');
         return;
       }
 
@@ -128,7 +142,9 @@ export function useDashboardNotifications() {
       });
 
       if (!response.ok) {
-        setCounts(EMPTY_NOTIFICATION_COUNTS);
+        markNotificationError(
+          `No se pudieron cargar las notificaciones del dashboard (${response.status}).`,
+        );
         return;
       }
 
@@ -137,16 +153,20 @@ export function useDashboardNotifications() {
       const stats = normalizeDashboardNotificationStats(payload);
 
       if (!stats) {
-        setCounts(EMPTY_NOTIFICATION_COUNTS);
+        markNotificationError(
+          'La respuesta de notificaciones llego incompleta o con un formato invalido.',
+        );
         return;
       }
 
       setCounts(buildNotificationCounts(role, stats));
     } catch (error) {
       console.error('Error loading dashboard notifications:', error);
-      setCounts(EMPTY_NOTIFICATION_COUNTS);
+      markNotificationError(
+        'Hubo un error inesperado al sincronizar las notificaciones del dashboard.',
+      );
     }
-  }, [role]);
+  }, [markNotificationError, role]);
 
   useEffect(() => {
     const triggerLoad = () => {

@@ -4,6 +4,7 @@ import { spawn, spawnSync } from 'node:child_process';
 
 const appRoot = process.cwd();
 const lockPath = path.join(appRoot, '.next', 'dev', 'lock');
+const devCachePath = path.join(appRoot, '.next', 'dev');
 
 function escapeForPowerShell(value) {
   return value.replace(/'/g, "''");
@@ -58,6 +59,12 @@ function clearLockIfPresent() {
   }
 }
 
+function clearDevCacheIfPresent() {
+  if (existsSync(devCachePath)) {
+    rmSync(devCachePath, { recursive: true, force: true });
+  }
+}
+
 if (process.platform === 'win32') {
   const stoppedIds = stopExistingWindowsWebDev();
 
@@ -66,6 +73,7 @@ if (process.platform === 'win32') {
   }
 
   clearLockIfPresent();
+  clearDevCacheIfPresent();
 }
 
 const child = process.platform === 'win32'

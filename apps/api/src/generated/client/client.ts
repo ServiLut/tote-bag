@@ -157,6 +157,11 @@ export type AuditLog = Prisma.AuditLogModel
  */
 export type Address = Prisma.AddressModel
 /**
+ * Model AppSetting
+ * 
+ */
+export type AppSetting = Prisma.AppSettingModel
+/**
  * Model ProductAttribute
  * 
  */
@@ -276,3 +281,8 @@ export type OpexCategory = Prisma.OpexCategoryModel
  * 
  */
 export type ManagerApproval = Prisma.ManagerApprovalModel
+/**
+ * Model KnowledgePost
+ * 
+ */
+export type KnowledgePost = Prisma.KnowledgePostModel

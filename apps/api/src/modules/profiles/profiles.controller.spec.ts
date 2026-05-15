@@ -1,9 +1,16 @@
-import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  UnauthorizedException,
+  ValidationPipe,
+} from '@nestjs/common';
 import { ProfilesController } from './profiles.controller';
+import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
 
 describe('ProfilesController', () => {
   const profilesService = {
     findAll: jest.fn(),
+    update: jest.fn(),
   };
   const rolesService = {
     hasPermission: jest.fn(),
@@ -100,5 +107,43 @@ describe('ProfilesController', () => {
         0,
       ),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('forwards validated profile updates for the authenticated user', async () => {
+    const payload = {
+      firstName: 'Ana',
+      departmentId: 'dept-1',
+      municipalityId: 'mun-1',
+    };
+    profilesService.update = jest.fn().mockResolvedValue({ ok: true });
+
+    await controller.updateMe({ user: { id: 'user-1' } } as never, payload);
+
+    expect(profilesService.update).toHaveBeenCalledWith('user-1', payload);
+  });
+
+  it('rejects fields fuera del DTO de perfil', async () => {
+    const pipe = new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    });
+
+    await expect(
+      pipe.transform(
+        {
+          firstName: 'Ana',
+          user: {
+            update: {
+              role: 'ADMIN',
+            },
+          },
+        },
+        {
+          type: 'body',
+          metatype: UpdateMyProfileDto,
+        },
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 });

@@ -147,6 +147,14 @@ jest.mock('./modules/purchases/purchases.module', () => ({
   PurchasesModule: class {},
 }));
 
+jest.mock('./modules/knowledge/knowledge.module', () => ({
+  KnowledgeModule: class {},
+}));
+
+jest.mock('./modules/notifications/notifications.module', () => ({
+  NotificationsModule: class {},
+}));
+
 jest.mock('./common/interceptors/audit.interceptor', () => ({
   AuditInterceptor: class {},
 }));
@@ -177,6 +185,10 @@ jest.mock('./modules/roles/roles.module', () => ({
 
 jest.mock('./common/storage/storage.module', () => ({
   StorageModule: class {},
+}));
+
+jest.mock('./common/filters/prisma-connection.filter', () => ({
+  PrismaConnectionExceptionFilter: class {},
 }));
 
 jest.mock('./common/context/debug-role-context.module', () => ({

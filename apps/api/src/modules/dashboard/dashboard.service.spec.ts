@@ -93,18 +93,91 @@ describe('DashboardService', () => {
       unitsSold: 1,
       imageUrl: null,
     });
-    expect(prisma.b2BQuote.count).toHaveBeenCalledWith({
+
+    const orderCountCalls = (
+      prisma.order.count as unknown as {
+        mock: { calls: unknown[][] };
+      }
+    ).mock.calls;
+    const dailyProductionArgs = orderCountCalls[0]?.[0] as {
       where: {
+        deletedAt: null;
+      };
+    };
+    expect(dailyProductionArgs.where.deletedAt).toBeNull();
+
+    expect(prisma.order.count).toHaveBeenNthCalledWith(2, {
+      where: {
+        deletedAt: null,
+        status: 'PENDIENTE_PAGO',
+      },
+    });
+    expect(prisma.order.count).toHaveBeenNthCalledWith(3, {
+      where: {
+        deletedAt: null,
+        status: 'EN_PRODUCCION',
+      },
+    });
+    expect(prisma.order.count).toHaveBeenNthCalledWith(4, {
+      where: {
+        deletedAt: null,
+        status: 'PAGADA',
+        OR: [
+          { shipment: { is: null } },
+          {
+            shipment: {
+              is: {
+                status: {
+                  in: ['PENDING', 'READY_TO_SHIP'],
+                },
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    const b2bQuoteCountCalls = (
+      prisma.b2BQuote.count as unknown as {
+        mock: { calls: unknown[][] };
+      }
+    ).mock.calls;
+    const b2bQuoteArgs = b2bQuoteCountCalls[0]?.[0] as {
+      where: {
+        deletedAt: null;
         status: {
-          notIn: [
-            'DISE\u00d1O_APROBADO',
-            'DISENO_APROBADO',
-            'DISEÃ‘O_APROBADO',
-            'DISEÃƒâ€˜O_APROBADO',
-            'DISEÃƒÆ’Ã¢â‚¬ËœO_APROBADO',
-          ],
+          notIn: string[];
+        };
+      };
+    };
+    expect(b2bQuoteArgs.where.deletedAt).toBeNull();
+    expect(b2bQuoteArgs.where.status.notIn).toContain('DISE\u00d1O_APROBADO');
+    expect(b2bQuoteArgs.where.status.notIn).toContain('DISENO_APROBADO');
+
+    expect(prisma.orderItem.groupBy).toHaveBeenNthCalledWith(1, {
+      by: ['productId'],
+      where: {
+        order: {
+          deletedAt: null,
+          status: {
+            in: ['PAGADA', 'EN_PRODUCCION', 'ENVIADA', 'ENTREGADA'],
+          },
         },
       },
+      _sum: {
+        quantity: true,
+      },
+      orderBy: [
+        {
+          _sum: {
+            quantity: 'desc',
+          },
+        },
+        {
+          productId: 'asc',
+        },
+      ],
+      take: 1,
     });
   });
 

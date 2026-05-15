@@ -407,6 +407,7 @@ export const ModelName = {
   B2BQuote: 'B2BQuote',
   AuditLog: 'AuditLog',
   Address: 'Address',
+  AppSetting: 'AppSetting',
   ProductAttribute: 'ProductAttribute',
   PersonalizationOption: 'PersonalizationOption',
   PersonalizationRule: 'PersonalizationRule',
@@ -430,7 +431,8 @@ export const ModelName = {
   PayrollShift: 'PayrollShift',
   PayrollBillingStatement: 'PayrollBillingStatement',
   OpexCategory: 'OpexCategory',
-  ManagerApproval: 'ManagerApproval'
+  ManagerApproval: 'ManagerApproval',
+  KnowledgePost: 'KnowledgePost'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -446,7 +448,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "product" | "productImage" | "collection" | "variant" | "order" | "shippingProvider" | "shipment" | "orderStatusHistory" | "orderIdempotencyKey" | "orderPayment" | "orderItem" | "user" | "roleModel" | "permission" | "rolePermission" | "userRole" | "webhookEvent" | "pqrsTicket" | "profile" | "department" | "municipality" | "b2BQuote" | "auditLog" | "address" | "productAttribute" | "personalizationOption" | "personalizationRule" | "personalizationRequest" | "pricingRule" | "b2BQuoteItem" | "wizardOption" | "supplier" | "supplyItem" | "purchaseBatch" | "purchaseBatchLine" | "shipmentSupplyUsage" | "shipmentSupplyUsageAllocation" | "inventoryAdjustment" | "nonCommercialInventoryOutput" | "inventoryMovement" | "purchaseInvoice" | "purchasePayment" | "financialTransaction" | "payrollWorker" | "payrollShift" | "payrollBillingStatement" | "opexCategory" | "managerApproval"
+    modelProps: "product" | "productImage" | "collection" | "variant" | "order" | "shippingProvider" | "shipment" | "orderStatusHistory" | "orderIdempotencyKey" | "orderPayment" | "orderItem" | "user" | "roleModel" | "permission" | "rolePermission" | "userRole" | "webhookEvent" | "pqrsTicket" | "profile" | "department" | "municipality" | "b2BQuote" | "auditLog" | "address" | "appSetting" | "productAttribute" | "personalizationOption" | "personalizationRule" | "personalizationRequest" | "pricingRule" | "b2BQuoteItem" | "wizardOption" | "supplier" | "supplyItem" | "purchaseBatch" | "purchaseBatchLine" | "shipmentSupplyUsage" | "shipmentSupplyUsageAllocation" | "inventoryAdjustment" | "nonCommercialInventoryOutput" | "inventoryMovement" | "purchaseInvoice" | "purchasePayment" | "financialTransaction" | "payrollWorker" | "payrollShift" | "payrollBillingStatement" | "opexCategory" | "managerApproval" | "knowledgePost"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2226,6 +2228,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    AppSetting: {
+      payload: Prisma.$AppSettingPayload<ExtArgs>
+      fields: Prisma.AppSettingFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AppSettingFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppSettingPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AppSettingFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppSettingPayload>
+        }
+        findFirst: {
+          args: Prisma.AppSettingFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppSettingPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AppSettingFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppSettingPayload>
+        }
+        findMany: {
+          args: Prisma.AppSettingFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppSettingPayload>[]
+        }
+        create: {
+          args: Prisma.AppSettingCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppSettingPayload>
+        }
+        createMany: {
+          args: Prisma.AppSettingCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AppSettingCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppSettingPayload>[]
+        }
+        delete: {
+          args: Prisma.AppSettingDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppSettingPayload>
+        }
+        update: {
+          args: Prisma.AppSettingUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppSettingPayload>
+        }
+        deleteMany: {
+          args: Prisma.AppSettingDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AppSettingUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AppSettingUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppSettingPayload>[]
+        }
+        upsert: {
+          args: Prisma.AppSettingUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppSettingPayload>
+        }
+        aggregate: {
+          args: Prisma.AppSettingAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAppSetting>
+        }
+        groupBy: {
+          args: Prisma.AppSettingGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AppSettingGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AppSettingCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AppSettingCountAggregateOutputType> | number
+        }
+      }
+    }
     ProductAttribute: {
       payload: Prisma.$ProductAttributePayload<ExtArgs>
       fields: Prisma.ProductAttributeFieldRefs
@@ -4002,6 +4078,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    KnowledgePost: {
+      payload: Prisma.$KnowledgePostPayload<ExtArgs>
+      fields: Prisma.KnowledgePostFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.KnowledgePostFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgePostPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.KnowledgePostFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgePostPayload>
+        }
+        findFirst: {
+          args: Prisma.KnowledgePostFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgePostPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.KnowledgePostFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgePostPayload>
+        }
+        findMany: {
+          args: Prisma.KnowledgePostFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgePostPayload>[]
+        }
+        create: {
+          args: Prisma.KnowledgePostCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgePostPayload>
+        }
+        createMany: {
+          args: Prisma.KnowledgePostCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.KnowledgePostCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgePostPayload>[]
+        }
+        delete: {
+          args: Prisma.KnowledgePostDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgePostPayload>
+        }
+        update: {
+          args: Prisma.KnowledgePostUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgePostPayload>
+        }
+        deleteMany: {
+          args: Prisma.KnowledgePostDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.KnowledgePostUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.KnowledgePostUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgePostPayload>[]
+        }
+        upsert: {
+          args: Prisma.KnowledgePostUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgePostPayload>
+        }
+        aggregate: {
+          args: Prisma.KnowledgePostAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateKnowledgePost>
+        }
+        groupBy: {
+          args: Prisma.KnowledgePostGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.KnowledgePostGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.KnowledgePostCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.KnowledgePostCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -4119,6 +4269,8 @@ export const OrderScalarFieldEnum = {
   customerEmail: 'customerEmail',
   customerPhone: 'customerPhone',
   shippingAddress: 'shippingAddress',
+  shippingMethod: 'shippingMethod',
+  shippingCost: 'shippingCost',
   city: 'city',
   totalAmount: 'totalAmount',
   netAmount: 'netAmount',
@@ -4452,6 +4604,16 @@ export const AddressScalarFieldEnum = {
 } as const
 
 export type AddressScalarFieldEnum = (typeof AddressScalarFieldEnum)[keyof typeof AddressScalarFieldEnum]
+
+
+export const AppSettingScalarFieldEnum = {
+  key: 'key',
+  value: 'value',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AppSettingScalarFieldEnum = (typeof AppSettingScalarFieldEnum)[keyof typeof AppSettingScalarFieldEnum]
 
 
 export const ProductAttributeScalarFieldEnum = {
@@ -4897,6 +5059,27 @@ export const ManagerApprovalScalarFieldEnum = {
 export type ManagerApprovalScalarFieldEnum = (typeof ManagerApprovalScalarFieldEnum)[keyof typeof ManagerApprovalScalarFieldEnum]
 
 
+export const KnowledgePostScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  slug: 'slug',
+  summary: 'summary',
+  content: 'content',
+  imageUrls: 'imageUrls',
+  attachments: 'attachments',
+  category: 'category',
+  status: 'status',
+  priority: 'priority',
+  tags: 'tags',
+  authorId: 'authorId',
+  publishedAt: 'publishedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type KnowledgePostScalarFieldEnum = (typeof KnowledgePostScalarFieldEnum)[keyof typeof KnowledgePostScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -5053,6 +5236,20 @@ export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'J
  * Reference to a field of type 'QueryMode'
  */
 export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
+    
+
+
+/**
+ * Reference to a field of type 'ShippingMethod'
+ */
+export type EnumShippingMethodFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ShippingMethod'>
+    
+
+
+/**
+ * Reference to a field of type 'ShippingMethod[]'
+ */
+export type ListEnumShippingMethodFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ShippingMethod[]'>
     
 
 
@@ -5519,6 +5716,48 @@ export type ListEnumManagerApprovalStatusFieldRefInput<$PrismaModel> = FieldRefI
 
 
 /**
+ * Reference to a field of type 'KnowledgeCategory'
+ */
+export type EnumKnowledgeCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'KnowledgeCategory'>
+    
+
+
+/**
+ * Reference to a field of type 'KnowledgeCategory[]'
+ */
+export type ListEnumKnowledgeCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'KnowledgeCategory[]'>
+    
+
+
+/**
+ * Reference to a field of type 'KnowledgeStatus'
+ */
+export type EnumKnowledgeStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'KnowledgeStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'KnowledgeStatus[]'
+ */
+export type ListEnumKnowledgeStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'KnowledgeStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'KnowledgePriority'
+ */
+export type EnumKnowledgePriorityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'KnowledgePriority'>
+    
+
+
+/**
+ * Reference to a field of type 'KnowledgePriority[]'
+ */
+export type ListEnumKnowledgePriorityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'KnowledgePriority[]'>
+    
+
+
+/**
  * Reference to a field of type 'Float'
  */
 export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -5650,6 +5889,7 @@ export type GlobalOmitConfig = {
   b2BQuote?: Prisma.B2BQuoteOmit
   auditLog?: Prisma.AuditLogOmit
   address?: Prisma.AddressOmit
+  appSetting?: Prisma.AppSettingOmit
   productAttribute?: Prisma.ProductAttributeOmit
   personalizationOption?: Prisma.PersonalizationOptionOmit
   personalizationRule?: Prisma.PersonalizationRuleOmit
@@ -5674,6 +5914,7 @@ export type GlobalOmitConfig = {
   payrollBillingStatement?: Prisma.PayrollBillingStatementOmit
   opexCategory?: Prisma.OpexCategoryOmit
   managerApproval?: Prisma.ManagerApprovalOmit
+  knowledgePost?: Prisma.KnowledgePostOmit
 }
 
 /* Types for Logging */

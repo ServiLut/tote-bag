@@ -13,6 +13,7 @@ import { Prisma } from '../../generated/client/client';
 import { PricingService } from '../pricing/pricing.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { ShippingSyncService } from '../shipping/shipping-sync.service';
+import { PICKUP_LOCATION } from '../../common/constants/pickup-location.constant';
 import {
   PriceRuleScope,
   OrderStatus,
@@ -75,6 +76,8 @@ type ResolvedCommercialVariant = {
   size: string | null;
   isActive: boolean;
 };
+
+type ShippingMethodValue = 'SHIPPING' | 'PICKUP';
 
 @Injectable()
 export class OrdersService {
@@ -385,6 +388,95 @@ export class OrdersService {
     }
 
     return parsed;
+  }
+
+  private parseNonNegativeMoney(value: DecimalInput, errorMessage: string) {
+    let parsed: Decimal;
+
+    try {
+      parsed = roundMoney(value);
+    } catch {
+      throw new BadRequestException('Monto decimal invalido');
+    }
+
+    if (!parsed.isFinite() || parsed.lessThan(0)) {
+      throw new BadRequestException(errorMessage);
+    }
+
+    return parsed;
+  }
+
+  private normalizeShippingMethod(
+    shippingMethod: CreateOrderDto['shippingMethod'],
+  ): ShippingMethodValue {
+    return shippingMethod === 'PICKUP' ? 'PICKUP' : 'SHIPPING';
+  }
+
+  private isPickupShippingMethod(shippingMethod: ShippingMethodValue) {
+    return shippingMethod === 'PICKUP';
+  }
+
+  private buildPickupShippingAddressSnapshot(input: {
+    firstName: string;
+    lastName: string;
+    customerPhone: string;
+  }): Prisma.InputJsonValue {
+    return {
+      type: 'PICKUP',
+      shippingMethod: 'PICKUP',
+      city: PICKUP_LOCATION.city,
+      address: PICKUP_LOCATION.address,
+      phone: input.customerPhone,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      pickupLocation: PICKUP_LOCATION,
+    } as Prisma.InputJsonValue;
+  }
+
+  private isMissingOrderShippingColumnsError(error: unknown) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2010'
+    ) {
+      return (
+        error.message.includes('shipping_method') ||
+        error.message.includes('shipping_cost') ||
+        error.message.includes('ShippingMethod')
+      );
+    }
+
+    if (!(error instanceof Error)) {
+      return false;
+    }
+
+    return (
+      error.message.includes('shipping_method') ||
+      error.message.includes('shipping_cost') ||
+      error.message.includes('ShippingMethod')
+    );
+  }
+
+  private async syncOrderShippingFields(
+    tx: Prisma.TransactionClient,
+    input: {
+      orderId: string;
+      shippingMethod: ShippingMethodValue;
+      shippingCost: Decimal;
+    },
+  ) {
+    try {
+      await tx.$executeRaw(Prisma.sql`
+        UPDATE "tote-bag"."orders"
+        SET
+          "shipping_method" = CAST(${input.shippingMethod} AS "tote-bag"."ShippingMethod"),
+          "shipping_cost" = ${input.shippingCost}
+        WHERE "id" = ${input.orderId}
+      `);
+    } catch (error) {
+      if (!this.isMissingOrderShippingColumnsError(error)) {
+        throw error;
+      }
+    }
   }
 
   private parseDateOrThrow(value: string, errorMessage: string) {
@@ -775,6 +867,9 @@ export class OrdersService {
       firstName,
       lastName,
       department,
+      city,
+      shippingMethod,
+      shippingCost,
       shippingProviderId,
       carrier,
       manualDiscountType,
@@ -820,6 +915,20 @@ export class OrdersService {
     const shouldReduceInventory =
       sourceToSet === OrderSource.MANUAL ||
       statusToSet !== OrderStatus.PENDIENTE_PAGO;
+    const shippingMethodToSet = this.normalizeShippingMethod(shippingMethod);
+    const shippingCostToSet = this.parseNonNegativeMoney(
+      shippingCost ?? 0,
+      'El costo de envio no puede ser negativo',
+    );
+
+    if (
+      this.isPickupShippingMethod(shippingMethodToSet) &&
+      !shippingCostToSet.isZero()
+    ) {
+      throw new BadRequestException(
+        'Los pedidos pickup no pueden incluir costo de envio',
+      );
+    }
 
     try {
       return await this.prisma.$transaction(async (tx) => {
@@ -1110,6 +1219,12 @@ export class OrdersService {
         } | null = null;
 
         if (shippingProviderId) {
+          if (this.isPickupShippingMethod(shippingMethodToSet)) {
+            throw new BadRequestException(
+              'Los pedidos pickup no pueden asociar transportadora',
+            );
+          }
+
           provider = await tx.shippingProvider.findUnique({
             where: { id: shippingProviderId },
             select: { id: true, name: true },
@@ -1121,29 +1236,74 @@ export class OrdersService {
         }
 
         // Prepare shipping address as JSON-compatible object
-        const resolvedCarrier = provider?.name ?? carrier ?? null;
+        const resolvedCarrier = this.isPickupShippingMethod(shippingMethodToSet)
+          ? null
+          : (provider?.name ?? carrier ?? null);
+        const normalizedShippingAddress =
+          shippingAddress &&
+          typeof shippingAddress === 'object' &&
+          !Array.isArray(shippingAddress)
+            ? (shippingAddress as unknown as Record<string, unknown>)
+            : null;
+        const rawCity = normalizedShippingAddress?.city ?? city;
+        const resolvedOrderCity = this.isPickupShippingMethod(
+          shippingMethodToSet,
+        )
+          ? PICKUP_LOCATION.city
+          : (typeof rawCity === 'string' ? rawCity : '').trim();
 
-        const shippingAddressJson = {
-          ...(shippingAddress as object),
-          firstName,
-          lastName,
-          department,
-          shippingProviderId: provider?.id ?? null,
-          shippingProviderName: resolvedCarrier,
-          manualDiscount: normalizedDiscountValue.greaterThan(0)
-            ? {
-                type: manualDiscountType ?? 'amount',
-                value: decimalToNumber(normalizedDiscountValue),
-                amount: decimalToNumber(discountAmount),
-                subtotal: decimalToNumber(subtotalAmount),
-              }
-            : null,
-        } as Prisma.InputJsonValue;
+        if (
+          !this.isPickupShippingMethod(shippingMethodToSet) &&
+          !normalizedShippingAddress
+        ) {
+          throw new BadRequestException(
+            'Debes enviar una direccion de entrega para pedidos con envio',
+          );
+        }
+
+        if (!resolvedOrderCity) {
+          throw new BadRequestException('La ciudad del pedido es obligatoria');
+        }
+
+        const manualDiscountSnapshot = normalizedDiscountValue.greaterThan(0)
+          ? {
+              type: manualDiscountType ?? 'amount',
+              value: decimalToNumber(normalizedDiscountValue),
+              amount: decimalToNumber(discountAmount),
+              subtotal: decimalToNumber(subtotalAmount),
+            }
+          : null;
+
+        const shippingAddressJson = this.isPickupShippingMethod(
+          shippingMethodToSet,
+        )
+          ? ({
+              ...(this.buildPickupShippingAddressSnapshot({
+                firstName,
+                lastName,
+                customerPhone: orderData.customerPhone,
+              }) as Record<string, unknown>),
+              manualDiscount: manualDiscountSnapshot,
+              shippingCost: decimalToNumber(shippingCostToSet),
+            } as Prisma.InputJsonValue)
+          : ({
+              ...(normalizedShippingAddress ?? {}),
+              firstName,
+              lastName,
+              department,
+              city: resolvedOrderCity,
+              shippingMethod: shippingMethodToSet,
+              shippingCost: decimalToNumber(shippingCostToSet),
+              shippingProviderId: provider?.id ?? null,
+              shippingProviderName: resolvedCarrier,
+              manualDiscount: manualDiscountSnapshot,
+            } as Prisma.InputJsonValue);
 
         const createdOrder = await tx.order.create({
           data: {
             ...orderData,
             profileId: resolvedProfileId,
+            city: resolvedOrderCity,
             carrier: resolvedCarrier,
             isB2B: !!isB2B,
             isManual: !!isManual,
@@ -1183,15 +1343,22 @@ export class OrdersService {
                 pricingJson: item.pricingJson,
               })),
             },
-            ...((provider || resolvedCarrier) && {
-              shipment: {
-                create: {
-                  ...(provider ? { providerId: provider.id } : {}),
+            ...(!this.isPickupShippingMethod(shippingMethodToSet) &&
+              (provider || resolvedCarrier) && {
+                shipment: {
+                  create: {
+                    ...(provider ? { providerId: provider.id } : {}),
+                  },
                 },
-              },
-            }),
+              }),
           },
           include: { items: true, statusHistory: true, shipment: true },
+        });
+
+        await this.syncOrderShippingFields(tx, {
+          orderId: createdOrder.id,
+          shippingMethod: shippingMethodToSet,
+          shippingCost: shippingCostToSet,
         });
 
         if (statusToSet === OrderStatus.PAGADA && normalizedPaymentReceiptUrl) {
@@ -1254,7 +1421,10 @@ export class OrdersService {
           });
         }
 
-        if (statusToSet !== OrderStatus.PENDIENTE_PAGO) {
+        if (
+          statusToSet !== OrderStatus.PENDIENTE_PAGO &&
+          !this.isPickupShippingMethod(shippingMethodToSet)
+        ) {
           await this.shippingSyncService.ensureShipmentForOrder(
             createdOrder.id,
             tx,
@@ -2017,7 +2187,17 @@ export class OrdersService {
     });
   }
 
-  async getAccountsReceivable() {
+  async getAccountsReceivable(filters?: { startDate?: Date; endDate?: Date }) {
+    if (
+      filters?.startDate &&
+      filters?.endDate &&
+      filters.startDate.getTime() > filters.endDate.getTime()
+    ) {
+      throw new BadRequestException(
+        'La fecha inicial no puede ser mayor que la fecha final',
+      );
+    }
+
     const orders = await this.prisma.order.findMany({
       where: {
         balanceDue: { gt: 0 },
@@ -2025,6 +2205,14 @@ export class OrdersService {
         status: {
           notIn: [OrderStatus.CANCELADA, OrderStatus.RETURNED_TO_STOCK],
         },
+        ...(filters?.startDate || filters?.endDate
+          ? {
+              createdAt: {
+                ...(filters.startDate ? { gte: filters.startDate } : {}),
+                ...(filters.endDate ? { lte: filters.endDate } : {}),
+              },
+            }
+          : {}),
       },
       select: {
         id: true,
