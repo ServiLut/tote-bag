@@ -91,6 +91,8 @@ export default function ProfitCalculator() {
   const [productsSource, setProductsSource] = useState<'admin' | 'catalog' | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<string>('');
   const [targetMarginPercent, setTargetMarginPercent] = useState('60');
+  const [quantity, setQuantity] = useState('1');
+  const [discountPercent, setDiscountPercent] = useState('0');
   const [suggestedPrice, setSuggestedPrice] = useState(() =>
     createCurrencyInputState(0),
   );
@@ -110,17 +112,33 @@ export default function ProfitCalculator() {
   const parsedTargetMarginPercent = Number(
     String(targetMarginPercent).replace(',', '.'),
   );
+  const parsedQuantity = Number(quantity);
+  const parsedDiscountPercent = Number(
+    String(discountPercent).replace(',', '.'),
+  );
+  const hasValidQuantity =
+    Number.isInteger(parsedQuantity) && parsedQuantity > 0;
   const hasValidTargetMargin =
     Number.isFinite(parsedTargetMarginPercent) &&
     parsedTargetMarginPercent >= 0 &&
     parsedTargetMarginPercent <= 100;
+  const hasValidDiscount =
+    Number.isFinite(parsedDiscountPercent) &&
+    parsedDiscountPercent >= 0 &&
+    parsedDiscountPercent <= 100;
   const hasSelection = Boolean(selectedProductId);
   const hasRealCost = avgCost.numericValue > 0;
+
+  const effectiveUnitGrossAmount =
+    suggestedPrice.numericValue * (1 - parsedDiscountPercent / 100);
+
   const canCalculateMetrics =
     hasSelection &&
     hasRealCost &&
     suggestedPrice.numericValue > 0 &&
-    hasValidTargetMargin;
+    hasValidTargetMargin &&
+    hasValidQuantity &&
+    hasValidDiscount;
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -211,11 +229,12 @@ export default function ProfitCalculator() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            grossAmount: suggestedPrice.numericValue,
+            grossAmount: effectiveUnitGrossAmount,
             productCost: avgCost.numericValue,
             taxRate: referenceTaxRate,
             marginTarget: parsedTargetMarginPercent,
             targetMargins: [parsedTargetMarginPercent],
+            quantity: parsedQuantity,
           }),
         });
 
@@ -256,9 +275,10 @@ export default function ProfitCalculator() {
     accessToken,
     avgCost.numericValue,
     canCalculateMetrics,
+    effectiveUnitGrossAmount,
+    parsedQuantity,
     parsedTargetMarginPercent,
     referenceTaxRate,
-    suggestedPrice.numericValue,
   ]);
 
   const current = grid?.current ?? null;
@@ -274,40 +294,58 @@ export default function ProfitCalculator() {
             Malla de Margen sobre Neto de Pasarela
           </h2>
           <p className="text-xs font-medium text-muted">
-            Calcula con backend financiero, no solo sobre PVP con IVA.
+            Calcula con backend financiero para una o varias unidades y descuentos.
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1.05fr_1fr]">
         <div className="space-y-6">
-          <div>
-            <label className="mb-2 block text-sm font-bold uppercase tracking-wider text-muted">
-              Seleccionar Producto
-            </label>
-            {productsLoading ? (
-              <div className="flex items-center gap-2 py-2 text-muted">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Cargando productos...</span>
-              </div>
-            ) : productsError ? (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {productsError}
-              </div>
-            ) : (
-              <select
-                value={selectedProductId}
-                onChange={(event) => setSelectedProductId(event.target.value)}
-                className="w-full rounded-xl border border-theme bg-base px-4 py-3 font-medium text-primary outline-none transition-all focus:ring-2 focus:ring-primary/20"
-              >
-                <option value="">Seleccione un producto</option>
-                {products.map((product) => (
-                  <option key={product.id} value={product.id}>
-                    {product.name}
-                  </option>
-                ))}
-              </select>
-            )}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1.5fr_1fr]">
+            <div>
+              <label className="mb-2 block text-sm font-bold uppercase tracking-wider text-muted">
+                Seleccionar Producto
+              </label>
+              {productsLoading ? (
+                <div className="flex items-center gap-2 py-2 text-muted">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Cargando productos...</span>
+                </div>
+              ) : productsError ? (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {productsError}
+                </div>
+              ) : (
+                <select
+                  value={selectedProductId}
+                  onChange={(event) => setSelectedProductId(event.target.value)}
+                  className="w-full rounded-xl border border-theme bg-base px-4 py-3 font-medium text-primary outline-none transition-all focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="">Seleccione un producto</option>
+                  {products.map((product) => (
+                    <option key={product.id} value={product.id}>
+                      {product.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-bold uppercase tracking-wider text-muted">
+                Cantidad
+              </label>
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                step={1}
+                value={quantity}
+                disabled={!hasSelection}
+                onChange={(event) => setQuantity(event.target.value)}
+                className="w-full rounded-xl border border-theme bg-base px-4 py-3 font-bold text-primary outline-none transition-all focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+              />
+            </div>
           </div>
 
           {productsSource === 'catalog' ? (
@@ -317,83 +355,115 @@ export default function ProfitCalculator() {
             </div>
           ) : null}
 
-          <div>
-            <label className="mb-2 block text-sm font-bold uppercase tracking-wider text-muted">
-              Costo del Producto
-            </label>
-            <InputGroup
-              prefix={<span className="font-bold text-muted">$</span>}
-              className="flex items-center gap-2 rounded-xl border border-theme bg-base px-4"
-            >
-              <Input
-                type="text"
-                inputMode="decimal"
-                value={avgCost.formattedValue}
-                disabled={!hasSelection}
-                onChange={(event) =>
-                  handleCurrencyInputChangeWithState(event, setAvgCost)
-                }
-                className="w-full bg-transparent py-3 font-bold text-primary outline-none transition-all focus:ring-0 disabled:cursor-not-allowed disabled:opacity-60"
-              />
-            </InputGroup>
-            <p className="mt-1 text-[10px] font-medium italic text-muted">
-              Usa costo real o ajusta manualmente para simular escenarios.
-            </p>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-bold uppercase tracking-wider text-muted">
-              Porcentaje de Ganancia
-            </label>
-            <InputGroup
-              suffix={<span className="font-bold text-muted">%</span>}
-              className="flex items-center gap-2 rounded-xl border border-theme bg-base px-4"
-            >
-              <Input
-                type="number"
-                inputMode="decimal"
-                min={0}
-                max={100}
-                step="0.1"
-                value={targetMarginPercent}
-                disabled={!hasSelection}
-                onChange={(event) => setTargetMarginPercent(event.target.value)}
-                className="w-full bg-transparent py-3 font-bold text-primary outline-none transition-all focus:ring-0 disabled:cursor-not-allowed disabled:opacity-60"
-              />
-            </InputGroup>
-            <p className="mt-1 text-[10px] font-medium italic text-muted">
-              Meta de utilidad sobre neto de pasarela para esta simulacion.
-            </p>
-            {!hasValidTargetMargin && hasSelection ? (
-              <p className="mt-1 text-[10px] font-medium text-red-700">
-                Ingresa un porcentaje valido entre 0 y 100.
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-bold uppercase tracking-wider text-muted">
+                Costo Unitario
+              </label>
+              <InputGroup
+                prefix={<span className="font-bold text-muted">$</span>}
+                className="flex items-center gap-2 rounded-xl border border-theme bg-base px-4"
+              >
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={avgCost.formattedValue}
+                  disabled={!hasSelection}
+                  onChange={(event) =>
+                    handleCurrencyInputChangeWithState(event, setAvgCost)
+                  }
+                  className="w-full bg-transparent py-3 font-bold text-primary outline-none transition-all focus:ring-0 disabled:cursor-not-allowed disabled:opacity-60"
+                />
+              </InputGroup>
+              <p className="mt-1 text-[10px] font-medium italic text-muted">
+                Costo por unidad.
               </p>
-            ) : null}
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-bold uppercase tracking-wider text-muted">
+                Porcentaje de Ganancia
+              </label>
+              <InputGroup
+                suffix={<span className="font-bold text-muted">%</span>}
+                className="flex items-center gap-2 rounded-xl border border-theme bg-base px-4"
+              >
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  max={100}
+                  step="0.1"
+                  value={targetMarginPercent}
+                  disabled={!hasSelection}
+                  onChange={(event) => setTargetMarginPercent(event.target.value)}
+                  className="w-full bg-transparent py-3 font-bold text-primary outline-none transition-all focus:ring-0 disabled:cursor-not-allowed disabled:opacity-60"
+                />
+              </InputGroup>
+              <p className="mt-1 text-[10px] font-medium italic text-muted">
+                Meta de utilidad sobre neto.
+              </p>
+            </div>
           </div>
 
-          <div>
-            <label className="mb-2 block text-sm font-bold uppercase tracking-wider text-muted">
-              PVP con IVA
-            </label>
-            <InputGroup
-              prefix={<span className="font-bold text-muted">$</span>}
-              className="flex items-center gap-2 rounded-xl border border-theme bg-base px-4"
-            >
-              <Input
-                type="text"
-                inputMode="decimal"
-                value={suggestedPrice.formattedValue}
-                disabled={!hasSelection}
-                onChange={(event) =>
-                  handleCurrencyInputChangeWithState(event, setSuggestedPrice)
-                }
-                className="w-full bg-transparent py-3 font-bold text-primary outline-none transition-all focus:ring-0 disabled:cursor-not-allowed disabled:opacity-60"
-              />
-            </InputGroup>
-            <p className="mt-1 text-[10px] font-medium italic text-muted">
-              Tarifa IVA de referencia: {(referenceTaxRate * 100).toFixed(0)}%.
-            </p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-bold uppercase tracking-wider text-muted">
+                PVP Unitario (Base)
+              </label>
+              <InputGroup
+                prefix={<span className="font-bold text-muted">$</span>}
+                className="flex items-center gap-2 rounded-xl border border-theme bg-base px-4"
+              >
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={suggestedPrice.formattedValue}
+                  disabled={!hasSelection}
+                  onChange={(event) =>
+                    handleCurrencyInputChangeWithState(event, setSuggestedPrice)
+                  }
+                  className="w-full bg-transparent py-3 font-bold text-primary outline-none transition-all focus:ring-0 disabled:cursor-not-allowed disabled:opacity-60"
+                />
+              </InputGroup>
+              <p className="mt-1 text-[10px] font-medium italic text-muted">
+                Precio de lista con IVA.
+              </p>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-bold uppercase tracking-wider text-muted">
+                Descuento aplicado
+              </label>
+              <InputGroup
+                suffix={<span className="font-bold text-muted">%</span>}
+                className="flex items-center gap-2 rounded-xl border border-theme bg-base px-4"
+              >
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  max={100}
+                  step="0.1"
+                  value={discountPercent}
+                  disabled={!hasSelection}
+                  onChange={(event) => setDiscountPercent(event.target.value)}
+                  className="w-full bg-transparent py-3 font-bold text-primary outline-none transition-all focus:ring-0 disabled:cursor-not-allowed disabled:opacity-60"
+                />
+              </InputGroup>
+              <p className="mt-1 text-[10px] font-medium italic text-muted">
+                Se aplica al PVP Unitario.
+              </p>
+            </div>
           </div>
+
+          {parsedDiscountPercent > 0 ? (
+            <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+              <p className="text-xs font-bold text-blue-700">
+                PVP Efectivo con Descuento: {formatCurrency(effectiveUnitGrossAmount)}
+              </p>
+            </div>
+          ) : null}
 
           <div className="grid grid-cols-1 gap-3">
             {(grid?.targets || []).map((target) => (
@@ -401,16 +471,21 @@ export default function ProfitCalculator() {
                 key={target.targetMargin}
                 className="rounded-xl border border-theme bg-base px-4 py-4"
               >
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted">
-                  Meta {formatPercentage(target.targetMargin)}
-                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted">
+                    Meta {formatPercentage(target.targetMargin)}
+                  </p>
+                  <p className="text-[10px] font-bold text-primary/60">
+                    Sugerido Unitario (Sin descuento adicional)
+                  </p>
+                </div>
                 <p className="mt-2 text-lg font-black text-primary">
                   {target.reachable
                     ? formatCurrency(target.requiredGrossAmount)
                     : 'No alcanzable'}
                 </p>
                 <p className="mt-1 text-[11px] font-medium text-muted">
-                  Neto estimado:{' '}
+                  Neto estimado total:{' '}
                   {target.reachable
                     ? formatCurrency(target.requiredNetReceivedAmount)
                     : '--'}
@@ -425,7 +500,7 @@ export default function ProfitCalculator() {
             <div className="flex items-start gap-3 rounded-xl border border-theme bg-base px-4 py-3 text-sm text-muted">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <p>
-                Selecciona un producto para calcular utilidad real y margen
+                Selecciona un producto y cantidad para calcular utilidad real y margen
                 sobre recaudo neto de pasarela.
               </p>
             </div>
@@ -444,10 +519,22 @@ export default function ProfitCalculator() {
             </div>
           ) : null}
 
+          <div className="flex items-center justify-between border-b border-primary/10 pb-2">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-bold text-primary">Estudio para {parsedQuantity} {parsedQuantity === 1 ? 'unidad' : 'unidades'}</h3>
+            </div>
+            {parsedDiscountPercent > 0 ? (
+              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-black text-blue-700">
+                DESC. {parsedDiscountPercent}%
+              </span>
+            ) : null}
+          </div>
+
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="rounded-xl border border-theme bg-base px-4 py-4">
               <p className="text-[10px] font-bold uppercase tracking-widest text-muted">
-                Venta neta sin IVA
+                Venta neta (Total sin IVA)
               </p>
               <p className="mt-2 text-2xl font-black text-primary">
                 {formatCurrency(current?.ventaNetaSinIva)}
@@ -484,7 +571,7 @@ export default function ProfitCalculator() {
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <div className="rounded-xl border border-theme bg-base px-4 py-3">
               <p className="text-[10px] font-bold uppercase tracking-widest text-muted">
-                IVA venta
+                IVA venta total
               </p>
               <p className="mt-1 text-lg font-black text-primary">
                 {formatCurrency(current?.iva)}
@@ -536,10 +623,10 @@ export default function ProfitCalculator() {
           </div>
 
           {canCalculateMetrics &&
-          suggestedPrice.numericValue < avgCost.numericValue ? (
+          effectiveUnitGrossAmount < avgCost.numericValue ? (
             <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-              El PVP con IVA esta por debajo del costo cargado para este
-              escenario.
+              El PVP efectivo con descuento esta por debajo del costo cargado
+              para este escenario.
             </div>
           ) : null}
 
