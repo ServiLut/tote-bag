@@ -350,7 +350,7 @@ export class B2bService {
     });
 
     const whatsappPayload = {
-      phone: '573000000000',
+      phone: '+57 3143964910',
       message: `Hola, soy ${createQuoteDto.businessName}. Quote ID: ${quote.id}`,
     };
 
