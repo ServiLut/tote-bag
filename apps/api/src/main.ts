@@ -7,6 +7,7 @@ import { json, urlencoded, Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
 import helmet from 'helmet';
 import { winstonConfig } from './common/logger/winston.config';
+import { rootProbeMiddleware } from './root-probe';
 
 type RequestWithCorrelation = Request & {
   requestId?: string;
@@ -23,6 +24,8 @@ async function bootstrap() {
 
   const logger = new Logger('HTTP');
   const bodyLimit = process.env.JSON_BODY_LIMIT?.trim() || '256kb';
+
+  app.use(rootProbeMiddleware);
 
   app.setGlobalPrefix('api');
   app.enableVersioning({
