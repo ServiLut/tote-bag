@@ -17,6 +17,11 @@ import { getServerApiCandidates } from '@/lib/api-config';
 import {
   resolveDashboardLayoutRedirect,
 } from '@/lib/frontend-routing';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  robots: 'noindex, nofollow',
+};
 
 const DASHBOARD_PATHNAME_HEADER_NAME = 'x-tote-bag-pathname';
 

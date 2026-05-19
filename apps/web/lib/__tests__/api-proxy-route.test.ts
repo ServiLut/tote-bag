@@ -16,6 +16,11 @@ jest.mock('@/lib/dashboard-auth', () => ({
   parseDashboardDebugRoleCookie: jest.fn(() => null),
 }));
 
+jest.mock('@/lib/audit-log', () => ({
+  logAuditRecord: jest.fn(),
+  logSystemAlert: jest.fn(),
+}));
+
 describe('api proxy route', () => {
   const originalFetch = global.fetch;
 

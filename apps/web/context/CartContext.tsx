@@ -1,20 +1,21 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { Product, Variant } from '@/types/product';
 import { toast } from 'sonner';
+import { 
+  migrateCartData, 
+  addItemToCart, 
+  calculateCartSubtotal, 
+  calculateCartCount,
+  CART_SCHEMA_VERSION,
+  CartItem
+} from '@/lib/cart-logic';
 
-export interface CartItem {
-  id: string; // unique ID for cart item (sku + configCode if applicable)
-  product: Product;
-  variant: Variant;
-  quantity: number;
-  configuration?: Record<string, unknown>;
-  unitPrice: number;
-  configCode?: string;
-  isCustom?: boolean;
-  customImageURL?: string;
-}
+export { type CartItem } from '@/lib/cart-logic';
+
+const CART_STORAGE_KEY = 'tote-cart-v1';
+const PERSIST_DEBOUNCE_MS = 1000;
 
 function getConfigurationImage(
   configuration?: Record<string, unknown>,
@@ -68,6 +69,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const persistTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Set mounted flag after first render
   useEffect(() => {
@@ -75,27 +77,41 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setIsMounted(true);
   }, []);
 
-  // Load cart from local storage ONLY ONCE on mount, but after we know we are on client
+  // Load cart from local storage with migration
   useEffect(() => {
-    const savedCart = localStorage.getItem('tote-cart');
+    const savedCart = localStorage.getItem(CART_STORAGE_KEY) || localStorage.getItem('tote-cart');
     if (savedCart) {
       try {
         const parsed = JSON.parse(savedCart);
-        if (Array.isArray(parsed)) {
-           // eslint-disable-next-line react-hooks/set-state-in-effect
-           setItems(parsed.map((item) => normalizeCartItem(item as CartItem)));
-        }
+        const migrated = migrateCartData(parsed);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setItems(migrated.items.map(normalizeCartItem));
       } catch (e) {
-        console.error('Failed to parse cart', e);
+        console.error('[Cart] Failed to load/migrate cart:', e);
       }
     }
   }, []);
 
-  // Save cart to local storage whenever it changes
+  // Debounced persistence
   useEffect(() => {
-    if (isMounted) {
-      localStorage.setItem('tote-cart', JSON.stringify(items));
+    if (!isMounted) return;
+
+    if (persistTimeoutRef.current) {
+      clearTimeout(persistTimeoutRef.current);
     }
+
+    persistTimeoutRef.current = setTimeout(() => {
+      const state = {
+        items,
+        version: CART_SCHEMA_VERSION,
+        updatedAt: new Date().toISOString()
+      };
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(state));
+    }, PERSIST_DEBOUNCE_MS);
+
+    return () => {
+      if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
+    };
   }, [items, isMounted]);
 
   const openCart = () => setIsOpen(true);
@@ -109,54 +125,58 @@ export function CartProvider({ children }: { children: ReactNode }) {
     unitPrice?: number, 
     configCode?: string
   ) => {
-    setItems((currentItems) => {
-      const itemId = configCode ? `${variant.sku}-${configCode}` : variant.sku;
-      const configurationImage = getConfigurationImage(configuration);
-      const customImageURL = configurationImage;
-      const isCustom = Boolean(configCode || customImageURL);
-      const existingItemIndex = currentItems.findIndex(
-        (item) => item.id === itemId
-      );
+    const itemId = configCode ? `${variant.sku}-${configCode}` : variant.sku;
+    const configurationImage = getConfigurationImage(configuration);
+    const customImageURL = configurationImage;
+    const isCustom = Boolean(configCode || customImageURL);
 
-      const price =
-        unitPrice !== undefined
-          ? unitPrice
-          : variant.salePrice !== undefined
-            ? variant.salePrice
-            // Transitional fallback only for legacy records without hydrated variant pricing.
-            : product.basePrice;
+    const price =
+      unitPrice !== undefined
+        ? unitPrice
+        : variant.salePrice !== undefined
+          ? variant.salePrice
+          : product.basePrice;
 
-      if (existingItemIndex > -1) {
-        const newItems = [...currentItems];
-        newItems[existingItemIndex].quantity += quantity;
-        toast.success(`Cantidad actualizada: ${product.name}`);
-        return newItems;
-      }
+    const newItem: CartItem = { 
+      id: itemId, 
+      product: { 
+        id: product.id, 
+        name: product.name, 
+        basePrice: product.basePrice,
+        images: product.images?.map(img => ({ url: img.url, position: img.position }))
+      }, 
+      variant: { 
+        id: variant.id ?? '', 
+        sku: variant.sku, 
+        salePrice: variant.salePrice,
+        imageUrl: variant.imageUrl
+      }, 
+      quantity, 
+      configuration, 
+      unitPrice: price,
+      configCode,
+      isCustom,
+      customImageURL,
+    };
 
-      toast.success(`Agregado al carrito: ${product.name}`);
-      return [...currentItems, { 
-        id: itemId, 
-        product, 
-        variant, 
-        quantity, 
-        configuration, 
-        unitPrice: price,
-        configCode,
-        isCustom,
-        customImageURL,
-      }];
+    setItems((current) => {
+      const updated = addItemToCart(current, newItem);
+      const isNew = updated.length > current.length;
+      toast.success(isNew ? `Agregado al carrito: ${product.name}` : `Cantidad actualizada: ${product.name}`);
+      return updated;
     });
+
     setIsOpen(true);
   };
 
   const removeFromCart = (cartItemId: string) => {
-    setItems((currentItems) => currentItems.filter((item) => item.id !== cartItemId));
+    setItems((current) => current.filter((item) => item.id !== cartItemId));
   };
 
   const updateQuantity = (cartItemId: string, quantity: number) => {
     if (quantity < 1) return;
-    setItems((currentItems) =>
-      currentItems.map((item) =>
+    setItems((current) =>
+      current.map((item) =>
         item.id === cartItemId ? { ...item, quantity } : item
       )
     );
@@ -164,8 +184,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = () => setItems([]);
 
-  const subtotal = items.reduce((total, item) => total + item.unitPrice * item.quantity, 0);
-  const count = items.reduce((total, item) => total + item.quantity, 0);
+  const subtotal = calculateCartSubtotal(items);
+  const count = calculateCartCount(items);
 
   return (
     <CartContext.Provider

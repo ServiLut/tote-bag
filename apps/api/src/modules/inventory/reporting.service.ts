@@ -16,10 +16,148 @@ import {
   type SimpleXlsxOptions,
   type SimpleXlsxRow,
 } from '../../common/utils/simple-xlsx.util';
+import { InventoryService } from './inventory.service';
+import {
+  BRANDED_REPORT_STYLES_XML,
+  BRANDED_REPORT_STYLE_IDS,
+  brandedCell,
+  brandedEmptyCells,
+  createBrandedFooterRow,
+  createBrandedPdfLayout,
+  createBrandedReportHeaderMerges,
+  createBrandedReportHeaderRows,
+  createBrandedSectionMerge,
+  createBrandedSectionRow,
+  drawBrandedPdfFooter,
+  drawBrandedPdfKeyValueRow,
+  drawBrandedPdfParagraph,
+  drawBrandedPdfSectionTitle,
+} from '../../common/utils/report-export-branding.util';
+
+type InventoryBatchReport = {
+  id: string;
+  lineId: string;
+  quantityReceived: number;
+  quantityRemaining: number;
+  unitCost: number;
+  totalCost: number;
+  status: string;
+  createdAt: string | Date;
+  supplier?: {
+    id: string;
+    name: string;
+  } | null;
+};
+
+type InventoryProductReport = {
+  id: string;
+  name: string;
+  slug: string;
+  image?: string | null;
+  totalStock: number;
+  stockPhysical?: number;
+  stockCommitted?: number;
+  stockAvailable?: number;
+  totalValuation: number;
+  weightedAvgCost: number;
+  batches: InventoryBatchReport[];
+};
+
+type InventoryMovementReport = {
+  id: string;
+  reason?: string;
+  itemType?: string;
+  quantity?: number;
+  balanceAfter?: number;
+  createdAt: string | Date;
+  variant?: {
+    sku?: string | null;
+    product?: { name?: string | null } | null;
+  } | null;
+  supplyItem?: {
+    name?: string | null;
+    sku?: string | null;
+  } | null;
+};
+
+type ReorderAlertReport = {
+  itemType: 'VARIANT' | 'SUPPLY';
+  id: string;
+  sku?: string | null;
+  name: string;
+  stockPhysical: number;
+  stockCommitted: number;
+  stockAvailable: number;
+  reorderPoint: number;
+  unitOfMeasure?: string;
+};
+
+type ReorderAlertsReport = {
+  count: number;
+  variants: ReorderAlertReport[];
+  supplies: ReorderAlertReport[];
+};
+
+type NonCommercialOutputReason =
+  | 'GIFT'
+  | 'SAMPLE'
+  | 'INTERNAL_TEST'
+  | 'OPERATIONAL_USE'
+  | 'OTHER';
+
+type NonCommercialOutputStatus = 'COMPLETED';
+
+type NonCommercialOutputReport = {
+  id: string;
+  quantity: number;
+  reason: NonCommercialOutputReason;
+  notes?: string | null;
+  supportUrl?: string | null;
+  status: NonCommercialOutputStatus;
+  createdAt: string | Date;
+  stockBefore?: number | null;
+  stockAfter?: number | null;
+  variant?: {
+    id: string;
+    sku?: string | null;
+    size?: string | null;
+    color?: string | null;
+    product?: {
+      id: string;
+      name?: string | null;
+      slug?: string | null;
+    } | null;
+  } | null;
+  user?: {
+    id: string;
+    email?: string | null;
+    profile?: {
+      firstName?: string | null;
+      lastName?: string | null;
+    } | null;
+  } | null;
+};
+
+const NON_COMMERCIAL_REASON_LABELS: Record<NonCommercialOutputReason, string> =
+  {
+    GIFT: 'Regalo',
+    SAMPLE: 'Muestra',
+    INTERNAL_TEST: 'Prueba interna',
+    OPERATIONAL_USE: 'Uso operativo',
+    OTHER: 'Otro',
+  };
+
+const NON_COMMERCIAL_STATUS_LABELS: Record<NonCommercialOutputStatus, string> =
+  {
+    COMPLETED: 'Registrada',
+  };
 
 @Injectable()
 export class ReportingService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly inventoryService: InventoryService,
+  ) {}
 
   private validateDateRange(startDate: Date, endDate: Date) {
     if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
@@ -31,6 +169,143 @@ export class ReportingService {
         'La fecha inicial no puede ser mayor que la fecha final',
       );
     }
+  }
+
+  private formatCurrency(amount: number) {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      maximumFractionDigits: 0,
+    }).format(amount);
+  }
+
+  private formatUnits(amount: number) {
+    return new Intl.NumberFormat('es-CO', {
+      maximumFractionDigits: 0,
+    }).format(amount);
+  }
+
+  private formatDateTime(value: string | Date) {
+    return new Intl.DateTimeFormat('es-CO', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone: 'America/Bogota',
+    }).format(new Date(value));
+  }
+
+  private resolveMovementItemLabel(movement: InventoryMovementReport) {
+    if (movement.variant?.product?.name || movement.variant?.sku) {
+      const productName = movement.variant?.product?.name || 'Variante';
+      const sku = movement.variant?.sku ? ` (${movement.variant.sku})` : '';
+      return `${productName}${sku}`;
+    }
+
+    if (movement.supplyItem?.name || movement.supplyItem?.sku) {
+      const supplyName = movement.supplyItem?.name || 'Insumo';
+      const sku = movement.supplyItem?.sku
+        ? ` (${movement.supplyItem.sku})`
+        : '';
+      return `${supplyName}${sku}`;
+    }
+
+    return 'Movimiento sin referencia';
+  }
+
+  private resolveUserLabel(output: NonCommercialOutputReport) {
+    const firstName = output.user?.profile?.firstName?.trim();
+    const lastName = output.user?.profile?.lastName?.trim();
+    const fullName = [firstName, lastName].filter(Boolean).join(' ');
+
+    if (fullName) {
+      return fullName;
+    }
+
+    const email = output.user?.email?.trim();
+    if (!email) {
+      return 'Usuario no disponible';
+    }
+
+    return email.split('@')[0] || email;
+  }
+
+  private resolveVariantLabel(output: NonCommercialOutputReport) {
+    const details = [output.variant?.size, output.variant?.color]
+      .filter(Boolean)
+      .join(' / ');
+    const sku = output.variant?.sku || 'SKU no disponible';
+    return details ? `${details} | ${sku}` : sku;
+  }
+
+  private async getFifoInventoryReportData() {
+    const [products, movements, reorderAlerts] = await Promise.all([
+      this.inventoryService.getDetailedInventory() as Promise<
+        InventoryProductReport[]
+      >,
+      this.inventoryService.getInventoryMovements() as Promise<
+        InventoryMovementReport[]
+      >,
+      this.inventoryService.getReorderAlerts() as Promise<ReorderAlertsReport>,
+    ]);
+
+    const totals = products.reduce(
+      (acc, product) => {
+        acc.products += 1;
+        acc.units += Number(product.totalStock ?? 0);
+        acc.committed += Number(product.stockCommitted ?? 0);
+        acc.available += Number(
+          product.stockAvailable ?? product.totalStock ?? 0,
+        );
+        acc.valuation += Number(product.totalValuation ?? 0);
+        acc.batches += product.batches.length;
+        return acc;
+      },
+      {
+        products: 0,
+        units: 0,
+        committed: 0,
+        available: 0,
+        valuation: 0,
+        batches: 0,
+      },
+    );
+
+    return {
+      generatedAt: new Date(),
+      products,
+      movements,
+      reorderAlerts,
+      totals,
+    };
+  }
+
+  private async getNonCommercialOutputsReportData() {
+    const outputs =
+      (await this.inventoryService.listNonCommercialOutputs()) as NonCommercialOutputReport[];
+
+    const summary = outputs.reduce(
+      (acc, output) => {
+        acc.totalRecords += 1;
+        acc.totalUnits += Number(output.quantity ?? 0);
+        acc.reasons.add(output.reason);
+        return acc;
+      },
+      {
+        totalRecords: 0,
+        totalUnits: 0,
+        reasons: new Set<NonCommercialOutputReason>(),
+      },
+    );
+
+    return {
+      generatedAt: new Date(),
+      outputs,
+      summary: {
+        totalRecords: summary.totalRecords,
+        totalUnits: summary.totalUnits,
+        activeReasons: summary.reasons.size,
+        lastMovementAt: outputs[0]?.createdAt ?? null,
+      },
+    };
   }
 
   async getAccountingReport(startDate: Date, endDate: Date) {
@@ -136,7 +411,10 @@ export class ReportingService {
         currency: 'COP',
         maximumFractionDigits: 0,
       }).format(amount);
-    const cell = (value: string | number | null, styleId?: number): SimpleXlsxCell => ({
+    const cell = (
+      value: string | number | null,
+      styleId?: number,
+    ): SimpleXlsxCell => ({
       value,
       styleId,
     });
@@ -291,8 +569,9 @@ export class ReportingService {
     <font><b/><sz val="12"/><name val="Calibri"/><family val="2"/><color rgb="FFFFFFFF"/></font>
     <font><sz val="9"/><name val="Calibri"/><family val="2"/><color rgb="FF9CA3AF"/></font>
   </fonts>
-  <fills count="4">
+  <fills count="5">
     <fill><patternFill patternType="none"/></fill>
+    <fill><patternFill patternType="gray125"/></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FFF8F9FA"/><bgColor indexed="64"/></patternFill></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FF2D3436"/><bgColor indexed="64"/></patternFill></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FFFFFFFF"/><bgColor indexed="64"/></patternFill></fill>
@@ -309,20 +588,20 @@ export class ReportingService {
   <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
   <cellXfs count="15">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
-    <xf numFmtId="0" fontId="0" fillId="1" borderId="0" xfId="0" applyFill="1"/>
-    <xf numFmtId="0" fontId="1" fillId="1" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>
-    <xf numFmtId="0" fontId="2" fillId="1" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>
-    <xf numFmtId="0" fontId="3" fillId="1" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
-    <xf numFmtId="0" fontId="4" fillId="1" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="2" borderId="0" xfId="0" applyFill="1"/>
+    <xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="3" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="4" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
     <xf numFmtId="0" fontId="5" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>
     <xf numFmtId="0" fontId="6" fillId="0" borderId="2" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>
     <xf numFmtId="0" fontId="7" fillId="0" borderId="2" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
     <xf numFmtId="0" fontId="8" fillId="0" borderId="2" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
     <xf numFmtId="0" fontId="9" fillId="0" borderId="2" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
-    <xf numFmtId="0" fontId="10" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>
-    <xf numFmtId="0" fontId="10" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="10" fillId="3" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="10" fillId="3" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
     <xf numFmtId="0" fontId="11" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
-    <xf numFmtId="0" fontId="0" fillId="2" borderId="0" xfId="0" applyFill="1"/>
+    <xf numFmtId="0" fontId="0" fillId="3" borderId="0" xfId="0" applyFill="1"/>
   </cellXfs>
 </styleSheet>`;
 
@@ -515,7 +794,696 @@ export class ReportingService {
     });
   }
 
+  async generateFifoInventoryExcel(): Promise<Buffer> {
+    const data = await this.getFifoInventoryReportData();
+    const totalColumns = 8;
+    const alerts = [
+      ...data.reorderAlerts.variants,
+      ...data.reorderAlerts.supplies,
+    ];
+    const rows: SimpleXlsxRow[] = [];
+    const merges = [...createBrandedReportHeaderMerges(totalColumns)];
+
+    rows.push(
+      ...createBrandedReportHeaderRows({
+        title: 'REPORTE INVENTARIO FIFO',
+        generatedLabel: `Generado: ${this.formatDateTime(data.generatedAt)}`,
+        totalColumns,
+      }),
+    );
+
+    rows.push(createBrandedSectionRow('RESUMEN GENERAL', totalColumns));
+    merges.push(createBrandedSectionMerge(rows.length, totalColumns));
+    rows.push({
+      height: 22,
+      cells: [
+        brandedCell(
+          'Producto con stock',
+          BRANDED_REPORT_STYLE_IDS.darkHeaderLeft,
+        ),
+        brandedCell(
+          'Unidades fisicas',
+          BRANDED_REPORT_STYLE_IDS.darkHeaderLeft,
+        ),
+        brandedCell(
+          'Unidades comprometidas',
+          BRANDED_REPORT_STYLE_IDS.darkHeaderLeft,
+        ),
+        brandedCell(
+          'Unidades disponibles',
+          BRANDED_REPORT_STYLE_IDS.darkHeaderLeft,
+        ),
+        brandedCell(
+          'Valor inventario',
+          BRANDED_REPORT_STYLE_IDS.darkHeaderLeft,
+        ),
+        brandedCell('Lotes activos', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell(null, BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell(null, BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+      ],
+    });
+    rows.push({
+      height: 22,
+      cells: [
+        brandedCell(data.totals.products, BRANDED_REPORT_STYLE_IDS.rowValue),
+        brandedCell(data.totals.units, BRANDED_REPORT_STYLE_IDS.rowValue),
+        brandedCell(data.totals.committed, BRANDED_REPORT_STYLE_IDS.rowValue),
+        brandedCell(data.totals.available, BRANDED_REPORT_STYLE_IDS.rowValue),
+        brandedCell(
+          this.formatCurrency(data.totals.valuation),
+          BRANDED_REPORT_STYLE_IDS.rowValue,
+        ),
+        brandedCell(data.totals.batches, BRANDED_REPORT_STYLE_IDS.rowValue),
+        brandedCell(null, BRANDED_REPORT_STYLE_IDS.rowValue),
+        brandedCell(null, BRANDED_REPORT_STYLE_IDS.rowValue),
+      ],
+    });
+    rows.push({ height: 12, cells: brandedEmptyCells(totalColumns) });
+
+    rows.push(
+      createBrandedSectionRow('ALERTAS DE REABASTECIMIENTO', totalColumns),
+    );
+    merges.push(createBrandedSectionMerge(rows.length, totalColumns));
+    rows.push({
+      height: 22,
+      cells: [
+        brandedCell('Tipo', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell('Nombre', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell('SKU', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell('Disponible', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell('Punto reorden', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell('Unidad', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell(null, BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell(null, BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+      ],
+    });
+
+    if (alerts.length === 0) {
+      rows.push({
+        height: 20,
+        cells: [
+          brandedCell('Sin alertas activas', BRANDED_REPORT_STYLE_IDS.rowLabel),
+          ...brandedEmptyCells(
+            totalColumns - 1,
+            BRANDED_REPORT_STYLE_IDS.rowLabel,
+          ),
+        ],
+      });
+    } else {
+      alerts.forEach((alert) => {
+        rows.push({
+          height: 20,
+          cells: [
+            brandedCell(
+              alert.itemType === 'VARIANT' ? 'Variante' : 'Insumo',
+              BRANDED_REPORT_STYLE_IDS.rowLabel,
+            ),
+            brandedCell(alert.name, BRANDED_REPORT_STYLE_IDS.rowLabel),
+            brandedCell(alert.sku ?? '-', BRANDED_REPORT_STYLE_IDS.rowLabel),
+            brandedCell(
+              this.formatUnits(alert.stockAvailable),
+              BRANDED_REPORT_STYLE_IDS.rowValue,
+            ),
+            brandedCell(
+              this.formatUnits(alert.reorderPoint),
+              BRANDED_REPORT_STYLE_IDS.rowValue,
+            ),
+            brandedCell(
+              alert.unitOfMeasure ?? 'und',
+              BRANDED_REPORT_STYLE_IDS.rowLabel,
+            ),
+            brandedCell(null, BRANDED_REPORT_STYLE_IDS.rowLabel),
+            brandedCell(null, BRANDED_REPORT_STYLE_IDS.rowLabel),
+          ],
+        });
+      });
+    }
+
+    rows.push({ height: 12, cells: brandedEmptyCells(totalColumns) });
+    rows.push(createBrandedSectionRow('INVENTARIO ACTUAL', totalColumns));
+    merges.push(createBrandedSectionMerge(rows.length, totalColumns));
+    rows.push({
+      height: 22,
+      cells: [
+        brandedCell('Producto', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell(
+          'Slug / Proveedor',
+          BRANDED_REPORT_STYLE_IDS.darkHeaderLeft,
+        ),
+        brandedCell(
+          'Stock fisico / Fecha',
+          BRANDED_REPORT_STYLE_IDS.darkHeaderLeft,
+        ),
+        brandedCell(
+          'Comprometido / Recibido',
+          BRANDED_REPORT_STYLE_IDS.darkHeaderLeft,
+        ),
+        brandedCell(
+          'Disponible / Restante',
+          BRANDED_REPORT_STYLE_IDS.darkHeaderLeft,
+        ),
+        brandedCell(
+          'Costo ponderado / Unitario',
+          BRANDED_REPORT_STYLE_IDS.darkHeaderLeft,
+        ),
+        brandedCell(
+          'Valor inventario / Total lote',
+          BRANDED_REPORT_STYLE_IDS.darkHeaderLeft,
+        ),
+        brandedCell('Lotes / Estado', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+      ],
+    });
+
+    data.products.forEach((product) => {
+      rows.push({
+        height: 22,
+        cells: [
+          brandedCell(product.name, BRANDED_REPORT_STYLE_IDS.rowLabel),
+          brandedCell(product.slug, BRANDED_REPORT_STYLE_IDS.rowLabel),
+          brandedCell(
+            this.formatUnits(product.stockPhysical ?? product.totalStock),
+            BRANDED_REPORT_STYLE_IDS.rowValue,
+          ),
+          brandedCell(
+            this.formatUnits(product.stockCommitted ?? 0),
+            BRANDED_REPORT_STYLE_IDS.rowValue,
+          ),
+          brandedCell(
+            this.formatUnits(product.stockAvailable ?? product.totalStock),
+            BRANDED_REPORT_STYLE_IDS.rowValue,
+          ),
+          brandedCell(
+            this.formatCurrency(product.weightedAvgCost),
+            BRANDED_REPORT_STYLE_IDS.rowValue,
+          ),
+          brandedCell(
+            this.formatCurrency(product.totalValuation),
+            BRANDED_REPORT_STYLE_IDS.rowValue,
+          ),
+          brandedCell(
+            product.batches.length,
+            BRANDED_REPORT_STYLE_IDS.rowValue,
+          ),
+        ],
+      });
+
+      product.batches.forEach((batch) => {
+        rows.push({
+          height: 20,
+          cells: [
+            brandedCell(
+              `  Lote ${batch.id.slice(0, 8)}`,
+              BRANDED_REPORT_STYLE_IDS.rowLabel,
+            ),
+            brandedCell(
+              batch.supplier?.name ?? 'Proveedor no disponible',
+              BRANDED_REPORT_STYLE_IDS.rowLabel,
+            ),
+            brandedCell(
+              this.formatDateTime(batch.createdAt),
+              BRANDED_REPORT_STYLE_IDS.rowLabel,
+            ),
+            brandedCell(
+              this.formatUnits(batch.quantityReceived),
+              BRANDED_REPORT_STYLE_IDS.rowValue,
+            ),
+            brandedCell(
+              this.formatUnits(batch.quantityRemaining),
+              BRANDED_REPORT_STYLE_IDS.rowValue,
+            ),
+            brandedCell(
+              this.formatCurrency(batch.unitCost),
+              BRANDED_REPORT_STYLE_IDS.rowValue,
+            ),
+            brandedCell(
+              this.formatCurrency(batch.totalCost),
+              BRANDED_REPORT_STYLE_IDS.rowValue,
+            ),
+            brandedCell(batch.status, BRANDED_REPORT_STYLE_IDS.rowLabel),
+          ],
+        });
+      });
+    });
+
+    rows.push({ height: 12, cells: brandedEmptyCells(totalColumns) });
+    rows.push(createBrandedSectionRow('MOVIMIENTOS RECIENTES', totalColumns));
+    merges.push(createBrandedSectionMerge(rows.length, totalColumns));
+    rows.push({
+      height: 22,
+      cells: [
+        brandedCell('Fecha', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell('Item', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell('Tipo', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell('Motivo', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell('Cantidad', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell('Saldo posterior', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell(null, BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell(null, BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+      ],
+    });
+
+    data.movements.forEach((movement) => {
+      rows.push({
+        height: 20,
+        cells: [
+          brandedCell(
+            this.formatDateTime(movement.createdAt),
+            BRANDED_REPORT_STYLE_IDS.rowLabel,
+          ),
+          brandedCell(
+            this.resolveMovementItemLabel(movement),
+            BRANDED_REPORT_STYLE_IDS.rowLabel,
+          ),
+          brandedCell(
+            movement.itemType ?? '-',
+            BRANDED_REPORT_STYLE_IDS.rowLabel,
+          ),
+          brandedCell(
+            movement.reason ?? '-',
+            BRANDED_REPORT_STYLE_IDS.rowLabel,
+          ),
+          brandedCell(
+            this.formatUnits(Number(movement.quantity ?? 0)),
+            BRANDED_REPORT_STYLE_IDS.rowValue,
+          ),
+          brandedCell(
+            this.formatUnits(Number(movement.balanceAfter ?? 0)),
+            BRANDED_REPORT_STYLE_IDS.rowValue,
+          ),
+          brandedCell(null, BRANDED_REPORT_STYLE_IDS.rowLabel),
+          brandedCell(null, BRANDED_REPORT_STYLE_IDS.rowLabel),
+        ],
+      });
+    });
+
+    rows.push({ height: 12, cells: brandedEmptyCells(totalColumns) });
+    rows.push(
+      createBrandedFooterRow(
+        'Documento interno para uso exclusivo de administracion. La valoracion y trazabilidad se calculan con metodologia FIFO.',
+        totalColumns,
+      ),
+    );
+    merges.push(createBrandedSectionMerge(rows.length, totalColumns));
+
+    return createSimpleXlsxBuffer('Inventario FIFO', rows, {
+      columns: [
+        { width: 28 },
+        { width: 24 },
+        { width: 20 },
+        { width: 18 },
+        { width: 18 },
+        { width: 20 },
+        { width: 22 },
+        { width: 16 },
+      ],
+      merges,
+      stylesXml: BRANDED_REPORT_STYLES_XML,
+    });
+  }
+
+  async generateFifoInventoryPDF(): Promise<Buffer> {
+    const data = await this.getFifoInventoryReportData();
+
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({
+        margin: 40,
+        size: 'LETTER',
+        info: { Title: 'Reporte Inventario FIFO - Tote Bag Co.' },
+      });
+      const chunks: Buffer[] = [];
+
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', (err: Error) => reject(new Error(err.message)));
+      const layout = createBrandedPdfLayout(doc, {
+        title: 'REPORTE INVENTARIO FIFO',
+        generatedLabel: `Generado: ${this.formatDateTime(data.generatedAt)}`,
+      });
+
+      drawBrandedPdfSectionTitle(layout, 'RESUMEN GENERAL');
+      drawBrandedPdfKeyValueRow(
+        layout,
+        'Productos con stock',
+        this.formatUnits(data.totals.products),
+      );
+      drawBrandedPdfKeyValueRow(
+        layout,
+        'Unidades fisicas',
+        this.formatUnits(data.totals.units),
+      );
+      drawBrandedPdfKeyValueRow(
+        layout,
+        'Unidades comprometidas',
+        this.formatUnits(data.totals.committed),
+      );
+      drawBrandedPdfKeyValueRow(
+        layout,
+        'Unidades disponibles',
+        this.formatUnits(data.totals.available),
+      );
+      drawBrandedPdfKeyValueRow(
+        layout,
+        'Valor total inventario',
+        this.formatCurrency(data.totals.valuation),
+        { tone: 'positive', emphasized: true },
+      );
+      drawBrandedPdfKeyValueRow(
+        layout,
+        'Lotes activos',
+        this.formatUnits(data.totals.batches),
+      );
+
+      drawBrandedPdfSectionTitle(layout, 'ALERTAS DE REABASTECIMIENTO');
+      if (data.reorderAlerts.count === 0) {
+        drawBrandedPdfParagraph(
+          layout,
+          'No hay alertas activas de reabastecimiento.',
+        );
+      } else {
+        [
+          ...data.reorderAlerts.variants,
+          ...data.reorderAlerts.supplies,
+        ].forEach((alert) => {
+          drawBrandedPdfParagraph(
+            layout,
+            `${alert.itemType === 'VARIANT' ? 'Variante' : 'Insumo'}: ${alert.name}${
+              alert.sku ? ` (${alert.sku})` : ''
+            } | Disponible ${this.formatUnits(alert.stockAvailable)} | Reorden ${this.formatUnits(
+              alert.reorderPoint,
+            )}${alert.unitOfMeasure ? ` ${alert.unitOfMeasure}` : ''}`,
+          );
+        });
+      }
+
+      drawBrandedPdfSectionTitle(layout, 'INVENTARIO ACTUAL');
+      if (data.products.length === 0) {
+        drawBrandedPdfParagraph(
+          layout,
+          'No hay productos con lotes activos en inventario.',
+        );
+      } else {
+        data.products.forEach((product) => {
+          drawBrandedPdfParagraph(
+            layout,
+            `${product.name} (${product.slug}) | Disponible ${this.formatUnits(
+              product.stockAvailable ?? product.totalStock,
+            )} | Comprometido ${this.formatUnits(product.stockCommitted ?? 0)} | Costo ponderado ${this.formatCurrency(
+              product.weightedAvgCost,
+            )} | Valor ${this.formatCurrency(product.totalValuation)}`,
+          );
+
+          product.batches.forEach((batch) => {
+            drawBrandedPdfParagraph(
+              layout,
+              `Lote ${batch.id.slice(0, 8)} | Proveedor ${
+                batch.supplier?.name ?? 'Proveedor no disponible'
+              } | Fecha ${this.formatDateTime(batch.createdAt)} | Restante ${this.formatUnits(
+                batch.quantityRemaining,
+              )} | Costo unitario ${this.formatCurrency(batch.unitCost)}`,
+            );
+          });
+        });
+      }
+
+      drawBrandedPdfSectionTitle(layout, 'MOVIMIENTOS RECIENTES');
+      if (data.movements.length === 0) {
+        drawBrandedPdfParagraph(
+          layout,
+          'No hay movimientos recientes de inventario.',
+        );
+      } else {
+        data.movements.forEach((movement) => {
+          drawBrandedPdfParagraph(
+            layout,
+            `${this.formatDateTime(movement.createdAt)} | ${this.resolveMovementItemLabel(
+              movement,
+            )} | ${movement.reason ?? 'Sin motivo'} | Cantidad ${this.formatUnits(
+              Number(movement.quantity ?? 0),
+            )} | Saldo ${this.formatUnits(Number(movement.balanceAfter ?? 0))}`,
+          );
+        });
+      }
+
+      drawBrandedPdfFooter(
+        layout,
+        'Documento interno para uso exclusivo de administracion. La valoracion y trazabilidad se calculan con metodologia FIFO.',
+      );
+
+      doc.end();
+    });
+  }
+
+  async generateNonCommercialOutputsExcel(): Promise<Buffer> {
+    const data = await this.getNonCommercialOutputsReportData();
+    const totalColumns = 11;
+    const rows: SimpleXlsxRow[] = [];
+    const merges = [...createBrandedReportHeaderMerges(totalColumns)];
+
+    rows.push(
+      ...createBrandedReportHeaderRows({
+        title: 'SALIDAS NO COMERCIALES',
+        generatedLabel: `Generado: ${this.formatDateTime(data.generatedAt)}`,
+        totalColumns,
+      }),
+    );
+
+    rows.push(createBrandedSectionRow('RESUMEN GENERAL', totalColumns));
+    merges.push(createBrandedSectionMerge(rows.length, totalColumns));
+    rows.push({
+      height: 22,
+      cells: [
+        brandedCell('Registros', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell(
+          'Unidades descontadas',
+          BRANDED_REPORT_STYLE_IDS.darkHeaderLeft,
+        ),
+        brandedCell('Motivos usados', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell('Ultimo registro', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        ...brandedEmptyCells(
+          totalColumns - 4,
+          BRANDED_REPORT_STYLE_IDS.darkHeaderLeft,
+        ),
+      ],
+    });
+    rows.push({
+      height: 22,
+      cells: [
+        brandedCell(
+          data.summary.totalRecords,
+          BRANDED_REPORT_STYLE_IDS.rowValue,
+        ),
+        brandedCell(data.summary.totalUnits, BRANDED_REPORT_STYLE_IDS.rowValue),
+        brandedCell(
+          data.summary.activeReasons,
+          BRANDED_REPORT_STYLE_IDS.rowValue,
+        ),
+        brandedCell(
+          data.summary.lastMovementAt
+            ? this.formatDateTime(data.summary.lastMovementAt)
+            : 'Sin datos',
+          BRANDED_REPORT_STYLE_IDS.rowValue,
+        ),
+        ...brandedEmptyCells(
+          totalColumns - 4,
+          BRANDED_REPORT_STYLE_IDS.rowLabel,
+        ),
+      ],
+    });
+    rows.push({ height: 12, cells: brandedEmptyCells(totalColumns) });
+
+    rows.push(createBrandedSectionRow('HISTORIAL DE SALIDAS', totalColumns));
+    merges.push(createBrandedSectionMerge(rows.length, totalColumns));
+    rows.push({
+      height: 22,
+      cells: [
+        brandedCell('Fecha', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell('Producto', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell('Variante / SKU', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell('Cantidad', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell('Motivo', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell('Usuario', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell('Stock antes', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell('Stock despues', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell('Estado', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell('Observacion', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+        brandedCell('Soporte', BRANDED_REPORT_STYLE_IDS.darkHeaderLeft),
+      ],
+    });
+
+    if (data.outputs.length === 0) {
+      rows.push({
+        height: 20,
+        cells: [
+          brandedCell(
+            'No hay salidas no comerciales registradas.',
+            BRANDED_REPORT_STYLE_IDS.rowLabel,
+          ),
+          ...brandedEmptyCells(
+            totalColumns - 1,
+            BRANDED_REPORT_STYLE_IDS.rowLabel,
+          ),
+        ],
+      });
+    } else {
+      data.outputs.forEach((output) => {
+        rows.push({
+          height: 20,
+          cells: [
+            brandedCell(
+              this.formatDateTime(output.createdAt),
+              BRANDED_REPORT_STYLE_IDS.rowLabel,
+            ),
+            brandedCell(
+              output.variant?.product?.name ?? 'Variante eliminada',
+              BRANDED_REPORT_STYLE_IDS.rowLabel,
+            ),
+            brandedCell(
+              this.resolveVariantLabel(output),
+              BRANDED_REPORT_STYLE_IDS.rowLabel,
+            ),
+            brandedCell(
+              this.formatUnits(output.quantity),
+              BRANDED_REPORT_STYLE_IDS.rowValue,
+            ),
+            brandedCell(
+              NON_COMMERCIAL_REASON_LABELS[output.reason],
+              BRANDED_REPORT_STYLE_IDS.rowLabel,
+            ),
+            brandedCell(
+              this.resolveUserLabel(output),
+              BRANDED_REPORT_STYLE_IDS.rowLabel,
+            ),
+            brandedCell(
+              this.formatUnits(Number(output.stockBefore ?? 0)),
+              BRANDED_REPORT_STYLE_IDS.rowValue,
+            ),
+            brandedCell(
+              this.formatUnits(Number(output.stockAfter ?? 0)),
+              BRANDED_REPORT_STYLE_IDS.rowValue,
+            ),
+            brandedCell(
+              NON_COMMERCIAL_STATUS_LABELS[output.status],
+              BRANDED_REPORT_STYLE_IDS.rowLabel,
+            ),
+            brandedCell(
+              output.notes?.trim() || 'Sin observacion',
+              BRANDED_REPORT_STYLE_IDS.rowLabel,
+            ),
+            brandedCell(
+              output.supportUrl?.trim() || '-',
+              BRANDED_REPORT_STYLE_IDS.rowLabel,
+            ),
+          ],
+        });
+      });
+    }
+
+    rows.push({ height: 12, cells: brandedEmptyCells(totalColumns) });
+    rows.push(
+      createBrandedFooterRow(
+        'Documento interno para uso exclusivo de administracion. Este historial conserva trazabilidad completa de descuentos no comerciales.',
+        totalColumns,
+      ),
+    );
+    merges.push(createBrandedSectionMerge(rows.length, totalColumns));
+
+    return createSimpleXlsxBuffer('Salidas no comerciales', rows, {
+      columns: [
+        { width: 22 },
+        { width: 26 },
+        { width: 24 },
+        { width: 14 },
+        { width: 18 },
+        { width: 18 },
+        { width: 14 },
+        { width: 14 },
+        { width: 14 },
+        { width: 36 },
+        { width: 40 },
+      ],
+      merges,
+      stylesXml: BRANDED_REPORT_STYLES_XML,
+    });
+  }
+
+  async generateNonCommercialOutputsPDF(): Promise<Buffer> {
+    const data = await this.getNonCommercialOutputsReportData();
+
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({
+        margin: 40,
+        size: 'LETTER',
+        info: { Title: 'Reporte Salidas No Comerciales - Tote Bag Co.' },
+      });
+      const chunks: Buffer[] = [];
+
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', (err: Error) => reject(new Error(err.message)));
+      const layout = createBrandedPdfLayout(doc, {
+        title: 'SALIDAS NO COMERCIALES',
+        generatedLabel: `Generado: ${this.formatDateTime(data.generatedAt)}`,
+      });
+
+      drawBrandedPdfSectionTitle(layout, 'RESUMEN GENERAL');
+      drawBrandedPdfKeyValueRow(
+        layout,
+        'Registros',
+        this.formatUnits(data.summary.totalRecords),
+      );
+      drawBrandedPdfKeyValueRow(
+        layout,
+        'Unidades descontadas',
+        this.formatUnits(data.summary.totalUnits),
+        { tone: 'negative', emphasized: true },
+      );
+      drawBrandedPdfKeyValueRow(
+        layout,
+        'Motivos usados',
+        this.formatUnits(data.summary.activeReasons),
+      );
+      drawBrandedPdfKeyValueRow(
+        layout,
+        'Ultimo registro',
+        data.summary.lastMovementAt
+          ? this.formatDateTime(data.summary.lastMovementAt)
+          : 'Sin datos',
+      );
+
+      drawBrandedPdfSectionTitle(layout, 'HISTORIAL DE SALIDAS');
+      if (data.outputs.length === 0) {
+        drawBrandedPdfParagraph(
+          layout,
+          'No hay salidas no comerciales registradas.',
+        );
+      } else {
+        data.outputs.forEach((output) => {
+          drawBrandedPdfParagraph(
+            layout,
+            `${this.formatDateTime(output.createdAt)} | ${
+              output.variant?.product?.name ?? 'Variante eliminada'
+            } | ${this.resolveVariantLabel(output)} | Cantidad ${this.formatUnits(
+              output.quantity,
+            )} | Motivo ${NON_COMMERCIAL_REASON_LABELS[output.reason]} | Usuario ${this.resolveUserLabel(
+              output,
+            )} | Estado ${NON_COMMERCIAL_STATUS_LABELS[output.status]} | Observacion ${
+              output.notes?.trim() || 'Sin observacion'
+            }`,
+          );
+        });
+      }
+
+      drawBrandedPdfFooter(
+        layout,
+        'Documento interno para uso exclusivo de administracion. Este historial conserva trazabilidad completa de descuentos no comerciales.',
+      );
+
+      doc.end();
+    });
+  }
+
   async getClosingReport(startDate: Date, endDate: Date, _userId: string) {
+    void _userId;
     this.validateDateRange(startDate, endDate);
 
     const whereClause: Prisma.FinancialTransactionWhereInput = {

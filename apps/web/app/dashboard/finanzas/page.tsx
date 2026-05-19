@@ -27,11 +27,9 @@ import {
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
-  buildDefaultFixedExpensesConfig,
   buildFinanceDashboardQueryParams,
-  deriveBreakEvenThermometer,
-  loadFinanceDashboardData,
 } from '@/lib/finance-dashboard';
+import { getFinanceDashboardData } from './actions';
 import { createClient } from '@/utils/supabase/client';
 import { apiFetch } from '@/utils/api';
 import { FINANCE_DATA_CHANGED_EVENT } from '@/lib/finance-events';
@@ -468,11 +466,7 @@ export default function FinanceDashboardPage() {
       }
 
       try {
-        const authHeaders = await getAuthHeaders();
-        const result = await loadFinanceDashboardData({
-          authHeaders,
-          query: financeQuery,
-        });
+        const result = await getFinanceDashboardData(financeQuery);
 
         if (!active) return;
         setSummary(result.summary);
@@ -699,24 +693,22 @@ export default function FinanceDashboardPage() {
 
       const configResult = await configRes.json();
       const resolvedConfig = unwrapApiData<FixedExpensesConfig>(configResult);
-      const safeConfig = resolvedConfig ?? buildDefaultFixedExpensesConfig();
-      const resolvedThermometer = deriveBreakEvenThermometer(
-        financeQuery,
-        safeConfig,
-        profitability,
-      );
-
-      setFixedExpensesConfig(safeConfig);
-      setBreakEvenThermometer(resolvedThermometer);
-      setFixedExpenseInputs(
-        safeConfig.items.length
-          ? safeConfig.items.map((item) => ({
-              id: item.id,
-              label: item.label,
-              amount: item.amount > 0 ? String(item.amount) : '',
-            }))
-          : buildDefaultFixedExpenseInputs(),
-      );
+      
+      // Trigger global refresh to let the server-side loader handle the new derived state
+      window.dispatchEvent(new CustomEvent(FINANCE_DATA_CHANGED_EVENT));
+      
+      if (resolvedConfig) {
+        setFixedExpensesConfig(resolvedConfig);
+        setFixedExpenseInputs(
+          resolvedConfig.items.length
+            ? resolvedConfig.items.map((item) => ({
+                id: item.id,
+                label: item.label,
+                amount: item.amount > 0 ? String(item.amount) : '',
+              }))
+            : buildDefaultFixedExpenseInputs(),
+        );
+      }
       setFixedExpensesSaveSuccess('Gastos fijos mensuales guardados.');
     } catch (error) {
       console.error('Error saving fixed expenses:', error);

@@ -22,13 +22,55 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   ...(metadataBase ? { metadataBase } : {}),
   title: {
-    default: "Tote Bag Shop | Bolsos Artesanales",
+    default: "Tote Bag Shop | Bolsos Artesanales y Personalizados en Colombia",
     template: "%s | Tote Bag Shop"
   },
-  description: "Bolsos artesanales y ecológicos creados para durar.",
+  description: "Descubre nuestra colección de tote bags artesanales, ecológicos y personalizables. Hechos en Colombia con materiales premium. Envíos a todo el país.",
+  keywords: ["tote bags", "bolsos de tela", "personalización", "bolsos artesanales", "Colombia", "moda sostenible"],
+  authors: [{ name: "Tote Bag Shop Team" }],
+  creator: "Tote Bag Shop",
+  publisher: "Tote Bag Shop",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
   alternates: {
     canonical: '/',
-  }
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'es_CO',
+    url: metadataBase?.toString() || 'https://totebag.shop',
+    siteName: 'Tote Bag Shop',
+    title: 'Tote Bag Shop | Bolsos Artesanales y Personalizados',
+    description: 'Bolsos artesanales y ecológicos creados para durar. Personaliza tu estilo hoy.',
+    images: [
+      {
+        url: '/tote_bag_lifestyle.png',
+        width: 1200,
+        height: 630,
+        alt: 'Tote Bag Shop Lifestyle',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Tote Bag Shop | Bolsos Artesanales',
+    description: 'Bolsos artesanales y ecológicos creados para durar.',
+    images: ['/tote_bag_lifestyle.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 };
 
 import { I18nProvider } from "@/components/I18nProvider";

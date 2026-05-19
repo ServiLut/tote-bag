@@ -55,4 +55,5 @@ export interface Product {
   };
   tags: string[];
   attributes?: Attribute[];
+  updatedAt?: string;
 }

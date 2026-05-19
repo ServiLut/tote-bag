@@ -132,6 +132,12 @@ const PRIVACY_COPY = {
   },
 } as const;
 
+interface LegalSection {
+  title: string;
+  paragraphs: readonly string[];
+  bullets?: readonly string[];
+}
+
 export default function PrivacyPolicyPage() {
   const { i18n } = useTranslation();
   const copy = (i18n.resolvedLanguage || i18n.language).startsWith('en')
@@ -147,7 +153,7 @@ export default function PrivacyPolicyPage() {
         <p className="text-muted">{copy.subtitle}</p>
       </div>
 
-      {copy.sections.map((section) => (
+      {(copy.sections as readonly LegalSection[]).map((section) => (
         <section key={section.title} className="space-y-4">
           <h2 className="text-2xl font-bold text-primary">{section.title}</h2>
           {section.paragraphs.map((paragraph) => (

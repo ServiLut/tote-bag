@@ -13,6 +13,7 @@ import { ReportingService } from './reporting.service';
 import { Response } from 'express';
 import { Role } from '../../generated/client/client';
 import { RolesService } from '../roles/roles.service';
+import { format } from 'date-fns';
 
 interface RequestWithUser {
   user?: { id: string };
@@ -130,6 +131,78 @@ export class ReportingController {
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename=Reporte_Contable_${startDate}_${endDate}.pdf`,
+      'Content-Length': buffer.length,
+    });
+
+    res.status(200).send(buffer);
+  }
+
+  @Get('fifo/export/excel')
+  async exportFifoInventoryExcel(
+    @Request() req: RequestWithUser,
+    @Res() res: Response,
+  ) {
+    await this.ensureAdmin(req.user?.id);
+    const buffer = await this.reportingService.generateFifoInventoryExcel();
+
+    res.set({
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename=Reporte_Inventario_FIFO_${format(new Date(), 'yyyy-MM-dd')}.xlsx`,
+      'Content-Length': buffer.length,
+    });
+
+    res.status(200).send(buffer);
+  }
+
+  @Get('fifo/export/pdf')
+  async exportFifoInventoryPDF(
+    @Request() req: RequestWithUser,
+    @Res() res: Response,
+  ) {
+    await this.ensureAdmin(req.user?.id);
+    const buffer = await this.reportingService.generateFifoInventoryPDF();
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename=Reporte_Inventario_FIFO_${format(new Date(), 'yyyy-MM-dd')}.pdf`,
+      'Content-Length': buffer.length,
+    });
+
+    res.status(200).send(buffer);
+  }
+
+  @Get('non-commercial-outputs/export/excel')
+  async exportNonCommercialOutputsExcel(
+    @Request() req: RequestWithUser,
+    @Res() res: Response,
+  ) {
+    await this.ensureAdmin(req.user?.id);
+    const buffer =
+      await this.reportingService.generateNonCommercialOutputsExcel();
+
+    res.set({
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename=Reporte_Salidas_No_Comerciales_${format(new Date(), 'yyyy-MM-dd')}.xlsx`,
+      'Content-Length': buffer.length,
+    });
+
+    res.status(200).send(buffer);
+  }
+
+  @Get('non-commercial-outputs/export/pdf')
+  async exportNonCommercialOutputsPDF(
+    @Request() req: RequestWithUser,
+    @Res() res: Response,
+  ) {
+    await this.ensureAdmin(req.user?.id);
+    const buffer =
+      await this.reportingService.generateNonCommercialOutputsPDF();
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename=Reporte_Salidas_No_Comerciales_${format(new Date(), 'yyyy-MM-dd')}.pdf`,
       'Content-Length': buffer.length,
     });
 

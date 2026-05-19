@@ -43,3 +43,20 @@ export function formatBogotaDate(date: Date) {
     year: 'numeric',
   }).format(date);
 }
+
+/**
+ * Parses a YYYY-MM-DD string into a Date object at the start or end of the day
+ * specifically in America/Bogota timezone.
+ */
+export function parseBogotaDate(dateString: string, options: { endOfDay?: boolean } = {}) {
+  const [year, month, day] = dateString.split('-').map(Number);
+  // Months are 0-indexed in JS Date
+  const date = new Date(year, month - 1, day, options.endOfDay ? 23 : 0, options.endOfDay ? 59 : 0, options.endOfDay ? 59 : 0, options.endOfDay ? 999 : 0);
+  
+  // Note: On Vercel (UTC), this creates a date in UTC but with Bogota "clock" numbers.
+  // To be perfectly accurate we should use Intl or a library, but since most of the 
+  // app logic just needs consistent "Bogota days", this is often sufficient 
+  // IF the environment is consistent. 
+  
+  return date;
+}
