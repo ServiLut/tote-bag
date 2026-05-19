@@ -9,7 +9,9 @@ import {
   Boxes,
   ChevronDown,
   ChevronRight,
+  Download,
   Factory,
+  FileSpreadsheet,
   History,
   Layers,
   Loader2,
@@ -111,6 +113,14 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+function getDownloadFilename(
+  contentDisposition: string | null,
+  fallback: string,
+) {
+  const match = contentDisposition?.match(/filename="?([^"]+)"?/i);
+  return match?.[1] ?? fallback;
+}
+
 export default function InventoryDashboardPage() {
   const [products, setProducts] = useState<InventoryProduct[]>([]);
   const [movements, setMovements] = useState<InventoryMovement[]>([]);
@@ -130,6 +140,7 @@ export default function InventoryDashboardPage() {
   const [inventoryValueMax, setInventoryValueMax] = useState('');
   const [batchCountMin, setBatchCountMin] = useState('');
   const [batchCountMax, setBatchCountMax] = useState('');
+  const [exportLoading, setExportLoading] = useState<'excel' | 'pdf' | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -278,6 +289,47 @@ export default function InventoryDashboardPage() {
     );
   };
 
+  const handleExport = async (type: 'excel' | 'pdf') => {
+    setExportLoading(type);
+    setError(null);
+
+    try {
+      const headers = await getAuthHeaders();
+      const response = await apiFetch(`/inventory/reporting/fifo/export/${type}`, {
+        headers,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          errorText || `No fue posible exportar el reporte en ${type.toUpperCase()}.`,
+        );
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = getDownloadFilename(
+        response.headers.get('Content-Disposition'),
+        `Reporte_Inventario_FIFO.${type === 'excel' ? 'xlsx' : 'pdf'}`,
+      );
+      document.body.appendChild(link);
+      link.click();
+      window.URL.revokeObjectURL(downloadUrl);
+      document.body.removeChild(link);
+    } catch (exportError) {
+      console.error(`Error exporting FIFO report (${type}):`, exportError);
+      setError(
+        exportError instanceof Error
+          ? exportError.message
+          : `No fue posible exportar el reporte en ${type.toUpperCase()}.`,
+      );
+    } finally {
+      setExportLoading(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="mx-auto flex min-h-[60vh] max-w-7xl items-center justify-center p-8 md:p-12">
@@ -306,29 +358,60 @@ export default function InventoryDashboardPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 rounded-xl border border-theme bg-base p-1">
-          <button
-            type="button"
-            onClick={() => setActiveTab('current')}
-            className={`rounded-lg px-4 py-2 text-[10px] font-black uppercase tracking-wider transition-all ${
-              activeTab === 'current'
-                ? 'bg-primary text-base-color shadow-sm'
-                : 'text-muted hover:bg-theme/5'
-            }`}
-          >
-            Inventario Actual
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('movements')}
-            className={`rounded-lg px-4 py-2 text-[10px] font-black uppercase tracking-wider transition-all ${
-              activeTab === 'movements'
-                ? 'bg-primary text-base-color shadow-sm'
-                : 'text-muted hover:bg-theme/5'
-            }`}
-          >
-            Movimientos
-          </button>
+        <div className="flex flex-col gap-3 md:items-end">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => void handleExport('excel')}
+              disabled={exportLoading !== null}
+              className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-black text-emerald-700 transition-all hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {exportLoading === 'excel' ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <FileSpreadsheet className="h-4 w-4" />
+              )}
+              Excel
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleExport('pdf')}
+              disabled={exportLoading !== null}
+              className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-black text-rose-700 transition-all hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {exportLoading === 'pdf' ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              PDF
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 rounded-xl border border-theme bg-base p-1">
+            <button
+              type="button"
+              onClick={() => setActiveTab('current')}
+              className={`rounded-lg px-4 py-2 text-[10px] font-black uppercase tracking-wider transition-all ${
+                activeTab === 'current'
+                  ? 'bg-primary text-base-color shadow-sm'
+                  : 'text-muted hover:bg-theme/5'
+              }`}
+            >
+              Inventario Actual
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('movements')}
+              className={`rounded-lg px-4 py-2 text-[10px] font-black uppercase tracking-wider transition-all ${
+                activeTab === 'movements'
+                  ? 'bg-primary text-base-color shadow-sm'
+                  : 'text-muted hover:bg-theme/5'
+              }`}
+            >
+              Movimientos
+            </button>
+          </div>
         </div>
       </div>
 
