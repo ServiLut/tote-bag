@@ -13,6 +13,7 @@ import {
   X,
 } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
+import { ReceiptUpload } from '@/components/dashboard/ReceiptUpload';
 import { Badge, Input, InputGroup } from '@tote-bag/ui';
 import { Combobox } from '@/components/ui/Combobox';
 import {
@@ -104,6 +105,41 @@ function getCatalogReferencePrice(product: Product) {
   }
 
   return normalizeCatalogMoney(product.basePrice);
+}
+
+function serializeDecimalForApi(value: number) {
+  return value.toFixed(2).replace(/\.00$/, '');
+}
+
+function serializeDateForApi(value: string) {
+  return `${value}T12:00:00.000Z`;
+}
+
+function extractStorageRef(payload: unknown) {
+  if (!payload || typeof payload !== 'object') {
+    return null;
+  }
+
+  const candidate = payload as {
+    storageRef?: unknown;
+    data?: {
+      storageRef?: unknown;
+    };
+  };
+
+  if (typeof candidate.storageRef === 'string') {
+    return candidate.storageRef;
+  }
+
+  if (
+    candidate.data &&
+    typeof candidate.data === 'object' &&
+    typeof candidate.data.storageRef === 'string'
+  ) {
+    return candidate.data.storageRef;
+  }
+
+  return null;
 }
 
 interface ShippingProvider {
@@ -201,6 +237,8 @@ export default function NewManualOrderPage() {
   const [discountType, setDiscountType] = useState<'amount' | 'percent'>('amount');
   const [initialStatus, setInitialStatus] = useState<'PENDIENTE_PAGO' | 'PAGADA'>('PENDIENTE_PAGO');
   const [paymentReceiptUrl, setPaymentReceiptUrl] = useState('');
+  const [paymentReceiptFile, setPaymentReceiptFile] = useState<File | null>(null);
+  const [creationNotice, setCreationNotice] = useState<string | null>(null);
   const [shippingData, setShippingData] = useState({
     providerId: '',
     providerName: '',
@@ -521,8 +559,12 @@ export default function NewManualOrderPage() {
     if (!shippingData.department.trim()) return 'Ingresa un departamento.';
     if (!shippingData.city.trim()) return 'Ingresa una ciudad o municipio.';
     if (!shippingData.address.trim()) return 'Ingresa una direccion completa.';
-    if (initialStatus === 'PAGADA' && !paymentReceiptUrl.trim()) {
-      return 'Adjunta la URL o referencia privada del soporte de pago.';
+    if (
+      initialStatus === 'PAGADA' &&
+      !paymentReceiptUrl.trim() &&
+      !paymentReceiptFile
+    ) {
+      return 'Adjunta un comprobante o registra una URL/referencia privada del soporte de pago.';
     }
     return null;
   };
@@ -537,6 +579,7 @@ export default function NewManualOrderPage() {
 
     setSubmitting(true);
     setFormError(null);
+    setCreationNotice(null);
 
     try {
       const {
@@ -546,6 +589,11 @@ export default function NewManualOrderPage() {
       if (!session) {
         throw new Error('La sesion expiro. Inicia sesion de nuevo.');
       }
+
+      const shouldConfirmOrder = initialStatus === 'PAGADA';
+      const shouldUploadReceiptAfterCreation =
+        shouldConfirmOrder && Boolean(paymentReceiptFile);
+      const normalizedPaymentReceiptUrl = paymentReceiptUrl.trim();
 
       const response = await apiFetch('/orders', {
         method: 'POST',
@@ -573,12 +621,14 @@ export default function NewManualOrderPage() {
           carrier: shippingData.providerName || undefined,
           isManual: true,
           source: 'MANUAL',
-          initialStatus,
+          initialStatus: shouldUploadReceiptAfterCreation
+            ? 'PENDIENTE_PAGO'
+            : initialStatus,
           manualDiscountType: discountType,
           manualDiscountValue: discount.numericValue,
           paymentReceiptUrl:
-            initialStatus === 'PAGADA'
-              ? paymentReceiptUrl.trim() || undefined
+            shouldConfirmOrder && !shouldUploadReceiptAfterCreation
+              ? normalizedPaymentReceiptUrl || undefined
               : undefined,
           items: items.map((item) => ({
             productId: item.productId,
@@ -589,12 +639,110 @@ export default function NewManualOrderPage() {
         }),
       });
 
-      const json = await response.json();
+      const json = await response.json().catch(() => null);
       if (!response.ok) {
         throw new Error(json?.message || json?.error || 'No se pudo crear el pedido.');
       }
 
-      setCreatedOrder(json.data as CreatedOrder);
+      const nextCreatedOrder = json?.data as CreatedOrder | undefined;
+
+      if (!nextCreatedOrder?.id) {
+        throw new Error('La orden se creo, pero la API no devolvio su identificador.');
+      }
+
+      if (!shouldConfirmOrder) {
+        setCreatedOrder(nextCreatedOrder);
+        return;
+      }
+
+      if (!shouldUploadReceiptAfterCreation) {
+        setCreationNotice('El pedido se registro como pagado con su soporte asociado.');
+        setCreatedOrder(nextCreatedOrder);
+        return;
+      }
+
+      let postCreationWarning: string | null = null;
+
+      try {
+        const receiptFileToUpload = paymentReceiptFile;
+        if (!receiptFileToUpload) {
+          throw new Error('No se encontro el archivo del comprobante para cerrar el pago.');
+        }
+
+        const receiptFormData = new FormData();
+        receiptFormData.append('file', receiptFileToUpload);
+
+        const uploadResponse = await apiFetch(
+          `/payments/upload-receipt/order/${nextCreatedOrder.id}`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: receiptFormData,
+          },
+        );
+
+        const uploadBody = await uploadResponse.json().catch(() => null);
+        if (!uploadResponse.ok) {
+          throw new Error(
+            extractApiErrorMessage(
+              uploadBody,
+              'No fue posible subir el comprobante del pedido.',
+            ),
+          );
+        }
+
+        const storageRef = extractStorageRef(uploadBody);
+        if (!storageRef) {
+          throw new Error(
+            'La API no devolvio la referencia privada del comprobante.',
+          );
+        }
+
+        const paymentResponse = await apiFetch(
+          `/orders/${nextCreatedOrder.id}/payments`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              amount: serializeDecimalForApi(total),
+              paymentDate: serializeDateForApi(
+                new Date().toISOString().slice(0, 10),
+              ),
+              proofUrl: storageRef,
+              notes: 'Pago registrado al crear la orden manual desde dashboard.',
+            }),
+          },
+        );
+
+        const paymentBody = await paymentResponse.json().catch(() => null);
+        if (!paymentResponse.ok) {
+          throw new Error(
+            extractApiErrorMessage(
+              paymentBody,
+              'No fue posible confirmar el pago del pedido.',
+            ),
+          );
+        }
+
+        setCreationNotice('El pedido quedo confirmado y el comprobante fue anexado.');
+      } catch (postCreationError) {
+        postCreationWarning =
+          postCreationError instanceof Error
+            ? postCreationError.message
+            : 'El pedido se creo, pero no fue posible cerrar el registro del comprobante.';
+      }
+
+      setCreatedOrder(nextCreatedOrder);
+      if (postCreationWarning) {
+        setFormError(
+          `${postCreationWarning} La orden quedo creada y requiere revision en el dashboard.`,
+        );
+      }
     } catch (error) {
       console.error(error);
       setFormError(error instanceof Error ? error.message : 'Error de conexion al crear el pedido.');
@@ -808,6 +956,11 @@ export default function NewManualOrderPage() {
         {formError && (
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {formError}
+          </div>
+        )}
+        {creationNotice && (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            {creationNotice}
           </div>
         )}
         <div className="grid gap-3">
@@ -1090,6 +1243,7 @@ export default function NewManualOrderPage() {
               setInitialStatus(nextStatus);
               if (nextStatus !== 'PAGADA') {
                 setPaymentReceiptUrl('');
+                setPaymentReceiptFile(null);
               }
             }}
             className="w-full rounded-xl border border-theme bg-base px-4 py-3 font-black outline-none focus:ring-2 focus:ring-primary/20"
@@ -1098,13 +1252,31 @@ export default function NewManualOrderPage() {
             <option value="PAGADA">Pagada / Confirmada</option>
           </select>
           {initialStatus === 'PAGADA' && (
-            <input
-              type="text"
-              value={paymentReceiptUrl}
-              onChange={(event) => setPaymentReceiptUrl(event.target.value)}
-              placeholder="URL publica o referencia privada del soporte"
-              className="w-full rounded-xl border border-theme bg-base px-4 py-3 font-bold outline-none focus:ring-2 focus:ring-primary/20"
-            />
+            <div className="space-y-3 rounded-2xl border border-theme bg-base/40 p-4">
+              <ReceiptUpload
+                entityId="manual-order-draft"
+                entityType="order"
+                deferUpload
+                disabled={submitting}
+                onFileSelected={setPaymentReceiptFile}
+                selectedFileName={paymentReceiptFile?.name ?? null}
+              />
+              <div className="space-y-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted">
+                  O pega una URL publica o referencia privada
+                </p>
+                <input
+                  type="text"
+                  value={paymentReceiptUrl}
+                  onChange={(event) => setPaymentReceiptUrl(event.target.value)}
+                  placeholder="https://... o private://..."
+                  className="w-full rounded-xl border border-theme bg-base px-4 py-3 font-bold outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              <p className="text-xs text-muted">
+                Si adjuntas un archivo, el pedido se crea y luego se confirma con el comprobante.
+              </p>
+            </div>
           )}
           <button disabled={submitting} onClick={handleSubmit} className="w-full rounded-2xl bg-primary py-4 font-black uppercase tracking-[0.2em] text-base-color disabled:opacity-50">
             {submitting ? <span className="flex items-center justify-center gap-2"><Loader2 className="h-5 w-5 animate-spin" />Creando...</span> : 'Crear Pedido'}
