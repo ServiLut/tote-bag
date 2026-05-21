@@ -316,12 +316,12 @@ export default function ReportsPage() {
 
       {/* Range Selector */}
       <div className="bg-surface border border-theme rounded-2xl p-6 shadow-sm flex flex-col md:flex-row items-start gap-6 md:items-center">
-        <div className="flex w-full items-center gap-2 overflow-x-auto p-1 bg-base border border-theme rounded-xl md:w-auto">
+        <div className="grid w-full grid-cols-1 gap-2 border border-theme bg-base p-1 rounded-xl sm:grid-cols-3 md:w-auto">
           {['CURRENT_MONTH', 'LAST_MONTH', 'YEAR_TO_DATE'].map((r) => (
             <button
               key={r}
               onClick={() => handleRangeChange(r)}
-              className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+              className={`w-full px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
                 range === r ? 'bg-primary text-base-color shadow-sm' : 'text-muted hover:bg-theme/5'
               }`}
             >
