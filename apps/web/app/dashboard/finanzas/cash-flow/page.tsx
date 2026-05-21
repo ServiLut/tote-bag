@@ -218,10 +218,10 @@ export default function CashFlowPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 animate-in fade-in slide-in-from-bottom-4 p-8 duration-500 md:p-12">
+    <div className="mx-auto max-w-7xl space-y-8 animate-in px-4 py-5 duration-500 fade-in slide-in-from-bottom-4 sm:px-6 md:p-12">
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
         <div className="space-y-1">
-          <h1 className="flex items-center gap-3 text-3xl font-black tracking-tight text-primary">
+          <h1 className="flex items-center gap-3 text-2xl font-black tracking-tight text-primary md:text-3xl">
             <TrendingUp className="h-8 w-8 text-emerald-500" />
             Flujo de Caja (Cash Flow)
           </h1>
@@ -230,7 +230,7 @@ export default function CashFlowPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 rounded-xl border border-theme bg-base p-1">
+        <div className="flex w-full items-center gap-2 overflow-x-auto rounded-xl border border-theme bg-base p-1 md:w-auto">
           {[
             { id: '30_DAYS', label: '30 dias', period: 'daily' },
             { id: '6_MONTHS', label: '6 meses', period: 'monthly' },
@@ -268,7 +268,7 @@ export default function CashFlowPage() {
           tone="rose"
           icon={<ArrowDownRight className="h-6 w-6" />}
         />
-        <div className="flex items-center justify-between rounded-3xl bg-primary p-8 text-base-color shadow-xl shadow-primary/20">
+        <div className="flex items-center justify-between rounded-3xl bg-primary p-6 text-base-color shadow-xl shadow-primary/20 dark:shadow-none md:p-8">
           <div>
             <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-base-color/60">
               Flujo Acumulado
@@ -289,7 +289,7 @@ export default function CashFlowPage() {
         </div>
       ) : null}
 
-      <div className="rounded-3xl border border-theme bg-surface p-8 shadow-sm">
+      <div className="rounded-3xl border border-theme bg-surface p-4 shadow-sm md:p-8">
         <div className="mb-8">
           <h2 className="text-xl font-bold text-primary">Analisis de Liquidez</h2>
           <p className="text-xs font-medium text-muted">
@@ -297,7 +297,7 @@ export default function CashFlowPage() {
           </p>
         </div>
 
-        <div className="h-[400px] w-full">
+        <div className="h-[320px] w-full md:h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={points}>
               <defs>
@@ -369,7 +369,7 @@ export default function CashFlowPage() {
       </div>
 
       <div className="overflow-hidden rounded-3xl border border-theme bg-surface shadow-sm">
-        <div className="flex items-center justify-between border-b border-theme bg-base/30 p-8">
+        <div className="flex flex-col items-start justify-between gap-3 border-b border-theme bg-base/30 p-4 md:flex-row md:items-center md:p-8">
           <h2 className="text-xl font-bold text-primary">Conciliacion</h2>
           <div className="rounded-full bg-theme/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-muted">
             Datos Consolidados
@@ -377,7 +377,7 @@ export default function CashFlowPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-left">
+          <table className="min-w-[720px] w-full border-collapse text-left">
             <thead>
               <tr className="border-b border-theme bg-base/20 text-[10px] font-black uppercase tracking-widest text-muted/60">
                 <th className="px-8 py-4">Periodo</th>
@@ -428,7 +428,7 @@ export default function CashFlowPage() {
         </div>
       </div>
 
-      <div className="rounded-3xl border border-theme bg-surface p-8 shadow-sm">
+      <div className="rounded-3xl border border-theme bg-surface p-4 shadow-sm md:p-8">
         <h2 className="text-xl font-bold text-primary">Contexto financiero</h2>
         <p className="mt-1 text-xs font-medium text-muted">
           Resumen de los componentes que impactan el flujo.

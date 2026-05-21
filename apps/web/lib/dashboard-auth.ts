@@ -20,21 +20,22 @@ export const DASHBOARD_DEBUG_ROLE_OPTIONS: readonly DashboardRole[] = [
   'CUSTOMER',
 ];
 
+const PROTECTED_ADMIN_EMAILS = new Set([
+  'deybisasprilla@gmail.co',
+  'deybisasprilla@gmail.com',
+]);
+
+const WHITELISTED_OPERATOR_EMAILS = new Set([
+  'deybisasprilla@gmail.co',
+  'deybisasprilla@gmail.com',
+  'totebagbolsadetela@gmail.com',
+]);
+
 const DASHBOARD_ROLE_LABELS: Record<DashboardRole, string> = {
   ADMIN: 'ADMIN',
   MANAGER: 'MANAGER',
   CUSTOMER: 'CUSTOMER',
 };
-
-const PROTECTED_DASHBOARD_ADMIN_EMAILS = new Set([
-  'deybisasprilla@gmail.co',
-  'deybisasprilla@gmail.com',
-]);
-
-const DASHBOARD_OPERATOR_EMAILS = new Set([
-  'deybisasprilla@gmail.co',
-  'deybisasprilla@gmail.com',
-]);
 
 export function normalizeDashboardRole(role: unknown): DashboardRole | null {
   if (role === 'ADMIN' || role === 'MANAGER' || role === 'CUSTOMER') {
@@ -82,15 +83,16 @@ export function getDashboardRoleForOperatorEmail(
   email: string | null | undefined,
 ): DashboardRole | null {
   const normalizedEmail = normalizeEmail(email);
+
   if (!normalizedEmail) {
     return null;
   }
 
-  if (PROTECTED_DASHBOARD_ADMIN_EMAILS.has(normalizedEmail)) {
+  if (PROTECTED_ADMIN_EMAILS.has(normalizedEmail)) {
     return 'ADMIN';
   }
 
-  if (DASHBOARD_OPERATOR_EMAILS.has(normalizedEmail)) {
+  if (WHITELISTED_OPERATOR_EMAILS.has(normalizedEmail)) {
     return 'MANAGER';
   }
 
@@ -213,3 +215,5 @@ export function readForwardedDashboardRoleContext(
       headers.get(DASHBOARD_DEBUG_ROLE_ALLOWED_HEADER_NAME) === '1',
   } as const;
 }
+
+// End of file security fix

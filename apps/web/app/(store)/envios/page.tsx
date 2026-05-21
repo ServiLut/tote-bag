@@ -3,18 +3,10 @@
 import Link from 'next/link';
 import { ArrowRight, CheckCircle2, Clock3, PackageCheck, RefreshCcw, ShieldCheck, Truck } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
+import { buildStorefrontWhatsAppUrl } from '@/lib/whatsapp';
 import { COMPANY_INFO } from '@/utils/company-info';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-
-function getWhatsAppUrl() {
-  const cleanPhone = COMPANY_INFO.phone.replace(/\D/g, '');
-  const message = encodeURIComponent(
-    'Hola, quiero recibir asesoria sobre envios y devoluciones de mi compra.',
-  );
-
-  return `https://wa.me/${cleanPhone}?text=${message}`;
-}
 
 function InfoCard({
   icon,
@@ -86,7 +78,7 @@ export default function ShippingInfoPage() {
 
               <div className="mt-8 space-y-3">
                 <Link
-                  href={getWhatsAppUrl()}
+                  href={buildStorefrontWhatsAppUrl('shipping')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex w-full items-center justify-center gap-3 rounded-2xl bg-[#25D366] px-5 py-4 text-sm font-black uppercase tracking-[0.18em] text-white transition-all hover:scale-[1.01] hover:bg-[#20ba57] active:scale-95"

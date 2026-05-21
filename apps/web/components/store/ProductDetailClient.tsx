@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import Image from 'next/image';
 import { Product, Variant } from '@/types/product';
 import { useCart } from '@/context/CartContext';
@@ -9,6 +10,7 @@ import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { formatWholeCurrency } from '@/lib/numeric-input';
 import { translateStoreValue } from '@/lib/storefront-translations';
+import { buildStorefrontWhatsAppUrl } from '@/lib/whatsapp';
 
 interface ProductDetailClientProps {
   product: Product;
@@ -233,6 +235,15 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     acc[attr.type].push(attr);
     return acc;
   }, {} as Record<string, Attribute[]>) || {};
+  const selectedColorLabel = getReadableColorLabel(selectedVariant.color, t);
+  const availabilityLabel =
+    selectedVariant.stock > 0 ? t('product_available_now') : t('product_made_to_order');
+  const stockTypeLabel =
+    selectedVariant.stock > 0 ? t('product_ready_stock') : t('product_quote_required');
+  const deliveryLabel =
+    (product as Product & { deliveryTime?: string }).deliveryTime || t('product_delivery_fallback');
+  const primaryWhatsAppUrl = buildStorefrontWhatsAppUrl('product', product.name);
+  const allowsPersonalization = !!configCode || !!config?.personalizationOptions?.length;
 
   return (
     <div className="space-y-12 lg:space-y-16">
@@ -272,6 +283,19 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                 || t('product_collection_fallback')}
             </span>
             <h1 className="text-3xl md:text-4xl font-serif text-primary leading-tight">{product.name}</h1>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className="rounded-full border border-theme bg-base px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-primary">
+                {availabilityLabel}
+              </span>
+              <span className="rounded-full border border-theme bg-base px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-primary">
+                {t('product_tax_badge')}
+              </span>
+              {allowsPersonalization ? (
+                <span className="rounded-full border border-theme bg-base px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-primary">
+                  {t('product_customization_available')}
+                </span>
+              ) : null}
+            </div>
           </div>
 
           <div className="flex items-center gap-4 mb-8 border-b border-theme pb-6">
@@ -387,7 +411,12 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
 
             {colorOptions.length > 0 && (
               <div>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary block mb-4">{t('product_color')}</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary block mb-4">
+                  {t('product_color')}
+                  <span className="ml-2 text-slate-900 font-bold uppercase">
+                    {selectedColorLabel}
+                  </span>
+                </span>
                 <div className="flex flex-wrap gap-3">
                   {colorOptions.map((variant) => (
                     <button
@@ -410,12 +439,44 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                         selectedVariant.sku === variant.sku ? 'ring-primary' : 'ring-transparent'
                       }`}
                       style={{ backgroundColor: getVariantColorHex(variant.color) }}
-                      title={translateStoreValue('color', variant.color, t)}
+                      title={getReadableColorLabel(variant.color, t)}
                     />
                   ))}
                 </div>
               </div>
             )}
+
+            <div className="grid gap-4 rounded-3xl border border-theme bg-surface p-5 text-sm text-muted">
+              <div className="grid gap-2 md:grid-cols-2">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-primary">
+                    {t('product_stock_type')}
+                  </p>
+                  <p className="mt-1 leading-6">{stockTypeLabel}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-primary">
+                    {t('product_estimated_delivery')}
+                  </p>
+                  <p className="mt-1 leading-6">{deliveryLabel}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-primary">
+                    {t('product_size_reference')}
+                  </p>
+                  <p className="mt-1 leading-6">{selectedVariant.size || selections.size || t('wizard_pending')}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-primary">
+                    {t('product_color_reference_label')}
+                  </p>
+                  <p className="mt-1 leading-6">{selectedColorLabel}</p>
+                </div>
+              </div>
+              <p className="text-sm leading-6 text-primary">
+                {t('product_brief_policy')}
+              </p>
+            </div>
 
             <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-theme">
               <div className="flex items-center border border-theme rounded-lg bg-white h-14">
@@ -432,6 +493,23 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                 <ShoppingBag className="w-5 h-5" />
                 {selectedVariant.stock === 0 ? t('product_sold_out') : t('product_add_to_cart_button')}
               </button>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <Link
+                href={primaryWhatsAppUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center rounded-xl border border-green-500 px-5 py-4 text-center text-sm font-bold text-green-700 transition-colors hover:bg-green-50"
+              >
+                {t('product_whatsapp_cta')}
+              </Link>
+              <Link
+                href={`/personaliza?product=${encodeURIComponent(product.slug)}&productId=${encodeURIComponent(product.id)}`}
+                className="flex items-center justify-center rounded-xl border border-theme px-5 py-4 text-center text-sm font-bold text-primary transition-colors hover:bg-base"
+              >
+                {t('product_customization_cta')}
+              </Link>
             </div>
           </div>
 
@@ -504,6 +582,22 @@ function getVariantColorHex(colorName: string): string {
     'azul': '#1e3a8a', 'verde': '#166534', 'rojo': '#991b1b', 'rosa': '#f472b6', 'amarillo': '#facc15',
   };
   return map[colorName?.toLowerCase?.()] || '#cccccc';
+}
+
+function getReadableColorLabel(
+  colorName: string,
+  t: (key: string, options?: Record<string, unknown>) => string,
+) {
+  const translated = translateStoreValue('color', colorName, t);
+  if (translated && translated !== colorName) {
+    return translated;
+  }
+
+  if (/^\d+$/.test(colorName || '')) {
+    return t('product_color_reference', { value: colorName });
+  }
+
+  return colorName || t('product_collection_fallback');
 }
 
 function allImagesRef(imageUrl: string, product: Product) {

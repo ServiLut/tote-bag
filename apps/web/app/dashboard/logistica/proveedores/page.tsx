@@ -154,7 +154,7 @@ export default function ShippingProvidersPage() {
   });
 
   return (
-    <div className="p-8 md:p-12 max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="mx-auto max-w-7xl space-y-8 animate-in px-4 py-5 duration-500 fade-in slide-in-from-bottom-4 sm:px-6 md:p-12">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-1">
@@ -162,7 +162,7 @@ export default function ShippingProvidersPage() {
             <div className="p-2.5 bg-primary rounded-xl text-base-color shadow-lg shadow-primary/20">
               <Truck className="w-6 h-6" />
             </div>
-            <h1 className="text-3xl font-black tracking-tight text-primary">Proveedores de Envío</h1>
+            <h1 className="text-2xl font-black tracking-tight text-primary md:text-3xl">Proveedores de Envío</h1>
           </div>
           <p className="text-muted font-medium">Gestiona las empresas de mensajería y sus credenciales de API.</p>
         </div>
@@ -173,7 +173,7 @@ export default function ShippingProvidersPage() {
             setError(null);
             setIsModalOpen(true);
           }}
-          className="flex items-center justify-center gap-2 px-6 py-3 bg-primary text-base-color font-bold rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 font-bold text-base-color shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 sm:w-auto"
         >
           <Plus className="w-5 h-5" />
           Nuevo Proveedor
@@ -201,7 +201,7 @@ export default function ShippingProvidersPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="min-w-[720px] w-full text-left border-collapse">
             <thead>
               <tr className="bg-base/20 text-[10px] uppercase tracking-widest font-black text-muted/60 border-b border-theme">
                 <th className="px-8 py-4">Nombre / Empresa</th>
@@ -278,7 +278,7 @@ export default function ShippingProvidersPage() {
               >
                 <X className="h-5 w-5" />
               </button>
-            <form onSubmit={handleCreateOrUpdateProvider} className="p-8 space-y-4">
+            <form onSubmit={handleCreateOrUpdateProvider} className="space-y-4 p-6 md:p-8">
               <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase text-muted">Nombre de la Empresa</label>
@@ -300,7 +300,7 @@ export default function ShippingProvidersPage() {
                 </div>
               </div>
               {error ? <p className="text-sm font-semibold text-rose-600">{error}</p> : null}
-              <div className="flex gap-4 pt-4">
+              <div className="flex flex-col gap-4 pt-4 sm:flex-row">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-6 py-4 bg-base border border-theme rounded-2xl font-bold text-muted">Cancelar</button>
                 <button disabled={submitting} className="flex-[2] px-6 py-4 bg-primary text-base-color font-black rounded-2xl flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-primary/20">
                   {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}

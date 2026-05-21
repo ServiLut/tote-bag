@@ -16,8 +16,10 @@ import { useTranslation } from 'react-i18next';
 interface CatalogClientProps {
   initialProducts: Product[];
   initialTotal: number;
-  collections: { id: string, name: string }[];
+  collections: { id: string; name: string }[];
   itemsPerPage: number;
+  fetchState: 'success' | 'empty' | 'error';
+  searchTerm: string;
 }
 
 export default function CatalogClient({
@@ -25,6 +27,8 @@ export default function CatalogClient({
   initialTotal,
   collections,
   itemsPerPage,
+  fetchState,
+  searchTerm,
 }: CatalogClientProps) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -44,6 +48,7 @@ export default function CatalogClient({
     : 1;
 
   useEffect(() => {
+    // Sync local filter UI with URL changes without duplicating router state.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setFilters((currentFilters) => {
       const nextFilters = readCatalogFiltersFromSearchParams(
@@ -96,9 +101,7 @@ export default function CatalogClient({
         collections={collections}
         filters={filters}
         onFilterChange={(nextFilters) => {
-           // We could trigger router push here too if we want immediate URL sync
-           // but FilterSidebar likely handles its own router.push or we rely on useEffect above
-           setFilters(nextFilters);
+          setFilters(nextFilters);
         }}
         isOpen={showMobileFilters}
         onClose={() => setShowMobileFilters(false)}
@@ -113,11 +116,17 @@ export default function CatalogClient({
                   end: currentRangeEnd,
                   total: initialTotal,
                 })
-              : t('catalog_empty_results')}
+              : searchTerm
+                ? t('catalog_search_results', { term: searchTerm })
+                : t('catalog_empty_results')}
           </span>
         </div>
 
-        <ProductGrid products={initialProducts} showVariantIndicator={false} />
+        <ProductGrid
+          products={initialProducts}
+          showVariantIndicator={false}
+          fetchState={fetchState}
+        />
 
         {totalPages > 1 && (
           <div className="mt-12 flex justify-center items-center gap-2">

@@ -1,35 +1,38 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import type { Metadata } from 'next';
+import { Geist, Geist_Mono } from 'next/font/google';
+import './globals.css';
 import { Toaster } from 'sonner';
-import { CartProvider } from "@/context/CartContext";
-import { ThemeProvider } from "@/components/theme-provider";
-import { CookieConsent } from "@/components/ui/CookieConsent";
+import { CartProvider } from '@/context/CartContext';
+import { ThemeProvider } from '@/components/theme-provider';
+import { CookieConsent } from '@/components/ui/CookieConsent';
 import { getPublicAppBaseUrl } from '@/lib/env';
+import { I18nProvider } from '@/components/I18nProvider';
 
-const metadataBase = getPublicAppBaseUrl();
+const metadataBase =
+  getPublicAppBaseUrl() ?? new URL('https://www.totebagbolsadetela.com');
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
 });
 
 export const metadata: Metadata = {
   ...(metadataBase ? { metadataBase } : {}),
   title: {
-    default: "Tote Bag Shop | Bolsos Artesanales y Personalizados en Colombia",
-    template: "%s | Tote Bag Shop"
+    default: 'Tote Bag Shop | Tote bags personalizables en Colombia',
+    template: '%s | Tote Bag Shop',
   },
-  description: "Descubre nuestra colección de tote bags artesanales, ecológicos y personalizables. Hechos en Colombia con materiales premium. Envíos a todo el país.",
-  keywords: ["tote bags", "bolsos de tela", "personalización", "bolsos artesanales", "Colombia", "moda sostenible"],
-  authors: [{ name: "Tote Bag Shop Team" }],
-  creator: "Tote Bag Shop",
-  publisher: "Tote Bag Shop",
+  description:
+    'Descubre tote bags funcionales, personalizables y producidas en Colombia para compra inmediata, marcas y eventos.',
+  keywords: ['tote bags', 'bolsos de tela', 'personalizacion', 'Colombia', 'regalos empresariales'],
+  authors: [{ name: 'Tote Bag Shop Team' }],
+  creator: 'Tote Bag Shop',
+  publisher: 'Tote Bag Shop',
   formatDetection: {
     email: false,
     address: false,
@@ -43,8 +46,9 @@ export const metadata: Metadata = {
     locale: 'es_CO',
     url: metadataBase?.toString() || 'https://totebag.shop',
     siteName: 'Tote Bag Shop',
-    title: 'Tote Bag Shop | Bolsos Artesanales y Personalizados',
-    description: 'Bolsos artesanales y ecológicos creados para durar. Personaliza tu estilo hoy.',
+    title: 'Tote Bag Shop | Tote bags personalizables en Colombia',
+    description:
+      'Tote bags funcionales, personalizables y listas para compra inmediata o cotizacion.',
     images: [
       {
         url: '/tote_bag_lifestyle.png',
@@ -56,8 +60,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Tote Bag Shop | Bolsos Artesanales',
-    description: 'Bolsos artesanales y ecológicos creados para durar.',
+    title: 'Tote Bag Shop | Tote bags personalizables',
+    description:
+      'Tote bags funcionales, personalizables y listas para compra inmediata o cotizacion.',
     images: ['/tote_bag_lifestyle.png'],
   },
   robots: {
@@ -72,8 +77,6 @@ export const metadata: Metadata = {
     },
   },
 };
-
-import { I18nProvider } from "@/components/I18nProvider";
 
 export default function RootLayout({
   children,

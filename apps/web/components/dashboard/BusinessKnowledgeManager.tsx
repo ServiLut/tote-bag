@@ -93,6 +93,12 @@ const PRIORITY_LABELS: Record<KnowledgePriority, string> = {
   CRITICA: 'Critica',
 };
 
+const knowledgeSurfaceClass =
+  'rounded-3xl border border-theme bg-surface shadow-sm dark:border-white/10 dark:bg-[radial-gradient(circle_at_top_left,rgba(141,161,104,0.14),transparent_30%),radial-gradient(circle_at_top_right,rgba(96,165,250,0.1),transparent_26%),linear-gradient(180deg,rgba(23,26,33,0.96),rgba(14,17,23,0.98))] dark:shadow-[0_18px_40px_rgba(0,0,0,0.28)]';
+
+const knowledgeElevatedSurfaceClass =
+  'rounded-3xl border border-theme bg-surface shadow-2xl dark:border-white/10 dark:bg-[radial-gradient(circle_at_top_left,rgba(141,161,104,0.16),transparent_28%),radial-gradient(circle_at_top_right,rgba(96,165,250,0.12),transparent_24%),linear-gradient(180deg,rgba(20,23,30,0.98),rgba(11,14,20,0.99))] dark:shadow-[0_24px_80px_rgba(0,0,0,0.45)]';
+
 function formatKnowledgeDate(value: string | null | undefined) {
   if (!value) {
     return 'Pendiente';
@@ -578,7 +584,7 @@ export default function BusinessKnowledgeManager() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-3xl border border-theme bg-surface p-6 shadow-sm">
+      <div className={`${knowledgeSurfaceClass} p-6`}>
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="grid flex-1 gap-4 md:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,0.7fr))]">
             <label className="relative block">
@@ -671,7 +677,7 @@ export default function BusinessKnowledgeManager() {
           {Array.from({ length: 6 }).map((_, index) => (
             <div
               key={index}
-              className="rounded-3xl border border-theme bg-surface p-6 shadow-sm"
+              className={`${knowledgeSurfaceClass} p-6`}
             >
               <div className="h-4 w-32 animate-pulse rounded-full bg-base" />
               <div className="mt-4 h-6 w-3/4 animate-pulse rounded-full bg-base" />
@@ -681,7 +687,7 @@ export default function BusinessKnowledgeManager() {
           ))}
         </div>
       ) : error ? (
-        <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-red-700 shadow-sm">
+        <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-red-700 shadow-sm dark:border-red-900/60 dark:bg-[linear-gradient(180deg,rgba(76,5,25,0.42),rgba(18,17,16,0.98))] dark:text-red-200 dark:shadow-[0_18px_40px_rgba(0,0,0,0.28)]">
           <div className="flex items-start gap-3">
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
             <div>
@@ -691,7 +697,7 @@ export default function BusinessKnowledgeManager() {
           </div>
         </div>
       ) : posts.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-theme bg-surface px-8 py-16 text-center shadow-sm">
+        <div className={`${knowledgeSurfaceClass} border-dashed px-8 py-16 text-center`}>
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
             <BookOpen className="h-8 w-8" />
           </div>
@@ -728,7 +734,7 @@ export default function BusinessKnowledgeManager() {
                     setSelectedPost(post);
                   }
                 }}
-                className="group min-w-0 rounded-3xl border border-theme bg-surface p-6 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5"
+                className={`group min-w-0 ${knowledgeSurfaceClass} p-6 text-left transition-all hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 dark:hover:shadow-[0_24px_48px_rgba(0,0,0,0.34)]`}
               >
                 {post.imageUrls[0] ? (
                   <div className="relative mb-5 aspect-[16/9] overflow-hidden rounded-2xl border border-theme bg-base">
@@ -850,7 +856,7 @@ export default function BusinessKnowledgeManager() {
             ))}
           </div>
 
-          <div className="flex flex-col gap-4 rounded-3xl border border-theme bg-surface px-6 py-4 shadow-sm md:flex-row md:items-center md:justify-between">
+          <div className={`${knowledgeSurfaceClass} px-6 py-4 md:flex-row md:items-center md:justify-between flex flex-col gap-4`}>
             <p className="text-sm font-medium text-muted">
               Pagina <span className="font-black text-primary">{page}</span> de{' '}
               <span className="font-black text-primary">{totalPages}</span>
@@ -887,7 +893,7 @@ export default function BusinessKnowledgeManager() {
           <div
             role="dialog"
             aria-modal="true"
-            className="w-full max-w-4xl overflow-hidden rounded-3xl border border-theme bg-surface shadow-2xl"
+            className={`w-full max-w-4xl overflow-hidden ${knowledgeElevatedSurfaceClass}`}
             onClick={(event) => event.stopPropagation()}
           >
             <form onSubmit={handleSubmit}>
@@ -1227,7 +1233,7 @@ export default function BusinessKnowledgeManager() {
           <div
             role="dialog"
             aria-modal="true"
-            className="w-full max-w-4xl overflow-hidden rounded-3xl border border-theme bg-surface shadow-2xl"
+            className={`w-full max-w-4xl overflow-hidden ${knowledgeElevatedSurfaceClass}`}
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4 border-b border-theme px-6 py-5 md:px-8">
@@ -1382,7 +1388,7 @@ export default function BusinessKnowledgeManager() {
           <div
             role="dialog"
             aria-modal="true"
-            className="w-full max-w-md overflow-hidden rounded-3xl border border-theme bg-surface shadow-2xl"
+            className={`w-full max-w-md overflow-hidden ${knowledgeElevatedSurfaceClass}`}
             onClick={(event) => event.stopPropagation()}
           >
             <div className="px-6 py-6">

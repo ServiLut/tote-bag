@@ -36,19 +36,25 @@ describe('ProfilesService', () => {
     });
 
     expect(transaction).toHaveBeenCalledTimes(1);
-    expect(findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        include: expect.objectContaining({
+    const [findManyArgs] = findMany.mock.calls[0] as unknown as [
+      {
+        include: {
           _count: {
             select: {
               orders: {
-                where: { deletedAt: null },
-              },
-            },
-          },
-        }),
-      }),
-    );
+                where: {
+                  deletedAt: null;
+                };
+              };
+            };
+          };
+        };
+      },
+    ];
+
+    expect(findManyArgs.include._count.select.orders.where).toEqual({
+      deletedAt: null,
+    });
     expect(result).toEqual({
       items: [{ id: 'profile-1', debugRoleAllowed: false }],
       pagination: {

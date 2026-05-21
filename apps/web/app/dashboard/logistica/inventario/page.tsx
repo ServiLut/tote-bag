@@ -342,14 +342,14 @@ export default function InventoryDashboardPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 animate-in fade-in slide-in-from-bottom-4 p-8 duration-500 md:p-12">
+    <div className="mx-auto max-w-7xl space-y-8 animate-in px-4 py-5 duration-500 fade-in slide-in-from-bottom-4 sm:px-6 md:p-12">
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
             <div className="rounded-xl bg-primary p-2.5 text-base-color shadow-lg shadow-primary/20">
               <Layers className="h-6 w-6" />
             </div>
-            <h1 className="text-3xl font-black tracking-tight text-primary">
+            <h1 className="text-2xl font-black tracking-tight text-primary md:text-3xl">
               Inventario FIFO Detallado
             </h1>
           </div>
@@ -388,7 +388,7 @@ export default function InventoryDashboardPage() {
             </button>
           </div>
 
-          <div className="flex items-center gap-2 rounded-xl border border-theme bg-base p-1">
+          <div className="flex w-full items-center gap-2 overflow-x-auto rounded-xl border border-theme bg-base p-1 md:w-auto">
             <button
               type="button"
               onClick={() => setActiveTab('current')}
@@ -533,7 +533,8 @@ export default function InventoryDashboardPage() {
           ) : null}
 
           <div className="overflow-hidden rounded-3xl border border-theme bg-surface shadow-sm">
-            <table className="w-full border-collapse text-left">
+            <div className="overflow-x-auto">
+              <table className="min-w-[920px] w-full border-collapse text-left">
               <thead>
                 <tr className="border-b border-theme bg-base/30 text-[10px] font-black uppercase tracking-widest text-muted/60">
                   <th className="px-8 py-4">Producto</th>
@@ -706,7 +707,8 @@ export default function InventoryDashboardPage() {
                   })
                 )}
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
@@ -766,7 +768,7 @@ export default function InventoryDashboardPage() {
           ) : null}
 
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left">
+            <table className="min-w-[760px] w-full border-collapse text-left">
               <thead>
                 <tr className="border-b border-theme bg-base/20 text-[10px] font-black uppercase tracking-widest text-muted/60">
                   <th className="px-8 py-4">Fecha/Hora</th>

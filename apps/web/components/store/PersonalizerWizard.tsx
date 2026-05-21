@@ -93,6 +93,7 @@ export interface PersonalizerTechniqueActionGuard {
   hasCompatibleTechniqueOptions: boolean;
   hasUploadedLogo: boolean;
   hasDesignUrl: boolean;
+  hasPreparedDesign?: boolean;
   hasConfigCode: boolean;
   isUploadingLogo?: boolean;
   isPricingLoading?: boolean;
@@ -135,6 +136,7 @@ export const isTechniqueActionBlocked = ({
   hasCompatibleTechniqueOptions,
   hasUploadedLogo,
   hasDesignUrl,
+  hasPreparedDesign = false,
   hasConfigCode,
   isUploadingLogo = false,
   isPricingLoading = false,
@@ -143,8 +145,29 @@ export const isTechniqueActionBlocked = ({
   isUploadingLogo ||
   !hasCompatibleTechniqueOptions ||
   !hasUploadedLogo ||
-  !hasDesignUrl ||
+  (!hasDesignUrl && !hasPreparedDesign) ||
   !hasConfigCode;
+
+export const PERSONALIZER_INLINE_DRAFT_MAX_BYTES = 1024 * 1024;
+
+export const shouldInlineDraftDesign = (fileSize?: number | null) =>
+  typeof fileSize === 'number' &&
+  fileSize > 0 &&
+  fileSize <= PERSONALIZER_INLINE_DRAFT_MAX_BYTES;
+
+export const resolveRestoredSizeSelection = ({
+  restoredSize,
+  resolvedVariantSize,
+  currentSize,
+}: {
+  restoredSize?: string | null;
+  resolvedVariantSize?: string | null;
+  currentSize?: string | null;
+}) =>
+  restoredSize?.trim() ||
+  resolvedVariantSize?.trim() ||
+  currentSize?.trim() ||
+  '';
 /* personalizer-wizard-test-helpers:end */
 
 const getDimensionVisualLabel = (option: WizardOption) => {
@@ -158,6 +181,52 @@ const DESIGN_FILE_EXTENSION_BY_MIME_TYPE: Record<string, string> = {
   'image/jpg': '.jpg',
   'image/webp': '.webp',
 };
+
+const PERSONALIZER_DRAFT_STORAGE_KEY = 'storefront.personalizer.draft.v1';
+
+type PersonalizerDraft = {
+  redirectPath: string;
+  step: Step;
+  uploadedLogo: string | null;
+  designFileName: string | null;
+  designFileType: string | null;
+  requiresDesignReupload?: boolean;
+  logoScale: number;
+  configCode: string;
+  calculatedUnitPrice: number;
+  calculatedTotalPrice: number;
+  resolvedProductId: string;
+  resolvedVariant: ProductResolution['variant'] | null;
+  selections: {
+    line: string;
+    size: string;
+    material: string;
+    quantity: number;
+    markingType: string;
+    extraOptions: string[];
+    designUrl: string;
+  };
+};
+
+async function fileToDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+async function dataUrlToFile(
+  dataUrl: string,
+  fileName: string,
+  mimeType?: string | null,
+) {
+  const response = await fetch(dataUrl);
+  const blob = await response.blob();
+  const type = mimeType || blob.type || 'image/png';
+  return new File([blob], fileName, { type });
+}
 
 const ensureDesignFileName = (file: File) => {
   const trimmedName = file.name.trim();
@@ -261,6 +330,15 @@ export default function PersonalizerWizard({
     : '/personaliza/configurador';
   const getTranslatedLineName = (line?: Pick<WizardOption, 'code' | 'name'> | null) =>
     translateStoreValue('line', line?.code || line?.name, t) || line?.name || '';
+  const getCompactLineName = (line?: Pick<WizardOption, 'code' | 'name'> | null) => {
+    const translatedName = getTranslatedLineName(line);
+    const rawName = translatedName || line?.name || line?.code || '';
+
+    return rawName
+      .replace(/^l[ií]nea\s+/i, '')
+      .replace(/^line_/i, '')
+      .trim();
+  };
   const getTranslatedLineDescription = (
     line?: Pick<WizardOption, 'code' | 'name' | 'description'> | null,
   ) =>
@@ -281,6 +359,18 @@ export default function PersonalizerWizard({
     translateStoreValue('technique', technique?.code || technique?.name, t)
     || technique?.name
     || '';
+  const getCompactTechniqueName = (
+    technique?: Pick<WizardOption, 'code' | 'name'> | PersonalizerTechniqueOption | null,
+  ) => {
+    const translatedName = getTranslatedTechniqueName(technique);
+    const rawName = translatedName || technique?.name || technique?.code || '';
+
+    return rawName
+      .replace(/^technique_/i, '')
+      .replace(/^t[eé]cnica\s+/i, '')
+      .replace(/_/g, ' ')
+      .trim();
+  };
   const loginRedirectParams = new URLSearchParams();
   if (productId) {
     loginRedirectParams.set('productId', productId);
@@ -319,6 +409,8 @@ export default function PersonalizerWizard({
   });
 
   const [uploadedLogo, setUploadedLogo] = useState<string | null>(null);
+  const [designFileName, setDesignFileName] = useState<string | null>(null);
+  const [designFileType, setDesignFileType] = useState<string | null>(null);
   const [logoScale, setLogoScale] = useState(50);
   const [calculatedUnitPrice, setCalculatedUnitPrice] = useState(0);
   const [calculatedTotalPrice, setCalculatedTotalPrice] = useState(0);
@@ -329,6 +421,7 @@ export default function PersonalizerWizard({
   const [submittedRequestId, setSubmittedRequestId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const restoredDraftRef = useRef<PersonalizerDraft | null>(null);
 
   useEffect(() => {
     setStep(isDirectMode ? 4 : 1);
@@ -391,8 +484,13 @@ export default function PersonalizerWizard({
         setResolvedVariant(resolvedSelection.variant);
         setSelections((prev) => ({
           ...prev,
-          size: resolvedSelection.variant.size || prev.size,
+          size: resolveRestoredSizeSelection({
+            restoredSize: restoredDraftRef.current?.selections.size,
+            resolvedVariantSize: resolvedSelection.variant.size,
+            currentSize: prev.size,
+          }),
         }));
+        restoredDraftRef.current = null;
       } catch (error) {
         if (error instanceof ProductResolutionError) {
           setOptionsError(t('wizard_unavailable'));
@@ -495,6 +593,233 @@ export default function PersonalizerWizard({
       }
     };
   }, [uploadedLogo]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const rawDraft = window.sessionStorage.getItem(
+      PERSONALIZER_DRAFT_STORAGE_KEY,
+    );
+    if (!rawDraft) {
+      return;
+    }
+
+    try {
+      const draft = JSON.parse(rawDraft) as PersonalizerDraft;
+      if (draft.redirectPath !== loginRedirectPath) {
+        return;
+      }
+
+      restoredDraftRef.current = draft;
+      setStep(draft.step);
+      setUploadedLogo(draft.uploadedLogo);
+      setDesignFileName(draft.designFileName);
+      setDesignFileType(draft.designFileType);
+      setLogoScale(draft.logoScale);
+      setConfigCode(draft.configCode);
+      setCalculatedUnitPrice(draft.calculatedUnitPrice);
+      setCalculatedTotalPrice(draft.calculatedTotalPrice);
+      setResolvedProductId(draft.resolvedProductId);
+      setResolvedVariant(draft.resolvedVariant);
+      setSelections((prev) => ({
+        ...prev,
+        ...draft.selections,
+        extraOptions: draft.selections.extraOptions,
+        customFile: null,
+      }));
+      if (draft.requiresDesignReupload) {
+        toast.error(
+          t('wizard_draft_requires_reupload', {
+            defaultValue:
+              'Vuelve a cargar tu diseño para terminar la solicitud. Guardamos la configuración, pero no el archivo local.',
+          }),
+        );
+      }
+      window.sessionStorage.removeItem(PERSONALIZER_DRAFT_STORAGE_KEY);
+    } catch (error) {
+      console.error('Failed to restore personalization draft:', error);
+      window.sessionStorage.removeItem(PERSONALIZER_DRAFT_STORAGE_KEY);
+    }
+  }, [loginRedirectPath, t]);
+
+  const persistDraft = useCallback(async () => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const canInlineDraftDesign = shouldInlineDraftDesign(selections.customFile?.size);
+    const requiresDesignReupload = !!selections.customFile && !canInlineDraftDesign;
+    const draftPreview = selections.customFile
+      ? canInlineDraftDesign
+        ? uploadedLogo?.startsWith('data:')
+          ? uploadedLogo
+          : await fileToDataUrl(selections.customFile)
+        : null
+      : uploadedLogo;
+
+    const draft: PersonalizerDraft = {
+      redirectPath: loginRedirectPath,
+      step,
+      uploadedLogo: draftPreview,
+      designFileName: requiresDesignReupload ? null : designFileName,
+      designFileType: requiresDesignReupload ? null : designFileType,
+      requiresDesignReupload,
+      logoScale,
+      configCode,
+      calculatedUnitPrice,
+      calculatedTotalPrice,
+      resolvedProductId,
+      resolvedVariant,
+      selections: {
+        line: selections.line,
+        size: selections.size,
+        material: selections.material,
+        quantity: selections.quantity,
+        markingType: selections.markingType,
+        extraOptions: selections.extraOptions,
+        designUrl: requiresDesignReupload ? '' : selections.designUrl,
+      },
+    };
+
+    try {
+      window.sessionStorage.setItem(
+        PERSONALIZER_DRAFT_STORAGE_KEY,
+        JSON.stringify(draft),
+      );
+    } catch (error) {
+      console.error('Failed to persist personalization draft with file preview:', error);
+
+      try {
+        const fallbackDraft: PersonalizerDraft = {
+          ...draft,
+          uploadedLogo: null,
+          designFileName: null,
+          designFileType: null,
+          requiresDesignReupload: !!selections.customFile || draft.requiresDesignReupload,
+          selections: {
+            ...draft.selections,
+            designUrl: '',
+          },
+        };
+
+        window.sessionStorage.setItem(
+          PERSONALIZER_DRAFT_STORAGE_KEY,
+          JSON.stringify(fallbackDraft),
+        );
+      } catch (fallbackError) {
+        console.error('Failed to persist personalization draft fallback:', fallbackError);
+      }
+    }
+  }, [
+    calculatedTotalPrice,
+    calculatedUnitPrice,
+    configCode,
+    designFileName,
+    designFileType,
+    loginRedirectPath,
+    logoScale,
+    resolvedProductId,
+    resolvedVariant,
+    selections,
+    step,
+    uploadedLogo,
+  ]);
+
+  const persistDesignToStorage = useCallback(async (accessToken: string) => {
+    if (
+      selections.designUrl &&
+      !selections.designUrl.startsWith('data:') &&
+      !selections.designUrl.startsWith('blob:')
+    ) {
+      return selections.designUrl;
+    }
+
+    let file = selections.customFile;
+
+    if (!file && uploadedLogo?.startsWith('data:')) {
+      file = await dataUrlToFile(
+        uploadedLogo,
+        designFileName || 'diseno-personalizado.png',
+        designFileType,
+      );
+    }
+
+    if (!file) {
+      return '';
+    }
+
+    const normalizedFileName = ensureDesignFileName(file);
+    setIsUploadingLogo(true);
+
+    try {
+      const signedUploadResponse = await apiFetch('/personalizations/signed-upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          fileName: normalizedFileName,
+          mimeType: file.type,
+          size: file.size,
+        }),
+      });
+
+      if (!signedUploadResponse.ok) {
+        const errorBody = await signedUploadResponse.json().catch(() => ({}));
+        const message =
+          typeof errorBody.message === 'string'
+            ? errorBody.message
+            : t('wizard_upload_persist_error');
+        throw new Error(message);
+      }
+
+      const signedBody = (await signedUploadResponse.json()) as {
+        data?: {
+          path?: string;
+          token?: string;
+          publicUrl?: string;
+        };
+      };
+      const uploadPath = signedBody.data?.path;
+      const uploadToken = signedBody.data?.token;
+      const publicUrl = signedBody.data?.publicUrl;
+
+      if (!uploadPath || !uploadToken || !publicUrl) {
+        throw new Error(t('wizard_upload_signed_url_error'));
+      }
+
+      const { error: uploadError } = await supabase.storage
+        .from('product-assets')
+        .uploadToSignedUrl(uploadPath, uploadToken, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      setDesignFileName(normalizedFileName);
+      setDesignFileType(file.type || null);
+      setSelections((prev) => ({
+        ...prev,
+        customFile: file,
+        designUrl: publicUrl,
+      }));
+
+      return publicUrl;
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  }, [
+    designFileName,
+    designFileType,
+    selections.customFile,
+    selections.designUrl,
+    supabase.storage,
+    t,
+    uploadedLogo,
+  ]);
 
   const fetchPricing = useCallback(async () => {
     if (!selections.size || !selections.material || !wizardOptions || loadingOptions) return;
@@ -640,87 +965,25 @@ export default function PersonalizerWizard({
       return;
     }
 
-    if (uploadedLogo?.startsWith('blob:')) {
-      URL.revokeObjectURL(uploadedLogo);
-    }
-
-    const previewUrl = URL.createObjectURL(file);
-    setUploadedLogo(previewUrl);
-    setSelections(prev => ({ ...prev, customFile: file, designUrl: '' }));
-    setIsUploadingLogo(true);
-
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session?.access_token) {
-        router.push(`/login?redirect=${encodeURIComponent(loginRedirectPath)}`);
-        return;
-      }
-
-      const signedUploadResponse = await apiFetch('/personalizations/signed-upload', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          fileName: normalizedFileName,
-          mimeType: file.type,
-          size: file.size,
-        }),
-      });
-
-      if (!signedUploadResponse.ok) {
-        const errorBody = await signedUploadResponse.json().catch(() => ({}));
-        const message =
-          typeof errorBody.message === 'string'
-            ? errorBody.message
-            : t('wizard_upload_persist_error');
-        throw new Error(message);
-      }
-
-      const signedBody = (await signedUploadResponse.json()) as {
-        data?: {
-          path?: string;
-          token?: string;
-          publicUrl?: string;
-        };
-      };
-      const uploadPath = signedBody.data?.path;
-      const uploadToken = signedBody.data?.token;
-      const publicUrl = signedBody.data?.publicUrl;
-
-      if (!uploadPath || !uploadToken || !publicUrl) {
-        throw new Error(t('wizard_upload_signed_url_error'));
-      }
-
-      const { error: uploadError } = await supabase.storage
-        .from('product-assets')
-        .uploadToSignedUrl(uploadPath, uploadToken, file);
-
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      if (!publicUrl) {
-        throw new Error(t('wizard_upload_public_url_error'));
-      }
-
-      setSelections(prev => ({ ...prev, customFile: file, designUrl: publicUrl }));
+      const previewUrl = await fileToDataUrl(file);
+      setUploadedLogo(previewUrl);
+      setDesignFileName(normalizedFileName);
+      setDesignFileType(file.type || null);
+      setSelections(prev => ({ ...prev, customFile: file, designUrl: '' }));
       toast.success(t('wizard_design_uploaded'));
     } catch (error) {
-      console.error('Custom design upload error:', error);
+      console.error('Custom design preparation error:', error);
       setSelections(prev => ({ ...prev, customFile: null, designUrl: '' }));
       setUploadedLogo(null);
+      setDesignFileName(null);
+      setDesignFileType(null);
       const message =
         error instanceof Error && error.message
           ? error.message
           : t('wizard_upload_retry_error');
       toast.error(message);
     } finally {
-      setIsUploadingLogo(false);
       e.target.value = '';
     }
   };
@@ -735,10 +998,13 @@ export default function PersonalizerWizard({
     selections.material,
   );
   const hasCompatibleTechniqueOptions = availableTechniqueOptions.length > 0;
+  const hasPreparedDesign =
+    !!selections.customFile || !!uploadedLogo?.startsWith('data:');
   const techniqueActionBlocked = isTechniqueActionBlocked({
     hasCompatibleTechniqueOptions,
     hasUploadedLogo: !!uploadedLogo,
     hasDesignUrl: !!selections.designUrl,
+    hasPreparedDesign,
     hasConfigCode: !!configCode,
     isUploadingLogo,
     isPricingLoading,
@@ -782,11 +1048,6 @@ export default function PersonalizerWizard({
       return;
     }
 
-    if (uploadedLogo && !selections.designUrl) {
-      toast.error(t('wizard_image_not_available'));
-      return;
-    }
-
     const selectedPersonalizations = [
       ...((selections.designUrl || uploadedLogo) && selections.markingType
         ? [{ code: selections.markingType, options: [selections.markingType] }]
@@ -805,7 +1066,17 @@ export default function PersonalizerWizard({
       } = await supabase.auth.getSession();
 
       if (!session?.access_token) {
+        await persistDraft();
         router.push(`/login?redirect=${encodeURIComponent(loginRedirectPath)}`);
+        return;
+      }
+
+      const persistedDesignUrl = uploadedLogo
+        ? await persistDesignToStorage(session.access_token)
+        : '';
+
+      if (uploadedLogo && !persistedDesignUrl) {
+        toast.error(t('wizard_image_not_available'));
         return;
       }
 
@@ -822,7 +1093,7 @@ export default function PersonalizerWizard({
           size: selections.size,
           material: selections.material,
           quantity: Number(selections.quantity),
-          customImageURL: selections.designUrl || undefined,
+          customImageURL: persistedDesignUrl || undefined,
           personalizations: selectedPersonalizations,
         }),
       });
@@ -848,6 +1119,9 @@ export default function PersonalizerWizard({
         body?.data?.id && typeof body.data.id === 'string' ? body.data.id : null;
 
       setSubmittedRequestId(requestId);
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.removeItem(PERSONALIZER_DRAFT_STORAGE_KEY);
+      }
       toast.success(t('wizard_request_sent_success'));
     } catch (error) {
       console.error('Personalization request error:', error);
@@ -944,7 +1218,7 @@ export default function PersonalizerWizard({
   const baseConfigurationSummary = [
     {
       label: t('wizard_line_short'),
-      value: getTranslatedLineName(selectedBaseLine) || t('wizard_pending'),
+      value: getCompactLineName(selectedBaseLine) || t('wizard_pending'),
     },
     {
       label: t('filters_material'),
@@ -1068,7 +1342,7 @@ export default function PersonalizerWizard({
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="text-xs font-black uppercase tracking-wide text-primary">
-                                {getTranslatedLineName(line)}
+                                {getCompactLineName(line)}
                               </p>
                               <p className="mt-1 text-[11px] text-muted">
                                 {getTranslatedLineDescription(line)}
@@ -1298,7 +1572,7 @@ export default function PersonalizerWizard({
                               : 'border-theme text-muted hover:border-primary/30'
                           }`}
                         >
-                          {getTranslatedTechniqueName(technique)}
+                          {getCompactTechniqueName(technique)}
                         </button>
                       ))}
                       {availableTechniqueOptions.length === 0 && (
@@ -1691,7 +1965,7 @@ export default function PersonalizerWizard({
                           onClick={() => setSelections(prev => ({ ...prev, markingType: technique.code }))}
                           className={`py-3 rounded-xl border-2 font-bold text-[10px] transition-all uppercase tracking-tighter ${selections.markingType === technique.code ? 'border-primary bg-primary text-white shadow-lg shadow-primary/20' : 'border-theme text-muted hover:border-primary/30'}`}
                         >
-                          {getTranslatedTechniqueName(technique)}
+                          {getCompactTechniqueName(technique)}
                         </button>
                       ))}
                       {availableTechniqueOptions.length === 0 && (

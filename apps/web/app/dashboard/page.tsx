@@ -23,7 +23,6 @@ import { extractApiConnectionErrorTargets } from '@/lib/api-config';
 import {
   buildDashboardAuthHeaders,
   extractRoleFromProfilePayload,
-  getDashboardRoleForOperatorEmail,
   parseDashboardDebugRoleCookie,
   DASHBOARD_DEBUG_ROLE_COOKIE_NAME,
   type DashboardRole,
@@ -283,16 +282,13 @@ async function getCurrentDashboardRole(
 
     if (response.ok) {
       const body = await response.json();
-      return (
-        extractRoleFromProfilePayload(body) ??
-        getDashboardRoleForOperatorEmail(session.user.email)
-      );
+      return extractRoleFromProfilePayload(body);
     }
   } catch {
     // The layout already protects the dashboard; keep the page resilient.
   }
 
-  return getDashboardRoleForOperatorEmail(session.user.email);
+  return null;
 }
 
 function getAccessibleDashboardHref(
@@ -312,6 +308,7 @@ export default async function DashboardPage() {
     getDashboardStats(debugRole),
     getCurrentDashboardRole(debugRole),
   ]);
+  const canViewFinance = canAccessDashboardPath(role, '/dashboard/finanzas');
   const todayLabel = new Date().toLocaleDateString('es-CO', {
     weekday: 'long',
     year: 'numeric',
@@ -320,7 +317,9 @@ export default async function DashboardPage() {
     timeZone: 'America/Bogota',
   });
   const healthTone =
-    stats.lowStockCount > 0 || stats.staleBatches > 0 || stats.monthlyCashFlowNet < 0
+    stats.lowStockCount > 0 ||
+    stats.staleBatches > 0 ||
+    (canViewFinance && stats.monthlyCashFlowNet < 0)
       ? 'warning'
       : 'success';
   const urgentActions =
@@ -406,7 +405,13 @@ export default async function DashboardPage() {
               />
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+            <div
+              className={`grid gap-4 ${
+                canViewFinance
+                  ? 'lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]'
+                  : 'lg:grid-cols-1'
+              }`}
+            >
               <div className="rounded-[28px] border border-theme bg-white/75 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-[#171a21]/88 dark:shadow-[0_12px_30px_rgba(0,0,0,0.28)]">
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -443,42 +448,44 @@ export default async function DashboardPage() {
                 </div>
               </div>
 
-              <div className="rounded-[28px] border border-black/5 bg-[#111111] p-5 text-[#F5F1EB] shadow-[0_18px_40px_rgba(17,17,17,0.18)] dark:border-white/10">
-                <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#F5F1EB]/70">
-                  Panorama financiero
-                </p>
-                <div className="mt-4 grid gap-4">
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
-                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#F5F1EB]/70">
-                      Flujo neto mensual
-                    </p>
-                    <p className="mt-2 text-2xl font-black">
-                      {formatCurrency(stats.monthlyCashFlowNet)}
-                    </p>
+              {canViewFinance ? (
+                <div className="rounded-[28px] border border-black/5 bg-[#111111] p-5 text-[#F5F1EB] shadow-[0_18px_40px_rgba(17,17,17,0.18)] dark:border-white/10">
+                  <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#F5F1EB]/70">
+                    Panorama financiero
+                  </p>
+                  <div className="mt-4 grid gap-4">
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
+                      <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#F5F1EB]/70">
+                        Flujo neto mensual
+                      </p>
+                      <p className="mt-2 text-2xl font-black">
+                        {formatCurrency(stats.monthlyCashFlowNet)}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
+                      <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#F5F1EB]/70">
+                        Saldo pendiente a proveedores
+                      </p>
+                      <p className="mt-2 text-2xl font-black">
+                        {formatCurrency(stats.supplierPendingBalance)}
+                      </p>
+                    </div>
                   </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
-                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#F5F1EB]/70">
-                      Saldo pendiente a proveedores
-                    </p>
-                    <p className="mt-2 text-2xl font-black">
-                      {formatCurrency(stats.supplierPendingBalance)}
-                    </p>
+                  <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
+                    <p className="text-sm font-medium text-[#F5F1EB]/70">{todayLabel}</p>
+                    <Link
+                      href={getAccessibleDashboardHref(
+                        role,
+                        '/dashboard/finanzas/cash-flow',
+                      )}
+                      className="inline-flex items-center gap-2 text-sm font-black text-[#F5F1EB] transition-transform hover:translate-x-0.5"
+                    >
+                      Ver finanzas
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
                   </div>
                 </div>
-                <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
-                  <p className="text-sm font-medium text-[#F5F1EB]/70">{todayLabel}</p>
-                  <Link
-                    href={getAccessibleDashboardHref(
-                      role,
-                      '/dashboard/finanzas/cash-flow',
-                    )}
-                    className="inline-flex items-center gap-2 text-sm font-black text-[#F5F1EB] transition-transform hover:translate-x-0.5"
-                  >
-                    Ver finanzas
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </div>
-              </div>
+              ) : null}
             </div>
           </div>
 

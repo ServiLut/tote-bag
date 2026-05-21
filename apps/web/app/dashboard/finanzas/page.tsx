@@ -737,7 +737,7 @@ export default function FinanceDashboardPage() {
 
   if (loadError && !hasFinanceContent) {
     return (
-      <div className="mx-auto max-w-7xl p-8 md:p-12">
+      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:p-12">
         <div className="rounded-3xl border border-rose-200 bg-rose-50 p-8 shadow-sm">
           <p className="text-xs font-black uppercase tracking-widest text-rose-700">
             Error de carga
@@ -749,7 +749,7 @@ export default function FinanceDashboardPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl animate-in space-y-8 p-8 duration-500 fade-in slide-in-from-bottom-4 md:p-12">
+    <div className="mx-auto max-w-7xl animate-in space-y-8 px-4 py-5 duration-500 fade-in slide-in-from-bottom-4 sm:px-6 md:p-12">
       {loadError ? (
         <div className="rounded-3xl border border-rose-200 bg-rose-50 p-6 shadow-sm">
           <p className="text-xs font-black uppercase tracking-widest text-rose-700">
@@ -774,7 +774,7 @@ export default function FinanceDashboardPage() {
 
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-start">
         <div className="space-y-1">
-          <h1 className="flex items-center gap-3 text-3xl font-black tracking-tight text-primary">
+          <h1 className="flex items-center gap-3 text-2xl font-black tracking-tight text-primary md:text-3xl">
             <PieChart className="h-8 w-8 text-primary" />
             Dashboard Financiero
           </h1>
@@ -783,7 +783,7 @@ export default function FinanceDashboardPage() {
             PDF.
           </p>
         </div>
-        <div className="flex flex-col gap-3 rounded-2xl border border-theme bg-surface p-4 shadow-sm md:min-w-[420px]">
+        <div className="flex flex-col gap-3 rounded-2xl border border-theme bg-surface dark-surface-gradient p-4 shadow-sm md:min-w-[420px]">
           <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted">
             <Calendar className="h-4 w-4" />
             Filtros del reporte
@@ -1007,7 +1007,7 @@ export default function FinanceDashboardPage() {
             />
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left">
+            <table className="min-w-[900px] w-full border-collapse text-left">
               <thead>
                 <tr className="border-b border-theme bg-base/20 text-[10px] font-black uppercase tracking-widest text-muted/60">
                   <th className="px-6 py-4">Orden</th>
@@ -1084,7 +1084,8 @@ export default function FinanceDashboardPage() {
             />
           </div>
           <div className="mt-6 overflow-hidden rounded-2xl border border-theme">
-            <table className="w-full border-collapse text-left">
+            <div className="overflow-x-auto">
+              <table className="min-w-[560px] w-full border-collapse text-left">
               <thead>
                 <tr className="border-b border-theme bg-base/30 text-[10px] font-black uppercase tracking-widest text-muted/60">
                   <th className="px-4 py-3">Orden</th>
@@ -1117,7 +1118,8 @@ export default function FinanceDashboardPage() {
                   </tr>
                 ) : null}
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -1160,7 +1162,7 @@ export default function FinanceDashboardPage() {
             />
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left">
+            <table className="min-w-[900px] w-full border-collapse text-left">
               <thead>
                 <tr className="border-b border-theme bg-base/20 text-[10px] font-black uppercase tracking-widest text-muted/60">
                   <th className="px-6 py-4">Orden</th>
@@ -1606,7 +1608,7 @@ export default function FinanceDashboardPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-left">
+          <table className="min-w-[900px] w-full border-collapse text-left">
             <thead>
               <tr className="border-b border-theme bg-base/20 text-[10px] font-black uppercase tracking-widest text-muted/60">
                 <th className="px-8 py-4">Fecha</th>

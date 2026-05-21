@@ -89,11 +89,18 @@ export async function generateMetadata({
   }
 
   const { product } = productResult;
+  const title = product.seoTitle?.trim() || `${product.name} | Tote Bag Shop`;
+  const description =
+    product.seoDescription?.trim()
+    || product.description
+    || 'Consulta disponibilidad, tiempos y opciones de personalizacion de esta tote bag.';
 
   return {
-    title: `${product.name} | Tote Bag Shop`,
-    description: product.description,
+    title,
+    description,
     openGraph: {
+      title,
+      description,
       images: product.images[0] ? [product.images[0].url] : [],
     },
   };

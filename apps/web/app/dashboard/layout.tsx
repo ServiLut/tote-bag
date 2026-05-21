@@ -6,7 +6,6 @@ import { ThemeProvider } from '@/components/theme-provider';
 import {
   buildDashboardAuthHeaders,
   extractDashboardRoleContextFromProfilePayload,
-  getDashboardRoleForOperatorEmail,
   DASHBOARD_DEBUG_ROLE_COOKIE_NAME,
   readForwardedDashboardRoleContext,
   parseDashboardDebugRoleCookie,
@@ -82,8 +81,7 @@ export default async function DashboardLayout({
   const roleContext = forwardedRoleContext.resolved
     ? forwardedRoleContext
     : await getCurrentRoleContext(session.access_token, debugRole);
-  const role =
-    roleContext.role ?? getDashboardRoleForOperatorEmail(session.user.email);
+  const role = roleContext.role;
 
   const roleRedirect = resolveDashboardLayoutRedirect({
     hasSession: true,

@@ -282,7 +282,7 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="p-8 md:p-12 max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="mx-auto max-w-7xl space-y-8 animate-in px-4 py-5 duration-500 fade-in slide-in-from-bottom-4 sm:px-6 md:p-12">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-1">
@@ -290,11 +290,11 @@ export default function ReportsPage() {
             <div className="p-2.5 bg-black rounded-xl text-white">
               <FileText className="w-6 h-6" />
             </div>
-            <h1 className="text-3xl font-black tracking-tight text-primary">Reportes Contables</h1>
+            <h1 className="text-2xl font-black tracking-tight text-primary md:text-3xl">Reportes Contables</h1>
           </div>
           <p className="text-muted font-medium">Genera estados de resultados oficiales y valuación de activos.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
            <button
              onClick={() => handleExport('excel')}
              disabled={exportLoading !== null || !hasCompleteDates || hasInvalidRange}
@@ -315,8 +315,8 @@ export default function ReportsPage() {
       </div>
 
       {/* Range Selector */}
-      <div className="bg-surface border border-theme rounded-2xl p-6 shadow-sm flex flex-col md:flex-row items-center gap-6">
-        <div className="flex items-center gap-2 p-1 bg-base border border-theme rounded-xl w-full md:w-auto">
+      <div className="bg-surface border border-theme rounded-2xl p-6 shadow-sm flex flex-col md:flex-row items-start gap-6 md:items-center">
+        <div className="flex w-full items-center gap-2 overflow-x-auto p-1 bg-base border border-theme rounded-xl md:w-auto">
           {['CURRENT_MONTH', 'LAST_MONTH', 'YEAR_TO_DATE'].map((r) => (
             <button
               key={r}
@@ -330,7 +330,7 @@ export default function ReportsPage() {
           ))}
         </div>
 
-        <div className="flex items-center gap-4 text-muted">
+        <div className="flex w-full flex-col gap-4 text-muted sm:flex-row sm:items-center">
            <div className="flex items-center gap-2">
              <Calendar className="w-4 h-4" />
              <input
@@ -409,7 +409,7 @@ export default function ReportsPage() {
                       Estado de Resultados (P&L)
                     </h2>
                   </div>
-                  <table className="w-full text-left border-collapse">
+                  <table className="min-w-[720px] w-full text-left border-collapse">
                     <tbody className="divide-y divide-theme">
                       <tr className="bg-base/10">
                         <td className="px-8 py-4 font-bold text-primary">Ingresos Operacionales (Ventas)</td>

@@ -767,10 +767,10 @@ export default function CustomersPage() {
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto flex flex-col h-[calc(100vh-64px)]">
+    <div className="mx-auto flex min-h-[calc(100vh-64px)] max-w-7xl flex-col px-4 py-5 sm:px-6 md:h-[calc(100vh-64px)] md:p-8">
       <div className="flex-none mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-primary">Clientes</h1>
+          <h1 className="text-2xl font-black tracking-tight text-primary md:text-3xl">Clientes</h1>
           <p className="mt-2 text-muted font-medium">
             Listado de clientes registrados en la tienda.
           </p>
@@ -781,7 +781,7 @@ export default function CustomersPage() {
             setCreateCustomerError(null);
             setShowCreateCustomerModal(true);
           }}
-          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-[10px] font-black uppercase tracking-widest text-base-color shadow-lg shadow-primary/10 transition-all active:scale-95"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-[10px] font-black uppercase tracking-widest text-base-color shadow-lg shadow-primary/10 transition-all active:scale-95 sm:w-auto"
         >
           <UserPlus className="h-4 w-4" />
           Registrar cliente manual
@@ -789,7 +789,7 @@ export default function CustomersPage() {
       </div>
 
       {/* Sección de Filtros */}
-      <div className="flex-none flex flex-wrap items-center gap-4 mb-6">
+      <div className="mb-6 flex flex-none flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
         <div className="relative w-full md:w-80">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search className="h-4 w-4 text-muted" />
@@ -848,10 +848,10 @@ export default function CustomersPage() {
         </div>
       ) : null}
 
-      <div className="flex-1 bg-surface rounded-2xl shadow-sm border border-theme overflow-hidden flex flex-col">
+      <div className="flex-1 bg-surface dark-surface-gradient-soft rounded-2xl shadow-sm border border-theme overflow-hidden flex flex-col">
         {/* Table Container with Scroll */}
-        <div className="flex-1 overflow-y-auto relative">
-          <table className="w-full text-left text-sm">
+        <div className="relative flex-1 overflow-auto">
+          <table className="min-w-[760px] w-full text-left text-sm">
             <thead className="bg-base/50 border-b border-theme sticky top-0 z-10">
               <tr>
                 <th className="px-6 py-4 font-black text-primary uppercase text-[10px] tracking-widest">Cliente</th>

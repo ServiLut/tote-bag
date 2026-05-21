@@ -472,16 +472,16 @@ export default function PayrollPage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 p-8 md:p-12">
+    <div className="mx-auto max-w-7xl space-y-8 px-4 py-5 sm:px-6 md:p-12">
       <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <div className="rounded-xl bg-primary p-2.5 text-base-color shadow-lg shadow-primary/20"><Wallet className="h-6 w-6" /></div>
-            <h1 className="text-3xl font-black tracking-tight text-primary">Nomina</h1>
+            <h1 className="text-2xl font-black tracking-tight text-primary md:text-3xl">Nomina</h1>
           </div>
           <p className="font-medium text-muted">Gestion de trabajadores, turnos, cuentas e historial.</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <Button onClick={() => openWorkerModal()} className="rounded-xl border border-theme bg-base px-5 py-3 text-xs font-black uppercase tracking-widest text-primary"><Users className="mr-2 h-4 w-4" />Nuevo trabajador</Button>
           <Button onClick={() => openShiftModal()} className="rounded-xl bg-primary px-5 py-3 text-xs font-black uppercase tracking-widest text-base-color"><Plus className="mr-2 h-4 w-4" />Nuevo turno</Button>
         </div>
@@ -497,7 +497,7 @@ export default function PayrollPage() {
         <div className="flex flex-col gap-4 border-b border-theme bg-base/30 p-6 md:flex-row md:items-center md:justify-between">
           <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar trabajador o estado..." className="w-full max-w-xl rounded-xl border border-theme bg-base px-4 py-2.5 text-sm font-medium md:w-[32rem]" />
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
+            <TabsList className="w-full justify-start overflow-x-auto whitespace-nowrap rounded-2xl border border-theme bg-base p-1">
               <TabsTrigger value="workers">Empleados</TabsTrigger>
               <TabsTrigger value="shifts">Turnos</TabsTrigger>
               <TabsTrigger value="statements">Cuentas</TabsTrigger>
@@ -686,7 +686,7 @@ export default function PayrollPage() {
 
 function Table({ loading, headers, children, emptyMessage }: { loading: boolean; headers: string[]; children: ReactNode; emptyMessage: string }) {
   const hasRows = Array.isArray(children) ? children.length > 0 : !!children;
-  return <div className="overflow-x-auto rounded-2xl border border-theme"><table className="w-full table-fixed text-left"><thead className="bg-base/20 text-[10px] font-black uppercase tracking-widest text-muted/70"><tr>{headers.map((header, index) => <th key={header} className={`px-4 py-3 ${index === headers.length - 1 ? 'w-24 text-right' : ''}`}>{header}</th>)}</tr></thead><tbody className="divide-y divide-theme">{loading ? <tr><td colSpan={headers.length} className="px-6 py-12 text-center"><Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" /></td></tr> : hasRows ? children : <tr><td colSpan={headers.length} className="px-6 py-12 text-center text-sm italic text-muted">{emptyMessage}</td></tr>}</tbody></table></div>;
+  return <div className="overflow-x-auto rounded-2xl border border-theme"><table className="min-w-[760px] w-full table-fixed text-left"><thead className="bg-base/20 text-[10px] font-black uppercase tracking-widest text-muted/70"><tr>{headers.map((header, index) => <th key={header} className={`px-4 py-3 ${index === headers.length - 1 ? 'w-24 text-right' : ''}`}>{header}</th>)}</tr></thead><tbody className="divide-y divide-theme">{loading ? <tr><td colSpan={headers.length} className="px-6 py-12 text-center"><Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" /></td></tr> : hasRows ? children : <tr><td colSpan={headers.length} className="px-6 py-12 text-center text-sm italic text-muted">{emptyMessage}</td></tr>}</tbody></table></div>;
 }
 
 function Modal({ title, onClose, children, maxWidthClass = 'max-w-2xl' }: { title: string; onClose: () => void; children: ReactNode; maxWidthClass?: string }) {

@@ -8,7 +8,7 @@ import {
   FinanceDashboardData 
 } from '@/lib/finance-dashboard';
 import { loadFinanceDashboardDataServer } from '@/lib/finance-server';
-import { getAuthHeaders as getSharedAuthHeaders } from '@/utils/supabase/auth';
+import { getAuthHeaders as getSharedAuthHeaders } from '@/utils/supabase/auth-server';
 
 /**
  * Server Action to load finance dashboard data securely.

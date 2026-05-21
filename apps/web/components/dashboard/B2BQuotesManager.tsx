@@ -75,7 +75,7 @@ interface ProductOption {
   variants?: ProductVariant[] | null;
 }
 
-const APPROVED_QUOTE_STATUS = 'DISEÃ‘O_APROBADO';
+const APPROVED_QUOTE_STATUS = 'DISEÑO_APROBADO';
 const APPROVED_QUOTE_STATUS_VARIANTS = new Set([
   APPROVED_QUOTE_STATUS,
   'DISE\u00d1O_APROBADO',
@@ -83,6 +83,7 @@ const APPROVED_QUOTE_STATUS_VARIANTS = new Set([
   'DISEÃƒâ€˜O_APROBADO',
   'DISEÃƒÆ’Ã¢â‚¬ËœO_APROBADO',
   'DISEÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“O_APROBADO',
+  'DISEÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¹Ã…â€œO_APROBADO',
 ]);
 
 function normalizeQuoteStatus(status: string) {
@@ -350,7 +351,7 @@ export default function B2BQuotesManager() {
       const matchesStatus = statusFilter === 'ALL'
         ? true
         : statusFilter === 'APPROVED'
-          ? quote.status === 'DISEÑO_APROBADO'
+          ? normalizeQuoteStatus(quote.status) === APPROVED_QUOTE_STATUS
           : quote.status !== 'DISEÑO_APROBADO';
 
       const normalizedStatus = normalizeQuoteStatus(quote.status);
@@ -587,7 +588,7 @@ export default function B2BQuotesManager() {
       {/* Data Table */}
       <div className="bg-surface rounded-2xl border border-theme shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
+          <table className="min-w-[960px] w-full text-sm text-left">
             <thead className="bg-base/50 border-b border-theme text-primary">
               <tr>
                 <th className="px-6 py-4 w-10"></th>
@@ -642,7 +643,7 @@ export default function B2BQuotesManager() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        {quote.status === 'DISEÑO_APROBADO' ? (
+                        {normalizeQuoteStatus(quote.status) === APPROVED_QUOTE_STATUS ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest bg-secondary/10 text-secondary border border-secondary/20">
                             <CheckCircle className="w-3 h-3" />
                             Aprobado
@@ -655,7 +656,7 @@ export default function B2BQuotesManager() {
                         )}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        {quote.status === 'DISEÑO_APROBADO' ? (
+                        {normalizeQuoteStatus(quote.status) === APPROVED_QUOTE_STATUS ? (
                           <button
                             disabled
                             className="inline-flex items-center gap-2 px-4 py-2 bg-base text-muted rounded-xl text-[10px] font-black uppercase tracking-widest cursor-not-allowed border border-theme shadow-inner opacity-60"
@@ -684,7 +685,7 @@ export default function B2BQuotesManager() {
                     {expandedRowId === quote.id && (
                       <tr className="bg-base/10">
                         <td colSpan={7} className="px-6 py-0">
-                          <div className="py-8 pl-10 grid grid-cols-1 md:grid-cols-4 gap-8 border-t border-theme animate-in slide-in-from-left-2 duration-300">
+                          <div className="grid grid-cols-1 gap-8 border-t border-theme py-8 pl-0 animate-in slide-in-from-left-2 duration-300 md:grid-cols-4 md:pl-10">
 
                             <div className="space-y-3">
                               <h4 className="text-[10px] font-black text-muted uppercase tracking-[0.2em] flex items-center gap-2">

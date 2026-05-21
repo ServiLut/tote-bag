@@ -4,6 +4,7 @@ import {
   NotificationEmailSender,
   ShipmentDispatchedEmailMessage,
 } from './notifications.constants';
+import { redactEmail } from '../../common/logger/log-sanitization';
 
 type ResendEmailResponse = {
   id?: string;
@@ -83,7 +84,7 @@ export class ResendNotificationEmailSender implements NotificationEmailSender {
       }
 
       this.logger.log(
-        `[CUSTOMER_EMAIL_SENT] provider=${this.providerName} orderId=${message.orderId} orderNumber=${message.orderNumber} email=${message.customerEmail} resendEmailId=${responseBody?.id ?? 'N/A'}`,
+        `[CUSTOMER_EMAIL_SENT] provider=${this.providerName} orderId=${message.orderId} orderNumber=${message.orderNumber} email=${redactEmail(message.customerEmail)} resendEmailId=${responseBody?.id ?? 'N/A'}`,
       );
     } finally {
       clearTimeout(timeout);

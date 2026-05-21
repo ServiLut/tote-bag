@@ -352,7 +352,7 @@ export default function ProductsTable() {
   return (
     <>
       <div className="overflow-x-auto rounded-2xl border border-theme bg-surface shadow-sm">
-        <table className="w-full divide-y divide-theme text-sm">
+        <table className="min-w-[980px] w-full divide-y divide-theme text-sm">
           <thead>
             <tr className="bg-base/50">
               <th className="px-6 py-4 text-left font-bold text-primary uppercase text-[10px] tracking-widest">Producto</th>

@@ -24,7 +24,9 @@ export function createApiProbePayload(now = new Date()): ApiProbePayload {
   };
 }
 
-function getRequestPath(request: Pick<Request, 'originalUrl' | 'path' | 'url'>) {
+function getRequestPath(
+  request: Pick<Request, 'originalUrl' | 'path' | 'url'>,
+) {
   const rawPath = request.path || request.originalUrl || request.url || '/';
   const [pathname] = rawPath.split('?');
 

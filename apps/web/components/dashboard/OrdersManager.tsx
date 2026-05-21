@@ -925,7 +925,7 @@ export default function OrdersManager() {
 
       {view === 'list' ? (
         <div className="overflow-hidden rounded-2xl border border-theme shadow-sm bg-surface">
-          <table className="w-full divide-y divide-theme text-sm text-left">
+          <table className="min-w-[980px] w-full divide-y divide-theme text-sm text-left">
             <thead>
               <tr className="bg-base/50">
                 <th className="px-6 py-4 font-bold text-primary uppercase text-[10px] tracking-widest">

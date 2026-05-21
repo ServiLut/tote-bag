@@ -966,14 +966,14 @@ export default function PurchaseInvoicingPage() {
         : getNumericAmount(selectedInvoice.balanceDue));
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 animate-in fade-in slide-in-from-bottom-4 p-8 duration-500 md:p-12">
+    <div className="mx-auto max-w-7xl space-y-8 animate-in px-4 py-5 duration-500 fade-in slide-in-from-bottom-4 sm:px-6 md:p-12">
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
             <div className="rounded-xl bg-primary p-2.5 text-base-color shadow-lg shadow-primary/20">
               <Receipt className="h-6 w-6" />
             </div>
-            <h1 className="text-3xl font-black tracking-tight text-primary">
+            <h1 className="text-2xl font-black tracking-tight text-primary md:text-3xl">
               Pagos y Facturacion
             </h1>
           </div>
@@ -985,7 +985,7 @@ export default function PurchaseInvoicingPage() {
         <Button
           type="button"
           onClick={openCreateModal}
-          className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-black text-base-color shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-black text-base-color shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 sm:w-auto"
         >
           <Plus className="h-4 w-4" />
           Nueva factura
@@ -1061,7 +1061,7 @@ export default function PurchaseInvoicingPage() {
         ) : null}
 
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-left">
+          <table className="min-w-[1040px] w-full border-collapse text-left">
             <thead>
               <tr className="border-b border-theme bg-base/20 text-[10px] font-black uppercase tracking-widest text-muted/60">
                 <th className="px-8 py-4">Proveedor</th>

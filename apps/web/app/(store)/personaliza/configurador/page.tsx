@@ -1,9 +1,7 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 import PersonalizerWizard from '@/components/store/PersonalizerWizard';
 import { DEFAULT_LANGUAGE, LANGUAGE_COOKIE_KEY } from '@/lib/i18n-config';
-import { createClient } from '@/utils/supabase/server';
 
 export async function generateMetadata(): Promise<Metadata> {
   const cookieStore = await cookies();
@@ -13,12 +11,14 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return language === 'en'
     ? {
-        title: 'Configurator | Customize your Tote Bag',
-        description: 'Choose every detail of your technical production setup.',
+        title: 'Tote Bag Configurator | Customization',
+        description:
+          'Choose line, size, material, and marking technique to prepare your customization request.',
       }
     : {
-        title: 'Configurador | Personaliza tu Tote Bag',
-        description: 'Elige cada detalle de tu producción técnica.',
+        title: 'Configurador de tote bag | Personalizacion',
+        description:
+          'Elige linea, tamano, material y tecnica para preparar tu solicitud de personalizacion.',
       };
 }
 
@@ -39,21 +39,6 @@ export default async function ConfiguradorPage({ searchParams }: PageProps) {
     typeof params.product === 'string' && params.product.trim().length > 0
       ? params.product.trim()
       : 'tote-bag-clasica';
-  const configuratorParams = new URLSearchParams();
-  if (requestedProductId) {
-    configuratorParams.set('productId', requestedProductId);
-  } else {
-    configuratorParams.set('product', requestedProduct);
-  }
-  const configuratorPath = `/personaliza/configurador?${configuratorParams.toString()}`;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect(`/login?redirect=${encodeURIComponent(configuratorPath)}`);
-  }
 
   return (
     <div className="bg-base min-h-screen py-12 md:py-20 px-4">

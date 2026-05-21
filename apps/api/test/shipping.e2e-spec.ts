@@ -96,7 +96,7 @@ describe('ShippingController (e2e)', () => {
 
   it('GET /api/v1/shipping/permissions expone permisos de lectura y actualizacion', async () => {
     rolesService.hasPermission.mockImplementation(
-      async (_userId: string, resource: string, action: string) =>
+      (_userId: string, resource: string, action: string) =>
         resource === 'shipping' && action === 'read',
     );
 

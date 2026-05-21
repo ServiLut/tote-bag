@@ -2,27 +2,3 @@
 > api@0.0.1 lint C:\Users\user\Desktop\deybis\tote-bag\apps\api
 > eslint "{src,apps,libs,test}/**/*.ts" --fix
 
-
-C:\Users\user\Desktop\deybis\tote-bag\apps\api\src\modules\b2b\b2b.service.ts
-  392:13  error  'status' is assigned a value but never used  @typescript-eslint/no-unused-vars
-
-C:\Users\user\Desktop\deybis\tote-bag\apps\api\src\modules\inventory\reporting.service.ts
-  441:58  error  '_userId' is defined but never used  @typescript-eslint/no-unused-vars
-
-C:\Users\user\Desktop\deybis\tote-bag\apps\api\src\modules\orders\orders.service.spec.ts
-  444:9  error  Unsafe assignment of an `any` value  @typescript-eslint/no-unsafe-assignment
-
-C:\Users\user\Desktop\deybis\tote-bag\apps\api\src\modules\profiles\profiles.service.spec.ts
-  41:9  error  Unsafe assignment of an `any` value  @typescript-eslint/no-unsafe-assignment
-
-C:\Users\user\Desktop\deybis\tote-bag\apps\api\src\modules\wizard\wizard.service.spec.ts
-  32:68  error  Async arrow function has no 'await' expression  @typescript-eslint/require-await
-  32:72  error  Unsafe return of a value of type `any`          @typescript-eslint/no-unsafe-return
-  44:7   error  Unsafe assignment of an `any` value             @typescript-eslint/no-unsafe-assignment
-
-C:\Users\user\Desktop\deybis\tote-bag\apps\api\test\shipping.e2e-spec.ts
-  99:65  error  Async arrow function has no 'await' expression  @typescript-eslint/require-await
-
-✖ 8 problems (8 errors, 0 warnings)
-
- ELIFECYCLE  Command failed with exit code 1.

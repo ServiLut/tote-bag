@@ -262,14 +262,14 @@ export default function OpexPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 animate-in fade-in slide-in-from-bottom-4 p-8 duration-500 md:p-12">
+    <div className="mx-auto max-w-7xl space-y-8 animate-in px-4 py-5 duration-500 fade-in slide-in-from-bottom-4 sm:px-6 md:p-12">
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
             <div className="rounded-xl bg-rose-500 p-2.5 text-white shadow-lg shadow-rose-200">
               <Receipt className="h-6 w-6" />
             </div>
-            <h1 className="text-3xl font-black tracking-tight text-primary">
+            <h1 className="text-2xl font-black tracking-tight text-primary md:text-3xl">
               Gastos Operativos
             </h1>
           </div>
@@ -281,29 +281,29 @@ export default function OpexPage() {
         <button
           type="button"
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center justify-center gap-2 rounded-xl bg-rose-500 px-6 py-3 font-bold text-white shadow-lg shadow-rose-200 transition-all hover:scale-[1.02] active:scale-95"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-rose-500 px-6 py-3 font-bold text-white transition-all hover:scale-[1.02] active:scale-95 sm:w-auto"
         >
           <Plus className="h-5 w-5" />
           Registrar Gasto
         </button>
       </div>
 
-      <div className="flex flex-col items-center justify-between gap-6 rounded-3xl border border-rose-100 bg-rose-50 p-8 md:flex-row">
+      <div className="flex flex-col items-center justify-between gap-6 rounded-3xl border border-rose-100 bg-rose-50 p-8 md:flex-row dark-surface-gradient-rose">
         <div className="flex items-center gap-4">
-          <div className="rounded-2xl bg-white p-4 shadow-sm">
+          <div className="rounded-2xl bg-white p-4 shadow-sm dark:border dark:border-white/10 dark:bg-white/10">
             <TrendingDown className="h-8 w-8 text-rose-500" />
           </div>
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-rose-400">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-rose-400 dark:text-rose-200/80">
               Total Gastado este Mes
             </p>
-            <h2 className="text-4xl font-black text-rose-600">
+            <h2 className="text-4xl font-black text-rose-600 dark:text-rose-100">
               {formatCurrency(currentMonthTotal)}
             </h2>
           </div>
         </div>
         <div className="text-right">
-          <p className="max-w-xs text-sm font-medium text-rose-500/80">
+          <p className="max-w-xs text-sm font-medium text-rose-500/80 dark:text-rose-100/75">
             Este valor incluye nomina, servicios, arriendo y otros gastos fijos del
             periodo actual.
           </p>
@@ -328,7 +328,7 @@ export default function OpexPage() {
         />
       </div>
 
-      <div className="overflow-hidden rounded-3xl border border-theme bg-surface shadow-sm">
+      <div className="overflow-hidden rounded-3xl border border-theme bg-surface dark-surface-gradient-soft shadow-sm">
         <div className="flex flex-col justify-between gap-4 border-b border-theme bg-base/30 p-8 md:flex-row md:items-center">
           <h2 className="flex items-center gap-2 text-xl font-bold text-primary">
             <Search className="h-5 w-5 text-muted" />
@@ -352,7 +352,7 @@ export default function OpexPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-left">
+          <table className="min-w-[720px] w-full border-collapse text-left">
             <thead>
               <tr className="border-b border-theme bg-base/20 text-[10px] font-black uppercase tracking-widest text-muted/60">
                 <th className="px-8 py-4">Fecha</th>

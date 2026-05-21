@@ -33,8 +33,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }));
       return [...routes, ...productRoutes];
     }
-  } catch (error) {
-    console.error('Sitemap error:', error);
+  } catch {
+    // Gracefully fall back to static routes when the API is unavailable at build time.
   }
 
   return routes;

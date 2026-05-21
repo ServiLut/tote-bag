@@ -13,7 +13,7 @@ export default function Footer() {
         <div className="col-span-1 space-y-6 md:col-span-2">
           <h3 className="text-2xl font-serif font-bold tracking-tighter">{COMPANY_INFO.name}</h3>
           <p className="max-w-xs text-sm leading-relaxed opacity-90">
-            {t('footer_description')}
+            {t('footer_brand_description')}
           </p>
         </div>
         <div>

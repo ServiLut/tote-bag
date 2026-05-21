@@ -9,17 +9,18 @@ import {
   parseDashboardDebugRoleCookie,
 } from '@/lib/dashboard-auth';
 import { sanitizeProxyResponseHeaders } from '@/lib/api-proxy';
-import { logAuditRecord, logSystemAlert } from '@/lib/audit-log';
+import { logSystemAlert } from '@/lib/audit-log';
 
 const PROXY_SAFE_RETRY_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
-const PROXY_MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 function getProxyRequestTimeoutMs(pathname: string) {
   if (pathname.startsWith('reports/')) return 45000;
   if (pathname.startsWith('uploads/')) return 30000;
   if (pathname.startsWith('finance/')) return 15000;
   if (pathname.startsWith('dashboard/')) return 12000;
-  if (pathname.startsWith('checkout/') || pathname.startsWith('payment/')) return 8000;
+  if (pathname.startsWith('checkout/') || pathname.startsWith('payment/')) {
+    return 8000;
+  }
   if (pathname.startsWith('catalog/')) return 6000;
 
   const rawValue = process.env.API_PROXY_TIMEOUT_MS?.trim();
@@ -66,7 +67,6 @@ function buildForwardHeaders(request: NextRequest, requestId: string) {
     request.cookies.get(DASHBOARD_DEBUG_ROLE_COOKIE_NAME)?.value,
   );
 
-  // Sanitización estricta: solo pasar headers permitidos
   for (const name of [
     'accept',
     'accept-language',
@@ -112,45 +112,27 @@ function buildForwardHeaders(request: NextRequest, requestId: string) {
   return headers;
 }
 
-const ipRateLimit = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT_MAX = 200;
-const RATE_LIMIT_WINDOW_MS = 60000;
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const record = ipRateLimit.get(ip);
-  if (!record || record.resetTime < now) {
-    ipRateLimit.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
-    return true;
-  }
-  if (record.count >= RATE_LIMIT_MAX) {
-    return false;
-  }
-  record.count++;
-  return true;
-}
-
-function secureLogProxy(level: 'info' | 'error', context: Record<string, unknown>) {
+function secureLogProxy(
+  level: 'info' | 'error',
+  context: Record<string, unknown>,
+) {
   const safeContext = {
     ...context,
     timestamp: new Date().toISOString(),
   };
+
   if (level === 'error') {
-    console.error(`[API Proxy Error]`, JSON.stringify(safeContext));
-  } else {
-    console.info(`[API Proxy Info]`, JSON.stringify(safeContext));
+    console.error('[API Proxy Error]', JSON.stringify(safeContext));
+    return;
   }
+
+  console.info('[API Proxy Info]', JSON.stringify(safeContext));
 }
 
 async function forwardRequest(
   request: NextRequest,
   context: { params: Promise<{ path: string[] }> },
 ) {
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || request.headers.get('x-real-ip') || '127.0.0.1';
-  if (!checkRateLimit(ip)) {
-    return NextResponse.json({ message: 'Too many requests' }, { status: 429 });
-  }
-
   const { path } = await context.params;
   const pathname = path.join('/');
   const query = request.nextUrl.search;
@@ -164,19 +146,17 @@ async function forwardRequest(
   const canReplayRequest = canReplayProxyRequest(request, headers);
 
   let lastError: unknown;
-  const attemptedUrls: string[] = [];
   const startTime = Date.now();
 
   for (const baseUrl of getServerApiCandidates()) {
     const targetUrl = `${baseUrl}/${pathname}${query}`;
     let safeTargetHost = 'unknown';
+
     try {
       safeTargetHost = new URL(baseUrl).host;
     } catch {
       safeTargetHost = baseUrl;
     }
-    
-    attemptedUrls.push(targetUrl);
 
     try {
       const upstreamResponse = await fetch(targetUrl, {
@@ -199,36 +179,30 @@ async function forwardRequest(
       }
 
       if (!upstreamResponse.ok && upstreamResponse.status >= 500) {
-         secureLogProxy('error', {
-           requestId,
-           path: pathname,
-           method: request.method,
-           status: upstreamResponse.status,
-           elapsedMs: Date.now() - startTime,
-           selectedTargetHost: safeTargetHost,
-           errorType: 'UpstreamServerError'
-         });
+        secureLogProxy('error', {
+          requestId,
+          path: pathname,
+          method: request.method,
+          status: upstreamResponse.status,
+          elapsedMs: Date.now() - startTime,
+          selectedTargetHost: safeTargetHost,
+          errorType: 'UpstreamServerError',
+        });
 
-         await logSystemAlert('CRITICAL', `API Error ${upstreamResponse.status} on ${pathname}`, {
+        await logSystemAlert(
+          'CRITICAL',
+          `API Error ${upstreamResponse.status} on ${pathname}`,
+          {
             requestId,
             method: request.method,
-            targetHost: safeTargetHost
-         });
+            targetHost: safeTargetHost,
+          },
+        );
       }
 
-      // Auditoría automática para métodos mutantes
-      if (upstreamResponse.ok && PROXY_MUTATING_METHODS.has(request.method.toUpperCase())) {
-         const entity = pathname.split('/')[0] || 'unknown';
-         await logAuditRecord({
-            action: `${request.method.toUpperCase()}_AUTO`,
-            entity,
-            entityId: pathname.split('/')[1] || null,
-            payload: { path: pathname, query },
-            metadata: { source: 'api-proxy-auto' }
-         }, requestId);
-      }
-
-      const responseHeaders = sanitizeProxyResponseHeaders(upstreamResponse.headers);
+      const responseHeaders = sanitizeProxyResponseHeaders(
+        upstreamResponse.headers,
+      );
       responseHeaders.set('x-request-id', requestId);
 
       return new NextResponse(upstreamResponse.body, {
@@ -238,8 +212,9 @@ async function forwardRequest(
       });
     } catch (error) {
       lastError = error;
-      const isTimeout = error instanceof DOMException && error.name === 'TimeoutError';
-      
+      const isTimeout =
+        error instanceof DOMException && error.name === 'TimeoutError';
+
       secureLogProxy('error', {
         requestId,
         path: pathname,
@@ -247,7 +222,7 @@ async function forwardRequest(
         status: isTimeout ? 504 : 502,
         elapsedMs: Date.now() - startTime,
         selectedTargetHost: safeTargetHost,
-        errorType: isTimeout ? 'TimeoutError' : 'NetworkError'
+        errorType: isTimeout ? 'TimeoutError' : 'NetworkError',
       });
 
       if (!canReplayRequest) {
@@ -258,7 +233,8 @@ async function forwardRequest(
 
   const detail =
     lastError instanceof Error ? lastError.message : 'Sin detalle adicional';
-  const isTimeoutError = lastError instanceof DOMException && lastError.name === 'TimeoutError';
+  const isTimeoutError =
+    lastError instanceof DOMException && lastError.name === 'TimeoutError';
   const finalStatus = isTimeoutError ? 504 : 502;
 
   return NextResponse.json(
@@ -270,9 +246,44 @@ async function forwardRequest(
   );
 }
 
-export async function GET(request: NextRequest, context: { params: Promise<{ path: string[] }> }) { return forwardRequest(request, context); }
-export async function POST(request: NextRequest, context: { params: Promise<{ path: string[] }> }) { return forwardRequest(request, context); }
-export async function PUT(request: NextRequest, context: { params: Promise<{ path: string[] }> }) { return forwardRequest(request, context); }
-export async function PATCH(request: NextRequest, context: { params: Promise<{ path: string[] }> }) { return forwardRequest(request, context); }
-export async function DELETE(request: NextRequest, context: { params: Promise<{ path: string[] }> }) { return forwardRequest(request, context); }
-export async function HEAD(request: NextRequest, context: { params: Promise<{ path: string[] }> }) { return forwardRequest(request, context); }
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ path: string[] }> },
+) {
+  return forwardRequest(request, context);
+}
+
+export async function POST(
+  request: NextRequest,
+  context: { params: Promise<{ path: string[] }> },
+) {
+  return forwardRequest(request, context);
+}
+
+export async function PUT(
+  request: NextRequest,
+  context: { params: Promise<{ path: string[] }> },
+) {
+  return forwardRequest(request, context);
+}
+
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<{ path: string[] }> },
+) {
+  return forwardRequest(request, context);
+}
+
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ path: string[] }> },
+) {
+  return forwardRequest(request, context);
+}
+
+export async function HEAD(
+  request: NextRequest,
+  context: { params: Promise<{ path: string[] }> },
+) {
+  return forwardRequest(request, context);
+}

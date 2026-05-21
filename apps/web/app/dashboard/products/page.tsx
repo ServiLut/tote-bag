@@ -16,10 +16,10 @@ export default function ProductsDashboardPage() {
   const isReadOnly = isDashboardReadOnlyRole(role);
 
   return (
-    <div className="p-8 md:p-12 max-w-7xl mx-auto space-y-8">
+    <div className="mx-auto max-w-7xl space-y-8 px-4 py-5 sm:px-6 md:p-12">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-primary">Gestión de productos</h1>
+          <h1 className="text-2xl font-black tracking-tight text-primary md:text-3xl">Gestión de productos</h1>
           <p className="mt-2 text-muted font-medium max-w-2xl">
             Administra el catálogo, precios y estados. Las alertas visuales indican márgenes reducidos.
           </p>
@@ -27,7 +27,7 @@ export default function ProductsDashboardPage() {
         {!isReadOnly && (
           <Link
             href="/dashboard/products/new"
-            className="inline-flex items-center justify-center gap-2 bg-primary text-base-color px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] hover:opacity-90 transition-all shadow-lg shadow-primary/10 active:scale-95"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-base-color shadow-lg shadow-primary/10 transition-all hover:opacity-90 active:scale-95 sm:w-auto"
           >
             <Plus className="w-4 h-4" />
             Nuevo producto
@@ -36,26 +36,26 @@ export default function ProductsDashboardPage() {
       </div>
 
       <Tabs defaultValue="productos" className="w-full">
-        <TabsList className="mb-8">
+        <TabsList className="mb-6 w-full justify-start overflow-x-auto whitespace-nowrap rounded-2xl border border-theme bg-surface p-1">
           <TabsTrigger value="productos">Catálogo</TabsTrigger>
           <TabsTrigger value="colecciones">Colecciones</TabsTrigger>
           <TabsTrigger value="configuracion">Configuración técnica</TabsTrigger>
           <TabsTrigger value="matriz">Matriz de compatibilidad</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="productos" className="bg-surface rounded-3xl border border-theme shadow-sm overflow-hidden">
+        <TabsContent value="productos" className="bg-surface dark-surface-gradient-soft rounded-3xl border border-theme shadow-sm overflow-hidden">
           <ProductsTable />
         </TabsContent>
 
-        <TabsContent value="colecciones" className="bg-surface rounded-3xl border border-theme shadow-sm overflow-hidden">
+        <TabsContent value="colecciones" className="bg-surface dark-surface-gradient-soft rounded-3xl border border-theme shadow-sm overflow-hidden">
           <CollectionsManager />
         </TabsContent>
 
-        <TabsContent value="configuracion" className="bg-surface rounded-3xl border border-theme shadow-sm overflow-hidden p-8">
+        <TabsContent value="configuracion" className="bg-surface dark-surface-gradient-soft rounded-3xl border border-theme shadow-sm overflow-hidden p-4 md:p-8">
           <WizardConfigManager />
         </TabsContent>
 
-        <TabsContent value="matriz" className="bg-surface rounded-3xl border border-theme shadow-sm overflow-hidden p-8">
+        <TabsContent value="matriz" className="bg-surface dark-surface-gradient-soft rounded-3xl border border-theme shadow-sm overflow-hidden p-4 md:p-8">
           <FabricCompatibilityMatrix />
         </TabsContent>
       </Tabs>
