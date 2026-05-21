@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatWholeCurrency } from '@/lib/numeric-input';
+import { formatVariantSummary } from '@/lib/storefront-translations';
 
 const CUSTOM_TOTE_FALLBACK_IMAGE = '/tote_bag_lifestyle.png';
 
@@ -117,13 +118,13 @@ export default function CartDrawer() {
                       </button>
                     </div>
                     <p className="text-xs text-muted mt-1">
-                      {[item.variant.size, item.variant.color].filter(Boolean).join(' / ')}
+                      {formatVariantSummary(item.variant.size, item.variant.color, t)}
                     </p>
                     <p className="text-sm font-semibold mt-1 text-primary">
                       {formatWholeCurrency(item.unitPrice)}
                     </p>
                     <p className="text-[10px] font-bold uppercase tracking-wide text-muted">
-                      IVA incluido
+                      {t('tax_included')}
                     </p>
                   </div>
 
@@ -158,7 +159,7 @@ export default function CartDrawer() {
                 <span className="text-muted">{t('cart_subtotal')}</span>
                 <span className="text-right">
                   <span className="block font-semibold text-primary">{formatWholeCurrency(subtotal)}</span>
-                  <span className="block text-[10px] font-bold uppercase tracking-wide text-muted">IVA incluido</span>
+                  <span className="block text-[10px] font-bold uppercase tracking-wide text-muted">{t('tax_included')}</span>
                 </span>
               </div>
               <div className="flex justify-between text-sm">

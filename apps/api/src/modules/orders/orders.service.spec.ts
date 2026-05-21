@@ -439,16 +439,21 @@ describe('OrdersService', () => {
       endDate: new Date('2026-04-30T23:59:59.999Z'),
     });
 
-    expect(prisma.order.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
+    const [findManyArgs] = prisma.order.findMany.mock.calls[0] as unknown as [
+      {
+        where: {
           createdAt: {
-            gte: new Date('2026-04-01T00:00:00.000Z'),
-            lte: new Date('2026-04-30T23:59:59.999Z'),
-          },
-        }),
-      }),
-    );
+            gte: Date;
+            lte: Date;
+          };
+        };
+      },
+    ];
+
+    expect(findManyArgs.where.createdAt).toEqual({
+      gte: new Date('2026-04-01T00:00:00.000Z'),
+      lte: new Date('2026-04-30T23:59:59.999Z'),
+    });
   });
 
   it('rechaza rangos invertidos en cuentas por cobrar', async () => {

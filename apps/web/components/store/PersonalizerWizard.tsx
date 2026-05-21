@@ -23,6 +23,7 @@ import { apiFetch } from '@/utils/api';
 import { createClient } from '@/utils/supabase/client';
 import { ApiResponse } from '@/types/api';
 import { Product } from '@/types/product';
+import { translateStoreText, translateStoreValue } from '@/lib/storefront-translations';
 
 interface WizardOption {
   id: string;
@@ -92,6 +93,7 @@ export interface PersonalizerTechniqueActionGuard {
   hasCompatibleTechniqueOptions: boolean;
   hasUploadedLogo: boolean;
   hasDesignUrl: boolean;
+  hasPreparedDesign?: boolean;
   hasConfigCode: boolean;
   isUploadingLogo?: boolean;
   isPricingLoading?: boolean;
@@ -134,6 +136,7 @@ export const isTechniqueActionBlocked = ({
   hasCompatibleTechniqueOptions,
   hasUploadedLogo,
   hasDesignUrl,
+  hasPreparedDesign = false,
   hasConfigCode,
   isUploadingLogo = false,
   isPricingLoading = false,
@@ -142,8 +145,29 @@ export const isTechniqueActionBlocked = ({
   isUploadingLogo ||
   !hasCompatibleTechniqueOptions ||
   !hasUploadedLogo ||
-  !hasDesignUrl ||
+  (!hasDesignUrl && !hasPreparedDesign) ||
   !hasConfigCode;
+
+export const PERSONALIZER_INLINE_DRAFT_MAX_BYTES = 1024 * 1024;
+
+export const shouldInlineDraftDesign = (fileSize?: number | null) =>
+  typeof fileSize === 'number' &&
+  fileSize > 0 &&
+  fileSize <= PERSONALIZER_INLINE_DRAFT_MAX_BYTES;
+
+export const resolveRestoredSizeSelection = ({
+  restoredSize,
+  resolvedVariantSize,
+  currentSize,
+}: {
+  restoredSize?: string | null;
+  resolvedVariantSize?: string | null;
+  currentSize?: string | null;
+}) =>
+  restoredSize?.trim() ||
+  resolvedVariantSize?.trim() ||
+  currentSize?.trim() ||
+  '';
 /* personalizer-wizard-test-helpers:end */
 
 const getDimensionVisualLabel = (option: WizardOption) => {
@@ -157,6 +181,52 @@ const DESIGN_FILE_EXTENSION_BY_MIME_TYPE: Record<string, string> = {
   'image/jpg': '.jpg',
   'image/webp': '.webp',
 };
+
+const PERSONALIZER_DRAFT_STORAGE_KEY = 'storefront.personalizer.draft.v1';
+
+type PersonalizerDraft = {
+  redirectPath: string;
+  step: Step;
+  uploadedLogo: string | null;
+  designFileName: string | null;
+  designFileType: string | null;
+  requiresDesignReupload?: boolean;
+  logoScale: number;
+  configCode: string;
+  calculatedUnitPrice: number;
+  calculatedTotalPrice: number;
+  resolvedProductId: string;
+  resolvedVariant: ProductResolution['variant'] | null;
+  selections: {
+    line: string;
+    size: string;
+    material: string;
+    quantity: number;
+    markingType: string;
+    extraOptions: string[];
+    designUrl: string;
+  };
+};
+
+async function fileToDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+async function dataUrlToFile(
+  dataUrl: string,
+  fileName: string,
+  mimeType?: string | null,
+) {
+  const response = await fetch(dataUrl);
+  const blob = await response.blob();
+  const type = mimeType || blob.type || 'image/png';
+  return new File([blob], fileName, { type });
+}
 
 const ensureDesignFileName = (file: File) => {
   const trimmedName = file.name.trim();
@@ -258,6 +328,49 @@ export default function PersonalizerWizard({
   const loginRedirectBasePath = isDirectMode
     ? '/personaliza'
     : '/personaliza/configurador';
+  const getTranslatedLineName = (line?: Pick<WizardOption, 'code' | 'name'> | null) =>
+    translateStoreValue('line', line?.code || line?.name, t) || line?.name || '';
+  const getCompactLineName = (line?: Pick<WizardOption, 'code' | 'name'> | null) => {
+    const translatedName = getTranslatedLineName(line);
+    const rawName = translatedName || line?.name || line?.code || '';
+
+    return rawName
+      .replace(/^l[ií]nea\s+/i, '')
+      .replace(/^line_/i, '')
+      .trim();
+  };
+  const getTranslatedLineDescription = (
+    line?: Pick<WizardOption, 'code' | 'name' | 'description'> | null,
+  ) =>
+    translateStoreText(
+      'store_description',
+      'line',
+      line?.code || line?.name,
+      line?.description || '',
+      t,
+    );
+  const getTranslatedMaterialName = (material?: string | null) =>
+    translateStoreValue('material', material, t) || material || '';
+  const getTranslatedSizeName = (size?: string | null) =>
+    translateStoreValue('size', size, t) || size || '';
+  const getTranslatedTechniqueName = (
+    technique?: Pick<WizardOption, 'code' | 'name'> | PersonalizerTechniqueOption | null,
+  ) =>
+    translateStoreValue('technique', technique?.code || technique?.name, t)
+    || technique?.name
+    || '';
+  const getCompactTechniqueName = (
+    technique?: Pick<WizardOption, 'code' | 'name'> | PersonalizerTechniqueOption | null,
+  ) => {
+    const translatedName = getTranslatedTechniqueName(technique);
+    const rawName = translatedName || technique?.name || technique?.code || '';
+
+    return rawName
+      .replace(/^technique_/i, '')
+      .replace(/^t[eé]cnica\s+/i, '')
+      .replace(/_/g, ' ')
+      .trim();
+  };
   const loginRedirectParams = new URLSearchParams();
   if (productId) {
     loginRedirectParams.set('productId', productId);
@@ -296,6 +409,8 @@ export default function PersonalizerWizard({
   });
 
   const [uploadedLogo, setUploadedLogo] = useState<string | null>(null);
+  const [designFileName, setDesignFileName] = useState<string | null>(null);
+  const [designFileType, setDesignFileType] = useState<string | null>(null);
   const [logoScale, setLogoScale] = useState(50);
   const [calculatedUnitPrice, setCalculatedUnitPrice] = useState(0);
   const [calculatedTotalPrice, setCalculatedTotalPrice] = useState(0);
@@ -306,6 +421,7 @@ export default function PersonalizerWizard({
   const [submittedRequestId, setSubmittedRequestId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const restoredDraftRef = useRef<PersonalizerDraft | null>(null);
 
   useEffect(() => {
     setStep(isDirectMode ? 4 : 1);
@@ -368,8 +484,13 @@ export default function PersonalizerWizard({
         setResolvedVariant(resolvedSelection.variant);
         setSelections((prev) => ({
           ...prev,
-          size: resolvedSelection.variant.size || prev.size,
+          size: resolveRestoredSizeSelection({
+            restoredSize: restoredDraftRef.current?.selections.size,
+            resolvedVariantSize: resolvedSelection.variant.size,
+            currentSize: prev.size,
+          }),
         }));
+        restoredDraftRef.current = null;
       } catch (error) {
         if (error instanceof ProductResolutionError) {
           setOptionsError(t('wizard_unavailable'));
@@ -472,6 +593,233 @@ export default function PersonalizerWizard({
       }
     };
   }, [uploadedLogo]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const rawDraft = window.sessionStorage.getItem(
+      PERSONALIZER_DRAFT_STORAGE_KEY,
+    );
+    if (!rawDraft) {
+      return;
+    }
+
+    try {
+      const draft = JSON.parse(rawDraft) as PersonalizerDraft;
+      if (draft.redirectPath !== loginRedirectPath) {
+        return;
+      }
+
+      restoredDraftRef.current = draft;
+      setStep(draft.step);
+      setUploadedLogo(draft.uploadedLogo);
+      setDesignFileName(draft.designFileName);
+      setDesignFileType(draft.designFileType);
+      setLogoScale(draft.logoScale);
+      setConfigCode(draft.configCode);
+      setCalculatedUnitPrice(draft.calculatedUnitPrice);
+      setCalculatedTotalPrice(draft.calculatedTotalPrice);
+      setResolvedProductId(draft.resolvedProductId);
+      setResolvedVariant(draft.resolvedVariant);
+      setSelections((prev) => ({
+        ...prev,
+        ...draft.selections,
+        extraOptions: draft.selections.extraOptions,
+        customFile: null,
+      }));
+      if (draft.requiresDesignReupload) {
+        toast.error(
+          t('wizard_draft_requires_reupload', {
+            defaultValue:
+              'Vuelve a cargar tu diseño para terminar la solicitud. Guardamos la configuración, pero no el archivo local.',
+          }),
+        );
+      }
+      window.sessionStorage.removeItem(PERSONALIZER_DRAFT_STORAGE_KEY);
+    } catch (error) {
+      console.error('Failed to restore personalization draft:', error);
+      window.sessionStorage.removeItem(PERSONALIZER_DRAFT_STORAGE_KEY);
+    }
+  }, [loginRedirectPath, t]);
+
+  const persistDraft = useCallback(async () => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const canInlineDraftDesign = shouldInlineDraftDesign(selections.customFile?.size);
+    const requiresDesignReupload = !!selections.customFile && !canInlineDraftDesign;
+    const draftPreview = selections.customFile
+      ? canInlineDraftDesign
+        ? uploadedLogo?.startsWith('data:')
+          ? uploadedLogo
+          : await fileToDataUrl(selections.customFile)
+        : null
+      : uploadedLogo;
+
+    const draft: PersonalizerDraft = {
+      redirectPath: loginRedirectPath,
+      step,
+      uploadedLogo: draftPreview,
+      designFileName: requiresDesignReupload ? null : designFileName,
+      designFileType: requiresDesignReupload ? null : designFileType,
+      requiresDesignReupload,
+      logoScale,
+      configCode,
+      calculatedUnitPrice,
+      calculatedTotalPrice,
+      resolvedProductId,
+      resolvedVariant,
+      selections: {
+        line: selections.line,
+        size: selections.size,
+        material: selections.material,
+        quantity: selections.quantity,
+        markingType: selections.markingType,
+        extraOptions: selections.extraOptions,
+        designUrl: requiresDesignReupload ? '' : selections.designUrl,
+      },
+    };
+
+    try {
+      window.sessionStorage.setItem(
+        PERSONALIZER_DRAFT_STORAGE_KEY,
+        JSON.stringify(draft),
+      );
+    } catch (error) {
+      console.error('Failed to persist personalization draft with file preview:', error);
+
+      try {
+        const fallbackDraft: PersonalizerDraft = {
+          ...draft,
+          uploadedLogo: null,
+          designFileName: null,
+          designFileType: null,
+          requiresDesignReupload: !!selections.customFile || draft.requiresDesignReupload,
+          selections: {
+            ...draft.selections,
+            designUrl: '',
+          },
+        };
+
+        window.sessionStorage.setItem(
+          PERSONALIZER_DRAFT_STORAGE_KEY,
+          JSON.stringify(fallbackDraft),
+        );
+      } catch (fallbackError) {
+        console.error('Failed to persist personalization draft fallback:', fallbackError);
+      }
+    }
+  }, [
+    calculatedTotalPrice,
+    calculatedUnitPrice,
+    configCode,
+    designFileName,
+    designFileType,
+    loginRedirectPath,
+    logoScale,
+    resolvedProductId,
+    resolvedVariant,
+    selections,
+    step,
+    uploadedLogo,
+  ]);
+
+  const persistDesignToStorage = useCallback(async (accessToken: string) => {
+    if (
+      selections.designUrl &&
+      !selections.designUrl.startsWith('data:') &&
+      !selections.designUrl.startsWith('blob:')
+    ) {
+      return selections.designUrl;
+    }
+
+    let file = selections.customFile;
+
+    if (!file && uploadedLogo?.startsWith('data:')) {
+      file = await dataUrlToFile(
+        uploadedLogo,
+        designFileName || 'diseno-personalizado.png',
+        designFileType,
+      );
+    }
+
+    if (!file) {
+      return '';
+    }
+
+    const normalizedFileName = ensureDesignFileName(file);
+    setIsUploadingLogo(true);
+
+    try {
+      const signedUploadResponse = await apiFetch('/personalizations/signed-upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          fileName: normalizedFileName,
+          mimeType: file.type,
+          size: file.size,
+        }),
+      });
+
+      if (!signedUploadResponse.ok) {
+        const errorBody = await signedUploadResponse.json().catch(() => ({}));
+        const message =
+          typeof errorBody.message === 'string'
+            ? errorBody.message
+            : t('wizard_upload_persist_error');
+        throw new Error(message);
+      }
+
+      const signedBody = (await signedUploadResponse.json()) as {
+        data?: {
+          path?: string;
+          token?: string;
+          publicUrl?: string;
+        };
+      };
+      const uploadPath = signedBody.data?.path;
+      const uploadToken = signedBody.data?.token;
+      const publicUrl = signedBody.data?.publicUrl;
+
+      if (!uploadPath || !uploadToken || !publicUrl) {
+        throw new Error(t('wizard_upload_signed_url_error'));
+      }
+
+      const { error: uploadError } = await supabase.storage
+        .from('product-assets')
+        .uploadToSignedUrl(uploadPath, uploadToken, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      setDesignFileName(normalizedFileName);
+      setDesignFileType(file.type || null);
+      setSelections((prev) => ({
+        ...prev,
+        customFile: file,
+        designUrl: publicUrl,
+      }));
+
+      return publicUrl;
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  }, [
+    designFileName,
+    designFileType,
+    selections.customFile,
+    selections.designUrl,
+    supabase.storage,
+    t,
+    uploadedLogo,
+  ]);
 
   const fetchPricing = useCallback(async () => {
     if (!selections.size || !selections.material || !wizardOptions || loadingOptions) return;
@@ -617,87 +965,25 @@ export default function PersonalizerWizard({
       return;
     }
 
-    if (uploadedLogo?.startsWith('blob:')) {
-      URL.revokeObjectURL(uploadedLogo);
-    }
-
-    const previewUrl = URL.createObjectURL(file);
-    setUploadedLogo(previewUrl);
-    setSelections(prev => ({ ...prev, customFile: file, designUrl: '' }));
-    setIsUploadingLogo(true);
-
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session?.access_token) {
-        router.push(`/login?redirect=${encodeURIComponent(loginRedirectPath)}`);
-        return;
-      }
-
-      const signedUploadResponse = await apiFetch('/personalizations/signed-upload', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          fileName: normalizedFileName,
-          mimeType: file.type,
-          size: file.size,
-        }),
-      });
-
-      if (!signedUploadResponse.ok) {
-        const errorBody = await signedUploadResponse.json().catch(() => ({}));
-        const message =
-          typeof errorBody.message === 'string'
-            ? errorBody.message
-            : 'No se pudo persistir la imagen.';
-        throw new Error(message);
-      }
-
-      const signedBody = (await signedUploadResponse.json()) as {
-        data?: {
-          path?: string;
-          token?: string;
-          publicUrl?: string;
-        };
-      };
-      const uploadPath = signedBody.data?.path;
-      const uploadToken = signedBody.data?.token;
-      const publicUrl = signedBody.data?.publicUrl;
-
-      if (!uploadPath || !uploadToken || !publicUrl) {
-        throw new Error('No se recibio una autorizacion valida para cargar el diseno.');
-      }
-
-      const { error: uploadError } = await supabase.storage
-        .from('product-assets')
-        .uploadToSignedUrl(uploadPath, uploadToken, file);
-
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      if (!publicUrl) {
-        throw new Error('No se pudo obtener la URL publica del diseno.');
-      }
-
-      setSelections(prev => ({ ...prev, customFile: file, designUrl: publicUrl }));
+      const previewUrl = await fileToDataUrl(file);
+      setUploadedLogo(previewUrl);
+      setDesignFileName(normalizedFileName);
+      setDesignFileType(file.type || null);
+      setSelections(prev => ({ ...prev, customFile: file, designUrl: '' }));
       toast.success(t('wizard_design_uploaded'));
     } catch (error) {
-      console.error('Custom design upload error:', error);
+      console.error('Custom design preparation error:', error);
       setSelections(prev => ({ ...prev, customFile: null, designUrl: '' }));
       setUploadedLogo(null);
+      setDesignFileName(null);
+      setDesignFileType(null);
       const message =
         error instanceof Error && error.message
           ? error.message
-          : 'No se pudo persistir la imagen. Intenta subirla de nuevo.';
+          : t('wizard_upload_retry_error');
       toast.error(message);
     } finally {
-      setIsUploadingLogo(false);
       e.target.value = '';
     }
   };
@@ -712,10 +998,13 @@ export default function PersonalizerWizard({
     selections.material,
   );
   const hasCompatibleTechniqueOptions = availableTechniqueOptions.length > 0;
+  const hasPreparedDesign =
+    !!selections.customFile || !!uploadedLogo?.startsWith('data:');
   const techniqueActionBlocked = isTechniqueActionBlocked({
     hasCompatibleTechniqueOptions,
     hasUploadedLogo: !!uploadedLogo,
     hasDesignUrl: !!selections.designUrl,
+    hasPreparedDesign,
     hasConfigCode: !!configCode,
     isUploadingLogo,
     isPricingLoading,
@@ -724,7 +1013,7 @@ export default function PersonalizerWizard({
   const nextStep = () => {
     if (step === 4 && techniqueActionBlocked) {
       if (!hasCompatibleTechniqueOptions) {
-        toast.error(t('wizard_not_compatible', { material: selections.material }));
+        toast.error(t('wizard_not_compatible', { material: getTranslatedMaterialName(selections.material) }));
       }
       return;
     }
@@ -750,17 +1039,12 @@ export default function PersonalizerWizard({
     }
 
     if (!hasCompatibleTechniqueOptions) {
-      toast.error(t('wizard_not_compatible', { material: selections.material }));
+      toast.error(t('wizard_not_compatible', { material: getTranslatedMaterialName(selections.material) }));
       return;
     }
 
     if (isUploadingLogo) {
-      toast.error('La imagen se esta cargando. Espera un momento.');
-      return;
-    }
-
-    if (uploadedLogo && !selections.designUrl) {
-      toast.error('La imagen personalizada no esta disponible todavia. Vuelve a subirla.');
+      toast.error(t('wizard_image_uploading_wait'));
       return;
     }
 
@@ -782,7 +1066,17 @@ export default function PersonalizerWizard({
       } = await supabase.auth.getSession();
 
       if (!session?.access_token) {
+        await persistDraft();
         router.push(`/login?redirect=${encodeURIComponent(loginRedirectPath)}`);
+        return;
+      }
+
+      const persistedDesignUrl = uploadedLogo
+        ? await persistDesignToStorage(session.access_token)
+        : '';
+
+      if (uploadedLogo && !persistedDesignUrl) {
+        toast.error(t('wizard_image_not_available'));
         return;
       }
 
@@ -799,7 +1093,7 @@ export default function PersonalizerWizard({
           size: selections.size,
           material: selections.material,
           quantity: Number(selections.quantity),
-          customImageURL: selections.designUrl || undefined,
+          customImageURL: persistedDesignUrl || undefined,
           personalizations: selectedPersonalizations,
         }),
       });
@@ -816,7 +1110,7 @@ export default function PersonalizerWizard({
             ? errorBody.message
             : Array.isArray(errorBody.message)
               ? errorBody.message.join(', ')
-            : 'No fue posible registrar la solicitud.';
+            : t('wizard_request_register_error');
         throw new Error(detail);
       }
 
@@ -825,13 +1119,16 @@ export default function PersonalizerWizard({
         body?.data?.id && typeof body.data.id === 'string' ? body.data.id : null;
 
       setSubmittedRequestId(requestId);
-      toast.success('Tu solicitud fue enviada para revision de un asesor.');
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.removeItem(PERSONALIZER_DRAFT_STORAGE_KEY);
+      }
+      toast.success(t('wizard_request_sent_success'));
     } catch (error) {
       console.error('Personalization request error:', error);
       toast.error(
         error instanceof Error
           ? error.message
-          : 'No fue posible enviar la solicitud.',
+          : t('wizard_request_send_error'),
       );
     } finally {
       setIsSubmittingRequest(false);
@@ -843,28 +1140,27 @@ export default function PersonalizerWizard({
       <div className="w-full max-w-4xl mx-auto bg-surface border border-theme rounded-[2.5rem] flex flex-col items-center justify-center py-24 px-8 gap-5 shadow-xl text-center">
         <Check className="w-10 h-10 text-primary" />
         <p className="text-sm font-black uppercase tracking-[0.2em] text-primary">
-          Solicitud enviada
+          {t('wizard_request_sent_badge')}
         </p>
         <h2 className="text-3xl font-serif text-primary">
-          Un asesor revisara tu personalizacion antes de finalizar la compra.
+          {t('wizard_request_sent_title')}
         </h2>
         <p className="text-sm text-muted max-w-2xl">
-          Registramos tu configuracion con el codigo{' '}
-          <span className="font-bold text-primary">{configCode}</span>.
-          {submittedRequestId ? ` Solicitud: ${submittedRequestId}.` : ''}
+          {t('wizard_request_sent_description', { configCode })}
+          {submittedRequestId ? ` ${t('wizard_request_sent_id', { requestId: submittedRequestId })}` : ''}
         </p>
         <div className="flex flex-col sm:flex-row gap-3">
           <button
             onClick={() => router.push('/profile')}
             className="px-6 py-3 bg-primary text-base-color rounded-xl text-[10px] font-black uppercase tracking-widest"
           >
-            Ir a mi perfil
+            {t('wizard_go_profile')}
           </button>
           <button
             onClick={() => router.push('/catalog')}
             className="px-6 py-3 border border-theme text-primary rounded-xl text-[10px] font-black uppercase tracking-widest"
           >
-            Seguir explorando
+            {t('wizard_continue_browsing')}
           </button>
         </div>
       </div>
@@ -921,20 +1217,22 @@ export default function PersonalizerWizard({
   );
   const baseConfigurationSummary = [
     {
-      label: 'Linea',
-      value: selectedBaseLine?.name || 'Pendiente',
+      label: t('wizard_line_short'),
+      value: getCompactLineName(selectedBaseLine) || t('wizard_pending'),
     },
     {
-      label: 'Material',
-      value: selectedBaseMaterial?.name || 'Pendiente',
+      label: t('filters_material'),
+      value: getTranslatedMaterialName(selectedBaseMaterial?.name) || t('wizard_pending'),
     },
     {
-      label: 'Tamano',
-      value: selectedBaseSize?.visualLabel || selections.size || 'Pendiente',
+      label: t('wizard_size_short'),
+      value: getTranslatedSizeName(selectedBaseSize?.name || selections.size)
+        || selectedBaseSize?.visualLabel
+        || t('wizard_pending'),
     },
     {
-      label: 'Cantidad',
-      value: `${selections.quantity} ${selections.quantity === 1 ? 'unidad' : 'unidades'}`,
+      label: t('wizard_quantity'),
+      value: `${selections.quantity} ${selections.quantity === 1 ? t('wizard_unit_singular') : t('wizard_unit_plural')}`,
     },
   ];
 
@@ -946,38 +1244,37 @@ export default function PersonalizerWizard({
               <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
                 <div className="space-y-4">
                   <div className="inline-flex items-center rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-primary">
-                    Configuracion base
+                    {t('wizard_base_configuration')}
                   </div>
                   <div>
                     <h3 className="text-xl font-serif text-primary">
-                      Define la base de tu tote antes de cargar el arte
+                      {t('wizard_base_panel_title')}
                     </h3>
                     <p className="mt-2 max-w-2xl text-sm text-muted">
-                      Organiza primero la linea, el material, el tamano y la
-                      cantidad. Esta seleccion sigue alimentando la cotizacion y
-                      la solicitud final, pero ahora aparece como un bloque mas
-                      claro y compacto.
+                      {t('wizard_base_panel_description')}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <span className="rounded-full border border-theme bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-muted">
-                      {selectedBaseLine?.name || 'Linea por definir'}
+                      {getTranslatedLineName(selectedBaseLine) || t('wizard_line_pending')}
                     </span>
                     <span className="rounded-full border border-theme bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-muted">
-                      {selectedBaseMaterial?.name || 'Material por definir'}
+                      {getTranslatedMaterialName(selectedBaseMaterial?.name) || t('wizard_material_pending')}
                     </span>
                     <span className="rounded-full border border-theme bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-muted">
-                      {selectedBaseSize?.visualLabel || selections.size || 'Tamano por definir'}
+                      {getTranslatedSizeName(selectedBaseSize?.name || selections.size)
+                        || selectedBaseSize?.visualLabel
+                        || t('wizard_size_pending')}
                     </span>
                     <span className="rounded-full border border-theme bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-muted">
-                      {selections.quantity} {selections.quantity === 1 ? 'unidad' : 'unidades'}
+                      {selections.quantity} {selections.quantity === 1 ? t('wizard_unit_singular') : t('wizard_unit_plural')}
                     </span>
                   </div>
                 </div>
 
                 <div className="rounded-[1.75rem] border border-primary/10 bg-white/90 p-5 shadow-sm">
                   <p className="text-[10px] font-black uppercase tracking-[0.22em] text-primary">
-                    Resumen activo
+                    {t('wizard_active_summary')}
                   </p>
                   <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-2">
                     {baseConfigurationSummary.map((item) => (
@@ -1001,22 +1298,20 @@ export default function PersonalizerWizard({
                 <div className="space-y-5 rounded-[1.75rem] border border-theme bg-white/75 p-5 md:p-6">
                   <div className="space-y-2">
                     <h4 className="text-[10px] font-black uppercase tracking-[0.22em] text-primary">
-                      Identidad del producto
+                      {t('wizard_product_identity')}
                     </h4>
                     <p className="text-sm text-muted">
-                      Escoge la linea y el material que mejor representan el
-                      estilo y uso de tu tote.
+                      {t('wizard_product_identity_description')}
                     </p>
                   </div>
 
                   <div className="space-y-4">
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-widest text-primary">
-                        Linea
+                        {t('wizard_line_short')}
                       </p>
                       <p className="mt-1 text-xs text-muted">
-                        Cada linea define el enfoque comercial y la percepcion
-                        del producto.
+                        {t('wizard_line_description')}
                       </p>
                     </div>
                     <div className="grid gap-3 md:grid-cols-2">
@@ -1047,10 +1342,10 @@ export default function PersonalizerWizard({
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="text-xs font-black uppercase tracking-wide text-primary">
-                                {line.name}
+                                {getCompactLineName(line)}
                               </p>
                               <p className="mt-1 text-[11px] text-muted">
-                                {line.description}
+                                {getTranslatedLineDescription(line)}
                               </p>
                             </div>
                             {isSelected && <Check className="shrink-0 text-primary" size={16} />}
@@ -1063,11 +1358,10 @@ export default function PersonalizerWizard({
                   <div className="space-y-4">
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-widest text-primary">
-                        Material
+                        {t('filters_material')}
                       </p>
                       <p className="mt-1 text-xs text-muted">
-                        El material afecta apariencia, compatibilidad tecnica y
-                        referencia visual del mockup.
+                        {t('wizard_material_description')}
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-3">
@@ -1086,7 +1380,7 @@ export default function PersonalizerWizard({
                               : 'border-theme text-muted hover:border-primary/30'
                           }`}
                         >
-                          {mat.name}
+                          {getTranslatedMaterialName(mat.name)}
                         </button>
                       ))}
                     </div>
@@ -1096,22 +1390,20 @@ export default function PersonalizerWizard({
                 <div className="space-y-5 rounded-[1.75rem] border border-theme bg-white/75 p-5 md:p-6">
                   <div className="space-y-2">
                     <h4 className="text-[10px] font-black uppercase tracking-[0.22em] text-primary">
-                      Medidas y volumen
+                      {t('wizard_measurements_volume')}
                     </h4>
                     <p className="text-sm text-muted">
-                      Ajusta el tamano comercial y la cantidad para aterrizar la
-                      cotizacion desde el inicio.
+                      {t('wizard_measurements_volume_description')}
                     </p>
                   </div>
 
                   <div className="space-y-4">
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-widest text-primary">
-                        Tamano
+                        {t('wizard_size_short')}
                       </p>
                       <p className="mt-1 text-xs text-muted">
-                        Selecciona la referencia que mejor encaja con tu uso o
-                        capacidad esperada.
+                        {t('wizard_size_description')}
                       </p>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
@@ -1150,7 +1442,7 @@ export default function PersonalizerWizard({
                             {dim.visualLabel}
                           </span>
                           <span className="mt-2 block text-xs font-bold text-primary">
-                            {dim.name}
+                            {getTranslatedSizeName(dim.name)}
                           </span>
                         </button>
                       ))}
@@ -1160,11 +1452,10 @@ export default function PersonalizerWizard({
                   <div className="space-y-4 rounded-2xl border border-theme bg-base/40 p-4">
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-widest text-primary">
-                        Cantidad
+                        {t('wizard_quantity')}
                       </p>
                       <p className="mt-1 text-xs text-muted">
-                        Define cuantas unidades quieres cotizar en esta
-                        solicitud.
+                        {t('wizard_quantity_description')}
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
@@ -1196,8 +1487,7 @@ export default function PersonalizerWizard({
                         </button>
                       </div>
                       <p className="text-xs text-muted">
-                        La cantidad actual se usa para estimar el total del
-                        pedido.
+                        {t('wizard_quantity_estimate_note')}
                       </p>
                     </div>
                   </div>
@@ -1234,7 +1524,7 @@ export default function PersonalizerWizard({
                     {isUploadingLogo && (
                       <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted">
                         <Loader2 size={14} className="animate-spin" />
-                        Persistiendo imagen...
+                        {t('wizard_image_persisting')}
                       </div>
                     )}
                     {uploadedLogo && (
@@ -1282,7 +1572,7 @@ export default function PersonalizerWizard({
                               : 'border-theme text-muted hover:border-primary/30'
                           }`}
                         >
-                          {technique.name}
+                          {getCompactTechniqueName(technique)}
                         </button>
                       ))}
                       {availableTechniqueOptions.length === 0 && (
@@ -1293,7 +1583,7 @@ export default function PersonalizerWizard({
                           />
                           <p className="text-[10px] font-medium text-red-700">
                             {t('wizard_not_compatible', {
-                              material: selections.material,
+                              material: getTranslatedMaterialName(selections.material),
                             })}
                           </p>
                         </div>
@@ -1330,11 +1620,11 @@ export default function PersonalizerWizard({
                               isSelected
                                 ? 'border-primary bg-primary text-white shadow-lg shadow-primary/20'
                                 : 'border-theme text-muted hover:border-primary/30'
-                            }`}
-                          >
-                            {option.name}
-                          </button>
-                        );
+                          }`}
+                        >
+                          {getTranslatedTechniqueName(option)}
+                        </button>
+                      );
                       })}
                       {availableOtherOptions.length === 0 &&
                         !noPersonalizationOptionsAvailable && (
@@ -1360,7 +1650,7 @@ export default function PersonalizerWizard({
                       return (
                         <Image
                           src={canvasImage}
-                          alt="Tote Mockup"
+                          alt={t('wizard_mockup_alt')}
                           fill
                           sizes="(max-width: 1024px) 100vw, 384px"
                           className="object-cover transition-opacity duration-500"
@@ -1373,7 +1663,7 @@ export default function PersonalizerWizard({
                         <div className="relative w-full h-full flex items-center justify-center p-2">
                           <Image
                             src={uploadedLogo}
-                            alt="Logo preview"
+                            alt={t('wizard_logo_preview_alt')}
                             width={200}
                             height={200}
                             style={{
@@ -1402,38 +1692,36 @@ export default function PersonalizerWizard({
               <div className="mx-auto w-full max-w-3xl space-y-5">
                 <div>
                   <h3 className="text-sm font-black uppercase tracking-[0.2em] text-primary">
-                    Precios estimados
+                    {t('wizard_estimated_prices')}
                   </h3>
                   <p className="mt-2 text-sm text-muted">
-                    Referencias comerciales orientativas para la solicitud de
-                    personalizacion.
+                    {t('wizard_estimated_prices_description')}
                   </p>
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-2xl border border-theme bg-surface px-5 py-4">
                     <p className="text-[10px] font-black uppercase tracking-[0.18em] text-muted">
-                      45 cm x 38 cm
+                      {t('wizard_estimated_price_large_label')}
                     </p>
                     <p className="mt-2 text-lg font-bold text-primary">
-                      desde $69.000 COP
+                      {t('wizard_estimated_price_large_value')}
                     </p>
                   </div>
 
                   <div className="rounded-2xl border border-theme bg-surface px-5 py-4">
                     <p className="text-[10px] font-black uppercase tracking-[0.18em] text-muted">
-                      30 cm x 35 cm
+                      {t('wizard_estimated_price_small_label')}
                     </p>
                     <p className="mt-2 text-lg font-bold text-primary">
-                      desde $63.750 COP
+                      {t('wizard_estimated_price_small_value')}
                     </p>
                   </div>
                 </div>
 
                 <div className="rounded-2xl border border-primary/20 bg-white px-5 py-4">
                   <p className="text-sm font-semibold text-primary">
-                    Precio estimado. El precio final lo define el asesor al
-                    revisar la solicitud.
+                    {t('wizard_estimated_price_note')}
                   </p>
                 </div>
               </div>
@@ -1456,11 +1744,11 @@ export default function PersonalizerWizard({
                 {isSubmittingRequest ? (
                   <>
                     <Loader2 size={16} className="animate-spin" />
-                    Enviando solicitud
+                    {t('wizard_submitting_request')}
                   </>
                 ) : (
                   <>
-                    Enviar para revision <ChevronRight size={16} />
+                    {t('wizard_submit_review')} <ChevronRight size={16} />
                   </>
                 )}
               </button>
@@ -1504,11 +1792,11 @@ export default function PersonalizerWizard({
             <span className="text-[10px] opacity-60">{t('wizard_currency_unit')}</span>
           </div>
           <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-base-color/70">
-            IVA incluido
+            {t('tax_included')}
           </p>
           {selections.quantity > 1 && (
             <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-base-color/70">
-              ${calculatedUnitPrice.toLocaleString('es-CO')} c/u
+              ${calculatedUnitPrice.toLocaleString('es-CO')} {t('wizard_unit_each')}
             </p>
           )}
           {pricingError && (
@@ -1541,8 +1829,8 @@ export default function PersonalizerWizard({
                         <Icon size={24} />
                       </div>
                       <div>
-                        <h4 className="font-bold text-primary">{line.name}</h4>
-                        <p className="text-xs text-muted">{line.description}</p>
+                        <h4 className="font-bold text-primary">{getTranslatedLineName(line)}</h4>
+                        <p className="text-xs text-muted">{getTranslatedLineDescription(line)}</p>
                       </div>
                       {selections.line === line.code && <Check className="ml-auto text-primary" size={20} />}
                     </button>
@@ -1591,7 +1879,7 @@ export default function PersonalizerWizard({
                         {dim.visualLabel}
                       </span>
                     </div>
-                    <span className="font-black uppercase tracking-widest text-[10px]">{dim.name}</span>
+                    <span className="font-black uppercase tracking-widest text-[10px]">{getTranslatedSizeName(dim.name)}</span>
                   </button>
                 ))}
               </div>
@@ -1610,7 +1898,7 @@ export default function PersonalizerWizard({
                       onClick={() => setSelections(prev => ({ ...prev, material: mat.name }))}
                       className={`px-6 py-3 rounded-full border-2 font-bold text-xs transition-all ${selections.material === mat.name ? 'bg-primary border-primary text-white' : 'border-theme text-muted'}`}
                     >
-                      {mat.name}
+                      {getTranslatedMaterialName(mat.name)}
                     </button>
                   ))}
                 </div>
@@ -1646,7 +1934,7 @@ export default function PersonalizerWizard({
                     {isUploadingLogo && (
                       <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted">
                         <Loader2 size={14} className="animate-spin" />
-                        Persistiendo imagen...
+                        {t('wizard_image_persisting')}
                       </div>
                     )}
                     {uploadedLogo && (
@@ -1671,20 +1959,20 @@ export default function PersonalizerWizard({
                   <div className="space-y-4">
                     <h4 className="text-xs font-black uppercase tracking-widest text-primary">{t('wizard_marking_technique')}</h4>
                     <div className="grid grid-cols-2 gap-3">
-                      {availableTechniqueOptions.map(t => (
+                      {availableTechniqueOptions.map((technique) => (
                         <button
-                          key={t.code}
-                          onClick={() => setSelections(prev => ({ ...prev, markingType: t.code }))}
-                          className={`py-3 rounded-xl border-2 font-bold text-[10px] transition-all uppercase tracking-tighter ${selections.markingType === t.code ? 'border-primary bg-primary text-white shadow-lg shadow-primary/20' : 'border-theme text-muted hover:border-primary/30'}`}
+                          key={technique.code}
+                          onClick={() => setSelections(prev => ({ ...prev, markingType: technique.code }))}
+                          className={`py-3 rounded-xl border-2 font-bold text-[10px] transition-all uppercase tracking-tighter ${selections.markingType === technique.code ? 'border-primary bg-primary text-white shadow-lg shadow-primary/20' : 'border-theme text-muted hover:border-primary/30'}`}
                         >
-                          {t.name}
+                          {getCompactTechniqueName(technique)}
                         </button>
                       ))}
                       {availableTechniqueOptions.length === 0 && (
                         <div className="col-span-2 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3">
                           <AlertCircle className="text-red-500 shrink-0" size={16} />
                           <p className="text-[10px] font-medium text-red-700">
-                            {t('wizard_not_compatible', { material: selections.material })}
+                            {t('wizard_not_compatible', { material: getTranslatedMaterialName(selections.material) })}
                           </p>
                         </div>
                       )}
@@ -1709,7 +1997,7 @@ export default function PersonalizerWizard({
                             }
                             className={`py-3 rounded-xl border-2 font-bold text-[10px] transition-all uppercase tracking-tighter ${isSelected ? 'border-primary bg-primary text-white shadow-lg shadow-primary/20' : 'border-theme text-muted hover:border-primary/30'}`}
                           >
-                            {option.name}
+                            {getTranslatedTechniqueName(option)}
                           </button>
                         );
                       })}
@@ -1733,7 +2021,7 @@ export default function PersonalizerWizard({
                       return (
                         <Image
                           src={canvasImage}
-                          alt="Tote Mockup"
+                          alt={t('wizard_mockup_alt')}
                           fill
                           sizes="(max-width: 1024px) 100vw, 384px"
                           className="object-cover transition-opacity duration-500"
@@ -1746,7 +2034,7 @@ export default function PersonalizerWizard({
                         <div className="relative w-full h-full flex items-center justify-center p-2">
                           <Image
                             src={uploadedLogo}
-                            alt="Logo preview"
+                            alt={t('wizard_logo_preview_alt')}
                             width={200}
                             height={200}
                             style={{ width: `${logoScale}%`, height: 'auto', objectFit: 'contain' }}
@@ -1773,16 +2061,23 @@ export default function PersonalizerWizard({
 
               <div className="bg-base/50 rounded-3xl p-8 border border-theme space-y-6">
                 <div className="grid grid-cols-2 gap-y-6 gap-x-4">
-                  <div><p className="text-[9px] font-black uppercase text-muted tracking-[0.2em] mb-1">{t('production_line')}</p><p className="font-bold text-primary">{selections.line}</p></div>
-                  <div><p className="text-[9px] font-black uppercase text-muted tracking-[0.2em] mb-1">{t('dimensions')}</p><p className="font-bold text-primary">{selections.size}</p></div>
-                  <div><p className="text-[9px] font-black uppercase text-muted tracking-[0.2em] mb-1">{t('product_material')}</p><p className="font-bold text-primary">{selections.material}</p></div>
+                  <div><p className="text-[9px] font-black uppercase text-muted tracking-[0.2em] mb-1">{t('production_line')}</p><p className="font-bold text-primary">{getTranslatedLineName(selectedBaseLine) || selections.line}</p></div>
+                  <div><p className="text-[9px] font-black uppercase text-muted tracking-[0.2em] mb-1">{t('dimensions')}</p><p className="font-bold text-primary">{getTranslatedSizeName(selections.size)}</p></div>
+                  <div><p className="text-[9px] font-black uppercase text-muted tracking-[0.2em] mb-1">{t('product_material')}</p><p className="font-bold text-primary">{getTranslatedMaterialName(selections.material)}</p></div>
                   <div>
                     <p className="text-[9px] font-black uppercase text-muted tracking-[0.2em] mb-1">{t('customization')}</p>
                     <p className="font-bold text-primary">
                       {[
-                        wizardOptions?.TECHNIQUE.find(t => t.code === selections.markingType)?.name,
+                        getTranslatedTechniqueName(
+                          wizardOptions?.TECHNIQUE.find((technique) => technique.code === selections.markingType) || null,
+                        ),
                         ...selections.extraOptions.map((optionCode) =>
-                          wizardOptions?.TECHNIQUE.find((technique) => technique.code === optionCode)?.name || optionCode,
+                          getTranslatedTechniqueName(
+                            wizardOptions?.TECHNIQUE.find((technique) => technique.code === optionCode) || {
+                              code: optionCode,
+                              name: optionCode,
+                            },
+                          ) || optionCode,
                         ),
                       ]
                         .filter(Boolean)
@@ -1849,11 +2144,11 @@ export default function PersonalizerWizard({
               {isSubmittingRequest ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />
-                  Enviando solicitud
+                  {t('wizard_submitting_request')}
                 </>
               ) : (
                 <>
-                  Enviar para revision <ChevronRight size={16} />
+                  {t('wizard_submit_review')} <ChevronRight size={16} />
                 </>
               )}
             </button>

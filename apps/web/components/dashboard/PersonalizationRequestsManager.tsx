@@ -656,7 +656,7 @@ export default function PersonalizationRequestsManager() {
 
       <div className="overflow-hidden rounded-2xl border border-theme bg-surface shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="min-w-[920px] w-full text-left text-sm">
             <thead className="border-b border-theme bg-base/50 text-primary">
               <tr>
                 <th className="w-10 px-6 py-4"></th>
@@ -885,7 +885,7 @@ export default function PersonalizationRequestsManager() {
                       {expandedRowId === request.id ? (
                         <tr className="bg-base/10">
                           <td colSpan={6} className="px-6 py-0">
-                            <div className="grid gap-6 border-t border-theme py-8 pl-10 md:grid-cols-4">
+                            <div className="grid gap-6 border-t border-theme py-8 pl-0 md:grid-cols-4 md:pl-10">
                               <div className="space-y-3">
                                 <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted">
                                   <Tag className="h-3.5 w-3.5" /> Configuración

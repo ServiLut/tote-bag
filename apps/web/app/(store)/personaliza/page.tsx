@@ -1,13 +1,26 @@
-import { Metadata } from 'next';
-import { redirect } from 'next/navigation';
-import PersonalizerWizard from '@/components/store/PersonalizerWizard';
-import { createClient } from '@/utils/supabase/server';
+import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
+import PersonalizePageContent from '@/components/store/PersonalizePageContent';
+import { DEFAULT_LANGUAGE, LANGUAGE_COOKIE_KEY } from '@/lib/i18n-config';
 
-export const metadata: Metadata = {
-  title: 'Personaliza tu Tote Bag | Personalizacion',
-  description:
-    'Sube tu diseno, elige la configuracion base y envia tu solicitud de personalizacion.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const cookieStore = await cookies();
+  const language = (cookieStore.get(LANGUAGE_COOKIE_KEY)?.value || DEFAULT_LANGUAGE).startsWith('en')
+    ? 'en'
+    : 'es';
+
+  return language === 'en'
+    ? {
+        title: 'Customize your Tote Bag | Configuration and review',
+        description:
+          'Configure your tote bag, estimate your request, and share your idea before sending the final customization request.',
+      }
+    : {
+        title: 'Personaliza tu tote bag | Configura y solicita asesoria',
+        description:
+          'Configura tu tote bag, estima tu solicitud y comparte tu idea antes de enviar la cotizacion o pedido formal.',
+      };
+}
 
 interface PageProps {
   searchParams: Promise<{
@@ -26,41 +39,11 @@ export default async function PersonalizaPage({ searchParams }: PageProps) {
     typeof params.product === 'string' && params.product.trim().length > 0
       ? params.product.trim()
       : 'tote-bag-clasica';
-  const personalizationParams = new URLSearchParams();
-  if (requestedProductId) {
-    personalizationParams.set('productId', requestedProductId);
-  } else {
-    personalizationParams.set('product', requestedProduct);
-  }
-  const personalizationPath = `/personaliza?${personalizationParams.toString()}`;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect(`/login?redirect=${encodeURIComponent(personalizationPath)}`);
-  }
 
   return (
-    <div className="bg-base min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 pt-12 pb-8">
-        <h1 className="text-3xl md:text-5xl font-serif font-bold text-primary mb-2">
-          Personalizacion
-        </h1>
-        <p className="text-muted text-sm md:text-base">
-          Sube tu diseno, elige la configuracion base y envia tu solicitud para
-          revision.
-        </p>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-0 md:px-4 pb-20">
-        <PersonalizerWizard
-          productId={requestedProductId}
-          productSlug={requestedProduct}
-          mode="direct"
-        />
-      </div>
-    </div>
+    <PersonalizePageContent
+      productId={requestedProductId}
+      productSlug={requestedProduct}
+    />
   );
 }

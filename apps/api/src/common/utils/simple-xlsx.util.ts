@@ -1,5 +1,32 @@
 type CellValue = string | number | null | undefined;
 
+export interface SimpleXlsxCell {
+  value: CellValue;
+  styleId?: number;
+}
+
+export interface SimpleXlsxRow {
+  cells: Array<CellValue | SimpleXlsxCell>;
+  height?: number;
+}
+
+export interface SimpleXlsxMergeRange {
+  startRow: number;
+  startCol: number;
+  endRow: number;
+  endCol: number;
+}
+
+export interface SimpleXlsxColumn {
+  width?: number;
+}
+
+export interface SimpleXlsxOptions {
+  columns?: SimpleXlsxColumn[];
+  merges?: SimpleXlsxMergeRange[];
+  stylesXml?: string;
+}
+
 const CRC32_TABLE = new Uint32Array(256).map((_, index) => {
   let crc = index;
   for (let bit = 0; bit < 8; bit += 1) {
@@ -38,34 +65,122 @@ function columnName(index: number) {
   return name;
 }
 
-function buildSheetXml(rows: CellValue[][]) {
+function serializeCell(
+  cell: CellValue | SimpleXlsxCell,
+  rowIndex: number,
+  columnIndex: number,
+) {
+  const ref = `${columnName(columnIndex)}${rowIndex + 1}`;
+  const normalizedCell =
+    typeof cell === 'object' && cell !== null && 'value' in cell
+      ? cell
+      : { value: cell };
+  const styleAttribute =
+    normalizedCell.styleId !== undefined
+      ? ` s="${normalizedCell.styleId}"`
+      : '';
+
+  if (
+    normalizedCell.value === null ||
+    normalizedCell.value === undefined ||
+    normalizedCell.value === ''
+  ) {
+    return normalizedCell.styleId !== undefined
+      ? `<c r="${ref}"${styleAttribute}/>`
+      : '';
+  }
+
+  if (
+    typeof normalizedCell.value === 'number' &&
+    Number.isFinite(normalizedCell.value)
+  ) {
+    return `<c r="${ref}"${styleAttribute}><v>${normalizedCell.value}</v></c>`;
+  }
+
+  return `<c r="${ref}" t="inlineStr"${styleAttribute}><is><t>${xmlEscape(
+    String(normalizedCell.value),
+  )}</t></is></c>`;
+}
+
+function buildColumnsXml(columns?: SimpleXlsxColumn[]) {
+  if (!columns || columns.length === 0) {
+    return '';
+  }
+
+  const cols = columns
+    .map((column, index) => {
+      if (!column.width || column.width <= 0) {
+        return '';
+      }
+
+      const position = index + 1;
+      return `<col min="${position}" max="${position}" width="${column.width}" customWidth="1"/>`;
+    })
+    .join('');
+
+  return cols ? `<cols>${cols}</cols>` : '';
+}
+
+function buildMergeCellsXml(merges?: SimpleXlsxMergeRange[]) {
+  if (!merges || merges.length === 0) {
+    return '';
+  }
+
+  const mergeXml = merges
+    .map(
+      (merge) =>
+        `<mergeCell ref="${columnName(merge.startCol)}${merge.startRow}:${columnName(
+          merge.endCol,
+        )}${merge.endRow}"/>`,
+    )
+    .join('');
+
+  return `<mergeCells count="${merges.length}">${mergeXml}</mergeCells>`;
+}
+
+function buildDefaultStylesXml() {
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>
+  <fills count="2">
+    <fill><patternFill patternType="none"/></fill>
+    <fill><patternFill patternType="gray125"/></fill>
+  </fills>
+  <borders count="1"><border/></borders>
+  <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+  <cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>
+</styleSheet>`;
+}
+
+function normalizeRows(rows: Array<CellValue[] | SimpleXlsxRow>) {
+  return rows.map((row) => (Array.isArray(row) ? { cells: row } : row));
+}
+
+function buildSheetXml(
+  rows: Array<CellValue[] | SimpleXlsxRow>,
+  options?: SimpleXlsxOptions,
+) {
+  const normalizedRows = normalizeRows(rows);
   const rowXml = rows
-    .map((row, rowIndex) => {
-      const cells = row
-        .map((cell, columnIndex) => {
-          if (cell === null || cell === undefined || cell === '') {
-            return '';
-          }
-
-          const ref = `${columnName(columnIndex)}${rowIndex + 1}`;
-
-          if (typeof cell === 'number' && Number.isFinite(cell)) {
-            return `<c r="${ref}"><v>${cell}</v></c>`;
-          }
-
-          return `<c r="${ref}" t="inlineStr"><is><t>${xmlEscape(
-            String(cell),
-          )}</t></is></c>`;
-        })
+    .map((_, rowIndex) => {
+      const row = normalizedRows[rowIndex];
+      const cells = row.cells
+        .map((cell, columnIndex) => serializeCell(cell, rowIndex, columnIndex))
         .join('');
+      const heightAttribute =
+        row.height && row.height > 0
+          ? ` ht="${row.height}" customHeight="1"`
+          : '';
 
-      return `<row r="${rowIndex + 1}">${cells}</row>`;
+      return `<row r="${rowIndex + 1}"${heightAttribute}>${cells}</row>`;
     })
     .join('');
 
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  ${buildColumnsXml(options?.columns)}
   <sheetData>${rowXml}</sheetData>
+  ${buildMergeCellsXml(options?.merges)}
 </worksheet>`;
 }
 
@@ -151,7 +266,11 @@ function createZip(files: Array<{ path: string; content: string | Buffer }>) {
   return Buffer.concat([...chunks, ...centralDirectory, end]);
 }
 
-export function createSimpleXlsxBuffer(sheetName: string, rows: CellValue[][]) {
+export function createSimpleXlsxBuffer(
+  sheetName: string,
+  rows: Array<CellValue[] | SimpleXlsxRow>,
+  options?: SimpleXlsxOptions,
+) {
   const safeSheetName = xmlEscape(sheetName.slice(0, 31) || 'Sheet1');
 
   return createZip([
@@ -190,18 +309,11 @@ export function createSimpleXlsxBuffer(sheetName: string, rows: CellValue[][]) {
     },
     {
       path: 'xl/styles.xml',
-      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  <fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>
-  <fills count="1"><fill><patternFill patternType="none"/></fill></fills>
-  <borders count="1"><border/></borders>
-  <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-  <cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>
-</styleSheet>`,
+      content: options?.stylesXml || buildDefaultStylesXml(),
     },
     {
       path: 'xl/worksheets/sheet1.xml',
-      content: buildSheetXml(rows),
+      content: buildSheetXml(rows, options),
     },
   ]);
 }

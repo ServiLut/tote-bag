@@ -7,6 +7,6 @@ export const COMPANY_INFO = {
     privacy: "totebagbolsadetela@gmail.com",
     dataProtection: "totebagbolsadetela@gmail.com",
   },
-  phone: "+57 301 447 2558",
+  phone: "+57 314 396 4910",
   website: "https://totebagbolsadetela.com",
 };

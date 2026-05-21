@@ -165,6 +165,16 @@ jobs:
           NODE_ENV: production
         run: pnpm --filter web build
 
+      - name: Install Playwright browser
+        run: pnpm --filter web exec playwright install --with-deps chromium
+
+      - name: Run web smoke e2e
+        env:
+          NODE_ENV: production
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:3100
+          PORT: 3100
+        run: pnpm --filter web test:e2e:smoke
+
       - name: Build web image
         run: >
           docker build

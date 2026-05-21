@@ -1079,7 +1079,12 @@ export class CatalogService {
     }
 
     if (status) {
-      where.status = status as ProductStatus;
+      const values = this.splitFilterValues(status) as ProductStatus[];
+      if (values.length === 1) {
+        where.status = values[0];
+      } else if (values.length > 1) {
+        where.status = { in: values };
+      }
     }
 
     if (search) {
@@ -1912,7 +1917,12 @@ export class CatalogService {
     }
 
     if (status) {
-      where.status = status as ProductStatus;
+      const values = this.splitFilterValues(status) as ProductStatus[];
+      if (values.length === 1) {
+        where.status = values[0];
+      } else if (values.length > 1) {
+        where.status = { in: values };
+      }
     }
 
     if (search) {

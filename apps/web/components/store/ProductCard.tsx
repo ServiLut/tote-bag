@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { formatWholeCurrency } from '@/lib/numeric-input';
+import { translateStoreValue } from '@/lib/storefront-translations';
 
 interface ProductCardProps {
   product: Product;
@@ -118,7 +119,7 @@ export default function ProductCard({
               {formatWholeCurrency(normalizedSalePrice)}
             </span>
             <span className="text-[10px] font-bold uppercase tracking-wide text-muted">
-              IVA incluido
+              {t('tax_included')}
             </span>
             {shouldShowComparePrice && (
               <span className="text-muted line-through text-xs">
@@ -145,7 +146,7 @@ export default function ProductCard({
                   : 'ring-transparent hover:scale-110'
               }`}
               style={{ backgroundColor: getVariantColorHex(variant.color) }}
-              title={variant.color}
+              title={translateStoreValue('color', variant.color, t)}
             />
           ))}
         </div>

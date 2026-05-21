@@ -1,12 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { getPermissionsForRole } from '../../common/utils/role-permissions.util';
 import { DebugRoleContextService } from '../../common/context/debug-role-context.service';
 import { Role } from '../../generated/client/enums';
 import { getProtectedAdminRoleForEmail } from '../../common/utils/protected-admin.util';
+import { redactEmail } from '../../common/logger/log-sanitization';
 
 @Injectable()
 export class RolesService {
+  private readonly logger = new Logger(RolesService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly debugRoleContext: DebugRoleContextService,
@@ -31,8 +34,8 @@ export class RolesService {
   async getUserPermissions(userId: string) {
     const { user, effectiveRole, debugRole } =
       await this.getEffectiveRole(userId);
-    console.log(
-      `RolesService: resolving permissions for user=${userId} email=${user?.email ?? 'unknown'} storedRole=${user?.role ?? 'unknown'} effectiveRole=${effectiveRole ?? 'unknown'} debugRole=${debugRole ?? 'none'}`,
+    this.logger.debug(
+      `resolving permissions user=${userId} email=${redactEmail(user?.email)} storedRole=${user?.role ?? 'unknown'} effectiveRole=${effectiveRole ?? 'unknown'} debugRole=${debugRole ?? 'none'}`,
     );
 
     return this.dedupePermissions(getPermissionsForRole(effectiveRole));
@@ -57,23 +60,12 @@ export class RolesService {
   ): Promise<boolean> {
     const { effectiveRole } = await this.getEffectiveRole(userId);
     if (effectiveRole === Role.ADMIN) {
-      if (resource === 'shipping') {
-        console.log(
-          `RolesService: shipping permission check user=${userId} action=${action} allowed=true permissions=*:*`,
-        );
-      }
       return true;
     }
 
     const permissions = await this.getUserPermissions(userId);
-    const allowed = permissions.some(
+    return permissions.some(
       (p) => p.resource === resource && p.action === action,
     );
-    if (resource === 'shipping') {
-      console.log(
-        `RolesService: shipping permission check user=${userId} action=${action} allowed=${allowed} permissions=${permissions.map((p) => `${p.resource}:${p.action}`).join(',')}`,
-      );
-    }
-    return allowed;
   }
 }

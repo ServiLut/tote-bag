@@ -5,6 +5,12 @@ import { CheckCircle2, Headset, Loader2, MessageSquareText } from 'lucide-react'
 import { apiFetch } from '@/utils/api';
 import { useTranslation } from 'react-i18next';
 
+const fieldClassName =
+  'h-14 w-full rounded-2xl border border-theme bg-surface px-4 py-3 font-semibold outline-none focus:ring-2 focus:ring-primary/20';
+
+const textAreaClassName =
+  'min-h-[10.5rem] w-full rounded-2xl border border-theme bg-surface px-4 py-3 font-medium outline-none focus:ring-2 focus:ring-primary/20';
+
 async function getErrorMessage(response: Response, fallback: string) {
   try {
     const body = await response.json();
@@ -158,37 +164,37 @@ export default function PqrsPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <FormField label={t('pqrs_full_name')}>
-                  <input required minLength={3} maxLength={120} value={form.fullName} onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))} className="w-full rounded-2xl border border-theme bg-surface px-4 py-3 font-semibold outline-none focus:ring-2 focus:ring-primary/20" />
+                  <input required minLength={3} maxLength={120} value={form.fullName} onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))} className={fieldClassName} />
                 </FormField>
                 <FormField label={t('pqrs_email')}>
-                  <input type="email" required maxLength={160} value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} className="w-full rounded-2xl border border-theme bg-surface px-4 py-3 font-semibold outline-none focus:ring-2 focus:ring-primary/20" />
+                  <input type="email" required maxLength={160} value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} className={fieldClassName} />
                 </FormField>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <FormField label={t('pqrs_phone')}>
-                  <input maxLength={40} value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} className="w-full rounded-2xl border border-theme bg-surface px-4 py-3 font-semibold outline-none focus:ring-2 focus:ring-primary/20" />
+                  <input maxLength={40} value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} className={fieldClassName} />
                 </FormField>
                 <FormField label={t('pqrs_order_number')}>
-                  <input maxLength={40} value={form.orderNumber} onChange={(event) => setForm((current) => ({ ...current, orderNumber: event.target.value }))} className="w-full rounded-2xl border border-theme bg-surface px-4 py-3 font-semibold outline-none focus:ring-2 focus:ring-primary/20" />
+                  <input maxLength={40} value={form.orderNumber} onChange={(event) => setForm((current) => ({ ...current, orderNumber: event.target.value }))} className={fieldClassName} />
                 </FormField>
               </div>
 
               <div className="grid gap-4 md:grid-cols-[0.65fr_1.35fr]">
                 <FormField label={t('pqrs_request_type')}>
-                  <select value={form.type} onChange={(event) => setForm((current) => ({ ...current, type: event.target.value }))} className="w-full rounded-2xl border border-theme bg-surface px-4 py-3 font-semibold outline-none focus:ring-2 focus:ring-primary/20">
+                  <select value={form.type} onChange={(event) => setForm((current) => ({ ...current, type: event.target.value }))} className={fieldClassName}>
                     {pqrsOptions.map((option) => (
                       <option key={option.value} value={option.value}>{option.label}</option>
                     ))}
                   </select>
                 </FormField>
                 <FormField label={t('pqrs_subject')}>
-                  <input required minLength={4} maxLength={160} value={form.subject} onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))} className="w-full rounded-2xl border border-theme bg-surface px-4 py-3 font-semibold outline-none focus:ring-2 focus:ring-primary/20" />
+                  <input required minLength={4} maxLength={160} value={form.subject} onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))} className={fieldClassName} />
                 </FormField>
               </div>
 
               <FormField label={t('pqrs_message')}>
-                <textarea required rows={7} minLength={10} maxLength={2000} value={form.message} onChange={(event) => setForm((current) => ({ ...current, message: event.target.value }))} className="w-full rounded-2xl border border-theme bg-surface px-4 py-3 font-medium outline-none focus:ring-2 focus:ring-primary/20" />
+                <textarea required rows={7} minLength={10} maxLength={2000} value={form.message} onChange={(event) => setForm((current) => ({ ...current, message: event.target.value }))} className={textAreaClassName} />
               </FormField>
 
               <button type="submit" disabled={submitting} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 text-sm font-black uppercase tracking-wider text-base-color shadow-lg shadow-primary/20 transition-all hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70">
@@ -214,8 +220,10 @@ function InfoCard({ title, description }: { title: string; description: string }
 
 function FormField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="block space-y-2">
-      <span className="text-[11px] font-black uppercase tracking-[0.18em] text-muted">{label}</span>
+    <label className="flex h-full flex-col gap-2">
+      <span className="text-[11px] font-black uppercase leading-4 tracking-[0.18em] text-muted md:min-h-[2rem]">
+        {label}
+      </span>
       {children}
     </label>
   );

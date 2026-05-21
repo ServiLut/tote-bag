@@ -37,6 +37,12 @@ type Supplier = {
   };
 };
 
+const suppliersSurfaceClass =
+  'rounded-3xl border border-theme bg-surface shadow-sm dark:border-white/10 dark:bg-[radial-gradient(circle_at_top_left,rgba(141,161,104,0.14),transparent_30%),radial-gradient(circle_at_top_right,rgba(96,165,250,0.1),transparent_26%),linear-gradient(180deg,rgba(23,26,33,0.96),rgba(14,17,23,0.98))] dark:shadow-[0_18px_40px_rgba(0,0,0,0.28)]';
+
+const suppliersElevatedSurfaceClass =
+  'rounded-3xl border border-theme bg-surface shadow-2xl dark:border-white/10 dark:bg-[radial-gradient(circle_at_top_left,rgba(141,161,104,0.16),transparent_28%),radial-gradient(circle_at_top_right,rgba(96,165,250,0.12),transparent_24%),linear-gradient(180deg,rgba(20,23,30,0.98),rgba(11,14,20,0.99))] dark:shadow-[0_24px_80px_rgba(0,0,0,0.45)]';
+
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat('es-CO', {
     style: 'currency',
@@ -357,7 +363,7 @@ export default function SuppliersPage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-8 animate-in fade-in slide-in-from-bottom-4 p-8 duration-500 md:p-12">
-      <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
+      <div className={`${suppliersSurfaceClass} flex flex-col justify-between gap-6 p-6 md:flex-row md:items-center`}>
         <div className="space-y-1">
           <div className="flex items-center gap-3">
             <div className="rounded-xl bg-primary p-2.5 text-base-color shadow-lg shadow-primary/20">
@@ -397,7 +403,7 @@ export default function SuppliersPage() {
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <div className="overflow-hidden rounded-3xl border border-theme bg-surface shadow-sm">
+          <div className={`overflow-hidden ${suppliersSurfaceClass}`}>
             <div className="border-b border-theme bg-base/30 p-6">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="relative max-w-md flex-1">
@@ -552,7 +558,7 @@ export default function SuppliersPage() {
                 <Truck className="absolute -bottom-4 -right-4 h-32 w-32 rotate-12 text-white/5" />
               </div>
 
-              <div className="space-y-4 rounded-3xl border border-theme bg-surface p-6 shadow-sm">
+              <div className={`${suppliersSurfaceClass} space-y-4 p-6`}>
                 <h3 className="text-xs font-black uppercase tracking-widest text-primary">
                   Resumen de relacion
                 </h3>
@@ -576,7 +582,7 @@ export default function SuppliersPage() {
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-theme bg-surface p-12 text-center">
+            <div className={`${suppliersSurfaceClass} flex flex-col items-center justify-center gap-4 border-dashed p-12 text-center`}>
               <div className="rounded-full bg-base p-4">
                 <Truck className="h-8 w-8 text-muted" />
               </div>
@@ -590,7 +596,7 @@ export default function SuppliersPage() {
 
       {isCreateModalOpen ? (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-primary/20 p-4 backdrop-blur-sm" onClick={handleCloseSupplierModal}>
-          <form onSubmit={handleSubmit} className="w-full max-w-lg space-y-4 rounded-3xl border border-theme bg-surface p-8 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+          <form onSubmit={handleSubmit} className={`w-full max-w-lg space-y-4 p-8 ${suppliersElevatedSurfaceClass}`} onClick={(event) => event.stopPropagation()}>
             <div className="flex items-start justify-between gap-4">
               <div>
               <h2 className="text-2xl font-black text-primary">
@@ -709,7 +715,7 @@ export default function SuppliersPage() {
         >
           <form
             onSubmit={handlePaymentSubmit}
-            className="w-full max-w-lg space-y-4 rounded-3xl border border-theme bg-surface p-8 shadow-2xl"
+            className={`w-full max-w-lg space-y-4 p-8 ${suppliersElevatedSurfaceClass}`}
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4">
@@ -804,7 +810,7 @@ function MetricCard({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-theme bg-surface p-6 shadow-sm">
+    <div className={`${suppliersSurfaceClass} rounded-2xl p-6`}>
       <div className="mb-4 flex items-center justify-between">
         <div className="rounded-lg bg-primary/10 p-2 text-primary">{icon}</div>
       </div>

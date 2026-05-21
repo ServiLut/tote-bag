@@ -6,30 +6,31 @@
 - Environments: .env
 
   Creating an optimized production build ...
-✓ Compiled successfully in 25.4s
+✓ Compiled successfully in 25.7s
   Running TypeScript ...
-  Finished TypeScript in 37.7s ...
+  Finished TypeScript in 39.8s ...
   Collecting page data using 7 workers ...
-  Generating static pages using 7 workers (0/52) ...
+  Generating static pages using 7 workers (0/55) ...
 🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
 🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
 🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
-  Generating static pages using 7 workers (13/52) 
-  Generating static pages using 7 workers (26/52) 
-  Generating static pages using 7 workers (39/52) 
-✓ Generating static pages using 7 workers (52/52) in 2.1s
+  Generating static pages using 7 workers (13/55) 
+  Generating static pages using 7 workers (27/55) 
+  Generating static pages using 7 workers (41/55) 
+✓ Generating static pages using 7 workers (55/55) in 3.3s
   Finalizing page optimization ...
 
-Route (app)
+Route (app)                                                 Revalidate  Expire
 ┌ ○ /
 ├ ○ /_not-found
 ├ ○ /about
+├ ƒ /api/payments/wompi/webhook
 ├ ƒ /api/proxy/[...path]
 ├ ƒ /api/v1/[...path]
 ├ ƒ /auth/signout
-├ ○ /b2b
+├ ƒ /b2b
 ├ ○ /beneficios
-├ ○ /catalog
+├ ƒ /catalog
 ├ ƒ /catalog/[slug]
 ├ ○ /checkout
 ├ ○ /checkout/confirmacion
@@ -75,7 +76,9 @@ Route (app)
 ├ ○ /pqrs
 ├ ○ /profile
 ├ ○ /register
-└ ○ /reset-password
+├ ○ /reset-password
+├ ○ /robots.txt
+└ ○ /sitemap.xml                                                    1h      1y
 
 
 ƒ Proxy (Middleware)

@@ -5,6 +5,7 @@ import {
   NotificationEmailSender,
   ShipmentDispatchedEmailMessage,
 } from './notifications.constants';
+import { redactEmail } from '../../common/logger/log-sanitization';
 
 @Injectable()
 export class NotificationsService {
@@ -19,7 +20,7 @@ export class NotificationsService {
     const preparedMessage = this.buildShipmentDispatchedEmailMessage(payload);
 
     this.logger.log(
-      `[SHIPMENT_DISPATCH_NOTIFICATION_PROCESSING] orderId=${preparedMessage.orderId} orderNumber=${preparedMessage.orderNumber} email=${preparedMessage.customerEmail} trackingNumber=${preparedMessage.trackingNumber ?? 'N/A'} provider=${this.emailSender.providerName}`,
+      `[SHIPMENT_DISPATCH_NOTIFICATION_PROCESSING] orderId=${preparedMessage.orderId} orderNumber=${preparedMessage.orderNumber} email=${redactEmail(preparedMessage.customerEmail)} trackingNumber=${preparedMessage.trackingNumber ?? 'N/A'} provider=${this.emailSender.providerName}`,
     );
 
     try {

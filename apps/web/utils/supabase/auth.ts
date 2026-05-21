@@ -6,25 +6,27 @@ import {
 } from '@/lib/dashboard-auth';
 
 /**
- * Safely gets the current session by first calling getUser() to satisfy
- * security warnings and ensure the token is refreshed if necessary.
+ * Safely gets the current session in the browser.
+ * This version is intended for Client Components.
  */
 export async function getSafeSession() {
   const supabase = createClient();
   
   // We use getUser() to satisfy security warnings and trigger token refresh if needed.
-  // This is the recommended way to verify the user's identity.
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   
   if (userError || !user) {
     return { session: null, error: userError };
   }
 
-  // Now we can safely get the session for the access_token
   const { data: { session }, error: sessionError } = await supabase.auth.getSession();
   return { session, error: sessionError };
 }
 
+/**
+ * Reads the debug role header from document.cookie.
+ * Safe for Client Components (returns empty object during SSR).
+ */
 export function getDashboardDebugRoleHeader(): Record<string, string> {
   if (typeof document === 'undefined') {
     return {};
@@ -43,7 +45,7 @@ export function getDashboardDebugRoleHeader(): Record<string, string> {
 }
 
 /**
- * Standalone helper to get Authorization headers safely
+ * Standalone helper to get Authorization headers in the browser.
  */
 export async function getAuthHeaders(): Promise<Record<string, string>> {
   const { session } = await getSafeSession();

@@ -67,6 +67,14 @@ export default function DashboardLayoutClient({
   }, [accessRedirect, router]);
 
   useEffect(() => {
+    document.body.classList.add('dashboard-route');
+
+    return () => {
+      document.body.classList.remove('dashboard-route');
+    };
+  }, []);
+
+  useEffect(() => {
     if (!mounted) {
       return;
     }

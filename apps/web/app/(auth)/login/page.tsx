@@ -11,7 +11,6 @@ import { getDashboardDebugRoleHeader } from '@/utils/supabase/auth';
 import { resolvePostLoginRedirectPath } from '@/lib/frontend-routing';
 import {
   extractRoleFromProfilePayload,
-  getDashboardRoleForOperatorEmail,
   type DashboardRole,
 } from '@/lib/dashboard-auth';
 
@@ -78,7 +77,7 @@ async function resolveRoleFromApi(accessToken: string) {
     const response = await apiFetch('/profiles/me', {
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        ...getDashboardDebugRoleHeader(),
+        ...(await getDashboardDebugRoleHeader()),
       },
     });
 
@@ -116,8 +115,7 @@ function LoginPageContent() {
 
       const payload = await loginAgainstApi(normalizedEmail, password);
       const session = payload.session;
-      const operatorRole = getDashboardRoleForOperatorEmail(normalizedEmail);
-      let role = operatorRole ?? payload.role ?? null;
+      let role = payload.role ?? null;
 
       if (!session?.access_token || !session.refresh_token) {
         throw new Error(
@@ -135,9 +133,7 @@ function LoginPageContent() {
       }
 
       if (!role) {
-        role =
-          (await resolveRoleFromApi(session.access_token)) ??
-          getDashboardRoleForOperatorEmail(normalizedEmail);
+        role = await resolveRoleFromApi(session.access_token);
       }
 
       if (role) {

@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
   Boxes,
+  Download,
+  FileSpreadsheet,
   Gift,
   Loader2,
   Package,
@@ -200,6 +202,14 @@ function resolveUserLabel(output: NonCommercialOutput) {
   return email.split('@')[0] || email;
 }
 
+function getDownloadFilename(
+  contentDisposition: string | null,
+  fallback: string,
+) {
+  const match = contentDisposition?.match(/filename="?([^"]+)"?/i);
+  return match?.[1] ?? fallback;
+}
+
 function SummaryCard({
   label,
   value,
@@ -235,6 +245,7 @@ export default function NonCommercialOutputsPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [exportLoading, setExportLoading] = useState<'excel' | 'pdf' | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
@@ -531,6 +542,57 @@ export default function NonCommercialOutputsPage() {
     };
   }, [closeCreateModal, isCreateModalOpen]);
 
+  const handleExport = useCallback(
+    async (type: 'excel' | 'pdf') => {
+      setExportLoading(type);
+      setError(null);
+
+      try {
+        const authHeaders = await getAuthHeaders();
+        const response = await apiFetch(
+          `/inventory/reporting/non-commercial-outputs/export/${type}`,
+          {
+            headers: authHeaders,
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            await resolveApiErrorMessage(
+              response,
+              `No fue posible exportar el reporte en ${type.toUpperCase()}.`,
+              { redirectOnUnauthorized: true },
+            ),
+          );
+        }
+
+        const blob = await response.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = getDownloadFilename(
+          response.headers.get('Content-Disposition'),
+          `Reporte_Salidas_No_Comerciales.${type === 'excel' ? 'xlsx' : 'pdf'}`,
+        );
+        document.body.appendChild(link);
+        link.click();
+        window.URL.revokeObjectURL(downloadUrl);
+        document.body.removeChild(link);
+      } catch (exportError) {
+        console.error(`Error exporting non-commercial outputs (${type}):`, exportError);
+        const message =
+          exportError instanceof Error
+            ? exportError.message
+            : `No fue posible exportar el reporte en ${type.toUpperCase()}.`;
+        setError(message);
+        toast.error(message);
+      } finally {
+        setExportLoading(null);
+      }
+    },
+    [getAuthHeaders, resolveApiErrorMessage],
+  );
+
   if (loading) {
     return (
       <div className="mx-auto flex min-h-[60vh] max-w-7xl items-center justify-center p-8 md:p-12">
@@ -568,7 +630,33 @@ export default function NonCommercialOutputsPage() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-end">
+          <Button
+            type="button"
+            onClick={() => void handleExport('excel')}
+            disabled={refreshing || submitting || exportLoading !== null}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-black text-emerald-700 disabled:opacity-60"
+          >
+            {exportLoading === 'excel' ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileSpreadsheet className="h-4 w-4" />
+            )}
+            Excel
+          </Button>
+          <Button
+            type="button"
+            onClick={() => void handleExport('pdf')}
+            disabled={refreshing || submitting || exportLoading !== null}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-5 py-3 text-sm font-black text-rose-700 disabled:opacity-60"
+          >
+            {exportLoading === 'pdf' ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            PDF
+          </Button>
           <Button
             type="button"
             onClick={() => {

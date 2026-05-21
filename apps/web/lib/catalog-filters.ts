@@ -5,6 +5,7 @@ export type CatalogFilterKey =
   | 'lines'
   | 'sizes'
   | 'materials'
+  | 'status'
   | 'minPrice'
   | 'maxPrice';
 
@@ -44,6 +45,7 @@ const FILTER_QUERY_KEYS: CatalogFilterKey[] = [
   'lines',
   'sizes',
   'materials',
+  'status',
   'minPrice',
   'maxPrice',
 ];
@@ -81,6 +83,9 @@ export function buildCatalogSearchParams(
   }
   if (filters.materials.length > 0) {
     params.set('materials', filters.materials.join(','));
+  }
+  if (filters.status.length > 0) {
+    params.set('status', filters.status.join(','));
   }
   if (filters.minPrice > 0) {
     params.set('minPrice', filters.minPrice.toString());
@@ -157,6 +162,11 @@ export function readCatalogFiltersFromSearchParams(
   const materials = params.get('materials');
   if (materials) {
     nextFilters.materials = materials.split(',').filter(Boolean);
+  }
+
+  const status = params.get('status');
+  if (status) {
+    nextFilters.status = status.split(',').filter(Boolean);
   }
 
   nextFilters.minPrice = parseCatalogPriceFilterValue(

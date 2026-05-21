@@ -6,6 +6,11 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 import { json, urlencoded, Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
 import helmet from 'helmet';
+import {
+  sanitizeIpForLogs,
+  sanitizeRequestUrlForLogs,
+  sanitizeUserAgentForLogs,
+} from './common/logger/log-sanitization';
 import { winstonConfig } from './common/logger/winston.config';
 import { rootProbeMiddleware } from './root-probe';
 
@@ -75,11 +80,11 @@ async function bootstrap() {
       logger.log({
         event: 'http_request',
         method,
-        url,
+        url: sanitizeRequestUrlForLogs(url),
         statusCode,
         durationMs: duration,
-        ip,
-        userAgent,
+        ip: sanitizeIpForLogs(ip),
+        userAgent: sanitizeUserAgentForLogs(userAgent),
         requestId: req.requestId,
         correlationId: req.correlationId,
       });

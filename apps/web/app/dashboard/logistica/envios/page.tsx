@@ -1149,8 +1149,8 @@ export default function ShippingManagementPage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 p-8 md:p-12">
-      <div className="space-y-6 rounded-[2rem] border border-theme bg-surface p-6 shadow-sm md:p-8">
+    <div className="mx-auto max-w-7xl space-y-8 px-4 py-5 sm:px-6 md:p-12">
+      <div className="space-y-6 rounded-[2rem] border border-theme bg-surface dark-surface-gradient p-6 shadow-sm md:p-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-2">
             <div className="flex items-center gap-3">
@@ -1158,7 +1158,7 @@ export default function ShippingManagementPage() {
                 <Package className="h-6 w-6" />
               </div>
               <div className="min-w-0">
-                <h1 className="text-3xl font-black tracking-tight text-primary">
+                <h1 className="text-2xl font-black tracking-tight text-primary md:text-3xl">
                   Gestion de Logistica
                 </h1>
                 <p className="font-medium text-muted">
@@ -1186,7 +1186,7 @@ export default function ShippingManagementPage() {
               value={tab}
               onValueChange={(value) => setTab(value as ViewTab)}
             >
-              <TabsList className="bg-base">
+              <TabsList className="w-full justify-start overflow-x-auto whitespace-nowrap rounded-2xl border border-theme bg-base p-1">
                 <TabsTrigger value="envios">Envios</TabsTrigger>
                 <TabsTrigger value="devoluciones">Devoluciones</TabsTrigger>
               </TabsList>
@@ -1235,7 +1235,7 @@ export default function ShippingManagementPage() {
             </div>
           </div>
         ) : null}
-        <div className="rounded-[2rem] border border-theme bg-surface shadow-sm">
+        <div className="rounded-[2rem] border border-theme bg-surface dark-surface-gradient-soft shadow-sm">
           <div className="flex flex-col gap-4 border-b border-theme bg-base/30 p-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="relative min-w-0 flex-1">
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
@@ -1310,7 +1310,7 @@ export default function ShippingManagementPage() {
               </div>
 
               <div className="overflow-hidden rounded-3xl border border-theme">
-                <table className="w-full border-collapse text-left">
+                <table className="min-w-[980px] w-full border-collapse text-left">
                   <thead className="bg-base/20 text-[10px] font-black uppercase tracking-widest text-muted/70">
                     <tr>
                       <th className="px-6 py-4">Orden</th>
@@ -1635,7 +1635,7 @@ export default function ShippingManagementPage() {
               </div>
 
               <div className="overflow-hidden rounded-3xl border border-theme">
-                <table className="w-full border-collapse text-left">
+                <table className="min-w-[860px] w-full border-collapse text-left">
                   <thead className="bg-base/20 text-[10px] font-black uppercase tracking-widest text-muted/70">
                     <tr>
                       <th className="px-6 py-4">Orden</th>

@@ -365,7 +365,7 @@ export default function Sidebar({
             <div key={group.title} className="space-y-2">
               <h3
                 aria-hidden={isCollapsed}
-                className={`overflow-hidden px-4 text-[10px] font-bold uppercase tracking-widest text-muted/50 transition-all duration-200 ${
+                className={`overflow-hidden px-4 text-[10px] font-bold uppercase tracking-widest text-muted transition-all duration-200 dark:text-slate-300 ${
                   isCollapsed ? 'max-h-0 opacity-0' : 'max-h-4 opacity-100 delay-100'
                 }`}
               >
@@ -531,7 +531,7 @@ export default function Sidebar({
           <nav className="custom-scrollbar max-h-[70vh] space-y-6 overflow-y-auto pr-2">
             {filteredMenuGroups.map((group) => (
               <div key={group.title} className="space-y-3">
-                <h3 className="px-2 text-[10px] font-bold uppercase tracking-widest text-muted/50">
+                <h3 className="px-2 text-[10px] font-bold uppercase tracking-widest text-muted dark:text-slate-300">
                   {group.title}
                 </h3>
                 <div className="space-y-2">

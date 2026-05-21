@@ -9,7 +9,9 @@ import {
   Boxes,
   ChevronDown,
   ChevronRight,
+  Download,
   Factory,
+  FileSpreadsheet,
   History,
   Layers,
   Loader2,
@@ -111,6 +113,14 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+function getDownloadFilename(
+  contentDisposition: string | null,
+  fallback: string,
+) {
+  const match = contentDisposition?.match(/filename="?([^"]+)"?/i);
+  return match?.[1] ?? fallback;
+}
+
 export default function InventoryDashboardPage() {
   const [products, setProducts] = useState<InventoryProduct[]>([]);
   const [movements, setMovements] = useState<InventoryMovement[]>([]);
@@ -130,6 +140,7 @@ export default function InventoryDashboardPage() {
   const [inventoryValueMax, setInventoryValueMax] = useState('');
   const [batchCountMin, setBatchCountMin] = useState('');
   const [batchCountMax, setBatchCountMax] = useState('');
+  const [exportLoading, setExportLoading] = useState<'excel' | 'pdf' | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -278,6 +289,47 @@ export default function InventoryDashboardPage() {
     );
   };
 
+  const handleExport = async (type: 'excel' | 'pdf') => {
+    setExportLoading(type);
+    setError(null);
+
+    try {
+      const headers = await getAuthHeaders();
+      const response = await apiFetch(`/inventory/reporting/fifo/export/${type}`, {
+        headers,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          errorText || `No fue posible exportar el reporte en ${type.toUpperCase()}.`,
+        );
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = getDownloadFilename(
+        response.headers.get('Content-Disposition'),
+        `Reporte_Inventario_FIFO.${type === 'excel' ? 'xlsx' : 'pdf'}`,
+      );
+      document.body.appendChild(link);
+      link.click();
+      window.URL.revokeObjectURL(downloadUrl);
+      document.body.removeChild(link);
+    } catch (exportError) {
+      console.error(`Error exporting FIFO report (${type}):`, exportError);
+      setError(
+        exportError instanceof Error
+          ? exportError.message
+          : `No fue posible exportar el reporte en ${type.toUpperCase()}.`,
+      );
+    } finally {
+      setExportLoading(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="mx-auto flex min-h-[60vh] max-w-7xl items-center justify-center p-8 md:p-12">
@@ -290,14 +342,14 @@ export default function InventoryDashboardPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 animate-in fade-in slide-in-from-bottom-4 p-8 duration-500 md:p-12">
+    <div className="mx-auto max-w-7xl space-y-8 animate-in px-4 py-5 duration-500 fade-in slide-in-from-bottom-4 sm:px-6 md:p-12">
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
             <div className="rounded-xl bg-primary p-2.5 text-base-color shadow-lg shadow-primary/20">
               <Layers className="h-6 w-6" />
             </div>
-            <h1 className="text-3xl font-black tracking-tight text-primary">
+            <h1 className="text-2xl font-black tracking-tight text-primary md:text-3xl">
               Inventario FIFO Detallado
             </h1>
           </div>
@@ -306,29 +358,60 @@ export default function InventoryDashboardPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 rounded-xl border border-theme bg-base p-1">
-          <button
-            type="button"
-            onClick={() => setActiveTab('current')}
-            className={`rounded-lg px-4 py-2 text-[10px] font-black uppercase tracking-wider transition-all ${
-              activeTab === 'current'
-                ? 'bg-primary text-base-color shadow-sm'
-                : 'text-muted hover:bg-theme/5'
-            }`}
-          >
-            Inventario Actual
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('movements')}
-            className={`rounded-lg px-4 py-2 text-[10px] font-black uppercase tracking-wider transition-all ${
-              activeTab === 'movements'
-                ? 'bg-primary text-base-color shadow-sm'
-                : 'text-muted hover:bg-theme/5'
-            }`}
-          >
-            Movimientos
-          </button>
+        <div className="flex flex-col gap-3 md:items-end">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => void handleExport('excel')}
+              disabled={exportLoading !== null}
+              className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-black text-emerald-700 transition-all hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {exportLoading === 'excel' ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <FileSpreadsheet className="h-4 w-4" />
+              )}
+              Excel
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleExport('pdf')}
+              disabled={exportLoading !== null}
+              className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-black text-rose-700 transition-all hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {exportLoading === 'pdf' ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              PDF
+            </button>
+          </div>
+
+          <div className="flex w-full items-center gap-2 overflow-x-auto rounded-xl border border-theme bg-base p-1 md:w-auto">
+            <button
+              type="button"
+              onClick={() => setActiveTab('current')}
+              className={`rounded-lg px-4 py-2 text-[10px] font-black uppercase tracking-wider transition-all ${
+                activeTab === 'current'
+                  ? 'bg-primary text-base-color shadow-sm'
+                  : 'text-muted hover:bg-theme/5'
+              }`}
+            >
+              Inventario Actual
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('movements')}
+              className={`rounded-lg px-4 py-2 text-[10px] font-black uppercase tracking-wider transition-all ${
+                activeTab === 'movements'
+                  ? 'bg-primary text-base-color shadow-sm'
+                  : 'text-muted hover:bg-theme/5'
+              }`}
+            >
+              Movimientos
+            </button>
+          </div>
         </div>
       </div>
 
@@ -450,7 +533,8 @@ export default function InventoryDashboardPage() {
           ) : null}
 
           <div className="overflow-hidden rounded-3xl border border-theme bg-surface shadow-sm">
-            <table className="w-full border-collapse text-left">
+            <div className="overflow-x-auto">
+              <table className="min-w-[920px] w-full border-collapse text-left">
               <thead>
                 <tr className="border-b border-theme bg-base/30 text-[10px] font-black uppercase tracking-widest text-muted/60">
                   <th className="px-8 py-4">Producto</th>
@@ -623,7 +707,8 @@ export default function InventoryDashboardPage() {
                   })
                 )}
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
@@ -683,7 +768,7 @@ export default function InventoryDashboardPage() {
           ) : null}
 
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left">
+            <table className="min-w-[760px] w-full border-collapse text-left">
               <thead>
                 <tr className="border-b border-theme bg-base/20 text-[10px] font-black uppercase tracking-widest text-muted/60">
                   <th className="px-8 py-4">Fecha/Hora</th>

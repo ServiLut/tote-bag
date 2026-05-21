@@ -5,6 +5,40 @@ export type RetryableProxyResponseSnapshot = {
   body: ArrayBuffer;
 };
 
+const ALLOWED_PROXY_HEADERS = new Set([
+  'accept',
+  'accept-language',
+  'authorization',
+  'content-type',
+  'user-agent',
+  'x-request-id',
+  'x-idempotency-key',
+  'x-event-checksum',
+  'x-correlation-id',
+]);
+
+const BLOCKED_PROXY_HEADERS = new Set([
+  'host',
+  'cookie',
+  'set-cookie',
+  'connection',
+  'upgrade',
+  'proxy-authorization',
+]);
+
+export function sanitizeProxyHeaders(originalHeaders: Headers): Headers {
+  const safeHeaders = new Headers();
+  
+  originalHeaders.forEach((value, key) => {
+    const lowerKey = key.toLowerCase();
+    if (ALLOWED_PROXY_HEADERS.has(lowerKey) && !BLOCKED_PROXY_HEADERS.has(lowerKey)) {
+      safeHeaders.set(lowerKey, value);
+    }
+  });
+
+  return safeHeaders;
+}
+
 export function sanitizeProxyResponseHeaders(headers: Headers) {
   const responseHeaders = new Headers(headers);
   responseHeaders.delete('content-encoding');

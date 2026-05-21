@@ -350,7 +350,7 @@ export class B2bService {
     });
 
     const whatsappPayload = {
-      phone: '573000000000',
+      phone: '+57 3143964910',
       message: `Hola, soy ${createQuoteDto.businessName}. Quote ID: ${quote.id}`,
     };
 
@@ -389,12 +389,9 @@ export class B2bService {
     });
 
     return quotes.map((quote) => {
-      const status = this.normalizeQuoteStatus(quote.status);
       return {
         ...quote,
-        status: B2bService.APPROVED_DESIGN_STATUSES.has(quote.status)
-          ? 'DISEÑO_APROBADO'
-          : quote.status,
+        status: this.normalizeQuoteStatus(quote.status),
       };
     });
   }
@@ -402,7 +399,7 @@ export class B2bService {
   async approveDesign(id: string) {
     return this.prisma.b2BQuote.update({
       where: { id },
-      data: { status: 'DISEÑO_APROBADO' },
+      data: { status: B2bService.APPROVED_DESIGN_STATUS },
     });
   }
 

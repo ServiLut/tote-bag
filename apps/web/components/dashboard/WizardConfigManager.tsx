@@ -37,9 +37,11 @@ interface WizardOption {
 
 interface FormData {
   name: string;
+  code: string;
   category: WizardCategory;
   description: string;
   basePriceModifier: number;
+  isActive: boolean;
   sortOrder: number;
   allowedMaterialValues: string[];
   imageUrl: string;
@@ -47,9 +49,11 @@ interface FormData {
 
 const INITIAL_FORM: FormData = {
   name: '',
+  code: '',
   category: 'TECHNIQUE',
   description: '',
   basePriceModifier: 0,
+  isActive: true,
   sortOrder: 0,
   allowedMaterialValues: [],
   imageUrl: '',
@@ -146,9 +150,11 @@ export default function WizardConfigManager() {
     setEditingId(option.id);
     setFormData({
       name: option.name,
+      code: option.code || '',
       category: option.category,
       description: option.description || '',
       basePriceModifier: option.basePriceModifier,
+      isActive: option.isActive ?? true,
       sortOrder: option.sortOrder,
       allowedMaterialValues:
         option.allowedMaterialIds && option.allowedMaterialIds.length > 0
@@ -398,6 +404,20 @@ export default function WizardConfigManager() {
                       />
                     </div>
                     <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-muted">Código (ID de negocio)</label>
+                      <input
+                        type="text"
+                        value={formData.code}
+                        onChange={e => setFormData({ ...formData, code: e.target.value.toUpperCase().replace(/\s+/g, '-') })}
+                        placeholder="Ej: LIN-PREMIUM"
+                        className="w-full bg-base border border-theme rounded-xl p-4 font-bold outline-none focus:ring-2 focus:ring-primary/20 transition-all font-mono"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase tracking-widest text-muted">Precio extra</label>
                       <input
                         type="text"
@@ -406,6 +426,20 @@ export default function WizardConfigManager() {
                         onChange={handleBasePriceModifierChange}
                         className="w-full bg-base border border-theme rounded-xl p-4 font-bold outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-muted">Estado</label>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}
+                        className={cn(
+                          "w-full flex items-center justify-between p-4 rounded-xl border font-bold transition-all",
+                          formData.isActive ? "bg-secondary/5 border-secondary text-secondary" : "bg-red-50 border-red-200 text-red-500"
+                        )}
+                      >
+                        <span className="uppercase tracking-widest text-[10px]">{formData.isActive ? 'Activo' : 'Inactivo'}</span>
+                        {formData.isActive ? <Check size={18} /> : <X size={18} />}
+                      </button>
                     </div>
                   </div>
 

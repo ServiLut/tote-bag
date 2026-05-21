@@ -340,7 +340,7 @@ export default function Navbar() {
                   {t('nav_customize')}
                 </Link>
                 <Link href="/b2b" className="hover:text-accent transition-colors font-black uppercase text-[10px] tracking-[0.2em] border border-accent/30 px-3 py-1 rounded-lg">
-                  B2B
+                  {t('nav_b2b_short')}
                 </Link>
               </div>
             </div>
@@ -454,7 +454,7 @@ export default function Navbar() {
                           className="mt-2 flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-primary transition-colors hover:bg-base"
                         >
                           <Settings className="h-4 w-4 text-accent" />
-                          Configuracion
+                          {t('nav_settings')}
                         </Link>
                         <Link
                           href="/profile?panel=addresses"
@@ -462,7 +462,7 @@ export default function Navbar() {
                           className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-primary transition-colors hover:bg-base"
                         >
                           <MapPin className="h-4 w-4 text-accent" />
-                          Direcciones
+                          {t('nav_addresses')}
                         </Link>
                         <Link
                           href={getProfileLink()}
@@ -470,7 +470,7 @@ export default function Navbar() {
                           className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-primary transition-colors hover:bg-base"
                         >
                           <UserCircle className="h-4 w-4 text-accent" />
-                          Mi cuenta
+                          {t('nav_my_account')}
                         </Link>
                         <button
                           type="button"
@@ -498,7 +498,7 @@ export default function Navbar() {
                           className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-primary transition-colors hover:bg-base"
                         >
                           <User className="h-4 w-4 text-accent" />
-                          Ingresar
+                          {t('nav_login')}
                         </Link>
                         <Link
                           href="/register"
@@ -506,7 +506,7 @@ export default function Navbar() {
                           className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-primary transition-colors hover:bg-base"
                         >
                           <Sparkles className="h-4 w-4 text-accent" />
-                          Registrarse
+                          {t('nav_register')}
                         </Link>
                       </>
                     )}
@@ -561,7 +561,7 @@ export default function Navbar() {
                     className="flex items-center gap-4 rounded-xl px-3 py-3 transition-colors hover:bg-base"
                   >
                     <Settings className="w-5 h-5" />
-                    <span className="text-xs">Configuracion</span>
+                    <span className="text-xs">{t('nav_settings')}</span>
                   </Link>
                   <Link
                     href="/profile?panel=addresses"
@@ -569,7 +569,7 @@ export default function Navbar() {
                     className="flex items-center gap-4 rounded-xl px-3 py-3 transition-colors hover:bg-base"
                   >
                     <MapPin className="w-5 h-5" />
-                    <span className="text-xs">Direcciones</span>
+                    <span className="text-xs">{t('nav_addresses')}</span>
                   </Link>
                   <button
                     type="button"
@@ -598,7 +598,7 @@ export default function Navbar() {
                     className="flex items-center gap-4 p-5 rounded-2xl bg-surface border border-theme shadow-sm transition-all active:scale-95"
                   >
                     <User className="w-6 h-6" />
-                    <span className="text-xs">Ingresar</span>
+                    <span className="text-xs">{t('nav_login')}</span>
                   </Link>
                   <Link
                     href="/register"
@@ -606,7 +606,7 @@ export default function Navbar() {
                     className="flex items-center gap-4 p-5 rounded-2xl bg-surface border border-theme shadow-sm transition-all active:scale-95"
                   >
                     <Sparkles className="w-6 h-6 text-accent" />
-                    <span className="text-xs">Registrarse</span>
+                    <span className="text-xs">{t('nav_register')}</span>
                   </Link>
                 </div>
               )}

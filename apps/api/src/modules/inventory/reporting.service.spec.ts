@@ -2,6 +2,25 @@ import { BadRequestException } from '@nestjs/common';
 import { ReportingService } from './reporting.service';
 
 describe('ReportingService', () => {
+  const inventoryService = {
+    getDetailedInventory: jest.fn(),
+    getInventoryMovements: jest.fn(),
+    getReorderAlerts: jest.fn(),
+    listNonCommercialOutputs: jest.fn(),
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    inventoryService.getDetailedInventory.mockResolvedValue([]);
+    inventoryService.getInventoryMovements.mockResolvedValue([]);
+    inventoryService.getReorderAlerts.mockResolvedValue({
+      count: 0,
+      variants: [],
+      supplies: [],
+    });
+    inventoryService.listNonCommercialOutputs.mockResolvedValue([]);
+  });
+
   it('rechaza rangos invertidos antes de consultar Prisma', async () => {
     const prisma = {
       financialTransaction: {
@@ -16,7 +35,10 @@ describe('ReportingService', () => {
         findMany: jest.fn(),
       },
     };
-    const service = new ReportingService(prisma as never);
+    const service = new ReportingService(
+      prisma as never,
+      inventoryService as never,
+    );
 
     await expect(
       service.getAccountingReport(
@@ -42,7 +64,10 @@ describe('ReportingService', () => {
         findMany: jest.fn(),
       },
     };
-    const service = new ReportingService(prisma as never);
+    const service = new ReportingService(
+      prisma as never,
+      inventoryService as never,
+    );
 
     await expect(
       service.getClosingReport(
@@ -69,7 +94,10 @@ describe('ReportingService', () => {
         findMany: jest.fn(),
       },
     };
-    const service = new ReportingService(prisma as never);
+    const service = new ReportingService(
+      prisma as never,
+      inventoryService as never,
+    );
 
     const buffer = await service.generateAccountingExcel(
       new Date('2026-03-01T00:00:00.000Z'),
@@ -93,7 +121,10 @@ describe('ReportingService', () => {
         findMany: jest.fn().mockResolvedValue([]),
       },
     };
-    const service = new ReportingService(prisma as never);
+    const service = new ReportingService(
+      prisma as never,
+      inventoryService as never,
+    );
 
     await service.getClosingReport(
       new Date('2026-03-01T00:00:00.000Z'),
@@ -102,5 +133,62 @@ describe('ReportingService', () => {
     );
 
     expect(prisma.auditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('genera un XLSX para inventario FIFO', async () => {
+    const prisma = {};
+    const service = new ReportingService(
+      prisma as never,
+      inventoryService as never,
+    );
+
+    const buffer = await service.generateFifoInventoryExcel();
+
+    expect(buffer.subarray(0, 2).toString('utf8')).toBe('PK');
+    expect(inventoryService.getDetailedInventory).toHaveBeenCalled();
+    expect(inventoryService.getInventoryMovements).toHaveBeenCalled();
+    expect(inventoryService.getReorderAlerts).toHaveBeenCalled();
+  });
+
+  it('genera un PDF para salidas no comerciales', async () => {
+    const prisma = {};
+    inventoryService.listNonCommercialOutputs.mockResolvedValue([
+      {
+        id: 'out-1',
+        quantity: 2,
+        reason: 'GIFT',
+        status: 'COMPLETED',
+        createdAt: '2026-05-19T10:00:00.000Z',
+        notes: 'Entrega interna',
+        variant: {
+          id: 'variant-1',
+          sku: 'SKU-001',
+          size: 'M',
+          color: 'Negro',
+          product: {
+            id: 'product-1',
+            name: 'Bolso clasico',
+            slug: 'bolso-clasico',
+          },
+        },
+        user: {
+          id: 'user-1',
+          email: 'admin@totebag.co',
+          profile: {
+            firstName: 'Ana',
+            lastName: 'Admin',
+          },
+        },
+      },
+    ]);
+    const service = new ReportingService(
+      prisma as never,
+      inventoryService as never,
+    );
+
+    const buffer = await service.generateNonCommercialOutputsPDF();
+
+    expect(buffer.subarray(0, 4).toString('utf8')).toBe('%PDF');
+    expect(inventoryService.listNonCommercialOutputs).toHaveBeenCalled();
   });
 });

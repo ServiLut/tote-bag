@@ -40,6 +40,13 @@ export interface Product {
   name: string;
   slug: string;
   description: string;
+  status?: string;
+  deliveryTime?: string;
+  material?: string;
+  dimensions?: string | null;
+  careInstructions?: string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
   // Deprecated as commercial source of truth. Keep only as compatibility snapshot
   // while remaining consumers migrate to variant pricing.
   basePrice: number;
@@ -55,4 +62,5 @@ export interface Product {
   };
   tags: string[];
   attributes?: Attribute[];
+  updatedAt?: string;
 }

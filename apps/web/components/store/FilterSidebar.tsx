@@ -12,6 +12,7 @@ import {
   parseCatalogPriceFilterValue,
 } from '@/lib/catalog-filters';
 import { useTranslation } from 'react-i18next';
+import { translateStoreValue } from '@/lib/storefront-translations';
 
 export interface FilterState {
   minPrice: number;
@@ -49,6 +50,7 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
     collection: true,
     line: true,
     attributes: true,
+    availability: true,
   });
 
   const updateURL = useCallback((newFilters: FilterState) => {
@@ -113,24 +115,29 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
     });
   };
 
-  const renderCheckboxGroup = (title: string, field: keyof FilterState, options: string[], section: keyof typeof openSections) => (
+  const renderCheckboxGroup = (
+    title: string,
+    field: keyof FilterState,
+    options: Array<{ value: string; label: string }>,
+    section: keyof typeof openSections,
+  ) => (
     <div className="border-b border-theme pb-6">
       <button onClick={() => toggleSection(section)} className="flex justify-between items-center w-full text-xs font-black uppercase tracking-[0.2em] mb-4 text-primary">
         {title}
         {openSections[section] ? <ChevronUp className="w-3 h-3 opacity-50" /> : <ChevronDown className="w-3 h-3 opacity-50" />}
       </button>
 
-      {openSections[section] && (
+        {openSections[section] && (
         <div className="space-y-3">
           {options.map((opt) => (
-            <label key={opt} className="flex items-center gap-3 cursor-pointer group">
+            <label key={opt.value} className="flex items-center gap-3 cursor-pointer group">
               <div className={`w-4 h-4 border flex items-center justify-center transition-all rounded-sm ${
-                (filters[field] as string[]).includes(opt) ? 'bg-primary border-primary' : 'border-theme group-hover:border-primary'
+                (filters[field] as string[]).includes(opt.value) ? 'bg-primary border-primary' : 'border-theme group-hover:border-primary'
               }`}>
-                {(filters[field] as string[]).includes(opt) && <div className="w-1.5 h-1.5 bg-base-color" />}
+                {(filters[field] as string[]).includes(opt.value) && <div className="w-1.5 h-1.5 bg-base-color" />}
               </div>
-              <input type="checkbox" className="hidden" checked={(filters[field] as string[]).includes(opt)} onChange={() => handleCheckboxChange(field, opt)} />
-              <span className="text-[11px] font-bold text-muted uppercase tracking-wider group-hover:text-primary transition-colors">{opt}</span>
+              <input type="checkbox" className="hidden" checked={(filters[field] as string[]).includes(opt.value)} onChange={() => handleCheckboxChange(field, opt.value)} />
+              <span className="text-[11px] font-bold text-muted uppercase tracking-wider group-hover:text-primary transition-colors">{opt.label}</span>
             </label>
           ))}
         </div>
@@ -168,7 +175,15 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
           )}
         </div>
 
-        {renderCheckboxGroup(t('filters_lines'), 'lines', (wizardOptions.LINE || []).map(l => l.name), 'line')}
+        {renderCheckboxGroup(
+          t('filters_lines'),
+          'lines',
+          (wizardOptions.LINE || []).map((line) => ({
+            value: line.name,
+            label: line.name,
+          })),
+          'line',
+        )}
 
         <div className="border-b border-theme pb-6">
           <button onClick={() => toggleSection('collection')} className="flex justify-between items-center w-full text-xs font-black uppercase tracking-[0.2em] mb-4 text-primary">
@@ -185,12 +200,32 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
                     {filters.collections.includes(coll.id) && <div className="w-1.5 h-1.5 bg-base-color" />}
                   </div>
                   <input type="checkbox" className="hidden" checked={filters.collections.includes(coll.id)} onChange={() => handleCheckboxChange('collections', coll.id)} />
-                  <span className="text-[11px] font-bold text-muted uppercase tracking-wider group-hover:text-primary transition-colors">{coll.name}</span>
+                  <span className="text-[11px] font-bold text-muted uppercase tracking-wider group-hover:text-primary transition-colors">
+                    {translateStoreValue('collection', coll.name, t)}
+                  </span>
                 </label>
               ))}
             </div>
           )}
         </div>
+
+        {renderCheckboxGroup(
+          t('filters_availability'),
+          'status',
+          [
+            {
+              value: 'DISPONIBLE',
+              label: t('filters_availability_stock'),
+            },
+            {
+              value: 'BAJO_PEDIDO',
+              label: t('filters_availability_on_demand'),
+            },
+          ],
+          'availability',
+        )}
+
+        {/* TODO: Add a public "personalizable" filter once the storefront API exposes rule-based filtering. */}
 
         <div className="border-b border-theme pb-6">
           <button onClick={() => toggleSection('attributes')} className="flex justify-between items-center w-full text-xs font-black uppercase tracking-[0.2em] mb-4 text-primary">
@@ -219,7 +254,9 @@ export default function FilterSidebar({ collections, filters, onFilterChange, is
                     {(wizardOptions.MATERIAL || []).length > 0 ? (wizardOptions.MATERIAL || []).map(m => (
                     <label key={m.id} className="flex items-center gap-2 cursor-pointer group">
                       <input type="checkbox" className="w-3.5 h-3.5 accent-primary border-theme" checked={filters.materials.includes(m.name)} onChange={() => handleCheckboxChange('materials', m.name)} />
-                      <span className="text-[11px] font-bold text-muted uppercase tracking-wider group-hover:text-primary transition-colors">{m.name}</span>
+                      <span className="text-[11px] font-bold text-muted uppercase tracking-wider group-hover:text-primary transition-colors">
+                        {translateStoreValue('material', m.name, t)}
+                      </span>
                     </label>
                     )) : <p className="text-[10px] text-muted italic">{t('filters_no_options')}</p>}
                   </div>

@@ -11,29 +11,31 @@ FROM node:22-alpine AS build
 WORKDIR /app
 ARG PNPM_VERSION=10.28.2
 
-# Instalar dependencias necesarias para Prisma en Alpine
 RUN apk add --no-cache openssl libc6-compat
-
-# Enable corepack for pnpm
 RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
 
-# Copiamos solo lo necesario para instalar dependencias
 COPY --from=base /app/out/json/ .
 COPY --from=base /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
-# Instalamos dependencias de producción y desarrollo para el build
 RUN pnpm install --frozen-lockfile --ignore-scripts
 
-# Copiamos el código fuente completo
 COPY --from=base /app/out/full/ .
 
-# Generar Prisma Client
 RUN pnpm --filter=api exec prisma generate
-
-# Construir la API
 RUN pnpm --filter=api build
 
-# Limpiar dependencias de desarrollo para dejar solo las de producción
+# 2b. Dependencias de runtime
+FROM node:22-alpine AS prod-deps
+WORKDIR /app
+ARG PNPM_VERSION=10.28.2
+
+RUN apk add --no-cache openssl libc6-compat
+RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
+
+COPY --from=base /app/out/json/ .
+COPY --from=base /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+
+RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 
 # 3. Runner
 FROM node:22-alpine AS runner
@@ -42,12 +44,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=4000
 
-# Instalamos OpenSSL para Prisma
 RUN apk add --no-cache openssl
 
-# Copiamos solo lo necesario para la ejecución
-COPY --from=build --chown=node:node /app/node_modules ./node_modules
-COPY --from=build --chown=node:node /app/apps/api/node_modules ./apps/api/node_modules
+COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
+COPY --from=prod-deps --chown=node:node /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=build --chown=node:node /app/apps/api/dist ./apps/api/dist
 COPY --from=build --chown=node:node /app/apps/api/package.json ./apps/api/package.json
 COPY --from=build --chown=node:node /app/apps/api/prisma ./apps/api/prisma

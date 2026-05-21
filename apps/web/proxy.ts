@@ -5,6 +5,7 @@ import {
   buildForwardedDashboardRoleContextHeaders,
   DASHBOARD_DEBUG_ROLE_ALLOWED_HEADER_NAME,
   DASHBOARD_DEBUG_ROLE_COOKIE_NAME,
+  DASHBOARD_DEBUG_ROLE_HEADER_NAME,
   DASHBOARD_ROLE_CONTEXT_RESOLVED_HEADER_NAME,
   DASHBOARD_ROLE_HEADER_NAME,
   extractDashboardRoleContextFromProfilePayload,
@@ -44,6 +45,8 @@ async function getRoleContextFromApi(
 export async function proxy(request: NextRequest) {
   const env = tryGetSupabaseEnv();
   const requestHeaders = new Headers(request.headers);
+  requestHeaders.delete(DASHBOARD_PATHNAME_HEADER_NAME);
+  requestHeaders.delete(DASHBOARD_DEBUG_ROLE_HEADER_NAME);
   requestHeaders.set(DASHBOARD_PATHNAME_HEADER_NAME, request.nextUrl.pathname);
   const pendingCookies: Array<{
     name: string;

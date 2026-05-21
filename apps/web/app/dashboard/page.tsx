@@ -23,7 +23,6 @@ import { extractApiConnectionErrorTargets } from '@/lib/api-config';
 import {
   buildDashboardAuthHeaders,
   extractRoleFromProfilePayload,
-  getDashboardRoleForOperatorEmail,
   parseDashboardDebugRoleCookie,
   DASHBOARD_DEBUG_ROLE_COOKIE_NAME,
   type DashboardRole,
@@ -283,16 +282,13 @@ async function getCurrentDashboardRole(
 
     if (response.ok) {
       const body = await response.json();
-      return (
-        extractRoleFromProfilePayload(body) ??
-        getDashboardRoleForOperatorEmail(session.user.email)
-      );
+      return extractRoleFromProfilePayload(body);
     }
   } catch {
     // The layout already protects the dashboard; keep the page resilient.
   }
 
-  return getDashboardRoleForOperatorEmail(session.user.email);
+  return null;
 }
 
 function getAccessibleDashboardHref(
@@ -312,6 +308,7 @@ export default async function DashboardPage() {
     getDashboardStats(debugRole),
     getCurrentDashboardRole(debugRole),
   ]);
+  const canViewFinance = canAccessDashboardPath(role, '/dashboard/finanzas');
   const todayLabel = new Date().toLocaleDateString('es-CO', {
     weekday: 'long',
     year: 'numeric',
@@ -320,7 +317,9 @@ export default async function DashboardPage() {
     timeZone: 'America/Bogota',
   });
   const healthTone =
-    stats.lowStockCount > 0 || stats.staleBatches > 0 || stats.monthlyCashFlowNet < 0
+    stats.lowStockCount > 0 ||
+    stats.staleBatches > 0 ||
+    (canViewFinance && stats.monthlyCashFlowNet < 0)
       ? 'warning'
       : 'success';
   const urgentActions =
@@ -335,12 +334,12 @@ export default async function DashboardPage() {
 
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-8 px-6 py-8 md:px-10 md:py-10 xl:px-12">
-      <section className="relative overflow-hidden rounded-[36px] border border-theme bg-surface shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(107,122,74,0.16),_transparent_32%),radial-gradient(circle_at_top_right,_rgba(59,130,246,0.12),_transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,248,250,0.98))] dark:bg-[radial-gradient(circle_at_top_left,_rgba(141,161,104,0.18),_transparent_32%),radial-gradient(circle_at_top_right,_rgba(96,165,250,0.14),_transparent_28%),linear-gradient(180deg,rgba(34,34,34,0.96),rgba(28,28,28,0.96))]" />
+      <section className="relative overflow-hidden rounded-[36px] border border-theme bg-surface shadow-[0_24px_80px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-[#0f1115] dark:shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(107,122,74,0.16),_transparent_32%),radial-gradient(circle_at_top_right,_rgba(59,130,246,0.12),_transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,248,250,0.98))] dark:bg-[radial-gradient(circle_at_top_left,_rgba(141,161,104,0.18),_transparent_26%),radial-gradient(circle_at_top_right,_rgba(96,165,250,0.14),_transparent_24%),linear-gradient(180deg,rgba(16,18,24,0.98),rgba(9,11,15,0.99))]" />
         <div className="relative grid gap-6 p-6 md:p-8 xl:grid-cols-[minmax(0,1.35fr)_360px]">
           <div className="space-y-6">
             {stats.loadError ? (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
                 {stats.loadError}
               </div>
             ) : null}
@@ -406,8 +405,14 @@ export default async function DashboardPage() {
               />
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-              <div className="rounded-[28px] border border-theme bg-white/75 p-5 shadow-sm backdrop-blur dark:bg-white/5">
+            <div
+              className={`grid gap-4 ${
+                canViewFinance
+                  ? 'lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]'
+                  : 'lg:grid-cols-1'
+              }`}
+            >
+              <div className="rounded-[28px] border border-theme bg-white/75 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-[#171a21]/88 dark:shadow-[0_12px_30px_rgba(0,0,0,0.28)]">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-[11px] font-black uppercase tracking-[0.24em] text-muted">
@@ -443,42 +448,44 @@ export default async function DashboardPage() {
                 </div>
               </div>
 
-              <div className="rounded-[28px] border border-black/5 bg-primary p-5 text-base-color shadow-[0_18px_40px_rgba(17,17,17,0.18)] dark:border-white/10">
-                <p className="text-[11px] font-black uppercase tracking-[0.24em] text-base-color/70">
-                  Panorama financiero
-                </p>
-                <div className="mt-4 grid gap-4">
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
-                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-base-color/70">
-                      Flujo neto mensual
-                    </p>
-                    <p className="mt-2 text-2xl font-black">
-                      {formatCurrency(stats.monthlyCashFlowNet)}
-                    </p>
+              {canViewFinance ? (
+                <div className="rounded-[28px] border border-black/5 bg-[#111111] p-5 text-[#F5F1EB] shadow-[0_18px_40px_rgba(17,17,17,0.18)] dark:border-white/10">
+                  <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#F5F1EB]/70">
+                    Panorama financiero
+                  </p>
+                  <div className="mt-4 grid gap-4">
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
+                      <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#F5F1EB]/70">
+                        Flujo neto mensual
+                      </p>
+                      <p className="mt-2 text-2xl font-black">
+                        {formatCurrency(stats.monthlyCashFlowNet)}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
+                      <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#F5F1EB]/70">
+                        Saldo pendiente a proveedores
+                      </p>
+                      <p className="mt-2 text-2xl font-black">
+                        {formatCurrency(stats.supplierPendingBalance)}
+                      </p>
+                    </div>
                   </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
-                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-base-color/70">
-                      Saldo pendiente a proveedores
-                    </p>
-                    <p className="mt-2 text-2xl font-black">
-                      {formatCurrency(stats.supplierPendingBalance)}
-                    </p>
+                  <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
+                    <p className="text-sm font-medium text-[#F5F1EB]/70">{todayLabel}</p>
+                    <Link
+                      href={getAccessibleDashboardHref(
+                        role,
+                        '/dashboard/finanzas/cash-flow',
+                      )}
+                      className="inline-flex items-center gap-2 text-sm font-black text-[#F5F1EB] transition-transform hover:translate-x-0.5"
+                    >
+                      Ver finanzas
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
                   </div>
                 </div>
-                <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
-                  <p className="text-sm font-medium text-base-color/70">{todayLabel}</p>
-                  <Link
-                    href={getAccessibleDashboardHref(
-                      role,
-                      '/dashboard/finanzas/cash-flow',
-                    )}
-                    className="inline-flex items-center gap-2 text-sm font-black text-base-color transition-transform hover:translate-x-0.5"
-                  >
-                    Ver finanzas
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </div>
-              </div>
+              ) : null}
             </div>
           </div>
 
@@ -603,7 +610,7 @@ export default async function DashboardPage() {
               )}
               tone={stats.staleBatches > 0 ? 'warning' : 'default'}
             />
-            <div className="grid gap-3 rounded-[24px] border border-theme bg-white/70 p-4 shadow-sm dark:bg-white/5">
+            <div className="grid gap-3 rounded-[24px] border border-theme bg-white/70 p-4 shadow-sm dark:border-white/10 dark:bg-[#171a21]/88 dark:shadow-[0_12px_30px_rgba(0,0,0,0.24)]">
               <p className="text-[11px] font-black uppercase tracking-[0.24em] text-muted">
                 Resumen rapido
               </p>
@@ -647,9 +654,9 @@ function IndicatorCluster({
 }) {
   const accentStyles = {
     default:
-      'border-theme bg-[linear-gradient(180deg,rgba(255,255,255,0.82),rgba(255,255,255,0.96))] dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.05))]',
+      'border-theme bg-[linear-gradient(180deg,rgba(255,255,255,0.82),rgba(255,255,255,0.96))] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(23,26,33,0.94),rgba(14,17,23,0.98))]',
     warning:
-      'border-amber-200 bg-[linear-gradient(180deg,rgba(255,248,235,0.95),rgba(255,255,255,0.98))] dark:border-amber-900 dark:bg-[linear-gradient(180deg,rgba(120,53,15,0.18),rgba(255,255,255,0.03))]',
+      'border-amber-200 bg-[linear-gradient(180deg,rgba(255,248,235,0.95),rgba(255,255,255,0.98))] dark:border-amber-900/80 dark:bg-[linear-gradient(180deg,rgba(64,33,12,0.72),rgba(18,17,16,0.98))]',
   };
 
   return (
@@ -692,7 +699,7 @@ function OverviewMetricCard({
   return (
     <Link
       href={href}
-      className="group rounded-[26px] border border-theme bg-white/75 p-5 shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:shadow-md dark:bg-white/5"
+      className="group rounded-[26px] border border-theme bg-white/75 p-5 shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-[#171a21]/88 dark:shadow-[0_12px_30px_rgba(0,0,0,0.24)]"
     >
       <div className="flex items-start justify-between gap-4">
         <div className={`rounded-2xl p-3 ${accents[accent]}`}>{icon}</div>
@@ -722,9 +729,9 @@ function ProductSpotlightCard({
 }) {
   const tones = {
     success:
-      'border-emerald-200/80 bg-emerald-50/80 text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/20 dark:text-emerald-100',
+      'border-emerald-200/80 bg-emerald-50/80 text-emerald-900 dark:border-emerald-800/60 dark:bg-[linear-gradient(180deg,rgba(7,42,34,0.86),rgba(14,17,23,0.98))] dark:text-emerald-100',
     warning:
-      'border-amber-200/80 bg-amber-50/80 text-amber-900 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-100',
+      'border-amber-200/80 bg-amber-50/80 text-amber-900 dark:border-amber-800/60 dark:bg-[linear-gradient(180deg,rgba(62,36,13,0.86),rgba(14,17,23,0.98))] dark:text-amber-100',
   };
 
   return (
@@ -742,17 +749,17 @@ function ProductSpotlightCard({
         <ArrowRight className="h-4 w-4 shrink-0 opacity-60 transition-transform group-hover:translate-x-0.5" />
       </div>
 
-      <div className="relative mt-6 min-h-[264px] overflow-hidden rounded-[30px] border border-current/10 bg-white/40 p-4 dark:bg-white/5 md:min-h-[292px]">
+      <div className="relative mt-6 min-h-[264px] overflow-hidden rounded-[30px] border border-current/10 bg-white/40 p-4 dark:border-white/10 dark:bg-black/25 md:min-h-[292px]">
         {product?.imageUrl ? (
-          <div className="absolute inset-[10px] overflow-hidden rounded-[26px] border border-black/10 bg-white/70 shadow-sm dark:border-white/10">
+          <div className="absolute inset-[10px] overflow-hidden rounded-[26px] border border-black/10 bg-white/70 shadow-sm dark:border-white/10 dark:bg-[#20242d]">
             <Image src={product.imageUrl} alt={title} fill className="object-cover object-center" />
           </div>
         ) : (
-          <div className="absolute inset-[10px] flex items-center justify-center rounded-[26px] border border-dashed border-current/20 bg-white/60 text-sm font-black opacity-70 dark:bg-white/5">
+          <div className="absolute inset-[10px] flex items-center justify-center rounded-[26px] border border-dashed border-current/20 bg-white/60 text-sm font-black opacity-70 dark:bg-[#20242d]">
             Sin imagen
           </div>
         )}
-        <div className="absolute bottom-6 right-6 z-10 flex w-[122px] shrink-0 flex-col items-center justify-center gap-2 rounded-[22px] border border-white/30 bg-white/30 px-4 py-4 text-center shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-[rgba(34,34,34,0.52)]">
+        <div className="absolute bottom-6 right-6 z-10 flex w-[122px] shrink-0 flex-col items-center justify-center gap-2 rounded-[22px] border border-white/30 bg-white/30 px-4 py-4 text-center shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-[rgba(12,14,18,0.78)]">
           <div className="min-w-0">
             <p className="text-[11px] font-black uppercase tracking-[0.16em] opacity-70">Ventas</p>
           </div>

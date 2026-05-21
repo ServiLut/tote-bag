@@ -8,21 +8,29 @@ import {
   DASHBOARD_DEBUG_ROLE_HEADER_NAME,
   parseDashboardDebugRoleCookie,
 } from '@/lib/dashboard-auth';
+import { sanitizeProxyResponseHeaders } from '@/lib/api-proxy';
+import { logSystemAlert } from '@/lib/audit-log';
 
 const PROXY_SAFE_RETRY_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
-const DEFAULT_PROXY_TIMEOUT_MS = 30_000;
 
-function getProxyRequestTimeoutMs() {
-  const rawValue = process.env.API_PROXY_TIMEOUT_MS?.trim();
-
-  if (!rawValue) {
-    return DEFAULT_PROXY_TIMEOUT_MS;
+function getProxyRequestTimeoutMs(pathname: string) {
+  if (pathname.startsWith('reports/')) return 45000;
+  if (pathname.startsWith('uploads/')) return 30000;
+  if (pathname.startsWith('finance/')) return 15000;
+  if (pathname.startsWith('dashboard/')) return 12000;
+  if (pathname.startsWith('checkout/') || pathname.startsWith('payment/')) {
+    return 8000;
   }
+  if (pathname.startsWith('catalog/')) return 6000;
 
-  const parsedValue = Number(rawValue);
-  return Number.isFinite(parsedValue) && parsedValue > 0
-    ? parsedValue
-    : DEFAULT_PROXY_TIMEOUT_MS;
+  const rawValue = process.env.API_PROXY_TIMEOUT_MS?.trim();
+  if (rawValue) {
+    const parsedValue = Number(rawValue);
+    if (Number.isFinite(parsedValue) && parsedValue > 0) {
+      return parsedValue;
+    }
+  }
+  return 8000;
 }
 
 function getRequestMethod(request: NextRequest) {
@@ -53,7 +61,7 @@ function buildForwardedForHeader(request: NextRequest) {
   return forwardedFor ?? realIp ?? null;
 }
 
-function buildForwardHeaders(request: NextRequest) {
+function buildForwardHeaders(request: NextRequest, requestId: string) {
   const headers = new Headers();
   const debugRole = parseDashboardDebugRoleCookie(
     request.cookies.get(DASHBOARD_DEBUG_ROLE_COOKIE_NAME)?.value,
@@ -66,12 +74,16 @@ function buildForwardHeaders(request: NextRequest) {
     'content-type',
     'user-agent',
     'x-idempotency-key',
+    'x-event-checksum',
+    'x-correlation-id',
   ]) {
     const value = request.headers.get(name);
     if (value) {
       headers.set(name, value);
     }
   }
+
+  headers.set('x-request-id', requestId);
 
   const forwardedFor = buildForwardedForHeader(request);
   if (forwardedFor) {
@@ -100,6 +112,23 @@ function buildForwardHeaders(request: NextRequest) {
   return headers;
 }
 
+function secureLogProxy(
+  level: 'info' | 'error',
+  context: Record<string, unknown>,
+) {
+  const safeContext = {
+    ...context,
+    timestamp: new Date().toISOString(),
+  };
+
+  if (level === 'error') {
+    console.error('[API Proxy Error]', JSON.stringify(safeContext));
+    return;
+  }
+
+  console.info('[API Proxy Info]', JSON.stringify(safeContext));
+}
+
 async function forwardRequest(
   request: NextRequest,
   context: { params: Promise<{ path: string[] }> },
@@ -107,8 +136,9 @@ async function forwardRequest(
   const { path } = await context.params;
   const pathname = path.join('/');
   const query = request.nextUrl.search;
-  const headers = buildForwardHeaders(request);
-  const requestTimeoutMs = getProxyRequestTimeoutMs();
+  const requestId = request.headers.get('x-request-id') || crypto.randomUUID();
+  const headers = buildForwardHeaders(request, requestId);
+  const requestTimeoutMs = getProxyRequestTimeoutMs(pathname);
   const body =
     request.method === 'GET' || request.method === 'HEAD'
       ? undefined
@@ -116,18 +146,19 @@ async function forwardRequest(
   const canReplayRequest = canReplayProxyRequest(request, headers);
 
   let lastError: unknown;
-  const attemptedUrls: string[] = [];
+  const startTime = Date.now();
 
   for (const baseUrl of getServerApiCandidates()) {
     const targetUrl = `${baseUrl}/${pathname}${query}`;
-    attemptedUrls.push(targetUrl);
+    let safeTargetHost = 'unknown';
 
     try {
-      if (pathname.startsWith('shipping/')) {
-        console.log(
-          `[api/proxy] ${request.method} ${pathname} -> ${targetUrl} auth=${headers.has('authorization')}`,
-        );
-      }
+      safeTargetHost = new URL(baseUrl).host;
+    } catch {
+      safeTargetHost = baseUrl;
+    }
+
+    try {
       const upstreamResponse = await fetch(targetUrl, {
         method: request.method,
         headers,
@@ -142,20 +173,37 @@ async function forwardRequest(
       ) {
         await upstreamResponse.body?.cancel().catch(() => undefined);
         lastError = new Error(
-          `API candidate ${targetUrl} returned transient status ${upstreamResponse.status}`,
+          `API candidate ${safeTargetHost} returned transient status ${upstreamResponse.status}`,
         );
         continue;
       }
 
-      if (pathname.startsWith('shipping/')) {
-        console.log(
-          `[api/proxy] ${request.method} ${pathname} <- ${upstreamResponse.status} from ${targetUrl}`,
+      if (!upstreamResponse.ok && upstreamResponse.status >= 500) {
+        secureLogProxy('error', {
+          requestId,
+          path: pathname,
+          method: request.method,
+          status: upstreamResponse.status,
+          elapsedMs: Date.now() - startTime,
+          selectedTargetHost: safeTargetHost,
+          errorType: 'UpstreamServerError',
+        });
+
+        await logSystemAlert(
+          'CRITICAL',
+          `API Error ${upstreamResponse.status} on ${pathname}`,
+          {
+            requestId,
+            method: request.method,
+            targetHost: safeTargetHost,
+          },
         );
       }
 
-      const responseHeaders = new Headers(upstreamResponse.headers);
-      responseHeaders.delete('content-encoding');
-      responseHeaders.delete('transfer-encoding');
+      const responseHeaders = sanitizeProxyResponseHeaders(
+        upstreamResponse.headers,
+      );
+      responseHeaders.set('x-request-id', requestId);
 
       return new NextResponse(upstreamResponse.body, {
         status: upstreamResponse.status,
@@ -164,6 +212,18 @@ async function forwardRequest(
       });
     } catch (error) {
       lastError = error;
+      const isTimeout =
+        error instanceof DOMException && error.name === 'TimeoutError';
+
+      secureLogProxy('error', {
+        requestId,
+        path: pathname,
+        method: request.method,
+        status: isTimeout ? 504 : 502,
+        elapsedMs: Date.now() - startTime,
+        selectedTargetHost: safeTargetHost,
+        errorType: isTimeout ? 'TimeoutError' : 'NetworkError',
+      });
 
       if (!canReplayRequest) {
         break;
@@ -173,12 +233,16 @@ async function forwardRequest(
 
   const detail =
     lastError instanceof Error ? lastError.message : 'Sin detalle adicional';
+  const isTimeoutError =
+    lastError instanceof DOMException && lastError.name === 'TimeoutError';
+  const finalStatus = isTimeoutError ? 504 : 502;
 
   return NextResponse.json(
     {
-      message: `No fue posible conectar con la API. URLs probadas: ${attemptedUrls.join(', ')}. Detalle: ${detail}`,
+      message: `No fue posible conectar con la API. Detalle: ${detail}`,
+      requestId,
     },
-    { status: 502 },
+    { status: finalStatus, headers: { 'x-request-id': requestId } },
   );
 }
 

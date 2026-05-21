@@ -17,6 +17,7 @@ import {
   getCheckoutLoginHref,
 } from '@/lib/frontend-routing';
 import { resolveWompiWidgetStatus } from '@/lib/wompi';
+import { formatVariantSummary } from '@/lib/storefront-translations';
 
 interface WompiWidgetOptions {
   currency: string;
@@ -876,13 +877,13 @@ function CheckoutPageContent() {
                     <div>
                       <h4 className="text-sm font-medium line-clamp-2 text-primary">{item.product.name}</h4>
                       <p className="text-xs text-muted">
-                        {[item.variant.size, item.variant.color].filter(Boolean).join(' / ')}
+                        {formatVariantSummary(item.variant.size, item.variant.color, t)}
                       </p>
                       <p className="text-sm font-semibold mt-1 text-primary">
                         ${(item.unitPrice * item.quantity).toLocaleString('es-CO')}
                       </p>
                       <p className="text-[10px] font-bold uppercase tracking-wide text-muted">
-                        IVA incluido
+                        {t('tax_included')}
                       </p>
                     </div>
                   </div>
@@ -893,7 +894,7 @@ function CheckoutPageContent() {
                   <span className="text-muted">{t('cart_subtotal')}</span>
                   <span className="text-right">
                     <span className="block text-primary">${subtotal.toLocaleString('es-CO')}</span>
-                    <span className="block text-[10px] font-bold uppercase tracking-wide text-muted">IVA incluido</span>
+                    <span className="block text-[10px] font-bold uppercase tracking-wide text-muted">{t('tax_included')}</span>
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
@@ -904,7 +905,7 @@ function CheckoutPageContent() {
                   <span>Total parcial</span>
                   <span className="text-right">
                     <span className="block">${subtotal.toLocaleString('es-CO')}</span>
-                    <span className="block text-[10px] font-bold uppercase tracking-wide text-muted">IVA incluido</span>
+                    <span className="block text-[10px] font-bold uppercase tracking-wide text-muted">{t('tax_included')}</span>
                   </span>
                 </div>
                 <p className="text-xs text-muted pt-2">

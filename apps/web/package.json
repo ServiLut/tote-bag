@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "jest --config ./jest.config.cjs"
+    "test": "jest --config ./jest.config.cjs",
+    "test:e2e": "playwright test",
+    "test:e2e:smoke": "playwright test --grep @smoke"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
@@ -37,6 +39,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.3",
     "jest": "^30.0.0",
+    "@playwright/test": "^1.50.1",
     "tailwindcss": "^4",
     "ts-jest": "^29.2.5",
     "typescript": "^5"

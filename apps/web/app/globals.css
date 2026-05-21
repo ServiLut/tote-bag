@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: var(--font-geist-sans);
@@ -73,6 +74,65 @@ body {
 }
 
 /* Forzar esquema de color claro en componentes específicos (como el Footer) */
+/* Dashboard dark mode should rely on borders, not elevation */
+.dark body.dashboard-route :is(div, section, aside, article, form)[class*="shadow"],
+.dark body.dashboard-route :is(div, section, aside, article, form)[style*="box-shadow"],
+.dark body.dashboard-route .recharts-tooltip-wrapper,
+.dark body.dashboard-route .recharts-tooltip-wrapper > * {
+  box-shadow: none !important;
+}
+
+/* Forzar esquema de color claro en componentes especÃ­ficos (como el Footer) */
+/* Dark mode buttons should not use elevation */
+.dark :is(
+  button,
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  label[class*="cursor-pointer"],
+  a[class*="inline-flex"],
+  a[class*="justify-center"],
+  [role="button"]
+)[class*="shadow"],
+.dark :is(
+  button,
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  label[class*="cursor-pointer"],
+  a[class*="inline-flex"],
+  a[class*="justify-center"],
+  [role="button"]
+)[style*="box-shadow"] {
+  box-shadow: none !important;
+}
+
+.dark .dark-surface-gradient {
+  border-color: rgb(255 255 255 / 0.1);
+  background-color: #171a21;
+  background-image:
+    radial-gradient(circle at top left, rgb(141 161 104 / 0.16), transparent 28%),
+    radial-gradient(circle at top right, rgb(96 165 250 / 0.12), transparent 24%),
+    linear-gradient(180deg, rgb(23 26 33 / 0.94), rgb(14 17 23 / 0.98));
+}
+
+.dark .dark-surface-gradient-soft {
+  border-color: rgb(255 255 255 / 0.1);
+  background-color: #171a21;
+  background-image:
+    radial-gradient(circle at top left, rgb(141 161 104 / 0.12), transparent 26%),
+    linear-gradient(180deg, rgb(23 26 33 / 0.9), rgb(14 17 23 / 0.98));
+}
+
+.dark .dark-surface-gradient-rose {
+  border-color: rgb(190 24 93 / 0.32);
+  background-color: #25131b;
+  background-image:
+    radial-gradient(circle at top left, rgb(244 63 94 / 0.18), transparent 30%),
+    radial-gradient(circle at top right, rgb(251 146 60 / 0.1), transparent 24%),
+    linear-gradient(180deg, rgb(63 17 31 / 0.78), rgb(14 17 23 / 0.98));
+}
+
 .force-light {
   --color-base: #F5F1EB !important;
   --color-primary: #111111 !important;

@@ -29,10 +29,12 @@ describe('WizardService', () => {
         name: 'Algodon',
       },
     ]);
-    prisma.wizardOption.create.mockImplementation(async ({ data }) => ({
-      id: 'technique-1',
-      ...data,
-    }));
+    prisma.wizardOption.create.mockImplementation(
+      ({ data }: { data: Record<string, unknown> }) => ({
+        id: 'technique-1',
+        ...data,
+      }),
+    );
 
     await service.create({
       category: WizardCategory.TECHNIQUE,
@@ -40,11 +42,19 @@ describe('WizardService', () => {
       allowedMaterialValues: ['Lona', 'material-2'],
     });
 
-    expect(prisma.wizardOption.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        allowedMaterialValues: ['material-1', 'material-2'],
-      }),
-    });
+    const [createArgs] = prisma.wizardOption.create.mock
+      .calls[0] as unknown as [
+      {
+        data: {
+          allowedMaterialValues: string[];
+        };
+      },
+    ];
+
+    expect(createArgs.data.allowedMaterialValues).toEqual([
+      'material-1',
+      'material-2',
+    ]);
   });
 
   it('exposes readable material names and resolved ids for technique options', async () => {
@@ -72,7 +82,10 @@ describe('WizardService', () => {
         { id: 'material-2', name: 'Algodon' },
       ]);
 
-    const result = await service.findAll();
+    const result = (await service.findAll()) as Array<{
+      allowedMaterialIds: string[];
+      allowedMaterialValues: string[];
+    }>;
 
     expect(result).toEqual([
       expect.objectContaining({

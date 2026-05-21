@@ -12,9 +12,16 @@ interface PersonalizerTechniqueActionGuard {
   hasCompatibleTechniqueOptions: boolean;
   hasUploadedLogo: boolean;
   hasDesignUrl: boolean;
+  hasPreparedDesign?: boolean;
   hasConfigCode: boolean;
   isUploadingLogo?: boolean;
   isPricingLoading?: boolean;
+}
+
+interface ResolveRestoredSizeSelectionInput {
+  restoredSize?: string | null;
+  resolvedVariantSize?: string | null;
+  currentSize?: string | null;
 }
 
 interface PersonalizerWizardHelperExports {
@@ -29,6 +36,10 @@ interface PersonalizerWizardHelperExports {
   isTechniqueActionBlocked: (
     input: PersonalizerTechniqueActionGuard,
   ) => boolean;
+  shouldInlineDraftDesign: (fileSize?: number | null) => boolean;
+  resolveRestoredSizeSelection: (
+    input: ResolveRestoredSizeSelectionInput,
+  ) => string;
 }
 
 const loadPersonalizerWizardHelpers = (): PersonalizerWizardHelperExports => {
@@ -66,6 +77,8 @@ describe('personalizer wizard guards', () => {
     getCompatibleTechniqueOptions,
     getCompatibleOtherOptions,
     isTechniqueActionBlocked,
+    shouldInlineDraftDesign,
+    resolveRestoredSizeSelection,
   } = loadPersonalizerWizardHelpers();
 
   it('no considera opciones extra como tecnica compatible para avanzar o enviar', () => {
@@ -92,6 +105,7 @@ describe('personalizer wizard guards', () => {
         hasCompatibleTechniqueOptions: false,
         hasUploadedLogo: true,
         hasDesignUrl: true,
+        hasPreparedDesign: true,
         hasConfigCode: true,
       }),
     ).toBe(true);
@@ -100,9 +114,33 @@ describe('personalizer wizard guards', () => {
       isTechniqueActionBlocked({
         hasCompatibleTechniqueOptions: true,
         hasUploadedLogo: true,
-        hasDesignUrl: true,
+        hasDesignUrl: false,
+        hasPreparedDesign: true,
         hasConfigCode: true,
       }),
     ).toBe(false);
+  });
+
+  it('solo serializa disenios pequenos en el borrador de sessionStorage', () => {
+    expect(shouldInlineDraftDesign(256 * 1024)).toBe(true);
+    expect(shouldInlineDraftDesign(5 * 1024 * 1024)).toBe(false);
+  });
+
+  it('preserva la talla restaurada del borrador sobre la variante base', () => {
+    expect(
+      resolveRestoredSizeSelection({
+        restoredSize: '45x38',
+        resolvedVariantSize: '30x35',
+        currentSize: '',
+      }),
+    ).toBe('45x38');
+
+    expect(
+      resolveRestoredSizeSelection({
+        restoredSize: '',
+        resolvedVariantSize: '30x35',
+        currentSize: 'otro',
+      }),
+    ).toBe('30x35');
   });
 });

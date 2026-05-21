@@ -136,10 +136,13 @@ export class DashboardService {
             status: {
               notIn: [
                 'DISE\u00d1O_APROBADO',
-                'DISENO_APROBADO',
+                'DISE\u00C3\u2018O_APROBADO',
+                'DISEÃƒâ€˜O_APROBADO',
                 'DISEÃƒÆ’Ã¢â‚¬ËœO_APROBADO',
+                'DISENO_APROBADO',
                 'DISEÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“O_APROBADO',
                 'DISEÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¹Ã…â€œO_APROBADO',
+                'DISEÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¹Ãƒâ€¦Ã¢â‚¬Å“O_APROBADO',
               ],
             },
           },

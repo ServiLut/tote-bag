@@ -3,13 +3,13 @@ import { initReactI18next } from 'react-i18next';
 
 import enCommon from '../public/locales/en/common.json';
 import esCommon from '../public/locales/es/common.json';
-
-export const DEFAULT_LANGUAGE = 'es';
-export const LANGUAGE_STORAGE_KEY = 'i18nextLng';
-export const LANGUAGE_COOKIE_KEY = 'i18next';
-export const SUPPORTED_LANGUAGES = ['en', 'es'] as const;
-
-type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
+import {
+  DEFAULT_LANGUAGE,
+  LANGUAGE_COOKIE_KEY,
+  LANGUAGE_STORAGE_KEY,
+  SUPPORTED_LANGUAGES,
+  type SupportedLanguage,
+} from './i18n-config';
 
 const resources = {
   en: {
